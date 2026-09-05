@@ -64,6 +64,9 @@ scenes. Try `Three students share two books`, followed by
 `Another student arrives with her own book` and `Highlight the second student`.
 Unsupported or ambiguous clauses preserve the previous scene and show a specific
 clarification. This is currently a bounded grammar, not arbitrary language understanding.
+Follow-up corrections include `Make that four students` and, after the arrival,
+`She gives her book to the first student`. Undo restores ownership and conversation
+context. Count changes and transfers keep the surviving objects' identities.
 See `ENGINEERING_STATUS.md` for evaluation methods, limitations and the next work.
 
 No language model draws directly onto the canvas. Every parser or model must produce DoodleScript, and every script must pass four gates before it changes a lesson:

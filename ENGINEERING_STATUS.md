@@ -1,4 +1,4 @@
-# Visual understanding: first increment
+# Visual understanding: contextual corrections
 
 The aim is broad natural explanation-to-visual understanding. This increment
 introduces composable object descriptions, shared resources, personal ownership,
@@ -13,6 +13,32 @@ on arbitrary speech or classroom explanations.
 3. Highlight the second student.
 4. Remove the first book.
 5. Undo using the existing button.
+
+## Contextual corrections
+
+The second increment adds `Make that four students`, `Change that to three books`,
+`They share two books`, and `She gives her book to the first student`.
+Conversation focus records subject and object IDs in each scene revision, so Undo
+restores context as well as geometry and ownership. Explicit highlights, renames
+and moves focus their targets. A singular pronoun requires one recent subject;
+gender is not inferred from a name or drawing. This is bounded conversational
+reference resolution, not unrestricted discourse understanding.
+
+Count changes apply to the discussed group, preserve retained IDs and positions,
+and update its relationship membership. Multiple roles or personal owners require
+clarification. Transfers require an existing sole owner and recipient, retain the
+object ID and position, and replace its ownership relation. They currently express
+the ownership change in the relationship key; physical handover animation remains
+unfinished. Existing sharing cannot silently become personal ownership.
+
+DoodleScript 1.2.0 adds explicit context and `unrelate`; 1.0.0 and 1.1.0 continue
+to be accepted under their original feature boundaries. Older scenes need no
+rewriting: absent context means no remembered subject, and absent relationships
+means an empty relation list. Version-specific extensions are rejected when tagged
+with an older version. Unknown versions are rejected.
+
+Browser verification covered count correction, arrival, transfer and Undo. The
+screen-reader summary also reports ownership changes when object counts stay fixed.
 
 Counts, object types and sharing/ownership are composed independently. Teachers,
 learners, people, cars, books, houses, trees and related aliases use the same path.
@@ -42,9 +68,13 @@ and p95 for 250 interpretation/validation/application iterations. It excludes
 microphone latency, transcription, React rendering, animation and SVG painting.
 The fixture suite checks meaning and continuity, not just object counts.
 
-Measured on this Windows development session: 39 tests passed; the 250-iteration
+At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.
+
+Contextual-corrections checkpoint: 55 tests passed. The same local benchmark
+reported median 0.44 ms and p95 1.14 ms over 250 iterations; speech and screen
+rendering remain excluded. Lint, build and browser interaction checks were run.
 
 Next evaluation needs independent explanations written by teachers, including
 unseen phrasing, with accepted scene graphs and explicit unsupported labels.
@@ -54,7 +84,7 @@ grammar fixtures as real-world accuracy.
 
 ## Outstanding work
 
-General language planning/retrieval, pronoun context beyond an unambiguous object,
+General language planning/retrieval, references beyond the recent explicit focus,
 events and causality, CPU semantics, academic renderers, rich poses, connector
 routing, calibrated speech confidence and device benchmarks remain unfinished.
 Android speech still uses a system recognition service: its prefer-offline flag

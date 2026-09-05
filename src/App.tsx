@@ -24,11 +24,14 @@ function App() {
   const canUndo = history.length > 1;
 
   const spokenSummary = useMemo(
-    () =>
-      scene.entities.length
-        ? scene.entities.map((entity) => entity.label ?? entity.kind).join(", ")
-        : "Nothing drawn yet",
-    [scene.entities]
+    () => {
+      if (!scene.entities.length) return "Nothing drawn yet";
+      const labels = (ids: string[]) => ids.map((id) => scene.entities.find((entity) => entity.id === id)?.label ?? id).join(", ");
+      return [scene.entities.map((entity) => entity.label ?? entity.kind).join(", "),
+        ...(scene.relations ?? []).map((relation) => `${labels(relation.sourceIds)} ${relation.kind === "shares" ? "share" : "owns"} ${labels(relation.targetIds)}`)
+      ].join(". ");
+    },
+    [scene.entities, scene.relations]
   );
 
   const submit = (text = input) => {

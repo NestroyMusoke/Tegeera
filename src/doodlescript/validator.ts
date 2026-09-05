@@ -55,6 +55,10 @@ export function validateDoodleScript(
   }
 
   for (const command of script.commands) {
+    if (command.action === "unrelate") {
+      if (script.schemaVersion !== "1.2.0") issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0." });
+      if (!relationIds.delete(command.relationId)) issues.push({ gate: "semantic", message: "That relationship no longer exists." });
+    }
     if (command.action === "clear") relationIds.clear();
     if (command.action === "relate") {
       const relation = command.relation;
@@ -93,6 +97,22 @@ export function validateDoodleScript(
   }
 
   const projected = applyDoodleScript(scene, script);
+  if (script.context) {
+    if (script.schemaVersion !== "1.2.0") issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0." });
+    for (const references of [script.context.subjectIds, script.context.objectIds]) {
+      if (new Set(references).size !== references.length || references.some((id) => !ids.has(id))) {
+        issues.push({ gate: "semantic", message: "Conversation context refers to missing or duplicate objects." });
+      }
+    }
+  }
+  const owned = new Set<string>();
+  for (const relation of projected.relations ?? []) {
+    if (relation.kind !== "owns") continue;
+    for (const id of relation.targetIds) {
+      if (owned.has(id)) issues.push({ gate: "semantic", message: "An object cannot have two personal owners. Transfer it explicitly." });
+      owned.add(id);
+    }
+  }
   if (hasDenseOverlap(projected.entities) || projected.entities.some((entity) => !withinCanvas(entity))) {
     issues.push({
       gate: "layout",
