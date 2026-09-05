@@ -7,6 +7,7 @@ import {
   validateDoodleScript,
   type GateIssue
 } from "./doodlescript/validator";
+import { useSpeechSession } from "./speech/useSpeechSession";
 
 const suggestions = [
   "Draw three students waiting in a queue",
@@ -58,6 +59,13 @@ function App() {
     setIssues([]);
   };
 
+  const speech = useSpeechSession((transcript) => submit(transcript));
+  const isListening = speech.status === "listening";
+  const speechBusy =
+    speech.status === "checking" ||
+    speech.status === "requesting-permission" ||
+    speech.status === "processing";
+
   return (
     <main className="app">
       <header className="topbar">
@@ -106,8 +114,41 @@ function App() {
             <button className="draw-button" type="submit">
               Draw it
             </button>
+            <button
+              aria-label={isListening ? "Stop listening" : "Start listening"}
+              aria-pressed={isListening}
+              className={`mic-button ${isListening ? "listening" : ""}`}
+              disabled={speech.status === "unavailable" || speechBusy}
+              onClick={() => void (isListening ? speech.stop() : speech.start())}
+              type="button"
+            >
+              <span aria-hidden="true">{isListening ? "■" : "●"}</span>
+              {isListening ? "Stop" : "Speak"}
+            </button>
           </div>
         </form>
+
+        <div className={`speech-status speech-${speech.status}`} role="status">
+          <div>
+            <strong>
+              {isListening
+                ? "Listening"
+                : speech.status === "unavailable"
+                  ? "Typed input ready"
+                  : "Speech input"}
+            </strong>
+            <span>
+              {speech.partialTranscript ||
+                speech.message ||
+                "Tap Speak, then explain one change at a time."}
+            </span>
+          </div>
+          {(isListening || speech.status === "processing") && (
+            <button onClick={() => void speech.cancel()} type="button">
+              Cancel
+            </button>
+          )}
+        </div>
 
         {issues.length ? (
           <div className="clarification" role="status">

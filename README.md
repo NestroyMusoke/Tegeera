@@ -14,6 +14,7 @@ The current foundation includes:
 - persistent scene revisions and undo;
 - safe clarification instead of guessed drawings;
 - Capacitor configuration for the Android application.
+- swappable live-speech engine with Android support, safe confidence handling and typed fallback.
 
 Try commands such as:
 
@@ -49,6 +50,12 @@ npx cap add android
 npm run android:sync
 npm run android:open
 ```
+
+The Android speech bridge requests microphone permission only when the user taps
+**Speak**. It asks Android to prefer an offline recognizer. Availability still
+depends on the recognition service and offline language pack installed on the
+device; when neither is available, Tegeera preserves the current scene and keeps
+typed input enabled.
 
 ## Safety contract
 

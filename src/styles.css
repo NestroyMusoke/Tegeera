@@ -1,7 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,600&display=swap");
-
 :root {
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
   color: #28261f;
   background: #eee6d3;
   font-synthesis: none;
@@ -58,7 +56,7 @@ button {
   background: #2c6e57;
   border: 2px solid #234a3c;
   border-radius: 47% 53% 45% 55%;
-  font: 600 27px/1 "Newsreader", serif;
+  font: 600 27px/1 Georgia, serif;
   transform: rotate(-3deg);
   box-shadow: 3px 3px 0 #d69c3c;
 }
@@ -68,7 +66,7 @@ button {
 }
 
 .brand strong {
-  font: 600 22px/1.1 "Newsreader", serif;
+  font: 600 22px/1.1 Georgia, serif;
 }
 
 .brand span {
@@ -114,7 +112,7 @@ button {
 
 .hero-copy h1 {
   margin: 0;
-  font: 600 clamp(35px, 6vw, 58px)/0.98 "Newsreader", serif;
+  font: 600 clamp(35px, 6vw, 58px)/0.98 Georgia, serif;
   letter-spacing: -0.025em;
 }
 
@@ -161,7 +159,7 @@ button {
 .empty-canvas p {
   margin: 6px 0 4px;
   color: #4e493e;
-  font: 600 21px "Newsreader", serif;
+  font: 600 21px Georgia, serif;
 }
 
 .empty-canvas small {
@@ -209,7 +207,7 @@ button {
 
 .entity-label {
   fill: #4c473e;
-  font: 600 13px "DM Sans", sans-serif;
+  font: 600 13px "Segoe UI", sans-serif;
   animation: label-in 300ms ease forwards;
   animation-delay: calc(var(--draw-delay) + 350ms);
   opacity: 0;
@@ -284,6 +282,82 @@ button {
 .draw-button:active {
   transform: translateY(2px);
   box-shadow: 0 2px 0 #214d3d;
+}
+
+.mic-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 92px;
+  padding: 0 14px;
+  color: #315747;
+  background: #edf4ef;
+  border: 1px solid #a7c1b5;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.mic-button span {
+  color: #b04b3f;
+  font-size: 11px;
+}
+
+.mic-button.listening {
+  color: #fffaf0;
+  background: #9d4037;
+  border-color: #7c2e27;
+}
+
+.mic-button.listening span {
+  color: #fffaf0;
+}
+
+.mic-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.speech-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  color: #4f5f57;
+  background: #edf2ed;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.speech-status > div {
+  display: grid;
+  gap: 2px;
+}
+
+.speech-status span {
+  color: #65736c;
+}
+
+.speech-listening {
+  color: #7b332c;
+  background: #fae7df;
+}
+
+.speech-error,
+.speech-needs-clarification {
+  color: #77501d;
+  background: #fff1cd;
+}
+
+.speech-status button {
+  padding: 6px 10px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
 }
 
 .control-footer {
@@ -369,11 +443,23 @@ button {
   }
 
   .input-row {
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .input-row input {
+    grid-column: 1 / -1;
   }
 
   .draw-button {
+    min-height: 44px;
     padding: 0 15px;
+  }
+
+  .mic-button {
+    min-width: 72px;
+    min-height: 44px;
+    padding: 0 10px;
   }
 
   .control-footer {
