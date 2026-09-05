@@ -176,6 +176,25 @@ button {
   font-size: 10px;
 }
 
+.relationship-key {
+  margin: 12px 0 28px;
+  display: grid;
+  gap: 6px;
+  font-size: clamp(10px, 1.4vw, 15px);
+}
+
+.relationship-key > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border-left: 4px solid #2f7159;
+  background: #f1eee3;
+  color: #28261f;
+}
+
+.relationship-key .relationship-owns { border-color: #ad7021; }
+
 .doodle-stroke,
 .doodle-detail,
 .accent-stroke {

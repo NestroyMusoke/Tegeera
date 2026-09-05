@@ -1,4 +1,4 @@
-import type { SceneEntity, SceneState } from "../doodlescript/schema";
+import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -6,6 +6,7 @@ interface DoodleCanvasProps {
 
 export function DoodleCanvas({ scene }: DoodleCanvasProps) {
   return (
+    <div className="visual-scene">
     <section className="canvas-shell" aria-label="Tegeera drawing canvas">
       <svg
         className="doodle-canvas"
@@ -30,15 +31,16 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
         </defs>
         <rect width="1000" height="620" fill="#fbf7ed" />
         <rect width="1000" height="620" filter="url(#paper-grain)" opacity=".5" />
+        {scene.relations?.map((relation) => (
+          <Relationship relation={relation} entities={scene.entities} key={relation.id} />
+        ))}
         {scene.entities.map((entity, index) => (
           <DoodleEntity entity={entity} index={index} key={entity.id} />
         ))}
       </svg>
       {!scene.entities.length && (
         <div className="empty-canvas">
-          <span className="empty-mark" aria-hidden="true">
-            ✦
-          </span>
+          <span className="empty-mark" aria-hidden="true">✦</span>
           <p>{scene.message}</p>
           <small>Try “Draw three students waiting in a queue.”</small>
         </div>
@@ -48,6 +50,48 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
         <span>Revision {scene.revision}</span>
       </div>
     </section>
+      {!!scene.relations?.length && (
+        <div className="relationship-key" aria-label="Scene relationships">
+          {scene.relations.map((relation) => {
+            const labels = (ids: string[]) => ids.map((id) => {
+              const entity = scene.entities.find((item) => item.id === id);
+              return entity?.label ?? id;
+            }).join(", ");
+            return (
+              <div key={relation.id} className={`relationship-${relation.kind}`}>
+                <span>{labels(relation.sourceIds)}</span>
+                <strong>{relation.kind === "shares" ? "share" : "owns"} →</strong>
+                <span>{labels(relation.targetIds)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Relationship({ relation, entities }: { relation: SceneRelation; entities: SceneEntity[] }) {
+  const members = [...relation.sourceIds, ...relation.targetIds]
+    .map((id) => entities.find((entity) => entity.id === id))
+    .filter((entity): entity is SceneEntity => !!entity);
+  if (!members.length) return null;
+  // Mixed-row relations remain in the explicit key until routed connectors exist.
+  if (members.some((entity) => entity.y !== members[0].y)) return null;
+  const y = Math.max(...members.map((entity) => entity.y * 6.2 + 85 * entity.scale)) + 18;
+  const left = Math.min(...members.map((entity) => entity.x * 10));
+  const right = Math.max(...members.map((entity) => entity.x * 10));
+  const color = relation.kind === "shares" ? "#2f7159" : "#ad7021";
+  return (
+    <g fill="none" stroke={color} strokeWidth="2" aria-label={relation.kind === "shares" ? "Shared resources" : "Personal ownership"}>
+      <path d={`M${left} ${y} H${right}`} />
+      {members.map((entity) => (
+        <path key={entity.id} d={`M${entity.x * 10} ${entity.y * 6.2 + 85 * entity.scale} V${y}`} />
+      ))}
+      <text x={(left + right) / 2} y={y + 19} textAnchor="middle" stroke="none" fill={color} fontSize="14">
+        {relation.kind === "shares" ? "shared" : "personal ownership"}
+      </text>
+    </g>
   );
 }
 

@@ -17,6 +17,8 @@ function applyCommand(
   command: DoodleCommand
 ): SceneEntity[] {
   switch (command.action) {
+    case "relate":
+      return entities;
     case "create":
       return [...entities, command.entity];
     case "move":
@@ -52,10 +54,23 @@ export function applyDoodleScript(
   scene: SceneState,
   script: DoodleScript
 ): SceneState {
+  let relations = [...(scene.relations ?? [])];
+  for (const command of script.commands) {
+    if (command.action === "clear") relations = [];
+    if (command.action === "relate") relations.push(command.relation);
+    if (command.action === "remove") {
+      relations = relations.map((relation) => ({
+        ...relation,
+        sourceIds: relation.sourceIds.filter((id) => id !== command.targetId),
+        targetIds: relation.targetIds.filter((id) => id !== command.targetId)
+      })).filter((relation) => relation.sourceIds.length && relation.targetIds.length);
+    }
+  }
   return {
     sceneId: script.sceneId,
     revision: scene.revision + 1,
     entities: script.commands.reduce(applyCommand, scene.entities),
+    relations,
     message: undefined
   };
 }

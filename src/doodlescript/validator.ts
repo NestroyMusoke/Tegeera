@@ -5,6 +5,8 @@ import {
   type SceneEntity,
   type SceneState
 } from "./schema";
+import { applyDoodleScript } from "./scene";
+import { overlaps, withinCanvas } from "./layout";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -47,8 +49,27 @@ export function validateDoodleScript(
   const script = parsed.data;
   const issues: GateIssue[] = [];
   let ids = new Set(scene.entities.map((entity) => entity.id));
+  const relationIds = new Set((scene.relations ?? []).map((relation) => relation.id));
+  if (script.revision !== scene.revision + 1 || (scene.sceneId !== "welcome" && script.sceneId !== scene.sceneId)) {
+    issues.push({ gate: "semantic", message: "This change belongs to an older or different scene. Please try again." });
+  }
 
   for (const command of script.commands) {
+    if (command.action === "clear") relationIds.clear();
+    if (command.action === "relate") {
+      const relation = command.relation;
+      const members = [...relation.sourceIds, ...relation.targetIds];
+      if (script.schemaVersion === "1.0.0") {
+        issues.push({ gate: "schema", message: "Relationships require DoodleScript 1.1.0." });
+      }
+      if (relationIds.has(relation.id) || members.some((id) => !ids.has(id)) || new Set(members).size !== members.length) {
+        issues.push({ gate: "semantic", message: "A relationship has duplicate or missing references." });
+      }
+      if (relation.kind === "owns" && relation.sourceIds.length !== 1) {
+        issues.push({ gate: "semantic", message: "Personal ownership needs one owner." });
+      }
+      relationIds.add(relation.id);
+    }
     if (command.action === "create" && ids.has(command.entity.id)) {
       issues.push({
         gate: "semantic",
@@ -71,17 +92,11 @@ export function validateDoodleScript(
     ids = idsAfterCommand(ids, command);
   }
 
-  const created = script.commands
-    .filter(
-      (command): command is Extract<DoodleCommand, { action: "create" }> =>
-        command.action === "create"
-    )
-    .map((command) => command.entity);
-
-  if (hasDenseOverlap([...scene.entities, ...created])) {
+  const projected = applyDoodleScript(scene, script);
+  if (hasDenseOverlap(projected.entities) || projected.entities.some((entity) => !withinCanvas(entity))) {
     issues.push({
       gate: "layout",
-      message: "The requested objects would overlap too closely."
+      message: "The change would overlap or clip an object or label. Choose another position or a shorter label."
     });
   }
 
@@ -100,7 +115,7 @@ function hasDenseOverlap(entities: SceneEntity[]): boolean {
     for (let other = index + 1; other < entities.length; other += 1) {
       const a = entities[index];
       const b = entities[other];
-      if (Math.abs(a.x - b.x) < 4 && Math.abs(a.y - b.y) < 7) return true;
+      if (overlaps(a, b)) return true;
     }
   }
   return false;

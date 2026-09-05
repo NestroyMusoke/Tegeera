@@ -11,7 +11,7 @@ The current foundation includes:
 - DoodleScript v1 with schema, semantic, layout and confidence gates;
 - deterministic animated SVG people and objects;
 - typed natural-language commands;
-- persistent scene revisions and undo;
+- in-session scene revisions and undo;
 - safe clarification instead of guessed drawings;
 - Capacitor configuration for the Android application.
 - swappable live-speech engine with Android support, safe confidence handling and typed fallback.
@@ -58,6 +58,13 @@ device; when neither is available, Tegeera preserves the current scene and keeps
 typed input enabled.
 
 ## Safety contract
+
+The first visual-understanding increment supports composable sharing and ownership
+scenes. Try `Three students share two books`, followed by
+`Another student arrives with her own book` and `Highlight the second student`.
+Unsupported or ambiguous clauses preserve the previous scene and show a specific
+clarification. This is currently a bounded grammar, not arbitrary language understanding.
+See `ENGINEERING_STATUS.md` for evaluation methods, limitations and the next work.
 
 No language model draws directly onto the canvas. Every parser or model must produce DoodleScript, and every script must pass four gates before it changes a lesson:
 

@@ -25,7 +25,15 @@ export const sceneEntitySchema = z.object({
   highlighted: z.boolean().default(false)
 });
 
+export const relationSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["shares", "owns"]),
+  sourceIds: z.array(z.string().min(1)).min(1).max(12),
+  targetIds: z.array(z.string().min(1)).min(1).max(12)
+});
+
 export const commandSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("relate"), relation: relationSchema }),
   z.object({
     action: z.literal("create"),
     entity: sceneEntitySchema
@@ -54,7 +62,7 @@ export const commandSchema = z.discriminatedUnion("action", [
 ]);
 
 export const doodleScriptSchema = z.object({
-  schemaVersion: z.literal("1.0.0"),
+  schemaVersion: z.enum(["1.0.0", "1.1.0"]),
   sceneId: z.string().min(1),
   revision: z.number().int().nonnegative(),
   confidence: z.number().min(0).max(1),
@@ -66,10 +74,12 @@ export type EntityKind = z.infer<typeof entityKindSchema>;
 export type SceneEntity = z.infer<typeof sceneEntitySchema>;
 export type DoodleCommand = z.infer<typeof commandSchema>;
 export type DoodleScript = z.infer<typeof doodleScriptSchema>;
+export type SceneRelation = z.infer<typeof relationSchema>;
 
 export interface SceneState {
   sceneId: string;
   revision: number;
   entities: SceneEntity[];
+  relations?: SceneRelation[];
   message?: string;
 }

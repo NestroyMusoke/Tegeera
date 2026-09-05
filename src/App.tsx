@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { DoodleCanvas } from "./components/DoodleCanvas";
-import { parseTeacherText } from "./doodlescript/parser";
+import { interpretTeacherText } from "./doodlescript/interpret";
 import { applyDoodleScript, initialScene } from "./doodlescript/scene";
 import type { SceneState } from "./doodlescript/schema";
 import {
@@ -10,10 +10,10 @@ import {
 import { useSpeechSession } from "./speech/useSpeechSession";
 
 const suggestions = [
-  "Draw three students waiting in a queue",
-  "Add a teacher",
-  "Draw a car",
-  "Move the car left"
+  "Three students share two books",
+  "Another student arrives with her own book",
+  "Highlight the second student",
+  "Draw a car"
 ];
 
 function App() {
@@ -32,18 +32,17 @@ function App() {
   );
 
   const submit = (text = input) => {
-    const script = parseTeacherText(text, scene);
-    if (!script) {
+    const interpretation = interpretTeacherText(text, scene);
+    if (!interpretation.ok) {
       setIssues([
         {
           gate: "confidence",
-          message:
-            "I heard you, but I need a clearer object or action. Try a person, student, teacher, car, book, tree, or building."
+          message: interpretation.message
         }
       ]);
       return;
     }
-    const result = validateDoodleScript(script, scene);
+    const result = validateDoodleScript(interpretation.script, scene);
     if (!result.ok) {
       setIssues(result.issues);
       return;
