@@ -46,6 +46,11 @@ Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.
 
+On a populated scene, **Read details** enlarges the unchanged SVG inside a
+scrollable canvas so labels remain readable on narrow screens. **Overview** returns
+to the complete scene and resets the scroll position. Switching view does not add
+a revision or consume Undo.
+
 ## Android
 
 The native Android project is added after installing dependencies:

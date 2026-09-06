@@ -135,6 +135,24 @@ This supplements the static renderer fixtures; it still uses scripted input,
 not real touch, a software keyboard, microphone or Android WebView. Settled-frame
 CSS disables animation in fixtures only. Device and animation checks remain open.
 
+## Readable scene inspection
+
+The scene now has explicit `Overview` and `Read details` modes. Overview always
+fits the complete 1000×620 scene into the canvas. Read details renders that exact
+SVG at 1200×744 and contains scrolling inside the canvas, keeping the teaching
+controls and page width stable. It opens on the most recent subject (or the first
+object) with a complete label visible. Returning to Overview resets both scroll
+axes. Changing view is presentation-only: it does not mutate the scene, increment
+its revision or consume Undo.
+
+Buttons use `aria-pressed`; the detail viewport is a labelled, keyboard-focusable
+region. The browser fixture checks an effective label size of at least 15 px,
+internal horizontal and vertical scrolling, initial label visibility, overview
+reset, scene equality and absence of page-wide overflow. A 390 px settled-frame
+screenshot was inspected. This is a deliberate inspection mode, not automatic
+semantic zoom; pinch gestures and Android screen-reader behavior remain unverified.
+The complete regression suite now passes 95 tests.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.

@@ -84,7 +84,24 @@ const appBundle = await build({
       check(document.querySelectorAll('.ownership-card').length === 3, 'Undo clear failed');
       check(document.documentElement.scrollWidth <= innerWidth, 'Horizontal overflow');
       check(document.querySelector('.undo-button').getBoundingClientRect().height >= 44, 'Undo tap area too small');
-      document.getElementById('qa-result').textContent = 'PASS: create, transfer, undo, clarification, clear, restore, layout';
+      const drawing = document.querySelector('.doodle-canvas').innerHTML;
+      const detailButton = [...document.querySelectorAll('button')].find(button => button.textContent === 'Read details');
+      detailButton.click(); await pause();
+      const viewport = document.querySelector('.canvas-viewport');
+      check(viewport.scrollWidth > viewport.clientWidth, 'Detail view is not scrollable');
+      const label = document.querySelector('.doodle-canvas .entity-label');
+      check(parseFloat(getComputedStyle(label).fontSize) * label.getScreenCTM().a >= 15, 'Detail labels are too small');
+      const viewportBox = viewport.getBoundingClientRect();
+      const labelBox = label.getBoundingClientRect();
+      check(labelBox.top >= viewportBox.top && labelBox.bottom <= viewportBox.bottom, 'Detail did not open on a readable label');
+      viewport.scrollLeft = 600; viewport.scrollTop = 250; await pause();
+      check(viewport.scrollLeft > 0 && viewport.scrollTop > 0, 'Detail panning failed');
+      check(document.querySelector('.doodle-canvas').innerHTML === drawing, 'Detail changed the scene');
+      [...document.querySelectorAll('button')].find(button => button.textContent === 'Overview').click(); await pause();
+      check(viewport.scrollLeft === 0 && viewport.scrollTop === 0, 'Overview did not reset scrolling');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Detail caused page overflow');
+      if (new URLSearchParams(location.search).has('detail')) { detailButton.click(); await pause(); }
+      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, detail size, scroll, overview reset, layout';
     }
     verify().catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
@@ -95,3 +112,4 @@ await writeFile(resolve(output, "app-check.js"), appBundle.outputFiles[0].text);
 await writeFile(resolve(output, "app-check.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><div id="root"></div><output id="qa-result">RUNNING</output><script src="app-check.js"></script></body></html>`);
 await writeFile(resolve(output, "app-phone.html"), '<!doctype html><html><body style="margin:0"><iframe title="Full app at 390 pixels" src="app-check.html" style="width:390px;height:1750px;border:0"></iframe></body></html>');
 await writeFile(resolve(output, "app-small-phone.html"), '<!doctype html><html><body style="margin:0"><iframe title="Full app at 320 pixels" src="app-check.html" style="width:320px;height:1750px;border:0"></iframe></body></html>');
+await writeFile(resolve(output, "app-detail-phone.html"), '<!doctype html><html><body style="margin:0"><iframe title="Detail view at 390 pixels" src="app-check.html?detail" style="width:390px;height:1750px;border:0"></iframe></body></html>');

@@ -1,6 +1,7 @@
 import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
 import { isMotion, motionGeometry, relationLabel } from "../doodlescript/motion";
 import { ownershipBadges, type OwnershipBadge } from "./ownership";
+import { useRef, useState } from "react";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -9,9 +10,32 @@ interface DoodleCanvasProps {
 
 export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const ownership = ownershipBadges(scene);
+  const [detail, setDetail] = useState(false);
+  const viewport = useRef<HTMLDivElement>(null);
+  const inspecting = detail && scene.entities.length > 0;
+  const openDetail = () => {
+    setDetail(true);
+    requestAnimationFrame(() => {
+      const panel = viewport.current;
+      const focusedId = scene.context?.subjectIds[0];
+      const focused = scene.entities.find((entity) => entity.id === focusedId) ?? scene.entities[0];
+      if (!panel || !focused) return;
+      panel.scrollLeft = Math.max(0, focused.x * 12 - panel.clientWidth / 2);
+      panel.scrollTop = Math.max(0, focused.y * 7.44 - panel.clientHeight / 2 + 50);
+    });
+  };
   return (
     <div className="visual-scene">
-    <section className="canvas-shell" aria-label="Tegeera drawing canvas">
+      <div className="canvas-view-controls" aria-label="Drawing view">
+        <button type="button" aria-pressed={!inspecting} onClick={() => {
+          setDetail(false);
+          if (viewport.current) { viewport.current.scrollLeft = 0; viewport.current.scrollTop = 0; }
+        }}>Overview</button>
+        <button type="button" aria-pressed={inspecting} disabled={!scene.entities.length} onClick={openDetail}>Read details</button>
+        <span>{inspecting ? "Scroll inside the drawing to explore. Overview shows everything." : "The whole scene. Use Read details for larger labels."}</span>
+      </div>
+    <section className={`canvas-shell${inspecting ? " is-detail" : ""}`} aria-label="Tegeera drawing canvas">
+      <div ref={viewport} className="canvas-viewport" tabIndex={inspecting ? 0 : undefined} role={inspecting ? "region" : undefined} aria-label={inspecting ? "Scrollable drawing detail" : undefined}>
       <svg
         className="doodle-canvas"
         viewBox="0 0 1000 620"
@@ -45,6 +69,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           return <DoodleEntity entity={geometry ? { ...entity, direction: geometry.direction } : entity} badges={ownership.get(entity.id) ?? []} moving={!!geometry} index={index} key={entity.id} />;
         })}
       </svg>
+      </div>
       {!scene.entities.length && (
         <div className="empty-canvas">
           <span className="empty-mark" aria-hidden="true">✦</span>

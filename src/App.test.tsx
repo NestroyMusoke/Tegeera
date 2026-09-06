@@ -10,6 +10,21 @@ function explain(text: string) {
 }
 
 describe("teaching workflow", () => {
+  it("changes view without changing scene revision or consuming Undo", () => {
+    const { container } = render(<App />);
+    expect((screen.getByRole("button", { name: "Read details" }) as HTMLButtonElement).disabled).toBe(true);
+    explain("Three students each have a book");
+    const drawing = container.querySelector(".doodle-canvas")!.innerHTML;
+    fireEvent.click(screen.getByRole("button", { name: "Read details" }));
+    expect(screen.getByRole("region", { name: "Scrollable drawing detail" }).tabIndex).toBe(0);
+    expect(screen.getByRole("button", { name: "Read details" }).getAttribute("aria-pressed")).toBe("true");
+    expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(drawing);
+    expect(screen.getByText("Revision 1")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+    expect(container.querySelector(".is-detail")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(container.querySelectorAll(".doodle-object")).toHaveLength(0);
+  });
   it("keeps controls before ownership details in reading and tab order", async () => {
     const { container } = render(<App />);
     await waitFor(() => expect(screen.getByText("Typed input ready")).toBeTruthy());
