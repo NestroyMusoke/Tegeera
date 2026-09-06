@@ -204,6 +204,31 @@ priorities, execution, preemption, scheduling algorithms or CPU utilization.
 The complete checkpoint passes 113 tests; lint, production build and Android
 asset synchronization pass.
 
+## Open visualization architecture — Milestone 1, slices 1–2
+
+Language input now crosses a typed semantic-frame boundary before the legacy
+interpreter sees it. Each clause retains exact source evidence offsets, a normalized
+form, explicit negation/condition/uncertainty signals, confidence and typed slots
+for entities, relations, quantities and references. The interpreter consumes these
+frames for clause boundaries and normalized text; no new domain phrase branch was
+added. Five focused tests cover source round-tripping, normalization, discourse
+signals, established multi-clause output, punctuation-only safety and the legacy
+failed-clause contract.
+
+The second slice moves concept aliases, number words, ordinals and relationship
+verbs into reusable grammar data. Simple descriptions plus sharing and ownership
+statements now populate entity mentions, quantity constraints, unresolved references
+and relation edges before the legacy adapter creates commands. Equivalent sharing
+paraphrases are compared at the semantic-frame level. Missing plural quantities stay
+explicitly unresolved instead of receiving an invented count, and polite “could you”
+requests are distinguished from uncertain “could happen” statements. No domain
+scenario matcher was added. The complete checkpoint passes 123 tests; lint and the
+production build pass.
+
+This is not yet a claim of general semantic understanding. Scene-aware reference
+resolution and most edit/action command planning still live in the legacy adapter
+and remain the next Milestone 1 work.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.

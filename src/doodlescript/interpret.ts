@@ -2,34 +2,20 @@ import type { DoodleCommand, DoodleScript, EntityKind, SceneEntity, SceneState, 
 import { applyDoodleScript } from "./scene";
 import { nextPosition } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
-import { normalizeTeacherClause } from "./language";
+import { analyzeTeacherInput } from "./semanticFrame";
+import { entityKindForAlias, ordinalWords, parseCountToken, parseEntityPhrase } from "./lexicon";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
   | { ok: false; message: string; clause: string };
-const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
-const nouns: Record<string, EntityKind> = {
-  person: "person", people: "person", persons: "person",
-  student: "student", students: "student", learner: "student", learners: "student",
-  teacher: "teacher", teachers: "teacher", lecturer: "teacher", lecturers: "teacher",
-  process: "process", processes: "process", cpu: "cpu", processor: "cpu", processors: "cpu",
-  car: "car", cars: "car", vehicle: "car", vehicles: "car",
-  book: "book", books: "book", tree: "tree", trees: "tree",
-  building: "building", buildings: "building", school: "building", schools: "building",
-  house: "building", houses: "building"
-};
-const ordinals = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"];
-const count = (word: string) => /^(a|an|another)$/.test(word) ? 1 : /^\d+$/.test(word) ? Number(word) : words.indexOf(word);
 class Clarification extends Error {}
 
 function nounPhrase(phrase: string): { kind: EntityKind; count: number } {
-  const match = phrase.trim().match(/^(?:(\w+) )?(\w+)$/);
-  const kind = match && nouns[match[2]];
-  if (!match || !kind) throw new Clarification(`I cannot yet represent “${phrase}”. Please describe its objects separately.`);
-  const amount = match[1] ? count(match[1]) : 1;
-  if (amount < 1 || amount > 12) throw new Clarification("Use a count from one to twelve; I have not changed the scene.");
-  if (!match[1] && (match[2].endsWith("s") || match[2] === "people")) throw new Clarification(`How many ${match[2]} should I draw?`);
-  return { kind, count: amount };
+  const parsed = parseEntityPhrase(phrase);
+  if (!parsed) throw new Clarification(`I cannot yet represent “${phrase}”. Please describe its objects separately.`);
+  if (parsed.count < 1 || parsed.count > 12) throw new Clarification("Use a count from one to twelve; I have not changed the scene.");
+  if (!parsed.countToken && (parsed.noun.endsWith("s") || parsed.noun === "people")) throw new Clarification(`How many ${parsed.noun} should I draw?`);
+  return { kind: parsed.kind, count: parsed.count };
 }
 
 function resolve(phrase: string, scene: SceneState): SceneEntity {
@@ -44,8 +30,8 @@ function resolve(phrase: string, scene: SceneState): SceneEntity {
   const exact = scene.entities.filter((entity) => entity.label?.toLowerCase() === normalized);
   if (exact.length === 1) return exact[0];
   const tokens = normalized.split(" ");
-  const ordinal = ordinals.indexOf(tokens[0]);
-  const kind = nouns[tokens.at(-1) ?? ""];
+  const ordinal = ordinalWords.indexOf(tokens[0] as typeof ordinalWords[number]);
+  const kind = entityKindForAlias(tokens.at(-1) ?? "");
   const candidates = kind ? scene.entities.filter((entity) => entity.kind === kind) : [];
   if (ordinal >= 0 && tokens.length === 2 && candidates[ordinal]) return candidates[ordinal];
   if (tokens.length === 1 && candidates.length === 1) return candidates[0];
@@ -101,10 +87,11 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   };
   try {
     if (!input.trim() || input.length > 500) throw new Clarification("Explain one short scene or change, up to 500 characters.");
-    const clauses = input.toLowerCase().trim().replace(/[.!?]+$/, "").split(/\s*(?:[.;]|,?\s+(?:and\s+)?then\s+)\s*/);
-    for (const clause of clauses) {
-      currentClause = clause;
-      const text = normalizeTeacherClause(clause.replace(/^imagine\s+/, ""));
+    const semanticInput = analyzeTeacherInput(input);
+    if (!semanticInput.frames.length) throw new Clarification("Explain one short scene or change, up to 500 characters.");
+    for (const frame of semanticInput.frames) {
+      currentClause = frame.sourceText.toLowerCase();
+      const text = frame.normalizedText;
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
         append({ action: "clear" }); focus([]); continue;
       }
@@ -176,9 +163,9 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       }
       const correction = text.match(/^(?:make that|make it|change (?:that|it) to) (\w+)(?: (\w+))?$/);
       if (correction) {
-        const amount = count(correction[1]);
+        const amount = parseCountToken(correction[1]);
         if (amount < 1 || amount > 10) throw new Clarification("Choose a count from one to ten for this scene.");
-        const explicitKind = correction[2] ? nouns[correction[2]] : undefined;
+        const explicitKind = correction[2] ? entityKindForAlias(correction[2]) : undefined;
         if (correction[2] && !explicitKind) throw new Clarification("Which existing type of object should change?");
         const subjects = working.entities.filter((entity) => context?.subjectIds.includes(entity.id));
         const objects = working.entities.filter((entity) => context?.objectIds.includes(entity.id));
@@ -227,7 +214,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         if (possession) {
           if (resolve(possession[1] === "their" ? "they" : possession[1], working).id !== giver.id) throw new Clarification("Whose object is being given?");
           const ownedIds = (working.relations ?? []).filter((relation) => relation.kind === "owns" && relation.sourceIds[0] === giver.id).flatMap((relation) => relation.targetIds);
-          const matches = working.entities.filter((entity) => entity.kind === nouns[possession[2]] && ownedIds.includes(entity.id));
+          const matches = working.entities.filter((entity) => entity.kind === entityKindForAlias(possession[2]) && ownedIds.includes(entity.id));
           if (matches.length !== 1) throw new Clarification("Which owned object should be given? Name it explicitly.");
           object = matches[0];
         } else object = resolve(transfer[2], working);
@@ -288,7 +275,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         if (phrase === "they") owners = context?.subjectIds ?? [];
         else if (phrase.startsWith("the ")) {
           const noun = phrase.slice(4);
-          const kind = nouns[noun];
+          const kind = entityKindForAlias(noun);
           if (!kind || !(noun.endsWith("s") || noun === "people")) throw new Clarification("Name the group, for example ‘the students each have a book’.");
           owners = working.entities.filter((entity) => entity.kind === kind).map((entity) => entity.id);
         } else owners = create(phrase);
@@ -305,20 +292,28 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         focus(owners, objects);
         continue;
       }
-      const relationship = text.match(/^(.+?) (?:are )?(sharing|share|shares|owns|own|has|have) (.+)$/);
-      if (relationship) {
-        const source = /^(they|them)$/.test(relationship[1]) ? context?.subjectIds ?? []
-          : /^(she|he)$/.test(relationship[1]) ? [resolve(relationship[1], working).id]
-          : relationship[1].startsWith("the ")
-          ? [resolve(relationship[1], working).id] : create(relationship[1]);
-        const kind = /^(sharing|share|shares)$/.test(relationship[2]) ? "shares" : "owns";
-        if (!source.length || (/^(they|them)$/.test(relationship[1]) && new Set(working.entities.filter((entity) => source.includes(entity.id)).map((entity) => entity.kind)).size !== 1)) throw new Clarification("Which group does that refer to?");
+      const semanticRelation = frame.relations[0];
+      if (semanticRelation && (semanticRelation.predicate === "shares" || semanticRelation.predicate === "owns")) {
+        const sourceMentionId = semanticRelation.sourceMentionIds[0];
+        const targetMentionId = semanticRelation.targetMentionIds[0];
+        const mentionText = (mentionId: string) => frame.entities.find((mention) => mention.mentionId === mentionId)?.text
+          ?? frame.references.find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const sourcePhrase = mentionText(sourceMentionId);
+        const targetPhrase = mentionText(targetMentionId);
+        const source = /^(they|them)$/.test(sourcePhrase) ? context?.subjectIds ?? []
+          : /^(she|he)$/.test(sourcePhrase) ? [resolve(sourcePhrase, working).id]
+          : sourcePhrase.startsWith("the ")
+          ? [resolve(sourcePhrase, working).id] : create(sourcePhrase);
+        const kind = semanticRelation.predicate;
+        if (!source.length || (/^(they|them)$/.test(sourcePhrase) && new Set(working.entities.filter((entity) => source.includes(entity.id)).map((entity) => entity.kind)).size !== 1)) throw new Clarification("Which group does that refer to?");
         if (kind === "owns" && source.length !== 1) throw new Clarification("Does each person own an item, or do they share the items?");
-        const targets = create(relationship[3]);
+        const targets = create(targetPhrase);
         relate(kind, source, targets); focus(source, targets); continue;
       }
-      const description = text.replace(/ (?:waiting )?in a (?:queue|line)$/, "");
-      const created = description.split(/\s+and\s+/).flatMap((phrase) => create(phrase));
+      const descriptionPhrases = frame.intent === "describe" && !frame.relations.length
+        ? frame.entities.map((mention) => mention.text)
+        : text.replace(/ (?:waiting )?in a (?:queue|line)$/, "").split(/\s+and\s+/);
+      const created = descriptionPhrases.flatMap((phrase) => create(phrase));
       focus(created);
     }
     return { ok: true, script: makeScript() };
