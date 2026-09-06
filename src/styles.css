@@ -417,6 +417,7 @@ button {
 
 .suggestions button,
 .undo-button {
+  min-height: 44px;
   flex: 0 0 auto;
   padding: 7px 10px;
   color: #6d665a;
@@ -425,6 +426,8 @@ button {
   border-radius: 999px;
   font-size: 10px;
 }
+
+.undo-button { min-width: 64px; }
 
 .suggestions button:hover {
   color: #2c6e57;

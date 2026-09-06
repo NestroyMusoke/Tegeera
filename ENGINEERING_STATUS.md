@@ -118,6 +118,23 @@ not verified by these screenshots. This does not verify app controls,
 Android WebView or speech latency. No automatic rearrangement or connector routing
 is implemented in this increment. The quality-review suite passes 92 tests.
 
+## Full teaching-screen verification
+
+The input, speech status, clarification and Undo controls now appear between the
+scene overview and ownership details, rather than below every ownership card.
+Undo and example commands have a minimum 44 px tap height. Two App-level tests
+exercise real form submission, transfer, Undo, unsupported-input preservation,
+clear and restoration; the complete suite now passes 94 tests.
+
+The visual-check script also bundles the real App into `app-check.html` and runs
+the same typed workflow in a browser. `app-phone.html` and
+`app-small-phone.html` embed it at 390 and 320 px respectively. Both viewport
+checks passed in headless Edge. The fixture asserts control/detail ordering,
+no page-wide horizontal overflow and Undo height, and displays PASS or FAIL.
+This supplements the static renderer fixtures; it still uses scripted input,
+not real touch, a software keyboard, microphone or Android WebView. Settled-frame
+CSS disables animation in fixtures only. Device and animation checks remain open.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.

@@ -41,6 +41,11 @@ npm test
 npm run build
 ```
 
+Run `node scripts/visual-check.mjs` to generate ignored local visual fixtures.
+Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
+browser for the real typed-input workflow check. Each ends with PASS or FAIL.
+These checks do not substitute for Android touch, keyboard and speech testing.
+
 ## Android
 
 The native Android project is added after installing dependencies:

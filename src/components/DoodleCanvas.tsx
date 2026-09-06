@@ -4,9 +4,10 @@ import { ownershipBadges, type OwnershipBadge } from "./ownership";
 
 interface DoodleCanvasProps {
   scene: SceneState;
+  children?: React.ReactNode;
 }
 
-export function DoodleCanvas({ scene }: DoodleCanvasProps) {
+export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const ownership = ownershipBadges(scene);
   return (
     <div className="visual-scene">
@@ -56,6 +57,7 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
         <span>Revision {scene.revision}</span>
       </div>
     </section>
+      {children}
       {ownership.size > 0 && (
         <section className="ownership-details" aria-label="Who owns what">
           <header><h2>Who owns what</h2><p>The same scene, grouped by owner. No extra objects.</p></header>

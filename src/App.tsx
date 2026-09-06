@@ -96,7 +96,7 @@ function App() {
         </p>
       </section>
 
-      <DoodleCanvas scene={scene} />
+      <DoodleCanvas scene={scene}>
 
       <section className="control-card">
         <form
@@ -185,6 +185,7 @@ function App() {
           </button>
         </div>
       </section>
+      </DoodleCanvas>
       <p className="sr-only" aria-live="polite">
         {spokenSummary}
       </p>
