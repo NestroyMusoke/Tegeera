@@ -1,5 +1,10 @@
 # Visual understanding: individual quantities
 
+> Direction correction: feature-specific grammar stops here. The audited path to
+> broad visualization is documented in `OPEN_VISUALIZATION_ARCHITECTURE.md`.
+> Existing scenarios remain regression fixtures while interpretation is refactored
+> through semantic frames, registries and general visualization plans.
+
 The aim is broad natural explanation-to-visual understanding. This increment
 introduces composable object descriptions, shared resources, personal ownership,
 ordinal references and atomic multi-clause interpretation. It is a small grammar,

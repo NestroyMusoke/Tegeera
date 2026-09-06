@@ -2,6 +2,10 @@
 
 **Speak it. See it. Understand it.**
 
+The path from the current bounded grammar to broad, compositional visualization
+is specified in [`OPEN_VISUALIZATION_ARCHITECTURE.md`](OPEN_VISUALIZATION_ARCHITECTURE.md).
+New domains should not add sentence-specific parser branches.
+
 Tegeera is an offline-first visual teaching instrument that turns explanations into in-session editable, hand-drawn scenes. It began with a simple experience at Uganda Christian University: sometimes words are not enough, and drawing the idea is what finally makes it understandable.
 
 ## First working slice
