@@ -2,7 +2,7 @@
 
 **Speak it. See it. Understand it.**
 
-Tegeera is an offline-first visual teaching instrument that turns explanations into persistent, editable, hand-drawn scenes. It began with a simple experience at Uganda Christian University: sometimes words are not enough, and drawing the idea is what finally makes it understandable.
+Tegeera is an offline-first visual teaching instrument that turns explanations into in-session editable, hand-drawn scenes. It began with a simple experience at Uganda Christian University: sometimes words are not enough, and drawing the idea is what finally makes it understandable.
 
 ## First working slice
 
@@ -24,6 +24,16 @@ Try commands such as:
 - `Move the car left`
 - `Remove the car`
 - `Clear everything`
+
+The original university workflow is now available:
+
+- `Imagine three processes waiting in a CPU queue`
+- `Make that four processes`
+- `Move the CPU to the right`
+- `What if the second process goes first?`
+
+The queue preserves process identities through count and order changes. It models
+ready-queue order, not execution timing or a complete scheduling algorithm.
 
 ## Run locally
 

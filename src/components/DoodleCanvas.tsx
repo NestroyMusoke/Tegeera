@@ -2,6 +2,7 @@ import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/sch
 import { isMotion, motionGeometry, relationLabel } from "../doodlescript/motion";
 import { ownershipBadges, type OwnershipBadge } from "./ownership";
 import { useLayoutEffect, useRef, useState } from "react";
+import { isQueue, queueGeometry } from "../doodlescript/queue";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -127,6 +128,22 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
   if (!members.length) return null;
   // Ownership uses matching badges, avoiding brackets through unrelated objects.
   if (relation.kind === "owns") return null;
+  if (isQueue(relation)) {
+    const geometry = queueGeometry(relation, entities);
+    if (!geometry) return null;
+    const { processes, cpu, y, startX, endX } = geometry;
+    return (
+      <g className="queue-annotation" fill="none" stroke="#355f78" strokeWidth="3" aria-label={`CPU ready queue: ${processes.map((process) => process.label).join(", ")}, then ${cpu.label}`}>
+        <path d={`M${startX} ${y} H${endX}`} />
+        <path d={`M${endX - 11} ${y - 8} L${endX} ${y} L${endX - 11} ${y + 8}`} />
+        {processes.map((process, index) => <g key={process.id}>
+          <path d={`M${process.x * 10} ${y - 7} V${y + 7}`} />
+          <text x={process.x * 10} y={y - 13} textAnchor="middle" stroke="none" fill="#355f78" fontSize="14">{index + 1}</text>
+        </g>)}
+        <text x={(startX + endX) / 2} y={y + 24} textAnchor="middle" stroke="none" fill="#355f78" fontSize="14">ready queue → CPU</text>
+      </g>
+    );
+  }
   if (isMotion(relation)) {
     const actor = entities.find((entity) => entity.id === relation.sourceIds[0]);
     const target = entities.find((entity) => entity.id === relation.targetIds[0]);
@@ -195,11 +212,31 @@ function DoodleEntity({
 }
 
 function EntityGlyph({ entity, moving = false }: { entity: SceneEntity; moving?: boolean }) {
+  if (entity.kind === "process") return <Process />;
+  if (entity.kind === "cpu") return <Cpu />;
   if (entity.kind === "car") return <Car direction={entity.direction} />;
   if (entity.kind === "tree") return <Tree />;
   if (entity.kind === "book") return <Book />;
   if (entity.kind === "building") return <Building />;
   return <Person kind={entity.kind} direction={entity.direction} moving={moving} />;
+}
+
+function Process() {
+  return <g>
+    <circle className="doodle-stroke" cx="0" cy="-42" r="15" />
+    <rect className="doodle-stroke" x="-25" y="-19" width="50" height="54" rx="10" />
+    <text x="0" y="15" textAnchor="middle" fill="#302e29" fontSize="27" fontWeight="700">P</text>
+    <path className="accent-stroke" d="M-18 45 H18 M-10 35 V45 M10 35 V45" />
+  </g>;
+}
+
+function Cpu() {
+  return <g>
+    <rect className="doodle-stroke" x="-42" y="-42" width="84" height="84" rx="9" />
+    <rect className="doodle-detail" x="-27" y="-25" width="54" height="50" rx="5" />
+    <text x="0" y="8" textAnchor="middle" fill="#302e29" fontSize="21" fontWeight="700">CPU</text>
+    <path className="accent-stroke" d="M-52-27 H-42 M-52-9 H-42 M-52 9 H-42 M-52 27 H-42 M42-27 H52 M42-9 H52 M42 9 H52 M42 27 H52 M-27-52 V-42 M-9-52 V-42 M9-52 V-42 M27-52 V-42 M-27 42 V52 M-9 42 V52 M9 42 V52 M27 42 V52" />
+  </g>;
 }
 
 function EntityThumbnail({ entity }: { entity: SceneEntity }) {

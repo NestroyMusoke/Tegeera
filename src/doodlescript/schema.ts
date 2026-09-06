@@ -4,6 +4,8 @@ export const entityKindSchema = z.enum([
   "person",
   "teacher",
   "student",
+  "process",
+  "cpu",
   "car",
   "book",
   "desk",
@@ -27,7 +29,7 @@ export const sceneEntitySchema = z.object({
 
 export const relationSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["shares", "owns", "toward", "away"]),
+  kind: z.enum(["shares", "owns", "toward", "away", "queuedFor"]),
   sourceIds: z.array(z.string().min(1)).min(1).max(12),
   targetIds: z.array(z.string().min(1)).min(1).max(12)
 });
@@ -68,7 +70,7 @@ export const contextSchema = z.object({
 });
 
 export const doodleScriptSchema = z.object({
-  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0"]),
+  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0"]),
   context: contextSchema.optional(),
   sceneId: z.string().min(1),
   revision: z.number().int().nonnegative(),

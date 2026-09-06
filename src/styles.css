@@ -223,6 +223,7 @@ button {
 .relationship-key .relationship-owns { border-color: #ad7021; }
 .relationship-key .relationship-toward,
 .relationship-key .relationship-away { border-color: #275a78; }
+.relationship-key .relationship-queuedFor { border-color: #355f78; }
 .motion-flow { stroke-dasharray: 7 5; animation: motion-flow 1s linear infinite; }
 @keyframes motion-flow { to { stroke-dashoffset: -12; } }
 @media (prefers-reduced-motion: reduce) { .motion-flow { animation: none; } }

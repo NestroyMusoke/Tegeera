@@ -12,6 +12,7 @@ const nouns: Record<string, EntityKind> = {
   person: "person", people: "person", persons: "person",
   student: "student", students: "student", learner: "student", learners: "student",
   teacher: "teacher", teachers: "teacher", lecturer: "teacher", lecturers: "teacher",
+  process: "process", processes: "process", cpu: "cpu", processor: "cpu", processors: "cpu",
   car: "car", cars: "car", vehicle: "car", vehicles: "car",
   book: "book", books: "book", tree: "tree", trees: "tree",
   building: "building", buildings: "building", school: "building", schools: "building",
@@ -60,7 +61,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentClause = input;
   let context: SceneContext | undefined = scene.context;
   const makeScript = (): DoodleScript => ({
-    schemaVersion: "1.3.0", sceneId: scene.sceneId, revision: scene.revision + 1, context,
+    schemaVersion: "1.4.0", sceneId: scene.sceneId, revision: scene.revision + 1, context,
     confidence: 1, sourceText: input, commands
   });
   const append = (command: DoodleCommand) => {
@@ -88,7 +89,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     context = { subjectIds, objectIds };
     working = applyDoodleScript(scene, makeScript());
   };
-  const relate = (kind: "shares" | "owns" | "toward" | "away", sourceIds: string[], targetIds: string[]) => {
+  const relate = (kind: "shares" | "owns" | "toward" | "away" | "queuedFor", sourceIds: string[], targetIds: string[]) => {
     append({ action: "relate", relation: {
       id: `relation-${scene.revision + 1}-${commands.length}`, kind, sourceIds, targetIds
     } });
@@ -106,6 +107,18 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       const text = normalizeTeacherClause(clause.replace(/^imagine\s+/, ""));
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
         append({ action: "clear" }); focus([]); continue;
+      }
+      const queue = text.match(/^(.+?) (?:are )?waiting in (?:a|the) cpu (?:ready )?queue$/)
+        ?? text.match(/^(?:a|the) cpu (?:ready )?queue (?:has|contains) (.+)$/);
+      if (queue) {
+        const spec = nounPhrase(queue[1]);
+        if (spec.kind !== "process") throw new Clarification("A CPU ready queue contains processes. Say how many processes are waiting.");
+        if (spec.count > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.");
+        const processes = create(queue[1]);
+        const cpu = create("a cpu");
+        relate("queuedFor", processes, cpu);
+        focus(processes, cpu);
+        continue;
       }
       const motion = text.match(/^(.+?) (approaches|approaching|moves? towards?|moving towards?|drives? towards?|driving towards?|walks? towards?|walking towards?|moves? away from|moving away from|drives? away from|driving away from|walks? away from|walking away from) (.+)$/);
       if (motion) {
@@ -133,6 +146,21 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         stopMotion(actorId);
         relate(previous[0].kind === "toward" ? "away" : "toward", [actorId], previous[0].targetIds);
         focus([actorId], previous[0].targetIds);
+        continue;
+      }
+      const first = text.match(/^(?:what if )?(.+?) (?:goes|went) first$/)
+        ?? text.match(/^move (.+?) to (?:the )?(?:front|first position)$/);
+      if (first) {
+        const process = resolve(first[1], working);
+        const queues = (working.relations ?? []).filter((relation) => relation.kind === "queuedFor" && relation.sourceIds.includes(process.id));
+        if (process.kind !== "process" || queues.length !== 1) throw new Clarification("Which queued process should go first? Name its position in the CPU queue.");
+        const previous = queues[0];
+        const ordered = [process.id, ...previous.sourceIds.filter((id) => id !== process.id)];
+        const row = working.entities.find((entity) => entity.id === previous.sourceIds[0])!.y;
+        ordered.forEach((targetId, index) => append({ action: "move", targetId, x: 12 + index * 18, y: row, direction: "right" }));
+        append({ action: "unrelate", relationId: previous.id });
+        append({ action: "relate", relation: { ...previous, sourceIds: ordered } });
+        focus(ordered, previous.targetIds);
         continue;
       }
       const stop = text.match(/^stop (.+)$/);
@@ -163,6 +191,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         if (amount === members.length) throw new Clarification(`That group already has ${amount} objects.`);
         const ids = members.map((entity) => entity.id);
         const affected = (working.relations ?? []).filter((relation) => [...relation.sourceIds, ...relation.targetIds].some((id) => ids.includes(id)));
+        if (affected.some((relation) => relation.kind === "queuedFor") && amount > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.");
         if (affected.length > 1 || affected.some((relation) => {
           const side = relation.sourceIds.some((id) => ids.includes(id)) ? relation.sourceIds : relation.targetIds;
           return side.length !== ids.length || side.some((id) => !ids.includes(id)) || (relation.kind === "owns" && side === relation.sourceIds);
@@ -172,10 +201,17 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         for (const id of ids.slice(amount)) append({ action: "remove", targetId: id });
         for (const relation of affected) {
           append({ action: "unrelate", relationId: relation.id });
-          append({ action: "relate", relation: { ...relation,
-            sourceIds: relation.sourceIds.some((id) => ids.includes(id)) ? retained : relation.sourceIds,
+          const sourceChanged = relation.sourceIds.some((id) => ids.includes(id));
+          const updated = { ...relation,
+            sourceIds: sourceChanged ? retained : relation.sourceIds,
             targetIds: relation.targetIds.some((id) => ids.includes(id)) ? retained : relation.targetIds
-          } });
+          };
+          append({ action: "relate", relation: updated });
+          if (updated.kind === "queuedFor" && sourceChanged) {
+            const row = members[0].y;
+            retained.forEach((targetId, index) => append({ action: "move", targetId, x: 12 + index * 18, y: row, direction: "right" }));
+            append({ action: "move", targetId: updated.targetIds[0], x: 12 + retained.length * 18, y: row, direction: "right" });
+          }
         }
         focus(context?.subjectIds.some((id) => ids.includes(id)) ? retained : context?.subjectIds ?? [],
           context?.objectIds.some((id) => ids.includes(id)) ? retained : context?.objectIds ?? []);
@@ -212,7 +248,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const direction = move[3] as "left" | "right" | "up" | "down";
         if (move[1] !== "move") append({ action: "update", targetId: target.id, direction });
         else append({ action: "move", targetId: target.id, direction,
-          x: target.x + (direction === "left" ? -18 : direction === "right" ? 18 : 0),
+          x: target.kind === "cpu" && direction === "right" ? Math.min(92, target.x + 18) : target.x + (direction === "left" ? -18 : direction === "right" ? 18 : 0),
           y: target.y + (direction === "up" ? -32 : direction === "down" ? 32 : 0)
         });
         focus([target.id]);

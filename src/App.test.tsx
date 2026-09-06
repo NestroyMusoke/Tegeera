@@ -10,6 +10,19 @@ function explain(text: string) {
 }
 
 describe("teaching workflow", () => {
+  it("completes the CPU queue golden workflow through the real form", () => {
+    const { container } = render(<App />);
+    explain("Imagine three processes waiting in a CPU queue");
+    explain("Make that four processes");
+    explain("Move the CPU to the right");
+    explain("What if the second process goes first");
+    expect(container.querySelectorAll('[data-entity-id^="process-"]')).toHaveLength(4);
+    expect(container.querySelector('[data-entity-id="cpu-1"]')).not.toBeNull();
+    expect(container.querySelector(".queue-annotation")?.getAttribute("aria-label")).toContain("process 2, process 1");
+    expect(screen.getByText("Revision 4")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(container.querySelector(".queue-annotation")?.getAttribute("aria-label")).toContain("process 1, process 2");
+  });
   it("accepts a polite classroom paraphrase but preserves the scene for polite negation", () => {
     const { container } = render(<App />);
     explain("Could you please show me three students sharing two books?");

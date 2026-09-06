@@ -8,6 +8,7 @@ import {
 import { applyDoodleScript } from "./scene";
 import { overlaps, withinCanvas } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
+import { isQueue, queueGeometry } from "./queue";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -57,7 +58,7 @@ export function validateDoodleScript(
 
   for (const command of script.commands) {
     if (command.action === "unrelate") {
-      if (!["1.2.0", "1.3.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0 or later." });
+      if (!["1.2.0", "1.3.0", "1.4.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0 or later." });
       if (!relationIds.delete(command.relationId)) issues.push({ gate: "semantic", message: "That relationship no longer exists." });
     }
     if (command.action === "clear") relationIds.clear();
@@ -65,8 +66,12 @@ export function validateDoodleScript(
       const relation = command.relation;
       const members = [...relation.sourceIds, ...relation.targetIds];
       if (isMotion(relation)) {
-        if (script.schemaVersion !== "1.3.0") issues.push({ gate: "schema", message: "Directed motion requires DoodleScript 1.3.0." });
+        if (!["1.3.0", "1.4.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Directed motion requires DoodleScript 1.3.0 or later." });
         if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "Motion needs one actor and one reference object." });
+      }
+      if (isQueue(relation)) {
+        if (script.schemaVersion !== "1.4.0") issues.push({ gate: "schema", message: "Ordered CPU queues require DoodleScript 1.4.0." });
+        if (relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "A ready queue needs exactly one CPU." });
       }
       if (script.schemaVersion === "1.0.0") {
         issues.push({ gate: "schema", message: "Relationships require DoodleScript 1.1.0." });
@@ -103,7 +108,7 @@ export function validateDoodleScript(
 
   const projected = applyDoodleScript(scene, script);
   if (script.context) {
-    if (!["1.2.0", "1.3.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
+    if (!["1.2.0", "1.3.0", "1.4.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
     for (const references of [script.context.subjectIds, script.context.objectIds]) {
       if (new Set(references).size !== references.length || references.some((id) => !ids.has(id))) {
         issues.push({ gate: "semantic", message: "Conversation context refers to missing or duplicate objects." });
@@ -113,6 +118,14 @@ export function validateDoodleScript(
   const owned = new Set<string>();
   const moving = new Set<string>();
   for (const relation of projected.relations ?? []) {
+    if (isQueue(relation)) {
+      const sources = relation.sourceIds.map((id) => projected.entities.find((entity) => entity.id === id));
+      const targets = relation.targetIds.map((id) => projected.entities.find((entity) => entity.id === id));
+      const validRoles = relation.sourceIds.length <= 4 && relation.targetIds.length === 1 &&
+        sources.every((entity) => entity?.kind === "process") && targets[0]?.kind === "cpu";
+      if (!validRoles) issues.push({ gate: "semantic", message: "A CPU ready queue needs one to four processes and exactly one CPU." });
+      else if (!queueGeometry(relation, projected.entities)) issues.push({ gate: "layout", message: "Keep the ordered processes on the same row before their CPU." });
+    }
     if (isMotion(relation)) {
       const actor = projected.entities.find((entity) => entity.id === relation.sourceIds[0]);
       const target = projected.entities.find((entity) => entity.id === relation.targetIds[0]);

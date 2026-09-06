@@ -105,7 +105,7 @@ not additional entities. Multiple ownership relations for one owner are merged
 into one card, and shared resources are excluded from personal cards. The scene
 overview remains unchanged; its tiny badges are supplementary, not the sole key.
 
-`node scripts/visual-check.mjs` generates four fixtures from the actual parser,
+`node scripts/visual-check.mjs` generates five fixtures from the actual parser,
 validator, React renderer and stylesheet in the ignored `.visual-check` folder.
 It includes a 390 px iframe for narrow-viewport inspection. The fixtures cover
 individual ownership, transfer, sharing and mixed ownership. Static browser
@@ -172,6 +172,33 @@ then confirms a polite negated clear leaves its drawing untouched. This raises
 authored coverage, not measured arbitrary-speech accuracy; accent, ASR errors and
 unseen phrasing still require an independent teacher corpus and device recording.
 
+## CPU ready queue
+
+DoodleScript 1.4.0 adds `process` and `cpu` entities plus an ordered `queuedFor`
+relationship. The canonical workflow is supported through the normal input:
+
+1. `Imagine three processes waiting in a CPU queue.`
+2. `Make that four processes.`
+3. `Move the CPU to the right.`
+4. `What if the second process goes first?`
+
+The first statement draws dedicated process characters, a CPU chip, numbered
+queue positions and an arrow toward the CPU. Count correction preserves existing
+IDs and compacts one to four processes before the CPU. Reordering changes both
+the relationship order and positions while preserving IDs. Undo restores the
+previous order. Moving the CPU retains the queue relationship.
+
+The schema, semantic and layout gates reject legacy-tagged queues, non-process
+members, multiple CPUs, more than four processes, mixed rows and a CPU placed
+inside or before its queue. Nine focused tests cover phrasings, count correction,
+movement, reordering, rendering, atomic rejection, schema version and malformed
+external scripts. A real-form App test covers all four revisions and Undo.
+Headless Edge verified the same workflow at 390 px; the static reordered frame
+was inspected separately. This models ready-queue order only—not arrival times,
+priorities, execution, preemption, scheduling algorithms or CPU utilization.
+The complete checkpoint passes 113 tests; lint, production build and Android
+asset synchronization pass.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.
@@ -211,7 +238,7 @@ grammar fixtures as real-world accuracy.
 ## Outstanding work
 
 General language planning/retrieval, references beyond the recent explicit focus,
-events and causality, CPU semantics, academic renderers, rich poses, connector
+events and causality, advanced CPU scheduling semantics, academic renderers, rich poses, connector
 routing, calibrated speech confidence and device benchmarks remain unfinished.
 Android speech still uses a system recognition service: its prefer-offline flag
 does not guarantee local processing. Native speech must be audited and verified

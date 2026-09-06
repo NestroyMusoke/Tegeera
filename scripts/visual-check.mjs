@@ -40,6 +40,7 @@ const cases = {
   transfer: ["Three students each have a book", "The first student gives book 1 to the second student"],
   shared: ["Three students share two books"],
   mixed: ["Three students share two books", "Another student arrives with her own book"],
+  cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
   await writeFile(resolve(output, `${name}.html`), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>${name}</h1>${render(commands)}</main></body></html>`);
@@ -105,7 +106,26 @@ const appBundle = await build({
       if (new URLSearchParams(location.search).has('detail')) { detailButton.click(); await pause(); }
       document.getElementById('qa-result').textContent = 'PASS: teaching workflow, detail size, scroll, overview reset, layout';
     }
-    verify().catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    async function verifyQueue() {
+      await pause();
+      await submit('Imagine three processes waiting in a CPU queue');
+      check(document.querySelectorAll('[data-entity-id^="process-"]').length === 3, 'Initial process count failed');
+      check(document.querySelectorAll('[data-entity-id="cpu-1"]').length === 1, 'CPU missing');
+      await submit('Make that four processes');
+      check(document.querySelectorAll('[data-entity-id^="process-"]').length === 4, 'Queue correction failed');
+      const cpu = document.querySelector('[data-entity-id="cpu-1"]');
+      const beforeMove = cpu.getAttribute('transform');
+      await submit('Move the CPU to the right');
+      check(cpu.getAttribute('transform') !== beforeMove, 'CPU did not move');
+      await submit('What if the second process goes first');
+      check(document.querySelector('.queue-annotation').getAttribute('aria-label').includes('process 2, process 1'), 'Queue order did not change');
+      check(document.querySelectorAll('.queue-annotation text').length === 5, 'Queue position labels missing');
+      document.querySelector('.undo-button').click(); await pause();
+      check(document.querySelector('.queue-annotation').getAttribute('aria-label').includes('process 1, process 2'), 'Queue Undo failed');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Queue caused page overflow');
+      document.getElementById('qa-result').textContent = 'PASS: CPU queue create, count correction, CPU move, reorder, undo, layout';
+    }
+    (new URLSearchParams(location.search).has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -116,3 +136,4 @@ const framedApp = (width, query = "") => `<!doctype html><html><body style="marg
 await writeFile(resolve(output, "app-phone.html"), framedApp(390));
 await writeFile(resolve(output, "app-small-phone.html"), framedApp(320));
 await writeFile(resolve(output, "app-detail-phone.html"), framedApp(390, "?detail"));
+await writeFile(resolve(output, "app-queue-phone.html"), framedApp(390, "?queue"));
