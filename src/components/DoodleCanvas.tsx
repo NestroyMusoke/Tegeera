@@ -1,7 +1,7 @@
 import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
 import { isMotion, motionGeometry, relationLabel } from "../doodlescript/motion";
 import { ownershipBadges, type OwnershipBadge } from "./ownership";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -13,17 +13,17 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const [detail, setDetail] = useState(false);
   const viewport = useRef<HTMLDivElement>(null);
   const inspecting = detail && scene.entities.length > 0;
-  const openDetail = () => {
-    setDetail(true);
-    requestAnimationFrame(() => {
-      const panel = viewport.current;
-      const focusedId = scene.context?.subjectIds[0];
-      const focused = scene.entities.find((entity) => entity.id === focusedId) ?? scene.entities[0];
-      if (!panel || !focused) return;
-      panel.scrollLeft = Math.max(0, focused.x * 12 - panel.clientWidth / 2);
-      panel.scrollTop = Math.max(0, focused.y * 7.44 - panel.clientHeight / 2 + 50);
-    });
-  };
+  const focusedId = scene.context?.subjectIds[0];
+  const focused = scene.entities.find((entity) => entity.id === focusedId) ?? scene.entities[0];
+  const focusedX = focused?.x;
+  const focusedY = focused?.y;
+  useLayoutEffect(() => {
+    if (!inspecting) return;
+    const panel = viewport.current;
+    if (!panel || focusedX === undefined || focusedY === undefined) return;
+    panel.scrollLeft = Math.max(0, focusedX * 12 - panel.clientWidth / 2);
+    panel.scrollTop = Math.max(0, focusedY * 7.44 - panel.clientHeight / 2 + 50);
+  }, [focusedX, focusedY, inspecting, scene.revision]);
   return (
     <div className="visual-scene">
       <div className="canvas-view-controls" aria-label="Drawing view">
@@ -31,7 +31,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           setDetail(false);
           if (viewport.current) { viewport.current.scrollLeft = 0; viewport.current.scrollTop = 0; }
         }}>Overview</button>
-        <button type="button" aria-pressed={inspecting} disabled={!scene.entities.length} onClick={openDetail}>Read details</button>
+        <button type="button" aria-pressed={inspecting} disabled={!scene.entities.length} onClick={() => setDetail(true)}>Read details</button>
         <span>{inspecting ? "Scroll inside the drawing to explore. Overview shows everything." : "The whole scene. Use Read details for larger labels."}</span>
       </div>
     <section className={`canvas-shell${inspecting ? " is-detail" : ""}`} aria-label="Tegeera drawing canvas">

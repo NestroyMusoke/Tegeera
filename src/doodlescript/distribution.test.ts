@@ -12,7 +12,7 @@ function run(text: string, scene = initialScene) {
 }
 
 describe("individual versus shared quantities", () => {
-  for (const phrase of ["Three students each have two books", "Three students have two books each", "Three learners each own two books"]) {
+  for (const phrase of ["Three students each have two books", "Three students have two books each", "Three learners each own two books", "Three students each having two books", "Three students each with two books"]) {
     it(phrase, () => {
       const scene = run(phrase);
       expect(scene.entities.filter((entity) => entity.kind === "student")).toHaveLength(3);

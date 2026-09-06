@@ -66,7 +66,7 @@ const appBundle = await build({
     }
     async function verify() {
       await pause();
-      await submit('Three students each have a book');
+      await submit('Could you please show me three students each having a book');
       check(document.querySelectorAll('.ownership-card').length === 3, 'Creation failed');
       const controls = document.querySelector('.control-card');
       const details = document.querySelector('.ownership-details');
@@ -93,7 +93,9 @@ const appBundle = await build({
       check(parseFloat(getComputedStyle(label).fontSize) * label.getScreenCTM().a >= 15, 'Detail labels are too small');
       const viewportBox = viewport.getBoundingClientRect();
       const labelBox = label.getBoundingClientRect();
-      check(labelBox.top >= viewportBox.top && labelBox.bottom <= viewportBox.bottom, 'Detail did not open on a readable label');
+      check(labelBox.top >= viewportBox.top && labelBox.bottom <= viewportBox.bottom,
+        'Detail did not open on a readable label: label=' + JSON.stringify({ top: labelBox.top, bottom: labelBox.bottom }) +
+        ' viewport=' + JSON.stringify({ top: viewportBox.top, bottom: viewportBox.bottom, scrollTop: viewport.scrollTop }));
       viewport.scrollLeft = 600; viewport.scrollTop = 250; await pause();
       check(viewport.scrollLeft > 0 && viewport.scrollTop > 0, 'Detail panning failed');
       check(document.querySelector('.doodle-canvas').innerHTML === drawing, 'Detail changed the scene');
@@ -110,6 +112,7 @@ const appBundle = await build({
 });
 await writeFile(resolve(output, "app-check.js"), appBundle.outputFiles[0].text);
 await writeFile(resolve(output, "app-check.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><div id="root"></div><output id="qa-result">RUNNING</output><script src="app-check.js"></script></body></html>`);
-await writeFile(resolve(output, "app-phone.html"), '<!doctype html><html><body style="margin:0"><iframe title="Full app at 390 pixels" src="app-check.html" style="width:390px;height:1750px;border:0"></iframe></body></html>');
-await writeFile(resolve(output, "app-small-phone.html"), '<!doctype html><html><body style="margin:0"><iframe title="Full app at 320 pixels" src="app-check.html" style="width:320px;height:1750px;border:0"></iframe></body></html>');
-await writeFile(resolve(output, "app-detail-phone.html"), '<!doctype html><html><body style="margin:0"><iframe title="Detail view at 390 pixels" src="app-check.html?detail" style="width:390px;height:1750px;border:0"></iframe></body></html>');
+const framedApp = (width, query = "") => `<!doctype html><html><body style="margin:0"><iframe id="app-frame" title="Full app at ${width} pixels" src="app-check.html${query}" style="width:${width}px;height:1750px;border:0"></iframe><output id="frame-result"></output><script>setInterval(() => { const result = document.getElementById('app-frame').contentDocument?.getElementById('qa-result'); if (result) document.getElementById('frame-result').textContent = result.textContent; }, 100);</script></body></html>`;
+await writeFile(resolve(output, "app-phone.html"), framedApp(390));
+await writeFile(resolve(output, "app-small-phone.html"), framedApp(320));
+await writeFile(resolve(output, "app-detail-phone.html"), framedApp(390, "?detail"));

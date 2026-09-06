@@ -151,7 +151,26 @@ internal horizontal and vertical scrolling, initial label visibility, overview
 reset, scene equality and absence of page-wide overflow. A 390 px settled-frame
 screenshot was inspected. This is a deliberate inspection mode, not automatic
 semantic zoom; pinch gestures and Android screen-reader behavior remain unverified.
-The complete regression suite now passes 95 tests.
+Detail centering runs in React's post-layout lifecycle so geometry checks and the
+visible frame cannot race an animation callback. The complete regression suite
+now passes 103 tests.
+
+## Classroom paraphrase normalization
+
+A bounded normalization layer now removes common conversational framing before
+the existing interpreter runs. Examples include `Could you please show me…`,
+`There are…`, `We have…`, `I want to show…`, `Let's have…` and `Actually…`.
+Continuous motion such as `A car is moving toward a person` maps to the same
+validated scene as its direct form. `and then` is an explicit command boundary.
+Corrections accept conversational lead-ins and `change it to`.
+
+Normalization does not assign confidence or bypass DoodleScript gates. Tests
+compare complete resulting scenes rather than merely checking acceptance. Safety
+fixtures ensure negation, uncertainty, conditions and trailing unsupported actions
+remain rejected atomically. A full App test covers a polite sharing request and
+then confirms a polite negated clear leaves its drawing untouched. This raises
+authored coverage, not measured arbitrary-speech accuracy; accent, ASR errors and
+unseen phrasing still require an independent teacher corpus and device recording.
 
 ## Correctness boundaries
 

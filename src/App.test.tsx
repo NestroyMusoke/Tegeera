@@ -10,6 +10,16 @@ function explain(text: string) {
 }
 
 describe("teaching workflow", () => {
+  it("accepts a polite classroom paraphrase but preserves the scene for polite negation", () => {
+    const { container } = render(<App />);
+    explain("Could you please show me three students sharing two books?");
+    expect(container.querySelectorAll(".doodle-object")).toHaveLength(5);
+    expect(container.querySelector(".relationship-key")?.textContent).toContain("share");
+    const scene = container.querySelector(".doodle-canvas")!.innerHTML;
+    explain("Could you not clear everything");
+    expect(screen.getByText("Help me understand")).toBeTruthy();
+    expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(scene);
+  });
   it("changes view without changing scene revision or consuming Undo", () => {
     const { container } = render(<App />);
     expect((screen.getByRole("button", { name: "Read details" }) as HTMLButtonElement).disabled).toBe(true);

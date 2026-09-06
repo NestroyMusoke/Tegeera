@@ -77,6 +77,10 @@ clarification. This is currently a bounded grammar, not arbitrary language under
 Follow-up corrections include `Make that four students` and, after the arrival,
 `She gives her book to the first student`. Undo restores ownership and conversation
 context. Count changes and transfers keep the surviving objects' identities.
+Common classroom framing is accepted too, including `Could you please show me
+three students sharing two books?`, `There are three students sharing two books`,
+and `A car is moving toward a person`. Meaning-bearing words are preserved:
+negation, uncertainty and unsupported trailing actions still request clarification.
 See `ENGINEERING_STATUS.md` for evaluation methods, limitations and the next work.
 
 Individual quantities are distinct from sharing: `Three students each have two

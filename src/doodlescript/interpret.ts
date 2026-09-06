@@ -2,6 +2,7 @@ import type { DoodleCommand, DoodleScript, EntityKind, SceneEntity, SceneState, 
 import { applyDoodleScript } from "./scene";
 import { nextPosition } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
+import { normalizeTeacherClause } from "./language";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -99,14 +100,14 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   };
   try {
     if (!input.trim() || input.length > 500) throw new Clarification("Explain one short scene or change, up to 500 characters.");
-    const clauses = input.toLowerCase().trim().replace(/[.!?]+$/, "").split(/\s*(?:[.;]|,?\s+then\s+)\s*/);
+    const clauses = input.toLowerCase().trim().replace(/[.!?]+$/, "").split(/\s*(?:[.;]|,?\s+(?:and\s+)?then\s+)\s*/);
     for (const clause of clauses) {
       currentClause = clause;
-      const text = clause.replace(/^(?:please |imagine |draw |add |show )/, "").trim();
-      if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(clause)) {
+      const text = normalizeTeacherClause(clause.replace(/^imagine\s+/, ""));
+      if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
         append({ action: "clear" }); focus([]); continue;
       }
-      const motion = text.match(/^(.+?) (approaches|moves towards?|drives towards?|walks towards?|moves away from|drives away from|walks away from) (.+)$/);
+      const motion = text.match(/^(.+?) (approaches|approaching|moves? towards?|moving towards?|drives? towards?|driving towards?|walks? towards?|walking towards?|moves? away from|moving away from|drives? away from|driving away from|walks? away from|walking away from) (.+)$/);
       if (motion) {
         const participant = (phrase: string, actor: boolean) => {
           if (/^(a|an|one) /.test(phrase)) return create(phrase)[0];
@@ -117,14 +118,14 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const targetId = participant(motion[3], false);
         if (actorId === targetId) throw new Clarification("An object cannot approach itself. Name the other object.");
         const actor = working.entities.find((entity) => entity.id === actorId)!;
-        if (motion[2].startsWith("drives") && actor.kind !== "car") throw new Clarification("Which car is moving? Name the vehicle.");
-        if (motion[2].startsWith("walks") && !["person", "student", "teacher"].includes(actor.kind)) throw new Clarification("Which person is walking?");
+        if (/^driv/.test(motion[2]) && actor.kind !== "car") throw new Clarification("Which car is moving? Name the vehicle.");
+        if (/^walk/.test(motion[2]) && !["person", "student", "teacher"].includes(actor.kind)) throw new Clarification("Which person is walking?");
         stopMotion(actorId);
         relate(motion[2].includes("away") ? "away" : "toward", [actorId], [targetId]);
         focus([actorId], [targetId]);
         continue;
       }
-      const reverse = clause.match(/^(?:make )?(.+?) (?:go|goes|move|moves) (?:the )?other way$/);
+      const reverse = text.match(/^(?:make )?(.+?) (?:go|goes|move|moves) (?:the )?other way$/);
       if (reverse) {
         const actorId = reverse[1] === "it" && context?.subjectIds.length === 1 ? context.subjectIds[0] : resolve(reverse[1], working).id;
         const previous = (working.relations ?? []).filter((relation) => isMotion(relation) && relation.sourceIds[0] === actorId);
@@ -134,7 +135,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         focus([actorId], previous[0].targetIds);
         continue;
       }
-      const stop = clause.match(/^stop (.+)$/);
+      const stop = text.match(/^stop (.+)$/);
       if (stop) {
         const actorId = stop[1] === "it" && context?.subjectIds.length === 1 ? context.subjectIds[0] : resolve(stop[1], working).id;
         const previous = (working.relations ?? []).find((relation) => isMotion(relation) && relation.sourceIds[0] === actorId);
@@ -145,7 +146,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         if (geometry) append({ action: "update", targetId: actorId, direction: geometry.direction });
         stopMotion(actorId); focus([actorId]); continue;
       }
-      const correction = clause.match(/^(?:make that|make it|change that to) (\w+)(?: (\w+))?$/);
+      const correction = text.match(/^(?:make that|make it|change (?:that|it) to) (\w+)(?: (\w+))?$/);
       if (correction) {
         const amount = count(correction[1]);
         if (amount < 1 || amount > 10) throw new Clarification("Choose a count from one to ten for this scene.");
@@ -180,7 +181,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           context?.objectIds.some((id) => ids.includes(id)) ? retained : context?.objectIds ?? []);
         continue;
       }
-      const transfer = clause.match(/^(.+?) gives (.+?) to (.+)$/);
+      const transfer = text.match(/^(.+?) gives (.+?) to (.+)$/);
       if (transfer) {
         const giver = resolve(transfer[1], working);
         const recipient = resolve(transfer[3], working);
@@ -204,7 +205,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         focus([giver.id], [object.id]);
         continue;
       }
-      const move = clause.match(/^(move|turn|face) (.+?) (?:to the )?(left|right|up|down)$/);
+      const move = text.match(/^(move|turn|face) (.+?) (?:to the )?(left|right|up|down)$/);
       if (move) {
         const target = resolve(move[2], working);
         stopMotion(target.id);
@@ -217,12 +218,12 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         focus([target.id]);
         continue;
       }
-      const remove = clause.match(/^(?:remove|delete|erase) (.+)$/);
+      const remove = text.match(/^(?:remove|delete|erase) (.+)$/);
       if (remove) {
         append({ action: "remove", targetId: resolve(remove[1], working).id });
         focus(working.context?.subjectIds ?? [], working.context?.objectIds ?? []); continue;
       }
-      const highlight = clause.match(/^highlight (.+)$/);
+      const highlight = text.match(/^highlight (.+)$/);
       if (highlight) {
         const targets = /^(they|them)$/.test(highlight[1]) ? context?.subjectIds ?? [] : [resolve(highlight[1], working).id];
         if (!targets.length) throw new Clarification("Which group should I highlight?");
@@ -230,7 +231,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         focus(targets);
         continue;
       }
-      const rename = clause.match(/^rename (.+?) to (.{1,60})$/);
+      const rename = text.match(/^rename (.+?) to (.{1,60})$/);
       if (rename) {
         const targetId = resolve(rename[1], working).id;
         append({ action: "update", targetId, label: rename[2] }); focus([targetId]); continue;
@@ -243,7 +244,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         focus(owners, object ? working.relations?.at(-1)?.targetIds ?? [] : []);
         continue;
       }
-      const distributed = text.match(/^(.+?) each (?:has|have|owns|own) (.+)$/)
+      const distributed = text.match(/^(.+?) each (?:has|have|owns|own|having|with) (.+)$/)
         ?? text.match(/^(.+?) (?:has|have|owns|own) (.+?) each$/);
       if (distributed) {
         const phrase = distributed[1];
