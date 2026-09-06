@@ -1,4 +1,4 @@
-# Visual understanding: contextual corrections
+# Visual understanding: directed motion
 
 The aim is broad natural explanation-to-visual understanding. This increment
 introduces composable object descriptions, shared resources, personal ownership,
@@ -45,6 +45,26 @@ learners, people, cars, books, houses, trees and related aliases use the same pa
 All entities retain their positions when adding others. The current conservative
 layout has ten slots. Overflow asks for a smaller scene instead of silently
 dropping objects. The scene is still held in React memory, not persisted to disk.
+
+## Directed motion
+
+DoodleScript 1.3.0 adds single-actor `toward` and `away` relationships.
+Try `A car approaches a person`, `Make it go the other way`, and `Stop it`.
+Walking is restricted to human figures and driving to cars. The renderer uses
+directional arrows, matching facing direction and a walking stance for people.
+Reverse replaces the previous direction without recreating either object. Stop
+removes the arrow and preserves facing; previous revisions remain available to Undo.
+Explicit turns replace motion. Ambiguous actors and self-targets require clarification.
+
+This is a directional illustration, not physical displacement, collision simulation
+or continuous movement. Same-row placement and sufficient arrow space are required;
+unsupported geometry is rejected. Arrow dashes respect reduced-motion preferences.
+Complex connector routing and unrestricted action language remain unfinished.
+
+The motion increment passed tests, lint and production build. Automated SVG checks
+cover arrow paths, relationship labels, Stop and rendering a previous revision.
+Browser visual inspection was blocked by the local automation runtime; Android
+appearance and live speech-to-motion latency have not been verified on a device.
 
 ## Correctness boundaries
 

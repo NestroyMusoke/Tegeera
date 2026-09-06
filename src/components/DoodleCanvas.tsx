@@ -1,4 +1,5 @@
 import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
+import { isMotion, motionGeometry, relationLabel } from "../doodlescript/motion";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -34,9 +35,12 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
         {scene.relations?.map((relation) => (
           <Relationship relation={relation} entities={scene.entities} key={relation.id} />
         ))}
-        {scene.entities.map((entity, index) => (
-          <DoodleEntity entity={entity} index={index} key={entity.id} />
-        ))}
+        {scene.entities.map((entity, index) => {
+          const motion = scene.relations?.find((relation) => isMotion(relation) && relation.sourceIds[0] === entity.id);
+          const target = scene.entities.find((item) => item.id === motion?.targetIds[0]);
+          const geometry = motion && target ? motionGeometry(entity, target, motion.kind as "toward" | "away") : null;
+          return <DoodleEntity entity={geometry ? { ...entity, direction: geometry.direction } : entity} moving={!!geometry} index={index} key={entity.id} />;
+        })}
       </svg>
       {!scene.entities.length && (
         <div className="empty-canvas">
@@ -60,7 +64,7 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
             return (
               <div key={relation.id} className={`relationship-${relation.kind}`}>
                 <span>{labels(relation.sourceIds)}</span>
-                <strong>{relation.kind === "shares" ? "share" : "owns"} →</strong>
+                <strong>{relationLabel(relation)} →</strong>
                 <span>{labels(relation.targetIds)}</span>
               </div>
             );
@@ -76,6 +80,21 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
     .map((id) => entities.find((entity) => entity.id === id))
     .filter((entity): entity is SceneEntity => !!entity);
   if (!members.length) return null;
+  if (isMotion(relation)) {
+    const actor = entities.find((entity) => entity.id === relation.sourceIds[0]);
+    const target = entities.find((entity) => entity.id === relation.targetIds[0]);
+    const geometry = actor && target ? motionGeometry(actor, target, relation.kind as "toward" | "away") : null;
+    if (!geometry) return null;
+    const { startX, endX, y } = geometry;
+    const sign = Math.sign(endX - startX);
+    return (
+      <g className="motion-annotation" aria-label={relationLabel(relation)}>
+        <path className="motion-flow" d={`M${startX} ${y} H${endX}`} fill="none" stroke="#275a78" strokeWidth="3" />
+        <path d={`M${endX - sign * 10} ${y - 7} L${endX} ${y} L${endX - sign * 10} ${y + 7}`} fill="none" stroke="#275a78" strokeWidth="3" />
+        <text x={(startX + endX) / 2} y={y - 13} textAnchor="middle" fill="#275a78" fontSize="14">{relation.kind === "toward" ? "toward" : "away"}</text>
+      </g>
+    );
+  }
   // Mixed-row relations remain in the explicit key until routed connectors exist.
   if (members.some((entity) => entity.y !== members[0].y)) return null;
   const y = Math.max(...members.map((entity) => entity.y * 6.2 + 85 * entity.scale)) + 18;
@@ -97,10 +116,12 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
 
 function DoodleEntity({
   entity,
-  index
+  index,
+  moving
 }: {
   entity: SceneEntity;
   index: number;
+  moving: boolean;
 }) {
   const x = entity.x * 10;
   const y = entity.y * 6.2;
@@ -115,7 +136,7 @@ function DoodleEntity({
       {entity.kind === "book" ? <Book /> : null}
       {entity.kind === "building" ? <Building /> : null}
       {["person", "student", "teacher", "generic"].includes(entity.kind) ? (
-        <Person kind={entity.kind} direction={entity.direction} />
+        <Person kind={entity.kind} direction={entity.direction} moving={moving} />
       ) : null}
       <text className="entity-label" x="0" y="72" textAnchor="middle">
         {entity.label ?? entity.kind}
@@ -126,10 +147,12 @@ function DoodleEntity({
 
 function Person({
   kind,
-  direction
+  direction,
+  moving
 }: {
   kind: SceneEntity["kind"];
   direction: SceneEntity["direction"];
+  moving: boolean;
 }) {
   const facing = direction === "left" ? -1 : 1;
   return (
@@ -137,7 +160,7 @@ function Person({
       <circle className="doodle-stroke" cx="0" cy="-39" r="16" />
       <path className="doodle-stroke" d="M0-23 C-2-4 1 11 0 31" />
       <path className="doodle-stroke" d="M0-11 L-24 7 M0-11 L25 1" />
-      <path className="doodle-stroke" d="M0 31 L-20 57 M0 31 L21 57" />
+      <path className="doodle-stroke" d={moving ? "M0 31 L-23 45 L-12 57 M0 31 L20 51 L31 51" : "M0 31 L-20 57 M0 31 L21 57"} />
       <path className="doodle-detail" d="M4-41 l4 1 M6-33 q6 4 10-1" />
       {kind === "student" ? (
         <path className="accent-stroke" d="M-17-52 Q0-67 17-52" />

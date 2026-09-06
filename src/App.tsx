@@ -8,6 +8,7 @@ import {
   type GateIssue
 } from "./doodlescript/validator";
 import { useSpeechSession } from "./speech/useSpeechSession";
+import { relationLabel } from "./doodlescript/motion";
 
 const suggestions = [
   "Three students share two books",
@@ -28,7 +29,7 @@ function App() {
       if (!scene.entities.length) return "Nothing drawn yet";
       const labels = (ids: string[]) => ids.map((id) => scene.entities.find((entity) => entity.id === id)?.label ?? id).join(", ");
       return [scene.entities.map((entity) => entity.label ?? entity.kind).join(", "),
-        ...(scene.relations ?? []).map((relation) => `${labels(relation.sourceIds)} ${relation.kind === "shares" ? "share" : "owns"} ${labels(relation.targetIds)}`)
+        ...(scene.relations ?? []).map((relation) => `${labels(relation.sourceIds)} ${relationLabel(relation)} ${labels(relation.targetIds)}`)
       ].join(". ");
     },
     [scene.entities, scene.relations]

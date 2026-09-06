@@ -1,6 +1,7 @@
 import type { DoodleCommand, DoodleScript, EntityKind, SceneEntity, SceneState, SceneContext } from "./schema";
 import { applyDoodleScript } from "./scene";
 import { nextPosition } from "./layout";
+import { isMotion, motionGeometry } from "./motion";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -58,7 +59,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentClause = input;
   let context: SceneContext | undefined = scene.context;
   const makeScript = (): DoodleScript => ({
-    schemaVersion: "1.2.0", sceneId: scene.sceneId, revision: scene.revision + 1, context,
+    schemaVersion: "1.3.0", sceneId: scene.sceneId, revision: scene.revision + 1, context,
     confidence: 1, sourceText: input, commands
   });
   const append = (command: DoodleCommand) => {
@@ -86,10 +87,15 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     context = { subjectIds, objectIds };
     working = applyDoodleScript(scene, makeScript());
   };
-  const relate = (kind: "shares" | "owns", sourceIds: string[], targetIds: string[]) => {
+  const relate = (kind: "shares" | "owns" | "toward" | "away", sourceIds: string[], targetIds: string[]) => {
     append({ action: "relate", relation: {
       id: `relation-${scene.revision + 1}-${commands.length}`, kind, sourceIds, targetIds
     } });
+  };
+  const stopMotion = (actorId: string) => {
+    for (const relation of (working.relations ?? []).filter((item) => isMotion(item) && item.sourceIds.includes(actorId))) {
+      append({ action: "unrelate", relationId: relation.id });
+    }
   };
   try {
     if (!input.trim() || input.length > 500) throw new Clarification("Explain one short scene or change, up to 500 characters.");
@@ -99,6 +105,45 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       const text = clause.replace(/^(?:please |imagine |draw |add |show )/, "").trim();
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(clause)) {
         append({ action: "clear" }); focus([]); continue;
+      }
+      const motion = text.match(/^(.+?) (approaches|moves towards?|drives towards?|walks towards?|moves away from|drives away from|walks away from) (.+)$/);
+      if (motion) {
+        const participant = (phrase: string, actor: boolean) => {
+          if (/^(a|an|one) /.test(phrase)) return create(phrase)[0];
+          if (actor && phrase === "it" && context?.subjectIds.length === 1) return context.subjectIds[0];
+          return resolve(phrase, working).id;
+        };
+        const actorId = participant(motion[1], true);
+        const targetId = participant(motion[3], false);
+        if (actorId === targetId) throw new Clarification("An object cannot approach itself. Name the other object.");
+        const actor = working.entities.find((entity) => entity.id === actorId)!;
+        if (motion[2].startsWith("drives") && actor.kind !== "car") throw new Clarification("Which car is moving? Name the vehicle.");
+        if (motion[2].startsWith("walks") && !["person", "student", "teacher"].includes(actor.kind)) throw new Clarification("Which person is walking?");
+        stopMotion(actorId);
+        relate(motion[2].includes("away") ? "away" : "toward", [actorId], [targetId]);
+        focus([actorId], [targetId]);
+        continue;
+      }
+      const reverse = clause.match(/^(?:make )?(.+?) (?:go|goes|move|moves) (?:the )?other way$/);
+      if (reverse) {
+        const actorId = reverse[1] === "it" && context?.subjectIds.length === 1 ? context.subjectIds[0] : resolve(reverse[1], working).id;
+        const previous = (working.relations ?? []).filter((relation) => isMotion(relation) && relation.sourceIds[0] === actorId);
+        if (previous.length !== 1) throw new Clarification("Which direction is being reversed? First describe what it is moving toward or away from.");
+        stopMotion(actorId);
+        relate(previous[0].kind === "toward" ? "away" : "toward", [actorId], previous[0].targetIds);
+        focus([actorId], previous[0].targetIds);
+        continue;
+      }
+      const stop = clause.match(/^stop (.+)$/);
+      if (stop) {
+        const actorId = stop[1] === "it" && context?.subjectIds.length === 1 ? context.subjectIds[0] : resolve(stop[1], working).id;
+        const previous = (working.relations ?? []).find((relation) => isMotion(relation) && relation.sourceIds[0] === actorId);
+        if (!previous) throw new Clarification("That object has no current motion to stop.");
+        const actor = working.entities.find((entity) => entity.id === actorId)!;
+        const target = working.entities.find((entity) => entity.id === previous.targetIds[0]);
+        const geometry = target ? motionGeometry(actor, target, previous.kind as "toward" | "away") : null;
+        if (geometry) append({ action: "update", targetId: actorId, direction: geometry.direction });
+        stopMotion(actorId); focus([actorId]); continue;
       }
       const correction = clause.match(/^(?:make that|make it|change that to) (\w+)(?: (\w+))?$/);
       if (correction) {
@@ -162,6 +207,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       const move = clause.match(/^(move|turn|face) (.+?) (?:to the )?(left|right|up|down)$/);
       if (move) {
         const target = resolve(move[2], working);
+        stopMotion(target.id);
         const direction = move[3] as "left" | "right" | "up" | "down";
         if (move[1] !== "move") append({ action: "update", targetId: target.id, direction });
         else append({ action: "move", targetId: target.id, direction,

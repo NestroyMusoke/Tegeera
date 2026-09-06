@@ -69,6 +69,11 @@ Follow-up corrections include `Make that four students` and, after the arrival,
 context. Count changes and transfers keep the surviving objects' identities.
 See `ENGINEERING_STATUS.md` for evaluation methods, limitations and the next work.
 
+Directed motion examples: `A car approaches a person`, `Make it go the other way`,
+and `Stop it`. Human figures also support `A student walks toward a school`.
+These show direction with arrows and facing/pose changes, not physical movement
+or collision simulation. Objects must share a row with room for an arrow.
+
 No language model draws directly onto the canvas. Every parser or model must produce DoodleScript, and every script must pass four gates before it changes a lesson:
 
 1. schema validity;
