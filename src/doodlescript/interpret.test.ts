@@ -44,7 +44,7 @@ describe("explanation meaning", () => {
   }
 
   it("does not silently ignore negation, conditions, unknown actions or objects", () => {
-    for (const text of ["Don't clear everything", "If I say clear everything", "A car explodes", "Three students share two planets", "Draw a car and a dragon", "Two students each own two books", "Move the car left and delete the tree"]) {
+    for (const text of ["Don't clear everything", "If I say clear everything", "A car explodes", "Three students share two planets", "Draw a car and a dragon", "Two students do not each own two books", "Move the car left and delete the tree"]) {
       expect(interpretTeacherText(text, initialScene).ok, text).toBe(false);
     }
   });

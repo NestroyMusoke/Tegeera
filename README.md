@@ -69,6 +69,15 @@ Follow-up corrections include `Make that four students` and, after the arrival,
 context. Count changes and transfers keep the surviving objects' identities.
 See `ENGINEERING_STATUS.md` for evaluation methods, limitations and the next work.
 
+Individual quantities are distinct from sharing: `Three students each have two
+books` creates six books with two assigned to each student. `Three students share
+two books` creates only two shared books. Existing groups support `They each have
+a book` or `The students have a book each`. These add new possessions; they do not
+distribute existing books. The ten-object layout limit still applies.
+Matching O-codes beneath owners and items show personal ownership across rows;
+the relationship key repeats those codes. Transfers update the codes without
+moving the drawings. Shared resources keep their separate shared relationship.
+
 Directed motion examples: `A car approaches a person`, `Make it go the other way`,
 and `Stop it`. Human figures also support `A student walks toward a school`.
 These show direction with arrows and facing/pose changes, not physical movement

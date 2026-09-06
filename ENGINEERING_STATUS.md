@@ -1,4 +1,4 @@
-# Visual understanding: directed motion
+# Visual understanding: individual quantities
 
 The aim is broad natural explanation-to-visual understanding. This increment
 introduces composable object descriptions, shared resources, personal ownership,
@@ -65,6 +65,41 @@ The motion increment passed tests, lint and production build. Automated SVG chec
 cover arrow paths, relationship labels, Stop and rendering a previous revision.
 Browser visual inspection was blocked by the local automation runtime; Android
 appearance and live speech-to-motion latency have not been verified on a device.
+
+## Individual quantities
+
+`Three students each have two books` and `Three students have two books each`
+create three sole-ownership relationships with two distinct books apiece. This
+uses existing DoodleScript 1.3.0 ownership semantics; no schema extension is needed.
+`They each have a book` uses the recent homogeneous subject group. `The students
+each have a book` explicitly selects all existing students, preserving their IDs
+and positions. Each command adds new items, not a redistribution of existing ones.
+
+The ten-object limit is checked before allocating individual possessions. Missing
+or mixed subject groups, unsupported objects and unspecified collective ownership
+still require clarification. Changing a distributed group's total count does not
+silently reassign possessions. Explicit transfers continue to preserve item IDs.
+These authored grammar tests measure supported cases, not arbitrary-speech accuracy.
+Individual-quantities checkpoint: 85 tests passed, including 11 distribution tests.
+The local meaning benchmark reported median 0.48 ms and p95 1.23 ms over 250
+iterations, excluding speech and rendering. Device verification remains outstanding.
+
+## Visible ownership
+
+Personal ownership now uses matching O-codes beneath the owner and each item,
+with the same code in the relationship key. Text and color are redundant cues;
+color alone is not required to identify a group. Unlike the old spanning bracket,
+these badges also work across rows and do not imply that intervening objects belong
+to an owner. Shared-resource brackets and motion arrows remain separate.
+
+Codes derive from entity order and are display annotations, not permanent IDs.
+Transfers preserve codes for remaining owners and update the transferred item's
+badge without moving objects. Removing entities can renumber codes consistently.
+Undo renders codes from the restored scene. SVG regression checks cover ownership
+membership, transfers, sharing, removal and absence of scene mutation. Browser
+inspection remains blocked by the automation runtime; small-screen readability
+still requires a device check. No automatic rearrangement or connector routing
+is implemented in this increment.
 
 ## Correctness boundaries
 

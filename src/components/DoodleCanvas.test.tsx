@@ -5,6 +5,7 @@ import { interpretTeacherText } from "../doodlescript/interpret";
 import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { validateDoodleScript } from "../doodlescript/validator";
 import { motionGeometry } from "../doodlescript/motion";
+import { ownershipBadges } from "./ownership";
 
 function run(text: string, scene = initialScene) {
   const result = interpretTeacherText(text, scene);
@@ -32,5 +33,39 @@ describe("motion SVG rendering", () => {
     expect(html).not.toContain('class="motion-annotation"');
     expect(html).toContain("Drawing containing 2 objects");
     expect(renderToStaticMarkup(<DoodleCanvas scene={moving} />)).toContain('class="motion-annotation"');
+  });
+});
+
+describe("visible ownership groups", () => {
+  it("assigns distinct owner codes to six individual books across rows", () => {
+    const scene = run("Three students each have two books");
+    const saved = structuredClone(scene);
+    const badges = ownershipBadges(scene);
+    for (let owner = 1; owner <= 3; owner++) {
+      expect(badges.get(`student-${owner}`)?.[0]).toMatchObject({ code: `O${owner}`, role: "owner" });
+      for (const book of [owner * 2 - 1, owner * 2]) expect(badges.get(`book-${book}`)?.[0]).toMatchObject({ code: `O${owner}`, role: "item" });
+    }
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html.match(/class="ownership-badge"/g)).toHaveLength(9);
+    expect(html).not.toContain('aria-label="Personal ownership"');
+    expect(scene).toEqual(saved);
+  });
+  it("updates a transferred book without changing other codes or positions", () => {
+    const before = run("Three students each have a book");
+    const after = run("The first student gives book 1 to the second student", before);
+    expect(ownershipBadges(after).get("book-1")?.[0].code).toBe("O2");
+    expect(ownershipBadges(after).get("book-3")).toEqual(ownershipBadges(before).get("book-3"));
+    expect(ownershipBadges(after).get("student-2")).toHaveLength(1);
+    expect(after.entities).toEqual(before.entities);
+    expect(ownershipBadges(before).get("book-1")?.[0].code).toBe("O1");
+  });
+  it("does not mark shared books as individually owned", () => {
+    const scene = run("Three students share two books");
+    expect(ownershipBadges(scene).size).toBe(0);
+    expect(renderToStaticMarkup(<DoodleCanvas scene={scene} />)).toContain("Shared resources");
+  });
+  it("cleans badges when an owner is removed", () => {
+    const scene = run("Remove the student", run("A student owns a book"));
+    expect(ownershipBadges(scene).size).toBe(0);
   });
 });

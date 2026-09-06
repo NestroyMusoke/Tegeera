@@ -243,6 +243,31 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         focus(owners, object ? working.relations?.at(-1)?.targetIds ?? [] : []);
         continue;
       }
+      const distributed = text.match(/^(.+?) each (?:has|have|owns|own) (.+)$/)
+        ?? text.match(/^(.+?) (?:has|have|owns|own) (.+?) each$/);
+      if (distributed) {
+        const phrase = distributed[1];
+        let owners: string[];
+        if (phrase === "they") owners = context?.subjectIds ?? [];
+        else if (phrase.startsWith("the ")) {
+          const noun = phrase.slice(4);
+          const kind = nouns[noun];
+          if (!kind || !(noun.endsWith("s") || noun === "people")) throw new Clarification("Name the group, for example ‘the students each have a book’.");
+          owners = working.entities.filter((entity) => entity.kind === kind).map((entity) => entity.id);
+        } else owners = create(phrase);
+        const members = working.entities.filter((entity) => owners.includes(entity.id));
+        if (!members.length || new Set(members.map((entity) => entity.kind)).size !== 1) throw new Clarification("Which group has an item each? Name one type of object.");
+        const spec = nounPhrase(distributed[2]);
+        if (working.entities.length + owners.length * spec.count > 10) throw new Clarification("Those individual items would exceed the ten-object scene limit. Use a smaller group or fewer items each.");
+        const objects: string[] = [];
+        for (const owner of owners) {
+          const owned = create(distributed[2]);
+          relate("owns", [owner], owned);
+          objects.push(...owned);
+        }
+        focus(owners, objects);
+        continue;
+      }
       const relationship = text.match(/^(.+?) (?:are )?(sharing|share|shares|owns|own|has|have) (.+)$/);
       if (relationship) {
         const source = /^(they|them)$/.test(relationship[1]) ? context?.subjectIds ?? []

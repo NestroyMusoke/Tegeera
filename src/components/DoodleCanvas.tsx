@@ -1,11 +1,13 @@
 import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
 import { isMotion, motionGeometry, relationLabel } from "../doodlescript/motion";
+import { ownershipBadges, type OwnershipBadge } from "./ownership";
 
 interface DoodleCanvasProps {
   scene: SceneState;
 }
 
 export function DoodleCanvas({ scene }: DoodleCanvasProps) {
+  const ownership = ownershipBadges(scene);
   return (
     <div className="visual-scene">
     <section className="canvas-shell" aria-label="Tegeera drawing canvas">
@@ -39,7 +41,7 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
           const motion = scene.relations?.find((relation) => isMotion(relation) && relation.sourceIds[0] === entity.id);
           const target = scene.entities.find((item) => item.id === motion?.targetIds[0]);
           const geometry = motion && target ? motionGeometry(entity, target, motion.kind as "toward" | "away") : null;
-          return <DoodleEntity entity={geometry ? { ...entity, direction: geometry.direction } : entity} moving={!!geometry} index={index} key={entity.id} />;
+          return <DoodleEntity entity={geometry ? { ...entity, direction: geometry.direction } : entity} badges={ownership.get(entity.id) ?? []} moving={!!geometry} index={index} key={entity.id} />;
         })}
       </svg>
       {!scene.entities.length && (
@@ -56,6 +58,7 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
     </section>
       {!!scene.relations?.length && (
         <div className="relationship-key" aria-label="Scene relationships">
+          {ownership.size > 0 && <p>Matching O-codes connect each owner to their items, even across rows.</p>}
           {scene.relations.map((relation) => {
             const labels = (ids: string[]) => ids.map((id) => {
               const entity = scene.entities.find((item) => item.id === id);
@@ -63,6 +66,7 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
             }).join(", ");
             return (
               <div key={relation.id} className={`relationship-${relation.kind}`}>
+                {relation.kind === "owns" && <span>{ownership.get(relation.sourceIds[0])?.find((badge) => badge.role === "owner")?.code}</span>}
                 <span>{labels(relation.sourceIds)}</span>
                 <strong>{relationLabel(relation)} →</strong>
                 <span>{labels(relation.targetIds)}</span>
@@ -80,6 +84,8 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
     .map((id) => entities.find((entity) => entity.id === id))
     .filter((entity): entity is SceneEntity => !!entity);
   if (!members.length) return null;
+  // Ownership uses matching badges, avoiding brackets through unrelated objects.
+  if (relation.kind === "owns") return null;
   if (isMotion(relation)) {
     const actor = entities.find((entity) => entity.id === relation.sourceIds[0]);
     const target = entities.find((entity) => entity.id === relation.targetIds[0]);
@@ -117,11 +123,13 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
 function DoodleEntity({
   entity,
   index,
-  moving
+  moving,
+  badges
 }: {
   entity: SceneEntity;
   index: number;
   moving: boolean;
+  badges: OwnershipBadge[];
 }) {
   const x = entity.x * 10;
   const y = entity.y * 6.2;
@@ -130,7 +138,7 @@ function DoodleEntity({
   const delay = { "--draw-delay": `${index * 90}ms` } as React.CSSProperties;
 
   return (
-    <g className={className} transform={transform} style={delay}>
+    <g className={className} data-entity-id={entity.id} transform={transform} style={delay}>
       {entity.kind === "car" ? <Car direction={entity.direction} /> : null}
       {entity.kind === "tree" ? <Tree /> : null}
       {entity.kind === "book" ? <Book /> : null}
@@ -141,6 +149,12 @@ function DoodleEntity({
       <text className="entity-label" x="0" y="72" textAnchor="middle">
         {entity.label ?? entity.kind}
       </text>
+      {badges.map((badge, index) => (
+        <g key={`${badge.role}-${badge.code}`} className="ownership-badge" aria-label={badge.role === "owner" ? `Owner ${badge.code}` : `Belongs to ${badge.code}`} transform={`translate(${(index - (badges.length - 1) / 2) * 62} 0)`}>
+          <rect x="-29" y="75" width="58" height="12" rx="4" fill="#fbf7ed" stroke={badge.color} />
+          <text x="0" y="84" textAnchor="middle" fill={badge.color} fontSize="10" fontFamily="sans-serif">{badge.role === "owner" ? `Owner ${badge.code}` : `Item ${badge.code}`}</text>
+        </g>
+      ))}
     </g>
   );
 }
