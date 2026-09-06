@@ -37,6 +37,36 @@ describe("motion SVG rendering", () => {
 });
 
 describe("visible ownership groups", () => {
+  it("renders one readable card per owner with the exact items, outside the clipped canvas", () => {
+    const scene = run("Three students each have two books");
+    const root = document.createElement("div");
+    root.innerHTML = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(root.querySelector(".canvas-shell .ownership-details")).toBeNull();
+    expect(root.querySelectorAll(".ownership-card")).toHaveLength(3);
+    expect(root.querySelectorAll("[data-owned-id]")).toHaveLength(6);
+    expect(root.querySelector('[data-owner-id="student-2"]')?.textContent).toContain("Owns 2 items");
+    expect(Array.from(root.querySelectorAll('[data-owner-id="student-2"] [data-owned-id]')).map((item) => item.getAttribute("data-owned-id"))).toEqual(["book-3", "book-4"]);
+  });
+  it("merges transferred possessions into one recipient card and restores the old grouping", () => {
+    const before = run("Three students each have a book");
+    const after = run("The first student gives book 1 to the second student", before);
+    const root = document.createElement("div");
+    root.innerHTML = renderToStaticMarkup(<DoodleCanvas scene={after} />);
+    expect(root.querySelectorAll('[data-owner-id="student-2"]')).toHaveLength(1);
+    expect(root.querySelectorAll('[data-owner-id="student-2"] [data-owned-id]')).toHaveLength(2);
+    expect(root.querySelector('[data-owner-id="student-1"]')).toBeNull();
+    root.innerHTML = renderToStaticMarkup(<DoodleCanvas scene={before} />);
+    expect(root.querySelectorAll('[data-owner-id="student-1"] [data-owned-id]')).toHaveLength(1);
+  });
+  it("keeps shared items out of personal ownership cards in a mixed scene", () => {
+    const scene = run("Another student arrives with her own book", run("Three students share two books"));
+    const root = document.createElement("div");
+    root.innerHTML = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(root.querySelectorAll(".ownership-card")).toHaveLength(1);
+    expect(root.querySelector('[data-owned-id="book-1"]')).toBeNull();
+    expect(root.querySelector('[data-owned-id="book-3"]')).not.toBeNull();
+    expect(root.querySelector(".relationship-key")?.textContent).toContain("share");
+  });
   it("assigns distinct owner codes to six individual books across rows", () => {
     const scene = run("Three students each have two books");
     const saved = structuredClone(scene);

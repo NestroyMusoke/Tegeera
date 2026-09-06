@@ -56,17 +56,31 @@ export function DoodleCanvas({ scene }: DoodleCanvasProps) {
         <span>Revision {scene.revision}</span>
       </div>
     </section>
-      {!!scene.relations?.length && (
+      {ownership.size > 0 && (
+        <section className="ownership-details" aria-label="Who owns what">
+          <header><h2>Who owns what</h2><p>The same scene, grouped by owner. No extra objects.</p></header>
+          <div className="ownership-cards">
+            {scene.entities.filter((owner) => ownership.get(owner.id)?.some((badge) => badge.role === "owner")).map((owner) => {
+              const badge = ownership.get(owner.id)!.find((item) => item.role === "owner")!;
+              const itemIds = new Set(scene.relations?.filter((relation) => relation.kind === "owns" && relation.sourceIds[0] === owner.id).flatMap((relation) => relation.targetIds));
+              const items = scene.entities.filter((entity) => itemIds.has(entity.id));
+              return <article className="ownership-card" key={owner.id} data-owner-id={owner.id} style={{ "--owner-color": badge.color } as React.CSSProperties}>
+                <header><EntityThumbnail entity={owner} /><div><h3>{owner.label ?? owner.kind}</h3><p>Owns {items.length} {items.length === 1 ? "item" : "items"}</p></div><span className="owner-code">{badge.code}</span></header>
+                <ul>{items.map((item) => <li key={item.id} data-owned-id={item.id}><EntityThumbnail entity={item} /><span>{item.label ?? item.kind}</span></li>)}</ul>
+              </article>;
+            })}
+          </div>
+        </section>
+      )}
+      {scene.relations?.some((relation) => relation.kind !== "owns") && (
         <div className="relationship-key" aria-label="Scene relationships">
-          {ownership.size > 0 && <p>Matching O-codes connect each owner to their items, even across rows.</p>}
-          {scene.relations.map((relation) => {
+          {scene.relations.filter((relation) => relation.kind !== "owns").map((relation) => {
             const labels = (ids: string[]) => ids.map((id) => {
               const entity = scene.entities.find((item) => item.id === id);
               return entity?.label ?? id;
             }).join(", ");
             return (
               <div key={relation.id} className={`relationship-${relation.kind}`}>
-                {relation.kind === "owns" && <span>{ownership.get(relation.sourceIds[0])?.find((badge) => badge.role === "owner")?.code}</span>}
                 <span>{labels(relation.sourceIds)}</span>
                 <strong>{relationLabel(relation)} →</strong>
                 <span>{labels(relation.targetIds)}</span>
@@ -139,13 +153,7 @@ function DoodleEntity({
 
   return (
     <g className={className} data-entity-id={entity.id} transform={transform} style={delay}>
-      {entity.kind === "car" ? <Car direction={entity.direction} /> : null}
-      {entity.kind === "tree" ? <Tree /> : null}
-      {entity.kind === "book" ? <Book /> : null}
-      {entity.kind === "building" ? <Building /> : null}
-      {["person", "student", "teacher", "generic"].includes(entity.kind) ? (
-        <Person kind={entity.kind} direction={entity.direction} moving={moving} />
-      ) : null}
+      <EntityGlyph entity={entity} moving={moving} />
       <text className="entity-label" x="0" y="72" textAnchor="middle">
         {entity.label ?? entity.kind}
       </text>
@@ -157,6 +165,18 @@ function DoodleEntity({
       ))}
     </g>
   );
+}
+
+function EntityGlyph({ entity, moving = false }: { entity: SceneEntity; moving?: boolean }) {
+  if (entity.kind === "car") return <Car direction={entity.direction} />;
+  if (entity.kind === "tree") return <Tree />;
+  if (entity.kind === "book") return <Book />;
+  if (entity.kind === "building") return <Building />;
+  return <Person kind={entity.kind} direction={entity.direction} moving={moving} />;
+}
+
+function EntityThumbnail({ entity }: { entity: SceneEntity }) {
+  return <svg className="entity-thumbnail" viewBox="-80 -90 160 160" aria-hidden="true"><EntityGlyph entity={entity} /></svg>;
 }
 
 function Person({

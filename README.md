@@ -75,7 +75,7 @@ two books` creates only two shared books. Existing groups support `They each hav
 a book` or `The students have a book each`. These add new possessions; they do not
 distribute existing books. The ten-object layout limit still applies.
 Matching O-codes beneath owners and items show personal ownership across rows;
-the relationship key repeats those codes. Transfers update the codes without
+readable “Who owns what” cards group the same doodles with their owner. Transfers update the codes without
 moving the drawings. Shared resources keep their separate shared relationship.
 
 Directed motion examples: `A car approaches a person`, `Make it go the other way`,

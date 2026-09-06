@@ -87,7 +87,7 @@ iterations, excluding speech and rendering. Device verification remains outstand
 ## Visible ownership
 
 Personal ownership now uses matching O-codes beneath the owner and each item,
-with the same code in the relationship key. Text and color are redundant cues;
+with the same code in the ownership detail cards. Text and color are redundant cues;
 color alone is not required to identify a group. Unlike the old spanning bracket,
 these badges also work across rows and do not imply that intervening objects belong
 to an owner. Shared-resource brackets and motion arrows remain separate.
@@ -96,10 +96,27 @@ Codes derive from entity order and are display annotations, not permanent IDs.
 Transfers preserve codes for remaining owners and update the transferred item's
 badge without moving objects. Removing entities can renumber codes consistently.
 Undo renders codes from the restored scene. SVG regression checks cover ownership
-membership, transfers, sharing, removal and absence of scene mutation. Browser
-inspection remains blocked by the automation runtime; small-screen readability
-still requires a device check. No automatic rearrangement or connector routing
-is implemented in this increment.
+membership, transfers, sharing, removal and absence of scene mutation.
+
+The quality review found that 10-unit badges shrink to only a few pixels on narrow
+screens. Ownership now has responsive detail cards with 14–16 px HTML labels and
+the same SVG glyphs used by the scene. These are another view of existing objects,
+not additional entities. Multiple ownership relations for one owner are merged
+into one card, and shared resources are excluded from personal cards. The scene
+overview remains unchanged; its tiny badges are supplementary, not the sole key.
+
+`node scripts/visual-check.mjs` generates four fixtures from the actual parser,
+validator, React renderer and stylesheet in the ignored `.visual-check` folder.
+It includes a 390 px iframe for narrow-viewport inspection. The fixtures cover
+individual ownership, transfer, sharing and mixed ownership. Static browser
+screenshots can be captured with an isolated headless Edge profile when the
+interactive automation runtime is unavailable. The quality review inspected
+individual ownership at a 390 px embedded viewport and transfers at 1280 px.
+It caught and corrected mobile horizontal overflow during a spacing refinement.
+Fixtures disable animations to inspect the settled frame; animation playback is
+not verified by these screenshots. This does not verify app controls,
+Android WebView or speech latency. No automatic rearrangement or connector routing
+is implemented in this increment. The quality-review suite passes 92 tests.
 
 ## Correctness boundaries
 

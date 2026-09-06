@@ -180,8 +180,24 @@ button {
   margin: 12px 0 28px;
   display: grid;
   gap: 6px;
-  font-size: clamp(10px, 1.4vw, 15px);
+  font-size: 14px;
 }
+
+.ownership-details { margin: 20px 0 28px; }
+.ownership-details > header h2 { margin: 0; font: 600 22px Georgia, serif; }
+.ownership-details > header p { margin: 6px 0 16px; font-size: 14px; color: #686258; }
+.ownership-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.ownership-card { min-width: 0; padding: 14px; border: 1px solid #d8cfbd; border-top: 4px solid var(--owner-color); border-radius: 14px; background: #fbf7ed; }
+.ownership-card > header { display: flex; align-items: center; gap: 10px; }
+.ownership-card > header > div { min-width: 0; flex: 1; }
+.ownership-card h3 { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+.ownership-card p { margin: 3px 0 0; font-size: 14px; color: #686258; }
+.owner-code { color: var(--owner-color); border: 1px solid currentColor; border-radius: 6px; padding: 4px 6px; font-size: 12px; }
+.entity-thumbnail { display: block; width: 54px; height: 54px; flex-shrink: 0; }
+.entity-thumbnail .doodle-stroke, .entity-thumbnail .doodle-detail, .entity-thumbnail .accent-stroke { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; }
+.ownership-card ul { list-style: none; margin: 12px 0 0; padding: 12px 0 0; border-top: 1px solid #e5dccb; display: flex; flex-wrap: wrap; gap: 10px; }
+.ownership-card li { display: flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; font-size: 14px; }
+.ownership-card li span { overflow-wrap: anywhere; }
 
 .relationship-key > div {
   display: flex;
@@ -458,7 +474,8 @@ button {
   }
 
   .canvas-shell {
-    min-height: 390px;
+    height: 240px;
+    min-height: 0;
     aspect-ratio: auto;
   }
 

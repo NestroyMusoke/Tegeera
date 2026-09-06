@@ -8,4 +8,5 @@ dist
 android/.gradle
 android/app/build
 coverage
+.visual-check
 *.tsbuildinfo
