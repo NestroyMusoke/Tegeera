@@ -41,7 +41,7 @@ await writeFile(bundlePath, result.outputFiles[0].text);
 const { render, renderPerformance } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const cases = {
@@ -53,6 +53,8 @@ const cases = {
   stagedTarget: ["A tree", "Move the tree right", "Move the tree right", "A teacher points at the tree"],
   contact: ["A teacher touches a book"],
   contactProcess: ["A teacher touches a process"],
+  holding: ["A teacher holds a book"],
+  carrying: ["A student carries a book"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -131,8 +133,19 @@ const appBundle = await build({
       [...document.querySelectorAll('button')].find(button => button.textContent === 'Overview').click(); await pause();
       check(viewport.scrollLeft === 0 && viewport.scrollTop === 0, 'Overview did not reset scrolling');
       check(document.documentElement.scrollWidth <= innerWidth, 'Detail caused page overflow');
+      await submit('Clear everything');
+      await submit('A teacher carries a book');
+      const carrier = document.querySelector('[data-entity-id="teacher-1"]');
+      const carried = document.querySelector('[data-entity-id="book-1"]');
+      check(carried?.dataset.attachedTo === 'teacher-1', 'Carried object identity is not attached to its actor');
+      check(!!carried?.querySelector('.attached-object.motion-walk'), 'Carried object does not share walking motion');
+      const carrierBefore = carrier?.getAttribute('transform');
+      const carriedBefore = carried?.getAttribute('transform');
+      await submit('Move the teacher right');
+      check(carrier?.getAttribute('transform') !== carrierBefore, 'Carrier did not move');
+      check(carried?.getAttribute('transform') !== carriedBefore, 'Attached object did not follow carrier movement');
       if (new URLSearchParams(location.search).has('detail')) { detailButton.click(); await pause(); }
-      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, spoken performance and target start/stop, character rigs, pose variety, detail size, scroll, overview reset, layout';
+      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, spoken performance, target lifecycle, contact attachment movement, character rigs, detail size, scroll, overview reset, layout';
     }
     async function verifyQueue() {
       await pause();

@@ -196,6 +196,13 @@ admits close pairs only when silhouettes and labels remain clear, and validates 
 after projection. Contact removal has its own release transition so removing the
 relationship cannot strand two entities inside the ordinary collision boundary.
 
+Persistent attachments extend contact without changing object identity. `hold` and
+`carry` relationships mark their target as attached; carrier movement propagates the
+same scene delta to that target, while the renderer synchronizes only the target glyph
+with the carrier's breathing or walking loop. Stopping or changing to a non-contact
+action releases the target through ordinary safe layout. Independent target movement
+that would break reach is rejected atomically.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive

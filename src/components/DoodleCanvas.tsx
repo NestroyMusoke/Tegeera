@@ -4,7 +4,8 @@ import { ownershipBadges, type OwnershipBadge } from "./ownership";
 import { useLayoutEffect, useRef, useState } from "react";
 import { isQueue, queueGeometry } from "../doodlescript/queue";
 import { EntityGlyph } from "./entityRenderers";
-import { applyTargetedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
+import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
+import { actionForPredicate } from "../doodlescript/actionRegistry";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -71,9 +72,23 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           const geometry = motion && target ? motionGeometry(entity, target, motion.kind as "toward" | "away") : null;
           const targeting = scene.relations?.find((relation) => isTargetedPerformance(relation) && relation.sourceIds[0] === entity.id);
           const performanceTarget = scene.entities.find((item) => item.id === targeting?.targetIds[0]);
+          const attachment = scene.relations?.find((relation) => isAttachedPerformance(relation) && relation.targetIds[0] === entity.id);
+          const carrier = scene.entities.find((item) => item.id === attachment?.sourceIds[0]);
+          const attachmentPerformance = carrier?.performance ?? actionForPredicate(attachment?.predicate)?.performance;
           const directed = geometry ? { ...entity, direction: geometry.direction } : entity;
           const performed = targeting && performanceTarget ? applyTargetedPerformance(directed, performanceTarget, targeting) : directed;
-          return <DoodleEntity entity={performed} badges={ownership.get(entity.id) ?? []} moving={!!geometry} index={index} key={entity.id} />;
+          return <DoodleEntity
+            entity={performed}
+            badges={ownership.get(entity.id) ?? []}
+            moving={!!geometry}
+            attachment={attachment && attachmentPerformance ? {
+              actorId: attachment.sourceIds[0],
+              loop: attachmentPerformance.loop ?? "none",
+              intensity: attachmentPerformance.intensity ?? 0
+            } : undefined}
+            index={index}
+            key={entity.id}
+          />;
         })}
       </svg>
       </div>
@@ -189,22 +204,30 @@ function DoodleEntity({
   entity,
   index,
   moving,
-  badges
+  badges,
+  attachment
 }: {
   entity: SceneEntity;
   index: number;
   moving: boolean;
   badges: OwnershipBadge[];
+  attachment?: { actorId: string; loop: string; intensity: number };
 }) {
   const x = entity.x * 10;
   const y = entity.y * 6.2;
   const transform = `translate(${x} ${y}) scale(${entity.scale})`;
   const className = `doodle-object ${entity.highlighted ? "highlighted" : ""}`;
   const delay = { "--draw-delay": `${index * 90}ms` } as React.CSSProperties;
+  const attachmentStyle = attachment ? {
+    "--performance-travel": `${-(2 + attachment.intensity * 4)}px`,
+    "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
+  } as React.CSSProperties : undefined;
 
   return (
-    <g className={className} data-entity-id={entity.id} transform={transform} style={delay}>
-      <EntityGlyph entity={entity} moving={moving} />
+    <g className={className} data-entity-id={entity.id} data-attached-to={attachment?.actorId} transform={transform} style={delay}>
+      <g className={attachment ? `attached-object motion-${attachment.loop}` : undefined} style={attachmentStyle}>
+        <EntityGlyph entity={entity} moving={moving} />
+      </g>
       <text className="entity-label" x="0" y="84" textAnchor="middle">
         {entity.label ?? entity.kind}
       </text>

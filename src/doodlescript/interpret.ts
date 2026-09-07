@@ -244,10 +244,20 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         stopMotion(target.id);
         const direction = move[3] as "left" | "right" | "up" | "down";
         if (move[1] !== "move") append({ action: "update", targetId: target.id, direction });
-        else append({ action: "move", targetId: target.id, direction,
-          x: target.kind === "cpu" && direction === "right" ? Math.min(92, target.x + 18) : target.x + (direction === "left" ? -18 : direction === "right" ? 18 : 0),
-          y: target.y + (direction === "up" ? -32 : direction === "down" ? 32 : 0)
-        });
+        else {
+          const nextX = target.kind === "cpu" && direction === "right" ? Math.min(92, target.x + 18)
+            : target.x + (direction === "left" ? -18 : direction === "right" ? 18 : 0);
+          const nextY = target.y + (direction === "up" ? -32 : direction === "down" ? 32 : 0);
+          const delta = { x: nextX - target.x, y: nextY - target.y };
+          const attachments = (working.relations ?? []).filter((relation) => relation.kind === "actsOn"
+            && relation.sourceIds[0] === target.id
+            && actionRegistry.find((action) => action.predicate === relation.predicate)?.targeting?.attachment);
+          append({ action: "move", targetId: target.id, direction, x: nextX, y: nextY });
+          attachments.forEach((relation) => {
+            const attached = working.entities.find((entity) => entity.id === relation.targetIds[0]);
+            if (attached) append({ action: "move", targetId: attached.id, x: attached.x + delta.x, y: attached.y + delta.y });
+          });
+        }
         focus([target.id]);
         continue;
       }
@@ -373,7 +383,15 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           });
           actorIds.forEach((targetId) => append({ action: "update", targetId, performance: null }));
         } else {
-          currentTargets.forEach((relation) => append({ action: "unrelate", relationId: relation.id }));
+          currentTargets.forEach((relation) => {
+            const previous = actionRegistry.find((action) => action.predicate === relation.predicate);
+            const keepsContact = previous?.targeting?.gesture === "contact"
+              && definition.targeting?.gesture === "contact" && relation.targetIds[0] === targetId;
+            const release = previous?.targeting?.gesture === "contact" && !keepsContact
+              ? releaseContactPair(working, relation.sourceIds[0], relation.targetIds[0]) : [];
+            append({ action: "unrelate", relationId: relation.id });
+            release.forEach((move) => append({ action: "move", ...move }));
+          });
           if (!created) actorIds.forEach((targetId) => append({ action: "update", targetId, performance: definition.performance }));
           if (targetId) {
             if (actorIds.length === 1) {

@@ -5,6 +5,9 @@ import type { CharacterPerformance, SceneEntity, SceneRelation } from "./schema"
 
 export const isTargetedPerformance = (relation: SceneRelation): boolean => relation.kind === "actsOn";
 
+export const isAttachedPerformance = (relation: SceneRelation): boolean => relation.kind === "actsOn"
+  && Boolean(actionRegistry.find((action) => action.predicate === relation.predicate)?.targeting?.attachment);
+
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
 function mergePerformance(base: CharacterPerformance, geometry: CharacterPerformance): CharacterPerformance {

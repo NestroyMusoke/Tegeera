@@ -110,7 +110,7 @@ not additional entities. Multiple ownership relations for one owner are merged
 into one card, and shared resources are excluded from personal cards. The scene
 overview remains unchanged; its tiny badges are supplementary, not the sole key.
 
-`node scripts/visual-check.mjs` generates nine fixtures from the actual parser,
+`node scripts/visual-check.mjs` generates eleven fixtures from the actual parser,
 validator, React renderer and stylesheet in the ignored `.visual-check` folder.
 It includes a 390 px iframe for narrow-viewport inspection. The fixtures cover
 individual ownership, transfer, sharing and mixed ownership. Static browser
@@ -383,9 +383,32 @@ inspected at 1200×900 and shows the hand meeting the book edge without overlap 
 connector. The complete checkpoint passes 164 tests.
 Lint, production build and Android synchronization pass.
 
-Holding, carrying and transfer animation remain unfinished. They require persistent
-attachment semantics and coordinated body/prop motion rather than treating every
-contact as a stationary touch.
+### Persistent holding and carrying
+
+`hold` and `carry` are registry-defined direct-object actions built on contact IK.
+Both preserve one target entity and expose the carrier ID on its rendered SVG group.
+Holding uses a quiet breathing loop; carrying uses a walking performance with a
+contact arm, walking legs and motion marks. The attached object's glyph—not its label
+or a duplicate—is given the carrier's exact animation timing and travel variables.
+Reduced-motion mode disables both animations together.
+
+Directional movement of an attached actor emits equal-delta move commands for the
+actor and target, so the physical relationship remains valid after scene edits.
+Moving the target away independently is rejected by the contact layout gate. Stopping
+an attachment restores ordinary spacing; replacing contact with a non-contact action
+also releases the old target before planning the new gesture. These transitions retain
+entity IDs and remain atomic through normal DoodleScript validation.
+
+Seven attachment tests cover semantic extraction, identity, holding markup, carrying
+motion synchronization, equal-delta movement, detached-target rejection, release and
+contact-to-point transition. The complete checkpoint passes 171 tests. Eleven real
+component fixtures now include holding and carrying, and the full 430 px browser app
+workflow reports PASS after verifying that both carrier and carried-object transforms
+change together.
+
+Animated person-to-person transfer remains unfinished. It needs a bounded transient
+handover phase followed by the already-safe ownership reassignment, without storing a
+half-completed transfer if playback is interrupted.
 
 ## Correctness boundaries
 

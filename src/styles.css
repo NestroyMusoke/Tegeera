@@ -232,6 +232,10 @@ button {
 .character-rig.motion-talk .rig-motion-layer { animation: rig-breathe 1200ms ease-in-out infinite alternate; }
 .character-rig.motion-celebrate .rig-motion-layer { animation: rig-celebrate 620ms ease-in-out infinite alternate; }
 .character-rig.motion-wave .rig-arm-right { animation: rig-wave 520ms ease-in-out infinite alternate; transform-box: fill-box; transform-origin: left center; }
+.attached-object.motion-walk { animation: rig-step 680ms ease-in-out infinite alternate; }
+.attached-object.motion-run { animation: rig-step 420ms ease-in-out infinite alternate; }
+.attached-object.motion-breathe,
+.attached-object.motion-talk { animation: rig-breathe 1200ms ease-in-out infinite alternate; }
 .rig-speed-lines { fill: none; stroke: #d08a2f; stroke-width: 3; stroke-linecap: round; animation: rig-speed 680ms ease-in-out infinite alternate; }
 @keyframes rig-step { to { transform: translateY(var(--performance-travel)); } }
 @keyframes rig-breathe { to { transform: translateY(var(--performance-breathe)); } }
@@ -239,7 +243,7 @@ button {
 @keyframes rig-wave { to { transform: rotate(var(--performance-wave)); } }
 @keyframes rig-speed { from { opacity: .25; } to { opacity: .9; } }
 @media (prefers-reduced-motion: reduce) {
-  .motion-flow, .character-rig .rig-motion-layer, .character-rig .rig-arm, .rig-speed-lines { animation: none; }
+  .motion-flow, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
 }
 
 .doodle-stroke,

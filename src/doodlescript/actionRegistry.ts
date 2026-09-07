@@ -2,6 +2,7 @@ import type { CharacterPerformance } from "./schema";
 
 export interface ActionDefinition {
   predicate: string;
+  relationLabel?: string;
   aliases: readonly string[];
   performance: CharacterPerformance;
   targeting?: {
@@ -9,6 +10,7 @@ export interface ActionDefinition {
     syntax?: "prepositional" | "direct";
     prepositions: readonly string[];
     gesture: "point" | "gaze" | "contact";
+    attachment?: boolean;
   };
 }
 
@@ -98,12 +100,35 @@ export const actionRegistry: readonly ActionDefinition[] = [
   },
   {
     predicate: "touch",
+    relationLabel: "touches",
     aliases: ["touch", "touches", "touching"],
     performance: {
       bodyLean: 2, rightArm: { upper: -18, joint: 34 },
       expression: { smile: 0.25, gazeX: 1 }, loop: "none", intensity: 0.35
     },
     targeting: { requirement: "required", syntax: "direct", prepositions: [], gesture: "contact" }
+  },
+  {
+    predicate: "hold",
+    relationLabel: "holds",
+    aliases: ["hold", "holds", "holding"],
+    performance: {
+      bodyLean: 1, rightArm: { upper: -20, joint: 38 },
+      expression: { smile: 0.35, gazeX: 0.8 }, loop: "breathe", intensity: 0.2
+    },
+    targeting: { requirement: "required", syntax: "direct", prepositions: [], gesture: "contact", attachment: true }
+  },
+  {
+    predicate: "carry",
+    relationLabel: "carries",
+    aliases: ["carry", "carries", "carrying"],
+    performance: {
+      bodyLean: 6,
+      leftArm: { upper: 205, joint: -12 }, rightArm: { upper: -18, joint: 34 },
+      leftLeg: { upper: 135, joint: -28 }, rightLeg: { upper: 48, joint: 22 },
+      expression: { smile: 0.3, gazeX: 0.65 }, loop: "walk", intensity: 0.55
+    },
+    targeting: { requirement: "required", syntax: "direct", prepositions: [], gesture: "contact", attachment: true }
   }
 ];
 
@@ -111,6 +136,10 @@ const aliasToAction = new Map(actionRegistry.flatMap((action) => action.aliases.
 
 export function actionForAlias(alias: string): ActionDefinition | undefined {
   return aliasToAction.get(alias);
+}
+
+export function actionForPredicate(predicate?: string): ActionDefinition | undefined {
+  return actionRegistry.find((action) => action.predicate === predicate);
 }
 
 export function actionAliases(): string[] {
