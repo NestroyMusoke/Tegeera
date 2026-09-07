@@ -110,7 +110,7 @@ not additional entities. Multiple ownership relations for one owner are merged
 into one card, and shared resources are excluded from personal cards. The scene
 overview remains unchanged; its tiny badges are supplementary, not the sole key.
 
-`node scripts/visual-check.mjs` generates five fixtures from the actual parser,
+`node scripts/visual-check.mjs` generates seven fixtures from the actual parser,
 validator, React renderer and stylesheet in the ignored `.visual-check` folder.
 It includes a 390 px iframe for narrow-viewport inspection. The fixtures cover
 individual ownership, transfer, sharing and mixed ownership. Static browser
@@ -306,9 +306,30 @@ existing/ambiguous references, target lifecycle and malformed/legacy validation.
 The browser workflow points at an existing book and stops through the normal form.
 The complete checkpoint passes 145 tests; lint, production build and Android sync pass.
 
+### Constraint-based spatial staging
+
+Targeted actions now pass through a deterministic two-endpoint staging solver before
+their `actsOn` relationship is committed. The solver evaluates the shared placement
+lattice for canvas bounds, label-aware collision clearance, vertical alignment,
+gesture distance, left-to-right reading order and total movement. This is one reusable
+constraint model for every registered targetable action, not a sentence or lesson
+preset.
+
+The stability contract is deliberately strict: only entities created by the current
+utterance may move. Existing actors, targets and unrelated classroom objects are
+anchors. If no valid improvement exists, the planner retains the safe original
+placement rather than forcing a bad arrangement. Five focused tests cover deterministic
+pair staging, fixed-actor and fixed-target constraints, zero-mutation fallback and a
+full interpreter/validator integration case. A dedicated `stagedTarget` browser fixture
+starts with a deliberately displaced existing tree and verifies that the newly created
+teacher is restaged next to it without moving the tree.
+The complete checkpoint passes 150 tests; lint, the production build and Android
+synchronization pass.
+
 Target-driven limb interpolation and held/contact props remain unfinished. The next
-step is spatial staging that chooses placements and connector-free gestures together,
-rather than placing objects first and adapting the pose afterward.
+step is intent-aware contact staging: infer a visual attachment point from renderer
+geometry so holding, giving and touching connect hands to props without baking SVG
+coordinates into language rules.
 
 ## Correctness boundaries
 

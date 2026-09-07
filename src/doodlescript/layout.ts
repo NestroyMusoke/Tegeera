@@ -16,15 +16,15 @@ export function withinCanvas(entity: SceneEntity): boolean {
     entity.y - 14 * entity.scale >= 1 && entity.y + 14 * entity.scale <= 99;
 }
 
+export const layoutPositions = [28, 60].flatMap((y) => [12, 30, 48, 66, 84].map((x) => ({ x, y })));
+
 export function nextPosition(entities: SceneEntity[]): { x: number; y: number } | null {
-  for (const y of [28, 60]) {
-    for (const x of [12, 30, 48, 66, 84]) {
-      const candidate: SceneEntity = {
-        id: "candidate", kind: "generic", x, y, scale: 1,
-        direction: "right", highlighted: false
-      };
-      if (!entities.some((entity) => overlaps(candidate, entity))) return { x, y };
-    }
+  for (const position of layoutPositions) {
+    const candidate: SceneEntity = {
+      id: "candidate", kind: "generic", ...position, scale: 1,
+      direction: "right", highlighted: false
+    };
+    if (!entities.some((entity) => overlaps(candidate, entity))) return position;
   }
   return null;
 }

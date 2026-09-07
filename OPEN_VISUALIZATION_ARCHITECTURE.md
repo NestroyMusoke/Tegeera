@@ -169,6 +169,14 @@ tilt and pointing angle from live actor/target coordinates, so moving the target
 does not leave a stale baked pose. The relationship is shared infrastructure for
 registered targetable actions rather than a new relation kind per verb.
 
+Targeted creation also uses a deterministic spatial staging pass. It scores candidate
+actor/target placements against canvas bounds, label-aware overlap, shared baseline,
+gesture reach, reading direction and movement cost. The pass is semantic-agnostic:
+all targetable registry actions use the same constraints. Only entities created by
+the current utterance are movable, so a new performance cannot unexpectedly rearrange
+an established explanation. Failure to find an improvement preserves the validated
+layout; it never licenses overlap or hidden scene mutation.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive

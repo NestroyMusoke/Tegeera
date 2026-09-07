@@ -5,6 +5,7 @@ import { isMotion, motionGeometry } from "./motion";
 import { analyzeTeacherInput } from "./semanticFrame";
 import { entityKindForAlias, ordinalWords, parseCountToken, parseEntityPhrase } from "./lexicon";
 import { actionRegistry } from "./actionRegistry";
+import { stageTargetedPair } from "./spatialStaging";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -311,6 +312,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const actorPhrase = mentionText(actorMentionId);
         let actorIds: string[];
         let created = false;
+        let createdActorIds: string[] = [];
         if (/^(they|them)$/.test(actorPhrase)) actorIds = context?.subjectIds ?? [];
         else if (/^(she|he)$/.test(actorPhrase)) actorIds = [resolve(actorPhrase, working).id];
         else if (actorPhrase.startsWith("the ")) {
@@ -326,6 +328,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           else if (spec && semanticAction.phase === "start") {
             actorIds = create(actorPhrase, definition.performance);
             created = true;
+            createdActorIds = actorIds;
           } else if (semanticAction.phase === "stop") {
             throw new Clarification("Which existing person should stop that action?");
           } else actorIds = [resolve(actorPhrase, working).id];
@@ -337,15 +340,18 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         }
         const targetMentionId = semanticAction.targetMentionIds[0];
         let targetId: string | undefined;
+        let targetCreated = false;
         if (targetMentionId) {
           const targetPhrase = mentionText(targetMentionId);
           const spec = parseEntityPhrase(targetPhrase);
           if (/^(?:it|that|the .+)$/.test(targetPhrase)) targetId = resolve(targetPhrase, working).id;
           else if (spec && spec.count !== 1) throw new Clarification("Name one target for that action.");
-          else if (spec?.countToken) targetId = create(targetPhrase)[0];
+          else if (spec?.countToken) { targetId = create(targetPhrase)[0]; targetCreated = true; }
           else if (spec) {
             const existing = working.entities.filter((entity) => entity.kind === spec.kind);
-            targetId = existing.length === 1 ? existing[0].id : existing.length ? resolve(targetPhrase, working).id : create(targetPhrase)[0];
+            if (existing.length === 1) targetId = existing[0].id;
+            else if (existing.length) targetId = resolve(targetPhrase, working).id;
+            else { targetId = create(targetPhrase)[0]; targetCreated = true; }
           } else targetId = resolve(targetPhrase, working).id;
           if (actorIds.includes(targetId)) throw new Clarification("A person cannot target the same character with their own gesture.");
         } else if (definition.targeting?.requirement === "required" && semanticAction.phase === "start") {
@@ -364,11 +370,17 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         } else {
           currentTargets.forEach((relation) => append({ action: "unrelate", relationId: relation.id }));
           if (!created) actorIds.forEach((targetId) => append({ action: "update", targetId, performance: definition.performance }));
-          if (targetId) actorIds.forEach((sourceId) => append({ action: "relate", relation: {
-            id: `relation-${scene.revision + 1}-${commands.length}`,
-            kind: "actsOn", predicate: definition.predicate, preposition: semanticAction.preposition,
-            sourceIds: [sourceId], targetIds: [targetId]
-          } }));
+          if (targetId) {
+            if (actorIds.length === 1) {
+              const movableIds = new Set([...createdActorIds, ...(targetCreated ? [targetId] : [])]);
+              stageTargetedPair(working, actorIds[0], targetId, movableIds).forEach((move) => append({ action: "move", ...move }));
+            }
+            actorIds.forEach((sourceId) => append({ action: "relate", relation: {
+              id: `relation-${scene.revision + 1}-${commands.length}`,
+              kind: "actsOn", predicate: definition.predicate, preposition: semanticAction.preposition,
+              sourceIds: [sourceId], targetIds: [targetId]
+            } }));
+          }
         }
         focus(actorIds, targetId ? [targetId] : []);
         continue;
