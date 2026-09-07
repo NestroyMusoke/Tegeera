@@ -84,6 +84,10 @@ const appBundle = await build({
         'Character pose variation missing');
       check(document.querySelectorAll('.doodle-canvas .rig-arm').length === 6, 'Articulated arms missing');
       check(document.querySelectorAll('.doodle-canvas .rig-leg').length === 6, 'Articulated legs missing');
+      await submit('The first student waves');
+      check(document.querySelector('[data-entity-id="student-1"] .character-rig')?.dataset.motion === 'wave', 'Spoken action did not start its performance');
+      await submit('The first student stops waving');
+      check(document.querySelector('[data-entity-id="student-1"] .character-rig')?.dataset.motion === 'none', 'Spoken stop did not clear its performance');
       const controls = document.querySelector('.control-card');
       const details = document.querySelector('.ownership-details');
       check(controls.getBoundingClientRect().bottom <= details.getBoundingClientRect().top, 'Controls overlap details');
@@ -119,7 +123,7 @@ const appBundle = await build({
       check(viewport.scrollLeft === 0 && viewport.scrollTop === 0, 'Overview did not reset scrolling');
       check(document.documentElement.scrollWidth <= innerWidth, 'Detail caused page overflow');
       if (new URLSearchParams(location.search).has('detail')) { detailButton.click(); await pause(); }
-      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, character rigs, pose variety, detail size, scroll, overview reset, layout';
+      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, spoken performance start/stop, character rigs, pose variety, detail size, scroll, overview reset, layout';
     }
     async function verifyQueue() {
       await pause();

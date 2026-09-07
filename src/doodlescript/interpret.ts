@@ -1,9 +1,10 @@
-import type { DoodleCommand, DoodleScript, EntityKind, SceneEntity, SceneState, SceneContext } from "./schema";
+import type { CharacterPerformance, DoodleCommand, DoodleScript, EntityKind, SceneEntity, SceneState, SceneContext } from "./schema";
 import { applyDoodleScript } from "./scene";
 import { nextPosition } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
 import { analyzeTeacherInput } from "./semanticFrame";
 import { entityKindForAlias, ordinalWords, parseCountToken, parseEntityPhrase } from "./lexicon";
+import { actionRegistry } from "./actionRegistry";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -46,16 +47,22 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let working = scene;
   let currentClause = input;
   let context: SceneContext | undefined = scene.context;
+  let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
   const makeScript = (): DoodleScript => ({
-    schemaVersion: "1.4.0", sceneId: scene.sceneId, revision: scene.revision + 1, context,
+    schemaVersion, sceneId: scene.sceneId, revision: scene.revision + 1, context,
     confidence: 1, sourceText: input, commands
   });
   const append = (command: DoodleCommand) => {
+    if ((command.action === "create" && command.entity.performance)
+      || (command.action === "update" && command.performance !== undefined)) schemaVersion = "1.5.0";
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
-  const create = (phrase: string): string[] => {
+  const create = (phrase: string, performance?: CharacterPerformance): string[] => {
     const spec = nounPhrase(phrase);
+    if (performance && !["person", "student", "teacher"].includes(spec.kind)) {
+      throw new Clarification(`A ${spec.kind} cannot perform that human action. Name a person instead.`);
+    }
     const ids: string[] = [];
     for (let i = 0; i < spec.count; i++) {
       const position = nextPosition(working.entities);
@@ -65,7 +72,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       const id = `${spec.kind}-${number}`;
       append({ action: "create", entity: {
         id, kind: spec.kind, label: `${spec.kind} ${number}`, ...position,
-        scale: 1, direction: "right", highlighted: false
+        scale: 1, direction: "right", highlighted: false, performance
       } });
       ids.push(id);
     }
@@ -290,6 +297,50 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           objects.push(...owned);
         }
         focus(owners, objects);
+        continue;
+      }
+      const semanticAction = frame.actions[0];
+      if (semanticAction) {
+        const definition = actionRegistry.find((action) => action.predicate === semanticAction.predicate);
+        if (!definition) throw new Clarification("I recognized an action but cannot yet perform it safely.");
+        const actorMentionId = semanticAction.actorMentionIds[0];
+        const actorPhrase = frame.entities.find((mention) => mention.mentionId === actorMentionId)?.text
+          ?? frame.references.find((mention) => mention.mentionId === actorMentionId)?.text ?? "";
+        let actorIds: string[];
+        let created = false;
+        if (/^(they|them)$/.test(actorPhrase)) actorIds = context?.subjectIds ?? [];
+        else if (/^(she|he)$/.test(actorPhrase)) actorIds = [resolve(actorPhrase, working).id];
+        else if (actorPhrase.startsWith("the ")) {
+          const noun = actorPhrase.slice(4);
+          const kind = entityKindForAlias(noun);
+          actorIds = kind && (noun.endsWith("s") || noun === "people")
+            ? working.entities.filter((entity) => entity.kind === kind).map((entity) => entity.id)
+            : [resolve(actorPhrase, working).id];
+        } else {
+          const spec = parseEntityPhrase(actorPhrase);
+          const existing = spec ? working.entities.filter((entity) => entity.kind === spec.kind) : [];
+          if (spec && !spec.countToken && existing.length === 1) actorIds = [existing[0].id];
+          else if (spec && semanticAction.phase === "start") {
+            actorIds = create(actorPhrase, definition.performance);
+            created = true;
+          } else if (semanticAction.phase === "stop") {
+            throw new Clarification("Which existing person should stop that action?");
+          } else actorIds = [resolve(actorPhrase, working).id];
+        }
+        const actors = working.entities.filter((entity) => actorIds.includes(entity.id));
+        if (!actors.length) throw new Clarification("Which person performs that action?");
+        if (actors.some((entity) => !["person", "student", "teacher"].includes(entity.kind))) {
+          throw new Clarification("That performance needs a person, student or teacher.");
+        }
+        if (semanticAction.phase === "stop") {
+          if (actors.some((entity) => entity.performance?.loop !== definition.performance.loop)) {
+            throw new Clarification(`That person is not currently ${semanticAction.predicate}ing.`);
+          }
+          actorIds.forEach((targetId) => append({ action: "update", targetId, performance: null }));
+        } else if (!created) {
+          actorIds.forEach((targetId) => append({ action: "update", targetId, performance: definition.performance }));
+        }
+        focus(actorIds);
         continue;
       }
       const semanticRelation = frame.relations[0];

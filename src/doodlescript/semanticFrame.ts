@@ -1,5 +1,6 @@
 import { normalizeTeacherClause } from "./language";
 import { parseEntityPhrase, relationLexemes } from "./lexicon";
+import { actionAliases, actionForAlias } from "./actionRegistry";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -28,6 +29,12 @@ export interface SemanticRelationMention {
   targetMentionIds: string[];
 }
 
+export interface SemanticActionMention {
+  predicate: string;
+  actorMentionIds: string[];
+  phase: "start" | "stop";
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -53,6 +60,7 @@ export interface SemanticFrame {
   intent: SemanticIntent;
   entities: SemanticEntityMention[];
   relations: SemanticRelationMention[];
+  actions: SemanticActionMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   discourse: DiscourseSignals;
@@ -80,6 +88,9 @@ function discourseSignals(text: string): DiscourseSignals {
 const relationWordPattern = relationLexemes.flatMap(({ words }) => words).join("|");
 const relationshipPattern = new RegExp(`^(.+?) (?:are )?(${relationWordPattern}) (.+)$`);
 const referencePattern = /^(?:she|he|her|him|they|them|it|that|the .+)$/;
+const actionWordPattern = actionAliases().join("|");
+const actionPattern = new RegExp(`^(.+?) (?:is |are )?(${actionWordPattern})$`);
+const stopActionPattern = new RegExp(`^(.+?) stops? (${actionWordPattern})$`);
 
 function entityMentionsAreResolved(frame: SemanticFrame): boolean {
   return frame.entities.every(({ text }) => {
@@ -105,6 +116,19 @@ function populateMeaning(frame: SemanticFrame): void {
     if (parsed && parsed.count >= 0) frame.quantities.push({ mentionId, value: parsed.count });
     return mentionId;
   };
+
+  const stoppedAction = frame.normalizedText.match(stopActionPattern);
+  const startedAction = frame.normalizedText.match(actionPattern);
+  const action = stoppedAction ?? startedAction;
+  if (action) {
+    const definition = actionForAlias(action[2]);
+    if (!definition) return;
+    const actorMentionId = addParticipant(action[1]);
+    frame.intent = stoppedAction ? "update" : "describe";
+    frame.actions.push({ predicate: definition.predicate, actorMentionIds: [actorMentionId], phase: stoppedAction ? "stop" : "start" });
+    frame.resolutionStatus = entityMentionsAreResolved(frame) ? "resolved" : frame.references.length ? "surface" : "needs-clarification";
+    return;
+  }
 
   const relationship = frame.normalizedText.match(relationshipPattern);
   if (relationship) {
@@ -149,6 +173,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       intent: "unresolved",
       entities: [],
       relations: [],
+      actions: [],
       quantities: [],
       references: [],
       discourse: discourseSignals(normalizedSource),

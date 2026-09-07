@@ -266,6 +266,28 @@ Semantic actions do not yet select these performance parameters, and revision-to
 revision interpolation remains unfinished. Those evidence-backed action mappings
 are the next visual milestone.
 
+### Evidence-backed semantic actions
+
+A data-driven action registry now maps verb forms to canonical actions and partial
+performance plans. The frame layer extracts actor, action and start/stop phase for
+wave, celebrate/cheer, explain/present, talk/speak, walk, run and think families.
+These are reusable action operators, not complete-sentence or lesson scenarios.
+
+The adapter can create one or more performers or update an existing label, ordinal,
+pronoun or plural group without duplicating it. A matching “stops …” statement
+clears the plan; stopping the wrong action or applying human performance to a
+non-human object preserves the scene and asks for clarification. Generated action
+scripts upgrade to DoodleScript 1.5 while unrelated workflows remain 1.4-compatible.
+
+Six action-registry tests cover alias integrity, tense/polite equivalence, grouped
+creation, reference updates, action lifecycle and atomic role rejection. The real
+phone workflow also starts and stops a wave through the normal form. The complete
+checkpoint passes 139 tests; lint, production build and Android synchronization pass.
+
+Targets and props are not yet bound to performances, and unregistered verbs still
+require clarification. The next step is a scene-aware action planner that composes
+gaze, gesture and spatial relationships toward resolved targets.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.

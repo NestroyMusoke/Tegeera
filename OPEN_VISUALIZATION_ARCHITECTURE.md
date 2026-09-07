@@ -175,6 +175,13 @@ regular expression:
 5. an optional small local structured planner for uncovered language;
 6. clarification whenever competing frames remain plausible.
 
+Actions use a versioned registry of verb aliases and bounded performance plans.
+The grammar extracts actor, canonical action and start/stop phase into a semantic
+frame; it does not match complete lesson sentences. The scene resolver then binds
+the actor to a new mention, label, ordinal, pronoun or homogeneous group before
+the planner emits DoodleScript 1.5. Adding an action should require registry data
+and tests, not another branch in the main interpreter.
+
 Retrieval templates describe visual structures such as ordered flow or resource
 distribution. They must not contain judge-only responses or exact-sentence checks.
 An optional planner receives the ontology and scene summary, returns constrained
