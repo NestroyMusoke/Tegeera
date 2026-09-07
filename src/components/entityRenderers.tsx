@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, CSSProperties } from "react";
 import type { EntityKind, SceneEntity } from "../doodlescript/schema";
 import { characterPoseFor, type LimbPose } from "./characterPerformance";
 
@@ -13,11 +13,13 @@ function Limb({ pose, length = 22, lowerLength = 21, className }: {
   lowerLength?: number;
   className: string;
 }) {
-  return <g className={className} transform={`rotate(${pose.upper})`}>
-    <path className="doodle-stroke" d={`M0 0 Q${length / 2} -1 ${length} 0`} />
-    <g transform={`translate(${length} 0) rotate(${pose.joint})`}>
-      <path className="doodle-stroke" d={`M0 0 Q${lowerLength / 2} 1 ${lowerLength} 0`} />
-      <circle className="doodle-detail rig-hand" cx={lowerLength + 2} cy="0" r="2.5" />
+  return <g className={className}>
+    <g transform={`rotate(${pose.upper})`}>
+      <path className="doodle-stroke" d={`M0 0 Q${length / 2} -1 ${length} 0`} />
+      <g transform={`translate(${length} 0) rotate(${pose.joint})`}>
+        <path className="doodle-stroke" d={`M0 0 Q${lowerLength / 2} 1 ${lowerLength} 0`} />
+        <circle className="doodle-detail rig-hand" cx={lowerLength + 2} cy="0" r="2.5" />
+      </g>
     </g>
   </g>;
 }
@@ -26,9 +28,15 @@ function Character({ entity, moving = false }: EntityRendererProps) {
   const pose = characterPoseFor(entity, moving);
   const facing = entity.direction === "left" ? -1 : 1;
   const mouthDepth = 2 + pose.smile * 5;
-  return <g className={`character-rig${moving ? " is-moving" : ""}`} data-pose={pose.name} transform={`scale(${facing} 1)`}>
+  const animated = pose.loop !== "none";
+  const style = {
+    "--performance-travel": `${-(2 + pose.intensity * 4)}px`,
+    "--performance-breathe": `${-(1 + pose.intensity * 2)}px`,
+    "--performance-wave": `${8 + pose.intensity * 10}deg`
+  } as CSSProperties;
+  return <g className={`character-rig motion-${pose.loop}${animated ? " is-moving" : ""}`} data-pose={pose.name} data-motion={pose.loop} transform={`scale(${facing} 1)`} style={style}>
     <g className="rig-motion-layer">
-      {moving && <path className="rig-speed-lines" d="M-43 0 h13 M-48 10 h17" />}
+      {(pose.loop === "walk" || pose.loop === "run") && <path className="rig-speed-lines" d="M-43 0 h13 M-48 10 h17" />}
       <g className="rig-torso" transform={`rotate(${pose.bodyLean} 0 4)`}>
         <path className="doodle-stroke" d="M0-24 Q-3-2 0 27" />
         <g transform="translate(0 -12)">
@@ -42,9 +50,12 @@ function Character({ entity, moving = false }: EntityRendererProps) {
       </g>
       <g className="rig-head" transform={`rotate(${pose.headTilt} 0 -42)`}>
         <circle className="doodle-stroke" cx="0" cy="-42" r="17" />
-        <circle className="doodle-detail rig-eye" cx="-5" cy="-45" r="1.7" />
-        <circle className="doodle-detail rig-eye" cx="7" cy="-45" r="1.7" />
-        <path className="doodle-detail rig-mouth" d={`M-6-37 Q1 ${-37 + mouthDepth} 8-38`} />
+        <path className="doodle-detail rig-brows" d={`M-9 ${-50 - pose.browLift * 2} h7 M4 ${-50 - pose.browLift * 2} h7`} />
+        <circle className="doodle-detail rig-eye" cx={-5 + pose.gazeX * 2} cy={-45 + pose.gazeY * 2} r="1.7" />
+        <circle className="doodle-detail rig-eye" cx={7 + pose.gazeX * 2} cy={-45 + pose.gazeY * 2} r="1.7" />
+        {pose.mouthOpen > 0.2
+          ? <ellipse className="doodle-detail rig-mouth" cx="1" cy="-36" rx={4 + pose.mouthOpen * 2} ry={1.5 + pose.mouthOpen * 4} />
+          : <path className="doodle-detail rig-mouth" d={`M-6-37 Q1 ${-37 + mouthDepth} 8-38`} />}
         {entity.kind === "student" && <path className="accent-stroke" d="M-16-54 Q0-68 17-53" />}
       </g>
       {entity.kind === "teacher" && <g className="rig-prop" transform="translate(38 -35) rotate(-8)">

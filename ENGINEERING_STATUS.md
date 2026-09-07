@@ -246,10 +246,25 @@ deterministic variation and moving/static behavior. The complete checkpoint pass
 127 tests; lint and production build pass. A real 390-pixel render was captured and
 inspected.
 
-This is a rendering foundation, not the finished universal performance system.
-Pose and expression are not yet represented in DoodleScript or selected from
-semantic actions. The next visual milestone is an evidence-backed performance plan
-with bounded joint parameters, transitions and reusable action-to-pose mappings.
+### DoodleScript 1.5 performance protocol
+
+DoodleScript 1.5 can now carry a partial character performance on create or update:
+bounded upper/lower limb angles, body lean, head tilt, smile, mouth opening, brow
+lift, gaze, motion loop and intensity. Unspecified parameters inherit a stable base
+pose. Plans can be replaced or explicitly cleared, so a stopped action cannot leave
+stale animation behind. The renderer exposes the chosen pose and loop as inspectable
+SVG metadata and supports none, breathe, walk, run, wave, talk and celebrate loops.
+
+The gates reject out-of-range joints, performance fields on pre-1.5 scripts and
+human articulation on non-character entities. Six protocol tests cover versioning,
+schema bounds, semantic role safety, immutable updates, partial composition, SVG
+execution and clearing. The complete checkpoint passes 133 tests; lint, production
+build and Android synchronization pass.
+
+This remains a protocol and renderer foundation, not the finished universal system.
+Semantic actions do not yet select these performance parameters, and revision-to-
+revision interpolation remains unfinished. Those evidence-backed action mappings
+are the next visual milestone.
 
 ## Correctness boundaries
 

@@ -24,12 +24,21 @@ const result = await build({
         scene = applyDoodleScript(scene, valid.script);
       }
       return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
+    }
+    export function renderPerformance() {
+      const base = { kind: 'person', y: 45, scale: 1.35, direction: 'right', highlighted: false };
+      const scene = { sceneId: 'performance-check', revision: 1, relations: [], entities: [
+        { ...base, id: 'person-wave', label: 'wave', x: 20, performance: { rightArm: { upper: -72, joint: 18 }, expression: { smile: .8, gazeX: .5 }, loop: 'wave', intensity: .8 } },
+        { ...base, id: 'person-celebrate', label: 'celebrate', x: 50, performance: { leftArm: { upper: 220, joint: 0 }, rightArm: { upper: -40, joint: 0 }, expression: { smile: 1, mouthOpen: .65, browLift: .6 }, loop: 'celebrate', intensity: 1 } },
+        { ...base, kind: 'teacher', id: 'teacher-talk', label: 'explain', x: 80, performance: { bodyLean: 7, headTilt: -6, expression: { mouthOpen: .45, gazeX: .8 }, loop: 'talk', intensity: .55 } }
+      ]};
+      return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
     }`, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "node", format: "cjs", jsx: "automatic", write: false,
 });
 const bundlePath = resolve(output, "renderer.cjs");
 await writeFile(bundlePath, result.outputFiles[0].text);
-const { render } = createRequire(import.meta.url)(bundlePath);
+const { render, renderPerformance } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
   .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow {
@@ -45,6 +54,7 @@ const cases = {
 for (const [name, commands] of Object.entries(cases)) {
   await writeFile(resolve(output, `${name}.html`), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>${name}</h1>${render(commands)}</main></body></html>`);
 }
+await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Composable performance protocol</h1>${renderPerformance()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
 console.log(`Rendered ${Object.keys(cases).length} real-component fixtures in ${output}`);
 

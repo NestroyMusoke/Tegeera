@@ -32,7 +32,7 @@ describe("entity renderer registry", () => {
   });
 
   it("marks moving characters for animation while keeping static characters still", () => {
-    expect(renderToStaticMarkup(<EntityGlyph entity={entity("person")} moving />)).toContain("character-rig is-moving");
+    expect(renderToStaticMarkup(<EntityGlyph entity={entity("person")} moving />)).toContain("motion-walk is-moving");
     expect(renderToStaticMarkup(<EntityGlyph entity={entity("person")} />)).not.toContain("is-moving");
   });
 });

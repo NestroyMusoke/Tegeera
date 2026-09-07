@@ -162,7 +162,7 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
   }
   // Mixed-row relations remain in the explicit key until routed connectors exist.
   if (members.some((entity) => entity.y !== members[0].y)) return null;
-  const y = Math.max(...members.map((entity) => entity.y * 6.2 + 85 * entity.scale)) + 18;
+  const y = Math.max(...members.map((entity) => entity.y * 6.2 + 110 * entity.scale)) + 18;
   const left = Math.min(...members.map((entity) => entity.x * 10));
   const right = Math.max(...members.map((entity) => entity.x * 10));
   const color = relation.kind === "shares" ? "#2f7159" : "#ad7021";
@@ -199,13 +199,13 @@ function DoodleEntity({
   return (
     <g className={className} data-entity-id={entity.id} transform={transform} style={delay}>
       <EntityGlyph entity={entity} moving={moving} />
-      <text className="entity-label" x="0" y="72" textAnchor="middle">
+      <text className="entity-label" x="0" y="84" textAnchor="middle">
         {entity.label ?? entity.kind}
       </text>
       {badges.map((badge, index) => (
         <g key={`${badge.role}-${badge.code}`} className="ownership-badge" aria-label={badge.role === "owner" ? `Owner ${badge.code}` : `Belongs to ${badge.code}`} transform={`translate(${(index - (badges.length - 1) / 2) * 62} 0)`}>
-          <rect x="-29" y="75" width="58" height="12" rx="4" fill="#fbf7ed" stroke={badge.color} />
-          <text x="0" y="84" textAnchor="middle" fill={badge.color} fontSize="10" fontFamily="sans-serif">{badge.role === "owner" ? `Owner ${badge.code}` : `Item ${badge.code}`}</text>
+          <rect x="-29" y="91" width="58" height="12" rx="4" fill="#fbf7ed" stroke={badge.color} />
+          <text x="0" y="100" textAnchor="middle" fill={badge.color} fontSize="10" fontFamily="sans-serif">{badge.role === "owner" ? `Owner ${badge.code}` : `Item ${badge.code}`}</text>
         </g>
       ))}
     </g>

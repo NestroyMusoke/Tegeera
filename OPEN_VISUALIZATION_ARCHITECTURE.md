@@ -157,9 +157,11 @@ remain deterministic by entity ID and semantically neutral. Emotion, gesture and
 props that imply meaning must come from evidence-backed frames. Motion must honor
 `prefers-reduced-motion`, and the static frame must still communicate the action.
 
-The performance layer should eventually interpolate between rig states across
-scene revisions. It must not generate video frames or rasterize the canvas; SVG
-joints remain editable, inspectable and cheap enough for Android classroom devices.
+DoodleScript 1.5 establishes the bounded partial-performance contract and supports
+explicit clearing. The remaining work is evidence-backed semantic selection and
+interpolation between rig states across scene revisions. The layer must not generate
+video frames or rasterize the canvas; SVG joints remain editable, inspectable and
+cheap enough for Android classroom devices.
 
 ## Broad-language strategy
 

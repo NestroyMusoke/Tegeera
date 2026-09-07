@@ -16,6 +16,31 @@ export const entityKindSchema = z.enum([
 
 export const directionSchema = z.enum(["left", "right", "up", "down"]);
 
+export const limbPerformanceSchema = z.object({
+  upper: z.number().min(-240).max(240),
+  joint: z.number().min(-160).max(160)
+});
+
+export const expressionPerformanceSchema = z.object({
+  smile: z.number().min(-1).max(1).optional(),
+  mouthOpen: z.number().min(0).max(1).optional(),
+  browLift: z.number().min(-1).max(1).optional(),
+  gazeX: z.number().min(-1).max(1).optional(),
+  gazeY: z.number().min(-1).max(1).optional()
+});
+
+export const characterPerformanceSchema = z.object({
+  bodyLean: z.number().min(-30).max(30).optional(),
+  headTilt: z.number().min(-35).max(35).optional(),
+  leftArm: limbPerformanceSchema.optional(),
+  rightArm: limbPerformanceSchema.optional(),
+  leftLeg: limbPerformanceSchema.optional(),
+  rightLeg: limbPerformanceSchema.optional(),
+  expression: expressionPerformanceSchema.optional(),
+  loop: z.enum(["none", "breathe", "walk", "run", "wave", "talk", "celebrate"]).optional(),
+  intensity: z.number().min(0).max(1).optional()
+});
+
 export const sceneEntitySchema = z.object({
   id: z.string().min(1),
   kind: entityKindSchema,
@@ -24,7 +49,8 @@ export const sceneEntitySchema = z.object({
   y: z.number().min(12).max(88),
   scale: z.number().min(0.5).max(2).default(1),
   direction: directionSchema.default("right"),
-  highlighted: z.boolean().default(false)
+  highlighted: z.boolean().default(false),
+  performance: characterPerformanceSchema.optional()
 });
 
 export const relationSchema = z.object({
@@ -53,7 +79,8 @@ export const commandSchema = z.discriminatedUnion("action", [
     targetId: z.string().min(1),
     label: z.string().max(60).optional(),
     highlighted: z.boolean().optional(),
-    direction: directionSchema.optional()
+    direction: directionSchema.optional(),
+    performance: characterPerformanceSchema.nullable().optional()
   }),
   z.object({
     action: z.literal("remove"),
@@ -70,7 +97,7 @@ export const contextSchema = z.object({
 });
 
 export const doodleScriptSchema = z.object({
-  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0"]),
+  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0"]),
   context: contextSchema.optional(),
   sceneId: z.string().min(1),
   revision: z.number().int().nonnegative(),
@@ -85,6 +112,7 @@ export type DoodleCommand = z.infer<typeof commandSchema>;
 export type DoodleScript = z.infer<typeof doodleScriptSchema>;
 export type SceneRelation = z.infer<typeof relationSchema>;
 export type SceneContext = z.infer<typeof contextSchema>;
+export type CharacterPerformance = z.infer<typeof characterPerformanceSchema>;
 
 export interface SceneState {
   sceneId: string;
