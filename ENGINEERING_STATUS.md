@@ -229,6 +229,28 @@ This is not yet a claim of general semantic understanding. Scene-aware reference
 resolution and most edit/action command planning still live in the legacy adapter
 and remain the next Milestone 1 work.
 
+## Articulated visual system — foundation
+
+Human glyphs now use one reusable SVG skeleton with separate upper/lower limbs,
+body lean, head tilt, facial marks and prop layers. Deterministic pose selection
+provides neutral stance variation, teachers use an explanatory gesture, and people
+with an active motion relation use a stepping pose plus a reduced-motion-safe loop.
+This replaces the previous single rigid stick figure rather than adding a set of
+story-specific drawings.
+
+Entity rendering now goes through an exhaustive typed registry covering every
+schema entity kind, including explicit desk and generic fallbacks. The canvas no
+longer contains a chain of entity-kind conditionals. Four focused rig/registry
+tests and phone browser assertions cover schema coverage, articulated limbs,
+deterministic variation and moving/static behavior. The complete checkpoint passes
+127 tests; lint and production build pass. A real 390-pixel render was captured and
+inspected.
+
+This is a rendering foundation, not the finished universal performance system.
+Pose and expression are not yet represented in DoodleScript or selected from
+semantic actions. The next visual milestone is an evidence-backed performance plan
+with bounded joint parameters, transitions and reusable action-to-pose mappings.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.

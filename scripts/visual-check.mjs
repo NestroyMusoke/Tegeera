@@ -69,6 +69,11 @@ const appBundle = await build({
       await pause();
       await submit('Could you please show me three students each having a book');
       check(document.querySelectorAll('.ownership-card').length === 3, 'Creation failed');
+      check(document.querySelectorAll('.character-rig').length === 6, 'Articulated character rigs missing from canvas or ownership cards');
+      check(new Set([...document.querySelectorAll('.doodle-canvas .character-rig')].map(rig => rig.dataset.pose)).size >= 2,
+        'Character pose variation missing');
+      check(document.querySelectorAll('.doodle-canvas .rig-arm').length === 6, 'Articulated arms missing');
+      check(document.querySelectorAll('.doodle-canvas .rig-leg').length === 6, 'Articulated legs missing');
       const controls = document.querySelector('.control-card');
       const details = document.querySelector('.ownership-details');
       check(controls.getBoundingClientRect().bottom <= details.getBoundingClientRect().top, 'Controls overlap details');
@@ -104,7 +109,7 @@ const appBundle = await build({
       check(viewport.scrollLeft === 0 && viewport.scrollTop === 0, 'Overview did not reset scrolling');
       check(document.documentElement.scrollWidth <= innerWidth, 'Detail caused page overflow');
       if (new URLSearchParams(location.search).has('detail')) { detailButton.click(); await pause(); }
-      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, detail size, scroll, overview reset, layout';
+      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, character rigs, pose variety, detail size, scroll, overview reset, layout';
     }
     async function verifyQueue() {
       await pause();

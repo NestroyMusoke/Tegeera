@@ -226,7 +226,13 @@ button {
 .relationship-key .relationship-queuedFor { border-color: #355f78; }
 .motion-flow { stroke-dasharray: 7 5; animation: motion-flow 1s linear infinite; }
 @keyframes motion-flow { to { stroke-dashoffset: -12; } }
-@media (prefers-reduced-motion: reduce) { .motion-flow { animation: none; } }
+.character-rig.is-moving .rig-motion-layer { animation: rig-step 680ms ease-in-out infinite alternate; }
+.rig-speed-lines { fill: none; stroke: #d08a2f; stroke-width: 3; stroke-linecap: round; animation: rig-speed 680ms ease-in-out infinite alternate; }
+@keyframes rig-step { to { transform: translateY(-4px); } }
+@keyframes rig-speed { from { opacity: .25; } to { opacity: .9; } }
+@media (prefers-reduced-motion: reduce) {
+  .motion-flow, .character-rig.is-moving .rig-motion-layer, .rig-speed-lines { animation: none; }
+}
 
 .doodle-stroke,
 .doodle-detail,

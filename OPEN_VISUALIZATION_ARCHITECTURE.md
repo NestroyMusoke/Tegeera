@@ -143,6 +143,24 @@ connectors. `AcademicRendererRegistry` owns specialist deterministic renderers.
 The main canvas renders registry results and must not grow a new conditional for
 every object or school subject.
 
+### Visual performance system
+
+Characters are articulated rigs, not a catalogue of complete stickman images.
+A performance plan controls bounded joint angles, body lean, head tilt, gaze,
+expression, held props and an optional motion loop. Semantic actions select or
+compose performances; the renderer only executes the plan. This lets walking,
+pointing, explaining, celebrating, listening and carrying reuse the same body
+without adding sentence-specific SVG.
+
+Ambient pose variation may make repeated characters feel hand-drawn, but it must
+remain deterministic by entity ID and semantically neutral. Emotion, gesture and
+props that imply meaning must come from evidence-backed frames. Motion must honor
+`prefers-reduced-motion`, and the static frame must still communicate the action.
+
+The performance layer should eventually interpolate between rig states across
+scene revisions. It must not generate video frames or rasterize the canvas; SVG
+joints remain editable, inspectable and cheap enough for Android classroom devices.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive
