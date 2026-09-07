@@ -284,9 +284,31 @@ creation, reference updates, action lifecycle and atomic role rejection. The rea
 phone workflow also starts and stops a wave through the normal form. The complete
 checkpoint passes 139 tests; lint, production build and Android synchronization pass.
 
-Targets and props are not yet bound to performances, and unregistered verbs still
-require clarification. The next step is a scene-aware action planner that composes
-gaze, gesture and spatial relationships toward resolved targets.
+### Target-aware performance planning
+
+DoodleScript 1.6 introduces the reusable `actsOn` relationship with an action
+predicate and preposition. Targetable action definitions declare whether a target
+is optional or required, allowed prepositions, and whether target geometry drives
+gaze alone or gaze plus a pointing limb. Point/pointing and look/looking are added
+through registry data; waving can optionally target another entity.
+
+The renderer recomputes facing, gaze, head tilt and pointing angle from current
+actor/target coordinates on every render. Moving either entity therefore preserves
+the semantic gesture without storing stale screen angles. Starting a new targeted
+action replaces the actor’s old target; stopping removes both performance and
+relationship while preserving the target object. Definite references resolve before
+quantity parsing, and ambiguous or multi-object targets trigger clarification.
+Legacy decorative teacher props are suppressed while a semantic performance controls
+the rig, preventing a fixed prop from floating after a target-driven joint change.
+
+Six focused tests cover frame extraction, DoodleScript 1.6 persistence, live geometry,
+existing/ambiguous references, target lifecycle and malformed/legacy validation.
+The browser workflow points at an existing book and stops through the normal form.
+The complete checkpoint passes 145 tests; lint, production build and Android sync pass.
+
+Target-driven limb interpolation and held/contact props remain unfinished. The next
+step is spatial staging that chooses placements and connector-free gestures together,
+rather than placing objects first and adapting the pose afterward.
 
 ## Correctness boundaries
 

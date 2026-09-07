@@ -49,6 +49,7 @@ const cases = {
   transfer: ["Three students each have a book", "The first student gives book 1 to the second student"],
   shared: ["Three students share two books"],
   mixed: ["Three students share two books", "Another student arrives with her own book"],
+  targeted: ["A teacher points at a tree"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -88,6 +89,11 @@ const appBundle = await build({
       check(document.querySelector('[data-entity-id="student-1"] .character-rig')?.dataset.motion === 'wave', 'Spoken action did not start its performance');
       await submit('The first student stops waving');
       check(document.querySelector('[data-entity-id="student-1"] .character-rig')?.dataset.motion === 'none', 'Spoken stop did not clear its performance');
+      await submit('The first student points at book 1');
+      check(document.querySelector('[data-entity-id="student-1"] .character-rig')?.dataset.pose === 'custom', 'Target geometry did not drive the character pose');
+      check(document.querySelector('.relationship-actsOn')?.textContent.includes('point at'), 'Action-target relation missing');
+      await submit('The first student stops pointing');
+      check(!document.querySelector('.relationship-actsOn'), 'Stopped target relation remained visible');
       const controls = document.querySelector('.control-card');
       const details = document.querySelector('.ownership-details');
       check(controls.getBoundingClientRect().bottom <= details.getBoundingClientRect().top, 'Controls overlap details');
@@ -123,7 +129,7 @@ const appBundle = await build({
       check(viewport.scrollLeft === 0 && viewport.scrollTop === 0, 'Overview did not reset scrolling');
       check(document.documentElement.scrollWidth <= innerWidth, 'Detail caused page overflow');
       if (new URLSearchParams(location.search).has('detail')) { detailButton.click(); await pause(); }
-      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, spoken performance start/stop, character rigs, pose variety, detail size, scroll, overview reset, layout';
+      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, spoken performance and target start/stop, character rigs, pose variety, detail size, scroll, overview reset, layout';
     }
     async function verifyQueue() {
       await pause();

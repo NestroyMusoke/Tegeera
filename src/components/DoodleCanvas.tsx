@@ -4,6 +4,7 @@ import { ownershipBadges, type OwnershipBadge } from "./ownership";
 import { useLayoutEffect, useRef, useState } from "react";
 import { isQueue, queueGeometry } from "../doodlescript/queue";
 import { EntityGlyph } from "./entityRenderers";
+import { applyTargetedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -68,7 +69,11 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           const motion = scene.relations?.find((relation) => isMotion(relation) && relation.sourceIds[0] === entity.id);
           const target = scene.entities.find((item) => item.id === motion?.targetIds[0]);
           const geometry = motion && target ? motionGeometry(entity, target, motion.kind as "toward" | "away") : null;
-          return <DoodleEntity entity={geometry ? { ...entity, direction: geometry.direction } : entity} badges={ownership.get(entity.id) ?? []} moving={!!geometry} index={index} key={entity.id} />;
+          const targeting = scene.relations?.find((relation) => isTargetedPerformance(relation) && relation.sourceIds[0] === entity.id);
+          const performanceTarget = scene.entities.find((item) => item.id === targeting?.targetIds[0]);
+          const directed = geometry ? { ...entity, direction: geometry.direction } : entity;
+          const performed = targeting && performanceTarget ? applyTargetedPerformance(directed, performanceTarget, targeting) : directed;
+          return <DoodleEntity entity={performed} badges={ownership.get(entity.id) ?? []} moving={!!geometry} index={index} key={entity.id} />;
         })}
       </svg>
       </div>
@@ -129,6 +134,7 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
   if (!members.length) return null;
   // Ownership uses matching badges, avoiding brackets through unrelated objects.
   if (relation.kind === "owns") return null;
+  if (isTargetedPerformance(relation)) return null;
   if (isQueue(relation)) {
     const geometry = queueGeometry(relation, entities);
     if (!geometry) return null;

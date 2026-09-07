@@ -3,7 +3,8 @@ import type { SceneEntity, SceneRelation } from "./schema";
 export const isMotion = (relation: SceneRelation) => relation.kind === "toward" || relation.kind === "away";
 
 export const relationLabel = (relation: SceneRelation): string => ({
-  shares: "share", owns: "owns", toward: "moves toward", away: "moves away from", queuedFor: "waits for CPU"
+  shares: "share", owns: "owns", toward: "moves toward", away: "moves away from", queuedFor: "waits for CPU",
+  actsOn: `${relation.predicate ?? "acts"} ${relation.preposition ?? "toward"}`
 })[relation.kind];
 
 // A directional illustration, not a physical simulation or a collision trajectory.

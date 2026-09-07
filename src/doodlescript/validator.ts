@@ -9,6 +9,7 @@ import { applyDoodleScript } from "./scene";
 import { overlaps, withinCanvas } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
 import { isQueue, queueGeometry } from "./queue";
+import { actionRegistry } from "./actionRegistry";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -52,6 +53,7 @@ export function validateDoodleScript(
   const issues: GateIssue[] = [];
   let ids = new Set(scene.entities.map((entity) => entity.id));
   const relationIds = new Set((scene.relations ?? []).map((relation) => relation.id));
+  const relationKinds = new Map((scene.relations ?? []).map((relation) => [relation.id, relation.kind]));
   if (script.revision !== scene.revision + 1 || (scene.sceneId !== "welcome" && script.sceneId !== scene.sceneId)) {
     issues.push({ gate: "semantic", message: "This change belongs to an older or different scene. Please try again." });
   }
@@ -59,24 +61,36 @@ export function validateDoodleScript(
   for (const command of script.commands) {
     const changesPerformance = command.action === "create" ? Boolean(command.entity.performance)
       : command.action === "update" ? command.performance !== undefined : false;
-    if (changesPerformance && script.schemaVersion !== "1.5.0") {
+    if (changesPerformance && !["1.5.0", "1.6.0"].includes(script.schemaVersion)) {
       issues.push({ gate: "schema", message: "Character performances require DoodleScript 1.5.0." });
     }
     if (command.action === "unrelate") {
-      if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0 or later." });
+      if (relationKinds.get(command.relationId) === "actsOn" && script.schemaVersion !== "1.6.0") issues.push({ gate: "schema", message: "Targeted performance edits require DoodleScript 1.6.0." });
+      if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0 or later." });
       if (!relationIds.delete(command.relationId)) issues.push({ gate: "semantic", message: "That relationship no longer exists." });
+      relationKinds.delete(command.relationId);
     }
-    if (command.action === "clear") relationIds.clear();
+    if (command.action === "clear") { relationIds.clear(); relationKinds.clear(); }
     if (command.action === "relate") {
       const relation = command.relation;
       const members = [...relation.sourceIds, ...relation.targetIds];
       if (isMotion(relation)) {
-        if (!["1.3.0", "1.4.0", "1.5.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Directed motion requires DoodleScript 1.3.0 or later." });
+        if (!["1.3.0", "1.4.0", "1.5.0", "1.6.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Directed motion requires DoodleScript 1.3.0 or later." });
         if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "Motion needs one actor and one reference object." });
       }
       if (isQueue(relation)) {
-        if (!["1.4.0", "1.5.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Ordered CPU queues require DoodleScript 1.4.0 or later." });
+        if (!["1.4.0", "1.5.0", "1.6.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Ordered CPU queues require DoodleScript 1.4.0 or later." });
         if (relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "A ready queue needs exactly one CPU." });
+      }
+      if (relation.kind === "actsOn") {
+        if (script.schemaVersion !== "1.6.0") issues.push({ gate: "schema", message: "Targeted performances require DoodleScript 1.6.0." });
+        if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1 || !relation.predicate || !relation.preposition) {
+          issues.push({ gate: "semantic", message: "A targeted performance needs one actor, one target, an action and a preposition." });
+        }
+        const action = actionRegistry.find((candidate) => candidate.predicate === relation.predicate);
+        if (!action?.targeting || !action.targeting.prepositions.includes(relation.preposition ?? "")) {
+          issues.push({ gate: "semantic", message: "That action and target preposition are not registered together." });
+        }
       }
       if (script.schemaVersion === "1.0.0") {
         issues.push({ gate: "schema", message: "Relationships require DoodleScript 1.1.0." });
@@ -88,6 +102,7 @@ export function validateDoodleScript(
         issues.push({ gate: "semantic", message: "Personal ownership needs one owner." });
       }
       relationIds.add(relation.id);
+      relationKinds.set(relation.id, relation.kind);
     }
     if (command.action === "create" && ids.has(command.entity.id)) {
       issues.push({
@@ -113,7 +128,7 @@ export function validateDoodleScript(
 
   const projected = applyDoodleScript(scene, script);
   if (script.context) {
-    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
+    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
     for (const references of [script.context.subjectIds, script.context.objectIds]) {
       if (new Set(references).size !== references.length || references.some((id) => !ids.has(id))) {
         issues.push({ gate: "semantic", message: "Conversation context refers to missing or duplicate objects." });
@@ -122,12 +137,19 @@ export function validateDoodleScript(
   }
   const owned = new Set<string>();
   const moving = new Set<string>();
+  const targeting = new Set<string>();
   for (const entity of projected.entities) {
     if (entity.performance && !["person", "student", "teacher"].includes(entity.kind)) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });
     }
   }
   for (const relation of projected.relations ?? []) {
+    if (relation.kind === "actsOn") {
+      const actor = projected.entities.find((entity) => entity.id === relation.sourceIds[0]);
+      if (!actor || !["person", "student", "teacher"].includes(actor.kind)) issues.push({ gate: "semantic", message: "A targeted performance needs a person as its actor." });
+      if (targeting.has(relation.sourceIds[0])) issues.push({ gate: "semantic", message: "A person cannot have two conflicting performance targets." });
+      targeting.add(relation.sourceIds[0]);
+    }
     if (isQueue(relation)) {
       const sources = relation.sourceIds.map((id) => projected.entities.find((entity) => entity.id === id));
       const targets = relation.targetIds.map((id) => projected.entities.find((entity) => entity.id === id));

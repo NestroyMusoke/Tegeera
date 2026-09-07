@@ -1,6 +1,6 @@
 import { normalizeTeacherClause } from "./language";
 import { parseEntityPhrase, relationLexemes } from "./lexicon";
-import { actionAliases, actionForAlias } from "./actionRegistry";
+import { actionAliases, actionForAlias, targetableActionAliases, targetPrepositions } from "./actionRegistry";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -32,6 +32,8 @@ export interface SemanticRelationMention {
 export interface SemanticActionMention {
   predicate: string;
   actorMentionIds: string[];
+  targetMentionIds: string[];
+  preposition?: string;
   phase: "start" | "stop";
 }
 
@@ -91,6 +93,7 @@ const referencePattern = /^(?:she|he|her|him|they|them|it|that|the .+)$/;
 const actionWordPattern = actionAliases().join("|");
 const actionPattern = new RegExp(`^(.+?) (?:is |are )?(${actionWordPattern})$`);
 const stopActionPattern = new RegExp(`^(.+?) stops? (${actionWordPattern})$`);
+const targetedActionPattern = new RegExp(`^(.+?) (?:is |are )?(${targetableActionAliases().join("|")}) (${targetPrepositions().join("|")}) (.+)$`);
 
 function entityMentionsAreResolved(frame: SemanticFrame): boolean {
   return frame.entities.every(({ text }) => {
@@ -118,14 +121,22 @@ function populateMeaning(frame: SemanticFrame): void {
   };
 
   const stoppedAction = frame.normalizedText.match(stopActionPattern);
+  const targetedAction = frame.normalizedText.match(targetedActionPattern);
   const startedAction = frame.normalizedText.match(actionPattern);
-  const action = stoppedAction ?? startedAction;
+  const action = stoppedAction ?? targetedAction ?? startedAction;
   if (action) {
     const definition = actionForAlias(action[2]);
     if (!definition) return;
     const actorMentionId = addParticipant(action[1]);
+    const targetMentionId = targetedAction ? addParticipant(targetedAction[4]) : undefined;
     frame.intent = stoppedAction ? "update" : "describe";
-    frame.actions.push({ predicate: definition.predicate, actorMentionIds: [actorMentionId], phase: stoppedAction ? "stop" : "start" });
+    frame.actions.push({
+      predicate: definition.predicate,
+      actorMentionIds: [actorMentionId],
+      targetMentionIds: targetMentionId ? [targetMentionId] : [],
+      preposition: targetedAction?.[3],
+      phase: stoppedAction ? "stop" : "start"
+    });
     frame.resolutionStatus = entityMentionsAreResolved(frame) ? "resolved" : frame.references.length ? "surface" : "needs-clarification";
     return;
   }

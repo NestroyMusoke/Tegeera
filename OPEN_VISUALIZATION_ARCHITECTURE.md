@@ -163,6 +163,12 @@ interpolation between rig states across scene revisions. The layer must not gene
 video frames or rasterize the canvas; SVG joints remain editable, inspectable and
 cheap enough for Android classroom devices.
 
+DoodleScript 1.6 adds a general `actsOn` relationship containing a canonical action
+predicate and preposition. Target-aware render planning derives facing, gaze, head
+tilt and pointing angle from live actor/target coordinates, so moving the target
+does not leave a stale baked pose. The relationship is shared infrastructure for
+registered targetable actions rather than a new relation kind per verb.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive

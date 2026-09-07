@@ -53,8 +53,10 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     confidence: 1, sourceText: input, commands
   });
   const append = (command: DoodleCommand) => {
-    if ((command.action === "create" && command.entity.performance)
-      || (command.action === "update" && command.performance !== undefined)) schemaVersion = "1.5.0";
+    if (((command.action === "create" && command.entity.performance)
+      || (command.action === "update" && command.performance !== undefined)) && schemaVersion === "1.4.0") schemaVersion = "1.5.0";
+    if (command.action === "unrelate" && working.relations?.some((relation) => relation.id === command.relationId && relation.kind === "actsOn")) schemaVersion = "1.6.0";
+    if (command.action === "relate" && command.relation.kind === "actsOn") schemaVersion = "1.6.0";
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -304,8 +306,9 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const definition = actionRegistry.find((action) => action.predicate === semanticAction.predicate);
         if (!definition) throw new Clarification("I recognized an action but cannot yet perform it safely.");
         const actorMentionId = semanticAction.actorMentionIds[0];
-        const actorPhrase = frame.entities.find((mention) => mention.mentionId === actorMentionId)?.text
-          ?? frame.references.find((mention) => mention.mentionId === actorMentionId)?.text ?? "";
+        const mentionText = (mentionId: string) => frame.entities.find((mention) => mention.mentionId === mentionId)?.text
+          ?? frame.references.find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const actorPhrase = mentionText(actorMentionId);
         let actorIds: string[];
         let created = false;
         if (/^(they|them)$/.test(actorPhrase)) actorIds = context?.subjectIds ?? [];
@@ -332,15 +335,42 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         if (actors.some((entity) => !["person", "student", "teacher"].includes(entity.kind))) {
           throw new Clarification("That performance needs a person, student or teacher.");
         }
+        const targetMentionId = semanticAction.targetMentionIds[0];
+        let targetId: string | undefined;
+        if (targetMentionId) {
+          const targetPhrase = mentionText(targetMentionId);
+          const spec = parseEntityPhrase(targetPhrase);
+          if (/^(?:it|that|the .+)$/.test(targetPhrase)) targetId = resolve(targetPhrase, working).id;
+          else if (spec && spec.count !== 1) throw new Clarification("Name one target for that action.");
+          else if (spec?.countToken) targetId = create(targetPhrase)[0];
+          else if (spec) {
+            const existing = working.entities.filter((entity) => entity.kind === spec.kind);
+            targetId = existing.length === 1 ? existing[0].id : existing.length ? resolve(targetPhrase, working).id : create(targetPhrase)[0];
+          } else targetId = resolve(targetPhrase, working).id;
+          if (actorIds.includes(targetId)) throw new Clarification("A person cannot target the same character with their own gesture.");
+        } else if (definition.targeting?.requirement === "required" && semanticAction.phase === "start") {
+          throw new Clarification(`What should the person ${semanticAction.predicate} at?`);
+        }
+        const currentTargets = (working.relations ?? []).filter((relation) => relation.kind === "actsOn" && actorIds.includes(relation.sourceIds[0]));
         if (semanticAction.phase === "stop") {
-          if (actors.some((entity) => entity.performance?.loop !== definition.performance.loop)) {
+          const matchingTargets = currentTargets.filter((relation) => relation.predicate === semanticAction.predicate);
+          const hasMatchingLoop = definition.performance.loop !== "none"
+            && actors.every((entity) => entity.performance?.loop === definition.performance.loop);
+          if (!matchingTargets.length && !hasMatchingLoop) {
             throw new Clarification(`That person is not currently ${semanticAction.predicate}ing.`);
           }
+          matchingTargets.forEach((relation) => append({ action: "unrelate", relationId: relation.id }));
           actorIds.forEach((targetId) => append({ action: "update", targetId, performance: null }));
-        } else if (!created) {
-          actorIds.forEach((targetId) => append({ action: "update", targetId, performance: definition.performance }));
+        } else {
+          currentTargets.forEach((relation) => append({ action: "unrelate", relationId: relation.id }));
+          if (!created) actorIds.forEach((targetId) => append({ action: "update", targetId, performance: definition.performance }));
+          if (targetId) actorIds.forEach((sourceId) => append({ action: "relate", relation: {
+            id: `relation-${scene.revision + 1}-${commands.length}`,
+            kind: "actsOn", predicate: definition.predicate, preposition: semanticAction.preposition,
+            sourceIds: [sourceId], targetIds: [targetId]
+          } }));
         }
-        focus(actorIds);
+        focus(actorIds, targetId ? [targetId] : []);
         continue;
       }
       const semanticRelation = frame.relations[0];

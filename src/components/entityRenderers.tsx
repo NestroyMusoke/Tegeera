@@ -58,7 +58,7 @@ function Character({ entity, moving = false }: EntityRendererProps) {
           : <path className="doodle-detail rig-mouth" d={`M-6-37 Q1 ${-37 + mouthDepth} 8-38`} />}
         {entity.kind === "student" && <path className="accent-stroke" d="M-16-54 Q0-68 17-53" />}
       </g>
-      {entity.kind === "teacher" && <g className="rig-prop" transform="translate(38 -35) rotate(-8)">
+      {entity.kind === "teacher" && !entity.performance && <g className="rig-prop" transform="translate(38 -35) rotate(-8)">
         <path className="accent-stroke" d="M0 0 L17-9" />
         <path className="accent-stroke" d="M14-12 L20-7" />
       </g>}

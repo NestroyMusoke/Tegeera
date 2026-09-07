@@ -4,6 +4,11 @@ export interface ActionDefinition {
   predicate: string;
   aliases: readonly string[];
   performance: CharacterPerformance;
+  targeting?: {
+    requirement: "optional" | "required";
+    prepositions: readonly string[];
+    gesture: "point" | "gaze";
+  };
 }
 
 // Actions describe reusable performances, not complete scenes or sentences.
@@ -16,7 +21,8 @@ export const actionRegistry: readonly ActionDefinition[] = [
       rightArm: { upper: -72, joint: 18 },
       expression: { smile: 0.8, browLift: 0.25, gazeX: 0.45 },
       loop: "wave", intensity: 0.8
-    }
+    },
+    targeting: { requirement: "optional", prepositions: ["at", "to"], gesture: "gaze" }
   },
   {
     predicate: "celebrate",
@@ -71,6 +77,23 @@ export const actionRegistry: readonly ActionDefinition[] = [
       expression: { smile: 0, browLift: 0.25, gazeX: 0.3, gazeY: -0.7 },
       loop: "breathe", intensity: 0.25
     }
+  },
+  {
+    predicate: "point",
+    aliases: ["point", "points", "pointing"],
+    performance: {
+      bodyLean: 4, rightArm: { upper: -20, joint: 0 },
+      expression: { smile: 0.25, gazeX: 0.9 }, loop: "none", intensity: 0.4
+    },
+    targeting: { requirement: "required", prepositions: ["at", "to", "toward", "towards"], gesture: "point" }
+  },
+  {
+    predicate: "look",
+    aliases: ["look", "looks", "looking"],
+    performance: {
+      headTilt: 2, expression: { gazeX: 1 }, loop: "breathe", intensity: 0.2
+    },
+    targeting: { requirement: "required", prepositions: ["at", "toward", "towards"], gesture: "gaze" }
   }
 ];
 
@@ -82,4 +105,12 @@ export function actionForAlias(alias: string): ActionDefinition | undefined {
 
 export function actionAliases(): string[] {
   return [...aliasToAction.keys()].sort((a, b) => b.length - a.length);
+}
+
+export function targetableActionAliases(): string[] {
+  return [...aliasToAction.entries()].filter(([, action]) => action.targeting).map(([alias]) => alias).sort((a, b) => b.length - a.length);
+}
+
+export function targetPrepositions(): string[] {
+  return [...new Set(actionRegistry.flatMap((action) => action.targeting?.prepositions ?? []))].sort((a, b) => b.length - a.length);
 }
