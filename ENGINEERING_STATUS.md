@@ -110,7 +110,7 @@ not additional entities. Multiple ownership relations for one owner are merged
 into one card, and shared resources are excluded from personal cards. The scene
 overview remains unchanged; its tiny badges are supplementary, not the sole key.
 
-`node scripts/visual-check.mjs` generates seven fixtures from the actual parser,
+`node scripts/visual-check.mjs` generates nine fixtures from the actual parser,
 validator, React renderer and stylesheet in the ignored `.visual-check` folder.
 It includes a 390 px iframe for narrow-viewport inspection. The fixtures cover
 individual ownership, transfer, sharing and mixed ownership. Static browser
@@ -352,9 +352,40 @@ The complete checkpoint passes 156 tests; the real SVG fixture was inspected at
 1200×900 and shows the teacher pointing into the tree canopy. Lint, production
 build and Android synchronization pass.
 
-Exact hand-to-surface contact remains unfinished. The next step is a bounded two-bone
-inverse-kinematics solver plus contact-aware staging, with explicit unreachable-target
-fallback rather than stretched or detached limbs.
+This anchor foundation feeds the bounded contact solver described below.
+
+### Bounded inverse kinematics and contact
+
+The visual system now supports direct-object contact through the same action registry
+and semantic-frame path as every other performance. “A teacher touches a book” creates
+one teacher, one book and one `actsOn` relationship; it does not draw a decorative copy
+of the book. Direct-object syntax is registry metadata, so adding another contact verb
+does not require a complete-sentence parser branch.
+
+A dependency-free planar two-bone inverse-kinematics solver computes upper-arm and
+elbow angles using the real 22/23-unit renderer segments. It returns an explicit
+unreachable result outside the physical interval instead of silently stretching a
+limb. Contact geometry selects the nearest registered object surface and transforms
+it through entity scale, character facing, shoulder position and torso lean. A
+forward-geometry test verifies the rendered hand center lands on that surface.
+
+Contact-aware staging searches bounded half-unit canvas positions, preserves unrelated
+objects, minimizes movement and accepts close placement only when visible silhouettes,
+labels and arm reach all remain safe. Existing distant entities are not pulled across
+an established explanation: validation rejects detached contact with a specific layout
+message. Ending contact preserves both identities and releases the object into the
+nearest ordinary safe layout slot.
+
+Eight focused tests cover exact IK, unreachable targets, direct semantic extraction,
+identity-preserving staging, right- and left-facing contact, visual endpoint accuracy,
+reuse across seven target kinds, safe rejection and stop/release lifecycle. The real parser/validator/React fixture was
+inspected at 1200×900 and shows the hand meeting the book edge without overlap or a
+connector. The complete checkpoint passes 164 tests.
+Lint, production build and Android synchronization pass.
+
+Holding, carrying and transfer animation remain unfinished. They require persistent
+attachment semantics and coordinated body/prop motion rather than treating every
+contact as a stationary touch.
 
 ## Correctness boundaries
 

@@ -51,6 +51,8 @@ const cases = {
   mixed: ["Three students share two books", "Another student arrives with her own book"],
   targeted: ["A teacher points at a tree"],
   stagedTarget: ["A tree", "Move the tree right", "Move the tree right", "A teacher points at the tree"],
+  contact: ["A teacher touches a book"],
+  contactProcess: ["A teacher touches a process"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {

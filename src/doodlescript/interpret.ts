@@ -5,7 +5,7 @@ import { isMotion, motionGeometry } from "./motion";
 import { analyzeTeacherInput } from "./semanticFrame";
 import { entityKindForAlias, ordinalWords, parseCountToken, parseEntityPhrase } from "./lexicon";
 import { actionRegistry } from "./actionRegistry";
-import { stageTargetedPair } from "./spatialStaging";
+import { releaseContactPair, stageContactPair, stageTargetedPair } from "./spatialStaging";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -365,7 +365,12 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           if (!matchingTargets.length && !hasMatchingLoop) {
             throw new Clarification(`That person is not currently ${semanticAction.predicate}ing.`);
           }
-          matchingTargets.forEach((relation) => append({ action: "unrelate", relationId: relation.id }));
+          matchingTargets.forEach((relation) => {
+            const release = definition.targeting?.gesture === "contact"
+              ? releaseContactPair(working, relation.sourceIds[0], relation.targetIds[0]) : [];
+            append({ action: "unrelate", relationId: relation.id });
+            release.forEach((move) => append({ action: "move", ...move }));
+          });
           actorIds.forEach((targetId) => append({ action: "update", targetId, performance: null }));
         } else {
           currentTargets.forEach((relation) => append({ action: "unrelate", relationId: relation.id }));
@@ -373,7 +378,8 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           if (targetId) {
             if (actorIds.length === 1) {
               const movableIds = new Set([...createdActorIds, ...(targetCreated ? [targetId] : [])]);
-              stageTargetedPair(working, actorIds[0], targetId, movableIds).forEach((move) => append({ action: "move", ...move }));
+              const staging = definition.targeting?.gesture === "contact" ? stageContactPair : stageTargetedPair;
+              staging(working, actorIds[0], targetId, movableIds).forEach((move) => append({ action: "move", ...move }));
             }
             actorIds.forEach((sourceId) => append({ action: "relate", relation: {
               id: `relation-${scene.revision + 1}-${commands.length}`,

@@ -6,8 +6,9 @@ export interface ActionDefinition {
   performance: CharacterPerformance;
   targeting?: {
     requirement: "optional" | "required";
+    syntax?: "prepositional" | "direct";
     prepositions: readonly string[];
-    gesture: "point" | "gaze";
+    gesture: "point" | "gaze" | "contact";
   };
 }
 
@@ -94,6 +95,15 @@ export const actionRegistry: readonly ActionDefinition[] = [
       headTilt: 2, expression: { gazeX: 1 }, loop: "breathe", intensity: 0.2
     },
     targeting: { requirement: "required", prepositions: ["at", "toward", "towards"], gesture: "gaze" }
+  },
+  {
+    predicate: "touch",
+    aliases: ["touch", "touches", "touching"],
+    performance: {
+      bodyLean: 2, rightArm: { upper: -18, joint: 34 },
+      expression: { smile: 0.25, gazeX: 1 }, loop: "none", intensity: 0.35
+    },
+    targeting: { requirement: "required", syntax: "direct", prepositions: [], gesture: "contact" }
   }
 ];
 
@@ -108,7 +118,11 @@ export function actionAliases(): string[] {
 }
 
 export function targetableActionAliases(): string[] {
-  return [...aliasToAction.entries()].filter(([, action]) => action.targeting).map(([alias]) => alias).sort((a, b) => b.length - a.length);
+  return [...aliasToAction.entries()].filter(([, action]) => action.targeting && action.targeting.syntax !== "direct").map(([alias]) => alias).sort((a, b) => b.length - a.length);
+}
+
+export function directTargetActionAliases(): string[] {
+  return [...aliasToAction.entries()].filter(([, action]) => action.targeting?.syntax === "direct").map(([alias]) => alias).sort((a, b) => b.length - a.length);
 }
 
 export function targetPrepositions(): string[] {

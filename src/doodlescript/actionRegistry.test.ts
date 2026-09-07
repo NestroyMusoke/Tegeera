@@ -17,7 +17,7 @@ function run(text: string, scene = initialScene): SceneState {
 describe("semantic action registry", () => {
   it("has unique aliases and valid bounded performance plans", () => {
     expect(new Set(actionAliases()).size).toBe(actionAliases().length);
-    expect(actionRegistry.map((action) => action.predicate)).toEqual(["wave", "celebrate", "explain", "talk", "walk", "run", "think", "point", "look"]);
+    expect(actionRegistry.map((action) => action.predicate)).toEqual(["wave", "celebrate", "explain", "talk", "walk", "run", "think", "point", "look", "touch"]);
     for (const action of actionRegistry) expect(action.performance.loop).toBeTruthy();
   });
 

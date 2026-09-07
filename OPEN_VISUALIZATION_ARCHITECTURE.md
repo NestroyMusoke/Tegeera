@@ -189,6 +189,13 @@ kinematics. The solver must report unreachable targets, never lengthen limbs sil
 and may restage only entities created by the active utterance. Holding or transfer
 must preserve object identity—rendering a second decorative copy is not acceptable.
 
+The first contact action implements that contract for direct-object “touch” semantics.
+The generic two-bone solver uses the renderer's actual segment lengths and is verified
+by forward geometry. A contact staging pass searches sub-grid horizontal positions,
+admits close pairs only when silhouettes and labels remain clear, and validates reach
+after projection. Contact removal has its own release transition so removing the
+relationship cannot strand two entities inside the ordinary collision boundary.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive

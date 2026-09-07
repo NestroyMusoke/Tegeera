@@ -2,7 +2,6 @@ import {
   doodleScriptSchema,
   type DoodleCommand,
   type DoodleScript,
-  type SceneEntity,
   type SceneState
 } from "./schema";
 import { applyDoodleScript } from "./scene";
@@ -10,6 +9,7 @@ import { overlaps, withinCanvas } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
 import { isQueue, queueGeometry } from "./queue";
 import { actionRegistry } from "./actionRegistry";
+import { contactPairIsVisuallySafe, solveContactArm } from "./contactGeometry";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -84,12 +84,15 @@ export function validateDoodleScript(
       }
       if (relation.kind === "actsOn") {
         if (script.schemaVersion !== "1.6.0") issues.push({ gate: "schema", message: "Targeted performances require DoodleScript 1.6.0." });
-        if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1 || !relation.predicate || !relation.preposition) {
-          issues.push({ gate: "semantic", message: "A targeted performance needs one actor, one target, an action and a preposition." });
+        if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1 || !relation.predicate) {
+          issues.push({ gate: "semantic", message: "A targeted performance needs one actor, one target and an action." });
         }
         const action = actionRegistry.find((candidate) => candidate.predicate === relation.predicate);
-        if (!action?.targeting || !action.targeting.prepositions.includes(relation.preposition ?? "")) {
-          issues.push({ gate: "semantic", message: "That action and target preposition are not registered together." });
+        const validTargetSyntax = action?.targeting?.syntax === "direct"
+          ? !relation.preposition
+          : Boolean(relation.preposition && action?.targeting?.prepositions.includes(relation.preposition));
+        if (!action?.targeting || !validTargetSyntax) {
+          issues.push({ gate: "semantic", message: "That action and target syntax are not registered together." });
         }
       }
       if (script.schemaVersion === "1.0.0") {
@@ -146,7 +149,15 @@ export function validateDoodleScript(
   for (const relation of projected.relations ?? []) {
     if (relation.kind === "actsOn") {
       const actor = projected.entities.find((entity) => entity.id === relation.sourceIds[0]);
+      const target = projected.entities.find((entity) => entity.id === relation.targetIds[0]);
+      const action = actionRegistry.find((candidate) => candidate.predicate === relation.predicate);
       if (!actor || !["person", "student", "teacher"].includes(actor.kind)) issues.push({ gate: "semantic", message: "A targeted performance needs a person as its actor." });
+      if (actor && target && action?.targeting?.gesture === "contact") {
+        const contact = solveContactArm(actor, target, actor.performance?.bodyLean ?? 0);
+        if (!contact.solution.reachable || !contactPairIsVisuallySafe(actor, target)) {
+          issues.push({ gate: "layout", message: "That contact pose cannot reach the visible object safely. Add it beside the person or move one endpoint closer." });
+        }
+      }
       if (targeting.has(relation.sourceIds[0])) issues.push({ gate: "semantic", message: "A person cannot have two conflicting performance targets." });
       targeting.add(relation.sourceIds[0]);
     }
@@ -171,7 +182,7 @@ export function validateDoodleScript(
       owned.add(id);
     }
   }
-  if (hasDenseOverlap(projected.entities) || projected.entities.some((entity) => !withinCanvas(entity))) {
+  if (hasDenseOverlap(projected) || projected.entities.some((entity) => !withinCanvas(entity))) {
     issues.push({
       gate: "layout",
       message: "The change would overlap or clip an object or label. Choose another position or a shorter label."
@@ -188,12 +199,31 @@ export function validateDoodleScript(
   return issues.length ? { ok: false, issues } : { ok: true, script, issues: [] };
 }
 
-function hasDenseOverlap(entities: SceneEntity[]): boolean {
+function hasDenseOverlap(scene: SceneState): boolean {
+  const entities = scene.entities;
   for (let index = 0; index < entities.length; index += 1) {
     for (let other = index + 1; other < entities.length; other += 1) {
       const a = entities[index];
       const b = entities[other];
-      if (overlaps(a, b)) return true;
+      if (!overlaps(a, b)) continue;
+      const contact = scene.relations?.find((relation) => {
+        if (relation.kind !== "actsOn") return false;
+        const action = actionRegistry.find((candidate) => candidate.predicate === relation.predicate);
+        return action?.targeting?.gesture === "contact"
+          && relation.sourceIds[0] === a.id && relation.targetIds[0] === b.id;
+      }) ?? scene.relations?.find((relation) => {
+        if (relation.kind !== "actsOn") return false;
+        const action = actionRegistry.find((candidate) => candidate.predicate === relation.predicate);
+        return action?.targeting?.gesture === "contact"
+          && relation.sourceIds[0] === b.id && relation.targetIds[0] === a.id;
+      });
+      if (contact) {
+        const actor = entities.find((entity) => entity.id === contact.sourceIds[0])!;
+        const target = entities.find((entity) => entity.id === contact.targetIds[0])!;
+        if (contactPairIsVisuallySafe(actor, target)
+          && solveContactArm(actor, target, actor.performance?.bodyLean ?? 0).solution.reachable) continue;
+      }
+      return true;
     }
   }
   return false;

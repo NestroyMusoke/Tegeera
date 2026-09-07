@@ -1,6 +1,6 @@
 import { normalizeTeacherClause } from "./language";
 import { parseEntityPhrase, relationLexemes } from "./lexicon";
-import { actionAliases, actionForAlias, targetableActionAliases, targetPrepositions } from "./actionRegistry";
+import { actionAliases, actionForAlias, directTargetActionAliases, targetableActionAliases, targetPrepositions } from "./actionRegistry";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -94,6 +94,7 @@ const actionWordPattern = actionAliases().join("|");
 const actionPattern = new RegExp(`^(.+?) (?:is |are )?(${actionWordPattern})$`);
 const stopActionPattern = new RegExp(`^(.+?) stops? (${actionWordPattern})$`);
 const targetedActionPattern = new RegExp(`^(.+?) (?:is |are )?(${targetableActionAliases().join("|")}) (${targetPrepositions().join("|")}) (.+)$`);
+const directTargetActionPattern = new RegExp(`^(.+?) (?:is |are )?(${directTargetActionAliases().join("|")}) (.+)$`);
 
 function entityMentionsAreResolved(frame: SemanticFrame): boolean {
   return frame.entities.every(({ text }) => {
@@ -122,13 +123,15 @@ function populateMeaning(frame: SemanticFrame): void {
 
   const stoppedAction = frame.normalizedText.match(stopActionPattern);
   const targetedAction = frame.normalizedText.match(targetedActionPattern);
+  const directTargetAction = frame.normalizedText.match(directTargetActionPattern);
   const startedAction = frame.normalizedText.match(actionPattern);
-  const action = stoppedAction ?? targetedAction ?? startedAction;
+  const action = stoppedAction ?? targetedAction ?? directTargetAction ?? startedAction;
   if (action) {
     const definition = actionForAlias(action[2]);
     if (!definition) return;
     const actorMentionId = addParticipant(action[1]);
-    const targetMentionId = targetedAction ? addParticipant(targetedAction[4]) : undefined;
+    const targetMentionId = targetedAction ? addParticipant(targetedAction[4])
+      : directTargetAction ? addParticipant(directTargetAction[3]) : undefined;
     frame.intent = stoppedAction ? "update" : "describe";
     frame.actions.push({
       predicate: definition.predicate,
