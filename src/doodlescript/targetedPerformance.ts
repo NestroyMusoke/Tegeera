@@ -1,4 +1,5 @@
 import { actionRegistry } from "./actionRegistry";
+import { attentionAnchor, shoulderAnchor } from "./entityGeometry";
 import type { CharacterPerformance, SceneEntity, SceneRelation } from "./schema";
 
 export const isTargetedPerformance = (relation: SceneRelation): boolean => relation.kind === "actsOn";
@@ -18,19 +19,28 @@ export function applyTargetedPerformance(actor: SceneEntity, target: SceneEntity
   if (relation.kind !== "actsOn") return actor;
   const action = actionRegistry.find((candidate) => candidate.predicate === relation.predicate);
   if (!action?.targeting) return actor;
-  const dx = (target.x - actor.x) * 10;
-  const dy = (target.y - actor.y) * 6.2;
-  const distance = Math.max(1, Math.hypot(dx, dy));
-  const direction = dx < 0 ? "left" as const : dx > 0 ? "right" as const : actor.direction;
-  const localAngle = clamp(Math.atan2(dy, Math.max(1, Math.abs(dx))) * 180 / Math.PI, -75, 75);
+  const targetPoint = attentionAnchor(target);
+  const centerDx = targetPoint.x - actor.x * 10;
+  const direction = centerDx < 0 ? "left" as const : centerDx > 0 ? "right" as const : actor.direction;
+  const directed = { ...actor, direction };
+  const basePerformance = actor.performance ?? action.performance;
+  const bodyLean = basePerformance.bodyLean ?? 0;
+  const shoulder = shoulderAnchor(directed, bodyLean);
+  const facing = direction === "left" ? -1 : 1;
+  const localDx = (targetPoint.x - shoulder.x) * facing / actor.scale;
+  const localDy = (targetPoint.y - shoulder.y) / actor.scale;
+  const distance = Math.max(1, Math.hypot(localDx, localDy));
+  const localAngle = clamp(Math.atan2(localDy, Math.max(1, localDx)) * 180 / Math.PI, -75, 75);
   const targetGeometry: CharacterPerformance = {
     headTilt: clamp(localAngle * 0.16, -12, 12),
-    expression: { gazeX: 1, gazeY: clamp(dy / distance, -1, 1) }
+    expression: { gazeX: 1, gazeY: clamp(localDy / distance, -1, 1) }
   };
-  if (action.targeting.gesture === "point") targetGeometry.rightArm = { upper: localAngle, joint: 0 };
+  // The arm is nested inside the leaning torso, so subtract its rotation to
+  // make the final world-space ray pass through the semantic target anchor.
+  if (action.targeting.gesture === "point") targetGeometry.rightArm = { upper: localAngle - bodyLean, joint: 0 };
   return {
     ...actor,
     direction,
-    performance: mergePerformance(actor.performance ?? action.performance, targetGeometry)
+    performance: mergePerformance(basePerformance, targetGeometry)
   };
 }

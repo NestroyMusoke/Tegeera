@@ -177,6 +177,18 @@ the current utterance are movable, so a new performance cannot unexpectedly rear
 an established explanation. Failure to find an improvement preserves the validated
 layout; it never licenses overlap or hidden scene mutation.
 
+Renderer geometry exposes semantic anchors independently of language interpretation.
+Each entity kind defines an attention point and contact surfaces in its own local
+coordinate system; shared projection functions apply scene position and scale.
+Target-aware poses aim from the character's transformed shoulder to the target's
+attention anchor and compensate for torso nesting. This keeps visual facts beside
+the glyphs they describe while allowing any registered action to consume them.
+
+Contact actions will build on the same contract through bounded two-bone inverse
+kinematics. The solver must report unreachable targets, never lengthen limbs silently,
+and may restage only entities created by the active utterance. Holding or transfer
+must preserve object identity—rendering a second decorative copy is not acceptable.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive

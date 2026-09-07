@@ -331,6 +331,31 @@ step is intent-aware contact staging: infer a visual attachment point from rende
 geometry so holding, giving and touching connect hands to props without baking SVG
 coordinates into language rules.
 
+### Semantic visual anchors
+
+Every entity renderer now has an exhaustive geometry contract containing an
+attention anchor and left/right contact surfaces in glyph-local coordinates. The
+registry is keyed by entity kind—not words or lesson scenarios—and converts anchors
+to canvas coordinates with the entity's live position and scale. A tree therefore
+offers its canopy as the meaningful attention point, a person offers their face, and
+a book offers its open pages. Contact surfaces are exposed now as the stable input
+for the next inverse-kinematics and held-prop increment.
+
+Targeted performance geometry now starts at the character's actual shoulder after
+torso lean, transforms the target into the character's facing coordinate system,
+and compensates for the nested torso rotation before setting the arm angle. This
+removes the old center-to-center approximation. A forward-kinematics regression test
+proves that the rendered pointing ray intersects the semantic anchor to sub-pixel
+angular tolerance. Six new tests also cover exhaustive renderer metadata, scaling,
+nearest contact surfaces, canopy targeting, both facing directions and immutability.
+The complete checkpoint passes 156 tests; the real SVG fixture was inspected at
+1200×900 and shows the teacher pointing into the tree canopy. Lint, production
+build and Android synchronization pass.
+
+Exact hand-to-surface contact remains unfinished. The next step is a bounded two-bone
+inverse-kinematics solver plus contact-aware staging, with explicit unreachable-target
+fallback rather than stretched or detached limbs.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.
