@@ -33,12 +33,21 @@ const result = await build({
         { ...base, kind: 'teacher', id: 'teacher-talk', label: 'explain', x: 80, performance: { bodyLean: 7, headTilt: -6, expression: { mouthOpen: .45, gazeX: .8 }, loop: 'talk', intensity: .55 } }
       ]};
       return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
+    }
+    export function renderSymbolAtlas() {
+      const labels = ['sunlight', 'evaporation', 'rainfall', 'plant', 'electricity', 'pressure', 'expansion', 'damage', 'constitutional legitimacy'];
+      const scene = { sceneId: 'symbol-atlas', revision: 1, relations: [], entities: labels.map((label, index) => ({
+        id: 'concept-' + (index + 1), kind: 'generic', label,
+        x: 14 + (index % 5) * 18, y: 28 + Math.floor(index / 5) * 42,
+        scale: 0.9, direction: 'right', highlighted: false
+      })) };
+      return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
     }`, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "node", format: "cjs", jsx: "automatic", write: false,
 });
 const bundlePath = resolve(output, "renderer.cjs");
 await writeFile(bundlePath, result.outputFiles[0].text);
-const { render, renderPerformance } = createRequire(import.meta.url)(bundlePath);
+const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
   .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .handover-object > g:first-child, .attached-object {
@@ -64,8 +73,9 @@ for (const [name, commands] of Object.entries(cases)) {
   await writeFile(resolve(output, `${name}.html`), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>${name}</h1>${render(commands)}</main></body></html>`);
 }
 await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Composable performance protocol</h1>${renderPerformance()}</main></body></html>`);
+await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
-console.log(`Rendered ${Object.keys(cases).length} real-component fixtures in ${output}`);
+console.log(`Rendered ${Object.keys(cases).length + 2} real-component fixtures in ${output}`);
 
 // Exercise the real App in a browser, without adding test-only props to production.
 const appBundle = await build({
@@ -179,6 +189,9 @@ const appBundle = await build({
       await submit('Condensation comes before rainfall');
       check(document.querySelectorAll('.event-before').length === 2, 'Timeline chain did not render');
       check(document.querySelectorAll('[data-renderer="generic"]').length === 3, 'Timeline duplicated or omitted a concept');
+      check(document.querySelector('[data-symbol-id="evaporation"] [data-primitive="water"]'), 'Evaporation symbol did not compose its water anchor');
+      check(document.querySelector('[data-symbol-id="condensation"] [data-primitive="cloud"]'), 'Condensation symbol did not compose its cloud anchor');
+      check(document.querySelector('[data-symbol-id="rain"] [data-primitive="droplet"]'), 'Rainfall symbol did not compose a falling-water cue');
       const before = document.querySelector('.doodle-canvas').innerHTML;
       await submit('Rainfall happens before evaporation');
       check(!!document.querySelector('.clarification'), 'Temporal cycle did not request clarification');
@@ -189,6 +202,7 @@ const appBundle = await build({
       await submit('Heavy rain causes soil erosion');
       check(document.querySelectorAll('.event-causes').length === 1, 'Causal relation did not render');
       check(document.querySelector('.relationship-causes')?.textContent.includes('causes'), 'Accessible causal key is missing');
+      check(document.querySelector('[data-symbol-id="soil-erosion"] [data-primitive="ground"]'), 'Soil erosion symbol is missing');
       await submit('Clear everything');
       await submit('Heat causes expansion');
       await submit('Heat causes pressure');
@@ -197,9 +211,10 @@ const appBundle = await build({
       await submit('Heat causes damage');
       check(document.querySelectorAll('.event-causes').length === 5, 'Branching causal graph did not render every edge');
       check(document.querySelectorAll('[data-renderer="generic"]').length === 4, 'Branching graph duplicated a converged concept');
+      check(document.querySelectorAll('[data-symbol-fallback="false"]').length === 4, 'Known graph concepts did not retrieve symbols');
       check(document.querySelectorAll('.event-flow[data-route="outer"]').length >= 1, 'Long edge did not use an outer route');
       check(document.documentElement.scrollWidth <= innerWidth, 'Event diagram caused horizontal overflow');
-      document.getElementById('qa-result').textContent = 'PASS: temporal chain, concept reuse, cycle rollback, Undo, branching, convergence, outer routing, accessibility, layout';
+      document.getElementById('qa-result').textContent = 'PASS: temporal chain, concept reuse, composed symbols, honest retrieval, cycle rollback, Undo, branching, convergence, outer routing, accessibility, layout';
     }
     const params = new URLSearchParams(location.search);
     (params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });

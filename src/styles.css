@@ -265,6 +265,27 @@ button {
   animation-delay: var(--draw-delay);
 }
 
+.symbol-frame {
+  fill: rgba(255, 255, 255, 0.54);
+  stroke: #6c655a;
+  stroke-width: 2;
+  stroke-dasharray: 4 5;
+}
+
+.symbol-cue {
+  fill: none;
+  stroke: #b95f37;
+  stroke-width: 2.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.symbol-weather .symbol-frame,
+.symbol-nature .symbol-frame { fill: rgba(169, 216, 178, 0.18); }
+.symbol-energy .symbol-frame { fill: rgba(245, 190, 67, 0.16); }
+.symbol-force .symbol-frame { fill: rgba(99, 156, 184, 0.14); }
+.symbol-state .symbol-frame { fill: rgba(193, 92, 70, 0.1); }
+
 .doodle-detail {
   stroke-width: 2.5;
   animation-delay: calc(var(--draw-delay) + 180ms);

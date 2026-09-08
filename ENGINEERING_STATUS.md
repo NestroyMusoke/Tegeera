@@ -510,6 +510,39 @@ and p95 for 250 interpretation/validation/application iterations. It excludes
 microphone latency, transcription, React rendering, animation and SVG painting.
 The fixture suite checks meaning and continuity, not just object counts.
 
+## Compositional visual symbols
+
+Generic event concepts no longer depend only on an initial-letter bubble. A
+versioned local ontology resolves supported labels into a `VisualSymbolPlan` with a
+semantic category, anchor primitive, visual capabilities, supporting terms, and a
+confidence value. Reusable SVG primitives compose content and overlay roles; generic
+capability cues communicate falling, rising, flowing, cycling, compression,
+spreading, radiance, and breakage without adding sentence branches to the canvas.
+
+Retrieval is deterministic and conservative. Exact aliases dominate, multiple
+descriptive signals can retrieve a concept, equal candidates are rejected, and a
+single weak contextual tag cannot make a pictorial claim. Unsupported or ambiguous
+concepts retain their visible label and initial-letter node. Registry validation runs
+at module startup, while TypeScript's exhaustive primitive registry prevents an
+ontology primitive from silently lacking a renderer.
+
+The actual-component atlas covers sunlight, evaporation, rainfall, plants,
+electricity, pressure, expansion, damage, and an unknown abstract concept. The
+430-pixel end-to-end event workflow verifies composition inside temporal and causal
+graphs, identity reuse, safe cycle rollback, outer routing, accessibility text, and
+page containment. This remains a deliberately small ontology, not a claim of broad
+real-world concept coverage; physical Android appearance and animation remain to be
+verified on devices.
+
+The complete checkpoint passes 206 tests across 23 files and generates 16
+actual-component fixtures. The final meaning-pipeline run measures 0.73 ms median and 7.74 ms
+p95 over 250 iterations, excluding speech recognition, DOM work, and SVG painting.
+The production JavaScript is 374.22 kB (115.41 kB gzip), an increase of 9.20 kB raw
+and 3.03 kB gzip from the topology-layout checkpoint; CSS is 11.13 kB (3.38 kB gzip).
+Lint, production build, Android asset synchronization, and narrow-browser workflow
+checks pass. Rollup still prints its pre-existing third-party Zod annotation notices;
+project lint itself is warning-free.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

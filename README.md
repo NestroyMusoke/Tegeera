@@ -56,6 +56,12 @@ npm run build
 ```
 
 Run `node scripts/visual-check.mjs` to generate ignored local visual fixtures.
+
+Open concepts now use a versioned, local visual-symbol ontology. Known labels are
+composed from reusable SVG anchors and capability cues (for example, water plus
+upward motion for evaporation); unfamiliar or ambiguous labels remain honest
+labelled nodes. The resolver uses concept data and token evidence rather than
+sentence-specific drawing branches.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.

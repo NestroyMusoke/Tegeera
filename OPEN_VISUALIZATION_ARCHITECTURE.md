@@ -357,9 +357,10 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-Replace generic initial-letter concept bubbles with a compositional visual-symbol
-system. Add a versioned local symbol ontology, reusable stroke primitives, and
-capability-based retrieval so unfamiliar concept labels can select or combine simple
-doodles without sentence-specific render branches. Unknown mappings must retain the
-honest labeled-node fallback, and generated symbols must pass the existing bounds,
-identity, accessibility, and deterministic replay gates.
+Extend the compositional visual-symbol system from isolated concept glyphs into
+evidence-backed visual phrases. The versioned local ontology, reusable stroke
+primitives, capability cues, deterministic retrieval, ambiguity rejection, and
+labelled-node fallback are now present. Next, bind multiple entity and action frames
+into symbol plans that can express subject–action–object meaning while retaining
+one identity per scene entity. The plan must remain editable and validated; it must
+not flatten an explanation into a generated raster image.

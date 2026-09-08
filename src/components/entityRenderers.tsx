@@ -1,6 +1,8 @@
 import type { ComponentType, CSSProperties } from "react";
 import type { EntityKind, SceneEntity } from "../doodlescript/schema";
+import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { characterPoseFor, type LimbPose } from "./characterPerformance";
+import { ComposedSymbol } from "./symbolPrimitives";
 
 export interface EntityRendererProps {
   entity: SceneEntity;
@@ -96,8 +98,22 @@ function Desk() {
 }
 
 function Generic({ entity }: EntityRendererProps) {
+  const plan = resolveVisualSymbol(entity.label ?? entity.kind);
+  if (!plan.fallback && plan.category !== "unknown") {
+    const hash = [...entity.id].reduce((value, character) => (value * 31 + character.charCodeAt(0)) | 0, 7);
+    const rotation = (Math.abs(hash) % 5) - 2;
+    return <g
+      data-symbol-id={plan.symbolId}
+      data-symbol-version={plan.ontologyVersion}
+      data-symbol-category={plan.category}
+      data-symbol-confidence={plan.confidence}
+      data-symbol-fallback="false"
+    >
+      <ComposedSymbol category={plan.category} primitives={plan.primitives} capabilities={plan.capabilities} rotation={rotation} />
+    </g>;
+  }
   const initial = (entity.label ?? entity.kind).trim().charAt(0).toUpperCase() || "?";
-  return <g><path className="doodle-stroke" d="M0-55 C34-55 47-34 43-4 C47 27 24 45 0 42 C-28 47-47 25-43-4 C-47-34-31-55 0-55Z" /><text x="0" y="5" textAnchor="middle" fill="#302e29" fontSize="30" fontWeight="700">{initial}</text></g>;
+  return <g data-symbol-id="labelled-node" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true"><path className="doodle-stroke" d="M0-55 C34-55 47-34 43-4 C47 27 24 45 0 42 C-28 47-47 25-43-4 C-47-34-31-55 0-55Z" /><text x="0" y="5" textAnchor="middle" fill="#302e29" fontSize="30" fontWeight="700">{initial}</text></g>;
 }
 
 const entityRendererRegistry: Record<EntityKind, ComponentType<EntityRendererProps>> = {
