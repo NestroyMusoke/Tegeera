@@ -1,6 +1,7 @@
 import { normalizeTeacherClause } from "./language";
 import { parseEntityPhrase, relationLexemes } from "./lexicon";
 import { actionAliases, actionForAlias, directTargetActionAliases, targetableActionAliases, targetPrepositions } from "./actionRegistry";
+import { visualActionAliases, visualActionForAlias, visualActionPrepositions } from "./visualActionRegistry";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -37,6 +38,13 @@ export interface SemanticActionMention {
   phase: "start" | "stop";
 }
 
+export interface SemanticVisualActionMention {
+  predicate: string;
+  subjectMentionId: string;
+  objectMentionId: string;
+  preposition?: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -63,6 +71,7 @@ export interface SemanticFrame {
   entities: SemanticEntityMention[];
   relations: SemanticRelationMention[];
   actions: SemanticActionMention[];
+  visualActions: SemanticVisualActionMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   discourse: DiscourseSignals;
@@ -95,6 +104,8 @@ const actionPattern = new RegExp(`^(.+?) (?:is |are )?(${actionWordPattern})$`);
 const stopActionPattern = new RegExp(`^(.+?) stops? (${actionWordPattern})$`);
 const targetedActionPattern = new RegExp(`^(.+?) (?:is |are )?(${targetableActionAliases().join("|")}) (${targetPrepositions().join("|")}) (.+)$`);
 const directTargetActionPattern = new RegExp(`^(.+?) (?:is |are )?(${directTargetActionAliases().join("|")}) (.+)$`);
+const visualPrepositionalActionPattern = new RegExp(`^(.+?) (?:is |are )?(${visualActionAliases("prepositional").join("|")}) (${visualActionPrepositions().join("|")}) (.+)$`);
+const visualDirectActionPattern = new RegExp(`^(.+?) (?:is |are )?(${visualActionAliases("direct").join("|")}) (.+)$`);
 
 function entityMentionsAreResolved(frame: SemanticFrame): boolean {
   return frame.entities.every(({ text }) => {
@@ -160,6 +171,28 @@ function populateMeaning(frame: SemanticFrame): void {
     return;
   }
 
+  const visualPrepositionalAction = frame.normalizedText.match(visualPrepositionalActionPattern);
+  const visualDirectAction = frame.normalizedText.match(visualDirectActionPattern);
+  const visualAction = visualPrepositionalAction ?? visualDirectAction;
+  if (visualAction) {
+    const definition = visualActionForAlias(visualAction[2]);
+    if (!definition) return;
+    const subjectMentionId = addParticipant(visualAction[1]);
+    const objectMentionId = addParticipant(visualPrepositionalAction ? visualAction[4] : visualAction[3]);
+    const mentions = [...frame.entities, ...frame.references];
+    const readable = mentions.every(({ text }) => text.length <= 40 && text.split(/\s+/).length <= 7
+      && /^[a-z0-9][a-z0-9 '-]*$/.test(text));
+    frame.intent = "describe";
+    frame.visualActions.push({
+      predicate: definition.predicate,
+      subjectMentionId,
+      objectMentionId,
+      preposition: visualPrepositionalAction?.[3]
+    });
+    frame.resolutionStatus = readable ? "resolved" : "needs-clarification";
+    return;
+  }
+
   const description = frame.normalizedText.replace(/ (?:waiting )?in a (?:queue|line)$/, "");
   const phrases = description.split(/\s+and\s+/);
   const parsed = phrases.map((phrase) => parseEntityPhrase(phrase));
@@ -192,6 +225,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       entities: [],
       relations: [],
       actions: [],
+      visualActions: [],
       quantities: [],
       references: [],
       discourse: discourseSignals(normalizedSource),

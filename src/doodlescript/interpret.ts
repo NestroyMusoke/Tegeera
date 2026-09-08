@@ -8,6 +8,7 @@ import { actionRegistry } from "./actionRegistry";
 import { releaseContactPair, stageContactPair, stageTargetedPair } from "./spatialStaging";
 import { stageHandover } from "./handover";
 import { planEventGraph } from "./eventRelations";
+import { planVisualPhrase } from "./visualPhrase";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -51,7 +52,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentClause = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -66,10 +67,12 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       const removedKind = working.relations?.find((relation) => relation.id === command.relationId)?.kind;
       if (removedKind === "actsOn") upgradeVersion("1.6.0");
       if (removedKind === "handover") upgradeVersion("1.7.0");
+      if (removedKind === "visualAction") upgradeVersion("1.9.0");
     }
     if (command.action === "relate" && command.relation.kind === "actsOn") upgradeVersion("1.6.0");
     if (command.action === "relate" && command.relation.kind === "handover") upgradeVersion("1.7.0");
     if (command.action === "relate" && ["before", "causes"].includes(command.relation.kind)) upgradeVersion("1.8.0");
+    if (command.action === "relate" && command.relation.kind === "visualAction") upgradeVersion("1.9.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -176,6 +179,29 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         moves.forEach((move) => append({ action: "move", ...move }));
         append({ action: "relate", relation });
         focus([sourceId], [targetId]);
+        continue;
+      }
+      const visualAction = frame.visualActions[0];
+      if (visualAction) {
+        const mentionText = (mentionId: string) => frame.entities.find((mention) => mention.mentionId === mentionId)?.text
+          ?? frame.references.find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map((entity) => entity.id));
+        const subjectId = eventNode(mentionText(visualAction.subjectMentionId));
+        const objectId = eventNode(mentionText(visualAction.objectMentionId));
+        if (subjectId === objectId) throw new Clarification("A visual action needs two distinct concepts or objects.");
+        const relation = {
+          id: `relation-${scene.revision + 1}-${commands.length}`,
+          kind: "visualAction" as const,
+          predicate: visualAction.predicate,
+          preposition: visualAction.preposition,
+          sourceIds: [subjectId], targetIds: [objectId]
+        };
+        const movableIds = new Set(working.entities.filter((entity) => !idsBefore.has(entity.id)).map((entity) => entity.id));
+        const moves = planVisualPhrase(working, relation, movableIds);
+        if (!moves) throw new Clarification("That visual phrase cannot fit readably yet. Remove an object or start a new scene.");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation });
+        focus([subjectId], [objectId]);
         continue;
       }
       const motion = text.match(/^(.+?) (approaches|approaching|moves? towards?|moving towards?|drives? towards?|driving towards?|walks? towards?|walking towards?|moves? away from|moving away from|drives? away from|driving away from|walks? away from|walking away from) (.+)$/);

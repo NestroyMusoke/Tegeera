@@ -543,6 +543,37 @@ Lint, production build, Android asset synchronization, and narrow-browser workfl
 checks pass. Rollup still prints its pre-existing third-party Zod annotation notices;
 project lint itself is warning-free.
 
+## Evidence-backed visual phrases
+
+DoodleScript 1.9 introduces a `visualAction` relation with one subject, one object,
+a canonical predicate, and optional registered preposition. A data-driven registry
+currently covers absorption, release/emission, production, influence, transformation,
+evaporation, and flow. Aliases produce the same semantic frame; no entry contains a
+complete teacher sentence or SVG coordinates.
+
+The interpreter resolves both roles through the existing open concept-node boundary,
+so later phrases reuse an exact existing identity. The visual direction is independent
+of graph roles: absorption draws from object to subject, while output and transformation
+draw from subject to object. The planner moves only entities created in the current
+utterance, preserves unrelated objects, and rejects an unsafe scene atomically.
+
+Layout validation samples the connector's actual cubic Bézier path against unrelated
+glyph bounds, checks action-label bounds against entity labels, and uses a bounded
+third narrative row when a continued phrase cannot safely cross an established node.
+The renderer adds directional particles and action-specific color while retaining a
+static arrow, visible text, relationship-key entry, accessible name, and reduced-motion
+behavior. Unknown subjects or objects stay as labelled nodes rather than acquiring an
+invented literal symbol.
+
+The complete checkpoint passes 221 tests across 24 files and generates 18
+actual-component fixtures. The final meaning-pipeline run measures 1.02 ms median and
+10.10 ms p95 over 250 iterations, excluding speech recognition, DOM work, and SVG
+painting. Production JavaScript is 382.68 kB (117.35 kB gzip), an increase of 8.46 kB
+raw and 1.94 kB gzip from the symbol-ontology checkpoint; CSS is 11.49 kB (3.46 kB
+gzip). Lint, production build, Android synchronization, desktop inspection, and the
+430-pixel real-app phrase workflow pass. The action vocabulary is deliberately small;
+independent teacher-language coverage and physical Android rendering remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

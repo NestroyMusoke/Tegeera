@@ -50,7 +50,7 @@ await writeFile(bundlePath, result.outputFiles[0].text);
 const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const cases = {
@@ -67,6 +67,8 @@ const cases = {
   timeline: ["Evaporation happens before condensation", "Condensation happens before rainfall"],
   causality: ["Heavy rain causes soil erosion"],
   eventGraph: ["Heat causes expansion", "Heat causes pressure", "Expansion causes damage", "Pressure causes damage", "Heat causes damage"],
+  visualPhrase: ["A plant absorbs sunlight", "The plant produces oxygen"],
+  transformation: ["Water evaporates into a cloud"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -216,8 +218,32 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Event diagram caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: temporal chain, concept reuse, composed symbols, honest retrieval, cycle rollback, Undo, branching, convergence, outer routing, accessibility, layout';
     }
+    async function verifyPhrases() {
+      await pause();
+      await submit('A plant absorbs sunlight');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 2, 'Visual phrase did not create two identities');
+      check(document.querySelectorAll('.visual-action-annotation').length === 1, 'Absorption connector is missing');
+      check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
+      check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
+      check(document.querySelector('.visual-action-annotation')?.getAttribute('aria-label') === 'plant absorbs sunlight', 'Accessible absorption meaning is wrong');
+      await submit('The plant produces oxygen');
+      check(document.querySelectorAll('[data-symbol-id="plant"]').length === 1, 'Continued phrase duplicated the plant');
+      check(document.querySelectorAll('.visual-action-annotation').length === 2, 'Continued phrase did not preserve both actions');
+      check(document.querySelector('[data-entity-id="concept-3"] [data-symbol-fallback="true"]'), 'Unknown oxygen concept did not retain honest fallback');
+      const before = document.querySelector('.doodle-canvas').innerHTML;
+      await submit('The plant does not release oxygen');
+      check(!!document.querySelector('.clarification'), 'Negated visual action did not request clarification');
+      check(document.querySelector('.doodle-canvas').innerHTML === before, 'Rejected negation changed the scene');
+      await submit('Clear everything');
+      await submit('Water evaporates into a cloud');
+      check(document.querySelector('.visual-action-cue-transform'), 'Transformation connector is missing');
+      check(document.querySelector('[data-symbol-id="water"]'), 'Water symbol is missing');
+      check(document.querySelector('[data-symbol-id="cloud"]'), 'Cloud symbol is missing');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Visual phrase caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: visual phrase extraction, identity reuse, semantic direction, composed symbols, honest fallback, negation rollback, transformation, accessibility, layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -230,3 +256,4 @@ await writeFile(resolve(output, "app-small-phone.html"), framedApp(320));
 await writeFile(resolve(output, "app-detail-phone.html"), framedApp(390, "?detail"));
 await writeFile(resolve(output, "app-queue-phone.html"), framedApp(390, "?queue"));
 await writeFile(resolve(output, "app-events-phone.html"), framedApp(390, "?events"));
+await writeFile(resolve(output, "app-phrases-phone.html"), framedApp(390, "?phrases"));

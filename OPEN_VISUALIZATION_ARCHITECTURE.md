@@ -225,6 +225,20 @@ fixed scene coordinates. Straight, curved, and upper-lane connector strategies k
 long edges out of intermediate nodes. The planner refuses more than three nodes in a
 rank until a larger-canvas navigation model exists.
 
+DoodleScript 1.9 adds an evidence-backed `visualAction` relationship with distinct
+subject and object roles. A versioned action registry owns canonical predicates,
+aliases, direct or prepositional syntax, semantic direction, labels, and connector
+cues. Nouns remain open slots; neither the registry nor renderer stores complete
+lesson sentences. Incoming actions such as absorption reverse only the rendered
+flow while preserving subject/object identity in the scene graph.
+
+The visual-phrase planner searches bounded candidate positions and can use a third
+narrative row for continued explanations. Only entities introduced by the active
+utterance may move. Connector validation samples the actual cubic curve against
+unrelated glyph bounds and separately checks the relationship label against entity
+labels. Static arrows, action text, and the relationship key carry the meaning;
+motion particles are supplementary and stop under `prefers-reduced-motion`.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive
@@ -357,10 +371,10 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-Extend the compositional visual-symbol system from isolated concept glyphs into
-evidence-backed visual phrases. The versioned local ontology, reusable stroke
-primitives, capability cues, deterministic retrieval, ambiguity rejection, and
-labelled-node fallback are now present. Next, bind multiple entity and action frames
-into symbol plans that can express subject–action–object meaning while retaining
-one identity per scene entity. The plan must remain editable and validated; it must
-not flatten an explanation into a generated raster image.
+Extend pairwise visual phrases into multi-relation explanation graphs. Coordinate
+shared subjects, multiple inputs and outputs, and clause-level ordering through one
+constraint plan instead of planning each connector independently. Add explicit
+clarification when two registry actions compete for the same words, and measure
+coverage on an independent teacher-authored phrase corpus. Preserve the current
+editable identities, conservative labelled fallback, rollback guarantees, and
+offline deterministic path.

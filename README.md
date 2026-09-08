@@ -62,6 +62,14 @@ composed from reusable SVG anchors and capability cues (for example, water plus
 upward motion for evaporation); unfamiliar or ambiguous labels remain honest
 labelled nodes. The resolver uses concept data and token evidence rather than
 sentence-specific drawing branches.
+
+DoodleScript 1.9 adds evidence-backed visual phrases. A versioned action registry
+extracts open subject and object slots around reusable actions such as absorption,
+release, production, transformation, influence, and flow. The planner preserves
+existing identities, moves only concepts created by the active utterance, samples
+the actual connector curve for glyph collisions, and keeps relation labels clear.
+Animated particles reinforce direction, while the static arrow and accessible
+relationship text retain the meaning when reduced motion is enabled.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.

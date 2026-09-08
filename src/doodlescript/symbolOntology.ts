@@ -63,6 +63,7 @@ export const symbolOntology: readonly SymbolDefinition[] = [
   { id: "electricity", aliases: ["electricity", "electric current", "electric charge", "voltage"], tags: ["electric", "power", "charge"], category: "energy", anchor: "lightning", capabilities: ["flows"] },
   { id: "water", aliases: ["water", "liquid", "river", "stream"], tags: ["fluid", "wet"], category: "material", anchor: "water", capabilities: ["flows"] },
   { id: "rain", aliases: ["rain", "rainfall", "heavy rain", "heavy rainfall", "storm"], tags: ["weather", "precipitation"], category: "weather", anchor: "cloud", capabilities: ["falls"] },
+  { id: "cloud", aliases: ["cloud", "clouds"], tags: ["weather", "sky"], category: "weather", anchor: "cloud", capabilities: [] },
   { id: "condensation", aliases: ["condensation", "dew"], tags: ["condense", "vapor", "gas", "liquid"], category: "process", anchor: "cloud", capabilities: ["falls"] },
   { id: "evaporation", aliases: ["evaporation", "vaporization"], tags: ["evaporate", "vapor", "liquid", "gas"], category: "process", anchor: "water", capabilities: ["rises"] },
   { id: "plant", aliases: ["plant", "leaf", "vegetation", "crop"], tags: ["botany", "green"], category: "nature", anchor: "leaf", capabilities: ["spreads"] },

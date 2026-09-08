@@ -8,6 +8,7 @@ import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance 
 import { actionForPredicate } from "../doodlescript/actionRegistry";
 import { applyHandoverPerformance, handoverParticipants, isHandover } from "../doodlescript/handover";
 import { eventFlowGeometry, isEventRelation } from "../doodlescript/eventRelations";
+import { isVisualAction, visualPhraseGeometry } from "../doodlescript/visualPhrase";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -184,6 +185,24 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
         <path d={`M${geometry.endX - 11} ${geometry.endY - 8} L${geometry.endX} ${geometry.endY} L${geometry.endX - 11} ${geometry.endY + 8}`} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
         {relation.kind === "causes" && <path d={`M${geometry.startX - 7} ${geometry.startY - 10} V${geometry.startY + 10} M${geometry.startX - 13} ${geometry.startY - 6} L${geometry.startX - 2} ${geometry.startY + 6}`} stroke={color} strokeWidth="2" />}
         <text x={geometry.labelX} y={geometry.labelY} textAnchor="middle" fill={color} fontSize="15">{label}</text>
+      </g>
+    );
+  }
+  if (isVisualAction(relation)) {
+    const geometry = visualPhraseGeometry(relation, entities);
+    if (!geometry) return null;
+    const color = geometry.definition.cue === "transform" ? "#8d4c83"
+      : geometry.definition.cue === "intake" ? "#28745a" : "#b45b32";
+    return (
+      <g className={`visual-action-annotation visual-action-cue-${geometry.definition.cue}`}
+        data-action={geometry.definition.predicate}
+        aria-label={`${geometry.subject.label} ${geometry.definition.label} ${geometry.object.label}`}>
+        <path className="visual-action-flow" data-route={geometry.route} data-cue={geometry.definition.cue}
+          d={geometry.path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+        <path d={geometry.arrow} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+        <circle className="visual-action-particle" cx={(geometry.startX * 2 + geometry.endX) / 3} cy={(geometry.startY * 2 + geometry.endY) / 3} r="4" fill={color} />
+        <circle className="visual-action-particle particle-late" cx={(geometry.startX + geometry.endX * 2) / 3} cy={(geometry.startY + geometry.endY * 2) / 3} r="3" fill={color} />
+        <text x={geometry.labelX} y={geometry.labelY} textAnchor="middle" fill={color} fontSize="15">{geometry.definition.label}</text>
       </g>
     );
   }

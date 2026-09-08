@@ -133,4 +133,12 @@ describe("semantic input frames", () => {
     if (result.ok) return;
     expect(result.clause).toBe("a dragon");
   });
+
+  it("keeps registered visual actions separate from human performances", () => {
+    const frame = analyzeTeacherInput("Water evaporates into a cloud").frames[0];
+    expect(frame.actions).toEqual([]);
+    expect(frame.visualActions).toHaveLength(1);
+    expect(frame.visualActions[0].predicate).toBe("evaporate");
+    expect(frame.visualActions[0].preposition).toBe("into");
+  });
 });
