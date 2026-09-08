@@ -430,6 +430,36 @@ recipient face inward, and the ownership badge reflects the recipient. The full 
 workflow at 430 px reports PASS after checking a single object, handover presence, and
 Undo cleanup. Animation timing and Android device rendering remain unverified.
 
+### Open-concept temporal and causal graphs
+
+DoodleScript 1.8 adds canonical `before` and `causes` relationships. The semantic
+frame recognizes reusable relation aliases: happens/occurs/comes before or after,
+and causes/leads to/results in. `after` is stored as a reversed `before` edge, so
+rendering and cycle checks consume one temporal meaning instead of parallel cases.
+
+Within those registered slots, concise phrases outside the fixed noun ontology become
+generic labeled concept nodes. This supports examples such as evaporation,
+condensation, rainfall, heavy rain, and soil erosion without adding scenario nouns.
+The opening is deliberately bounded: labels are validated for length and characters,
+while unknown predicates, negation, conditions, and uncertainty still preserve the
+scene and request clarification.
+
+Connectors derive their endpoints from the registered glyph silhouettes. Temporal
+edges are dashed and causal edges are solid with distinct color and marks; both retain
+an accessible text key and static meaning when reduced motion is enabled. Exact label
+reuse extends a chain without duplicating a concept. Validation rejects self-edges,
+duplicate claims, malformed arity, old-version extensions, unreadable geometry, and
+directed cycles. Removing an endpoint cleans its edges.
+
+Eleven focused tests cover semantic aliases, open concept construction, article-led
+phrases, canonical `after`, chain reuse, paraphrase equivalence, cycles, duplicates,
+schema attacks, negation, cleanup, and DoodleScript 1.7/1.8 composition. The complete
+checkpoint passes 189 tests. Thirteen actual-component fixtures include timeline and
+causality scenes. Desktop captures were inspected, and the 430 px real-app workflow
+reports PASS for chain construction, cycle rollback, Undo, causality, accessibility,
+and layout. Branching graphs, cross-row routing, physical Android rendering, and
+speech-to-event latency remain unverified.
+
 ## Correctness boundaries
 
 - Unrecognised clauses roll back the entire proposed input.
@@ -469,7 +499,7 @@ grammar fixtures as real-world accuracy.
 ## Outstanding work
 
 General language planning/retrieval, references beyond the recent explicit focus,
-events and causality, advanced CPU scheduling semantics, academic renderers, rich poses, connector
+branching event layout, advanced CPU scheduling semantics, academic renderers, rich poses, connector
 routing, calibrated speech confidence and device benchmarks remain unfinished.
 Android speech still uses a system recognition service: its prefer-offline flag
 does not guarantee local processing. Native speech must be audited and verified

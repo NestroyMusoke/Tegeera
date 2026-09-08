@@ -1,6 +1,6 @@
 import type { CharacterPerformance, DoodleCommand, DoodleScript, EntityKind, SceneEntity, SceneState, SceneContext } from "./schema";
 import { applyDoodleScript } from "./scene";
-import { nextPosition } from "./layout";
+import { nextPosition, nextPositionFor } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
 import { analyzeTeacherInput } from "./semanticFrame";
 import { entityKindForAlias, ordinalWords, parseCountToken, parseEntityPhrase } from "./lexicon";
@@ -50,7 +50,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentClause = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -68,6 +68,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     }
     if (command.action === "relate" && command.relation.kind === "actsOn") upgradeVersion("1.6.0");
     if (command.action === "relate" && command.relation.kind === "handover") upgradeVersion("1.7.0");
+    if (command.action === "relate" && ["before", "causes"].includes(command.relation.kind)) upgradeVersion("1.8.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -95,7 +96,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     context = { subjectIds, objectIds };
     working = applyDoodleScript(scene, makeScript());
   };
-  const relate = (kind: "shares" | "owns" | "toward" | "away" | "queuedFor", sourceIds: string[], targetIds: string[]) => {
+  const relate = (kind: "shares" | "owns" | "toward" | "away" | "queuedFor" | "before" | "causes", sourceIds: string[], targetIds: string[]) => {
     append({ action: "relate", relation: {
       id: `relation-${scene.revision + 1}-${commands.length}`, kind, sourceIds, targetIds
     } });
@@ -104,6 +105,33 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     for (const relation of (working.relations ?? []).filter((item) => isMotion(item) && item.sourceIds.includes(actorId))) {
       append({ action: "unrelate", relationId: relation.id });
     }
+  };
+  const eventNode = (phrase: string): string => {
+    const normalized = phrase.trim().replace(/^(?:a|an|the) /, "");
+    if (!normalized || normalized.length > 40 || normalized.split(/\s+/).length > 7
+      || !/^[a-z0-9][a-z0-9 '-]*$/.test(normalized)) {
+      throw new Clarification("Keep each event or concept to seven words so its timeline label stays readable.");
+    }
+    const exact = working.entities.filter((entity) => entity.label?.toLowerCase() === normalized);
+    if (exact.length === 1) return exact[0].id;
+    if (/^(?:it|that)$/.test(phrase)) return resolve(phrase, working).id;
+    const parsed = parseEntityPhrase(normalized);
+    if (parsed) {
+      if (parsed.count !== 1) throw new Clarification("Use one event or concept at each end of a timeline relationship.");
+      const existingKind = working.entities.filter((entity) => entity.kind === parsed.kind);
+      if (phrase.startsWith("the ") && existingKind.length) return resolve(phrase, working).id;
+      return create(normalized)[0];
+    }
+    const position = nextPositionFor(working.entities, "generic", normalized);
+    if (!position) throw new Clarification("There is no readable space left for that event. Remove an object or start a new scene.");
+    let number = 1;
+    while (working.entities.some((entity) => entity.id === `concept-${number}`)) number++;
+    const id = `concept-${number}`;
+    append({ action: "create", entity: {
+      id, kind: "generic", label: normalized, ...position,
+      scale: 1, direction: "right", highlighted: false
+    } });
+    return id;
   };
   try {
     if (!input.trim() || input.length > 500) throw new Clarification("Explain one short scene or change, up to 500 characters.");
@@ -125,6 +153,20 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const cpu = create("a cpu");
         relate("queuedFor", processes, cpu);
         focus(processes, cpu);
+        continue;
+      }
+      const eventRelation = frame.relations.find((relation) => ["before", "after", "causes"].includes(relation.predicate));
+      if (eventRelation) {
+        const mentionText = (mentionId: string) => frame.entities.find((mention) => mention.mentionId === mentionId)?.text
+          ?? frame.references.find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const leftPhrase = mentionText(eventRelation.sourceMentionIds[0]);
+        const rightPhrase = mentionText(eventRelation.targetMentionIds[0]);
+        const reverse = eventRelation.predicate === "after";
+        const sourceId = eventNode(reverse ? rightPhrase : leftPhrase);
+        const targetId = eventNode(reverse ? leftPhrase : rightPhrase);
+        if (sourceId === targetId) throw new Clarification("An event cannot be ordered before or caused by itself.");
+        relate(eventRelation.predicate === "causes" ? "causes" : "before", [sourceId], [targetId]);
+        focus([sourceId], [targetId]);
         continue;
       }
       const motion = text.match(/^(.+?) (approaches|approaching|moves? towards?|moving towards?|drives? towards?|driving towards?|walks? towards?|walking towards?|moves? away from|moving away from|drives? away from|driving away from|walks? away from|walking away from) (.+)$/);

@@ -55,7 +55,7 @@ export const sceneEntitySchema = z.object({
 
 export const relationSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["shares", "owns", "toward", "away", "queuedFor", "actsOn", "handover"]),
+  kind: z.enum(["shares", "owns", "toward", "away", "queuedFor", "actsOn", "handover", "before", "causes"]),
   sourceIds: z.array(z.string().min(1)).min(1).max(12),
   targetIds: z.array(z.string().min(1)).min(1).max(12),
   objectIds: z.array(z.string().min(1)).min(1).max(12).optional(),
@@ -100,7 +100,7 @@ export const contextSchema = z.object({
 });
 
 export const doodleScriptSchema = z.object({
-  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0"]),
+  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0"]),
   context: contextSchema.optional(),
   sceneId: z.string().min(1),
   revision: z.number().int().nonnegative(),

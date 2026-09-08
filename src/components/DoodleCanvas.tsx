@@ -7,6 +7,7 @@ import { EntityGlyph } from "./entityRenderers";
 import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
 import { actionForPredicate } from "../doodlescript/actionRegistry";
 import { applyHandoverPerformance, handoverParticipants, isHandover } from "../doodlescript/handover";
+import { eventFlowGeometry, isEventRelation } from "../doodlescript/eventRelations";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -169,6 +170,20 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
         <path className="handover-flow" d={`M${startX} ${y} Q${centerX} ${y - 34} ${endX} ${y}`} fill="none" stroke="#b95f37" strokeWidth="3" strokeLinecap="round" />
         <path d={`M${endX - direction * 11} ${y - 8} L${endX} ${y} L${endX - direction * 11} ${y + 8}`} fill="none" stroke="#b95f37" strokeWidth="3" strokeLinecap="round" />
         <text x={centerX} y={y - 25} textAnchor="middle" fill="#8f4026" fontSize="15">handover</text>
+      </g>
+    );
+  }
+  if (isEventRelation(relation)) {
+    const geometry = eventFlowGeometry(relation, entities);
+    if (!geometry) return null;
+    const color = relation.kind === "causes" ? "#a44a2a" : "#315f79";
+    const label = relation.kind === "causes" ? "causes" : "before";
+    return (
+      <g className={`event-annotation event-${relation.kind}`} aria-label={`${geometry.source.label} ${label} ${geometry.target.label}`}>
+        <path className="event-flow" d={`M${geometry.startX} ${geometry.y} H${geometry.endX}`} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+        <path d={`M${geometry.endX - 11} ${geometry.y - 8} L${geometry.endX} ${geometry.y} L${geometry.endX - 11} ${geometry.y + 8}`} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+        {relation.kind === "causes" && <path d={`M${geometry.startX - 7} ${geometry.y - 10} V${geometry.y + 10} M${geometry.startX - 13} ${geometry.y - 6} L${geometry.startX - 2} ${geometry.y + 6}`} stroke={color} strokeWidth="2" />}
+        <text x={(geometry.startX + geometry.endX) / 2} y={geometry.y - 14} textAnchor="middle" fill={color} fontSize="15">{label}</text>
       </g>
     );
   }

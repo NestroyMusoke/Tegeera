@@ -211,6 +211,13 @@ surfaces of the one transferred entity. Ownership, staging, and the event relati
 land in one revision, preventing a persisted half-transfer and allowing Undo to
 restore the exact prior scene.
 
+DoodleScript 1.8 introduces canonical temporal and causal edges over reusable concept
+nodes. Open vocabulary is permitted only inside these evidence-backed relationship
+slots, keeping unsupported predicates outside the mutation boundary. `after` reverses
+into `before`; causal paraphrases converge on `causes`. The validator enforces arity,
+reference integrity, unique edges, acyclic graphs, readable left-to-right geometry,
+and version compatibility before any revision is applied.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive
@@ -343,8 +350,8 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-Generalize event sequencing beyond the completed handover primitive: add explicit
-before/after/causes roles to the semantic plan, then implement a revision-safe
-transition timeline that composes registered actions without sentence-specific
-rendering branches. Keep the same identity, collision, accessibility, and rollback
-gates used by contact and handover.
+Generalize the completed linear event edges into a topology-aware graph planner. It
+should place branches and convergences across rows, route connectors around node and
+label bounds, preserve established node positions where possible, and reject layouts
+whose crossings cannot be made readable. Keep event vocabulary, layout, and rendering
+separate so the same planner can serve scientific cycles, histories, and causal maps.

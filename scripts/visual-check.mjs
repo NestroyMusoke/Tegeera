@@ -41,7 +41,7 @@ await writeFile(bundlePath, result.outputFiles[0].text);
 const { render, renderPerformance } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const cases = {
@@ -55,6 +55,8 @@ const cases = {
   contactProcess: ["A teacher touches a process"],
   holding: ["A teacher holds a book"],
   carrying: ["A student carries a book"],
+  timeline: ["Evaporation happens before condensation", "Condensation happens before rainfall"],
+  causality: ["Heavy rain causes soil erosion"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -170,7 +172,27 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Queue caused page overflow');
       document.getElementById('qa-result').textContent = 'PASS: CPU queue create, count correction, CPU move, reorder, undo, layout';
     }
-    (new URLSearchParams(location.search).has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    async function verifyEvents() {
+      await pause();
+      await submit('Evaporation happens before condensation');
+      await submit('Condensation comes before rainfall');
+      check(document.querySelectorAll('.event-before').length === 2, 'Timeline chain did not render');
+      check(document.querySelectorAll('[data-renderer="generic"]').length === 3, 'Timeline duplicated or omitted a concept');
+      const before = document.querySelector('.doodle-canvas').innerHTML;
+      await submit('Rainfall happens before evaporation');
+      check(!!document.querySelector('.clarification'), 'Temporal cycle did not request clarification');
+      check(document.querySelector('.doodle-canvas').innerHTML === before, 'Rejected temporal cycle changed the scene');
+      document.querySelector('.undo-button').click(); await pause();
+      check(document.querySelectorAll('.event-before').length === 1, 'Timeline Undo did not restore the prior graph');
+      await submit('Clear everything');
+      await submit('Heavy rain causes soil erosion');
+      check(document.querySelectorAll('.event-causes').length === 1, 'Causal relation did not render');
+      check(document.querySelector('.relationship-causes')?.textContent.includes('causes'), 'Accessible causal key is missing');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Event diagram caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: temporal chain, concept reuse, cycle rollback, Undo, causality, accessibility, layout';
+    }
+    const params = new URLSearchParams(location.search);
+    (params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -182,3 +204,4 @@ await writeFile(resolve(output, "app-phone.html"), framedApp(390));
 await writeFile(resolve(output, "app-small-phone.html"), framedApp(320));
 await writeFile(resolve(output, "app-detail-phone.html"), framedApp(390, "?detail"));
 await writeFile(resolve(output, "app-queue-phone.html"), framedApp(390, "?queue"));
+await writeFile(resolve(output, "app-events-phone.html"), framedApp(390, "?events"));

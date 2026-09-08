@@ -238,6 +238,8 @@ button {
 .attached-object.motion-talk { animation: rig-breathe 1200ms ease-in-out infinite alternate; }
 .handover-object > g:first-child { animation: handover-object 900ms cubic-bezier(.2,.8,.3,1) 1; transform-origin: center; }
 .handover-flow { stroke-dasharray: 8 7; animation: motion-flow 900ms linear 1; }
+.event-before .event-flow { stroke-dasharray: 8 7; }
+.event-flow { animation: motion-flow 1100ms linear infinite; }
 .rig-speed-lines { fill: none; stroke: #d08a2f; stroke-width: 3; stroke-linecap: round; animation: rig-speed 680ms ease-in-out infinite alternate; }
 @keyframes rig-step { to { transform: translateY(var(--performance-travel)); } }
 @keyframes rig-breathe { to { transform: translateY(var(--performance-breathe)); } }
@@ -246,7 +248,7 @@ button {
 @keyframes rig-speed { from { opacity: .25; } to { opacity: .9; } }
 @keyframes handover-object { 45% { transform: translateY(-7px) scale(1.08); } }
 @media (prefers-reduced-motion: reduce) {
-  .motion-flow, .handover-flow, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
+  .motion-flow, .handover-flow, .event-flow, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
 }
 
 .doodle-stroke,

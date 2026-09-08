@@ -113,6 +113,14 @@ and `Stop it`. Human figures also support `A student walks toward a school`.
 These show direction with arrows and facing/pose changes, not physical movement
 or collision simulation. Objects must share a row with room for an arrow.
 
+Temporal and causal concept diagrams accept open, readable labels inside registered
+relationship structures. Try `Evaporation happens before condensation`, followed by
+`Condensation comes before rainfall`, or `Heavy rain causes soil erosion`. `After`
+is normalized into the same earlier-to-later graph; `leads to` and `results in` use
+the same causal relation. Matching concepts are reused, cycles and duplicate claims
+are rejected atomically, and unknown verbs outside these structures still require
+clarification.
+
 No language model draws directly onto the canvas. Every parser or model must produce DoodleScript, and every script must pass four gates before it changes a lesson:
 
 1. schema validity;

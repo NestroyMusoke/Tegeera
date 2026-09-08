@@ -152,7 +152,11 @@ function populateMeaning(frame: SemanticFrame): void {
     if (!predicate) return;
     frame.intent = "describe";
     frame.relations.push({ predicate, sourceMentionIds: [sourceMentionId], targetMentionIds: [targetMentionId] });
-    frame.resolutionStatus = entityMentionsAreResolved(frame) ? "resolved" : "needs-clarification";
+    const openConceptRelation = ["before", "after", "causes"].includes(predicate);
+    const conceptSlotsAreReadable = [...frame.entities, ...frame.references]
+      .every(({ text }) => text.length <= 40 && text.split(/\s+/).length <= 7 && /^[a-z0-9][a-z0-9 '-]*$/.test(text));
+    frame.resolutionStatus = entityMentionsAreResolved(frame) || (openConceptRelation && conceptSlotsAreReadable)
+      ? "resolved" : "needs-clarification";
     return;
   }
 
