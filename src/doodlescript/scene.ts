@@ -65,8 +65,10 @@ export function applyDoodleScript(
       relations = relations.map((relation) => ({
         ...relation,
         sourceIds: relation.sourceIds.filter((id) => id !== command.targetId),
-        targetIds: relation.targetIds.filter((id) => id !== command.targetId)
-      })).filter((relation) => relation.sourceIds.length && relation.targetIds.length);
+        targetIds: relation.targetIds.filter((id) => id !== command.targetId),
+        objectIds: relation.objectIds?.filter((id) => id !== command.targetId)
+      })).filter((relation) => relation.sourceIds.length && relation.targetIds.length
+        && (relation.kind !== "handover" || relation.objectIds?.length));
     }
   }
   const entities = script.commands.reduce(applyCommand, scene.entities);

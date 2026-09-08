@@ -203,6 +203,14 @@ with the carrier's breathing or walking loop. Stopping or changing to a non-cont
 action releases the target through ordinary safe layout. Independent target movement
 that would break reach is rejected atomically.
 
+DoodleScript 1.7 represents a person-to-person transfer as a triadic `handover`
+relationship with distinct giver, recipient, and object roles. A deterministic
+three-participant planner searches safe shared placements while holding unrelated
+entities fixed. Both characters reuse the same contact solver against opposite
+surfaces of the one transferred entity. Ownership, staging, and the event relation
+land in one revision, preventing a persisted half-transfer and allowing Undo to
+restore the exact prior scene.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive
@@ -335,8 +343,8 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-Build Milestone 1 only. Do not add another scenario. Introduce semantic frames and
-route the existing general object, ownership, motion and ordered-queue meanings
-through them while preserving every current result. This creates the seam where
-retrieval and a future local planner can contribute without touching rendering or
-bypassing validation.
+Generalize event sequencing beyond the completed handover primitive: add explicit
+before/after/causes roles to the semantic plan, then implement a revision-safe
+transition timeline that composes registered actions without sentence-specific
+rendering branches. Keep the same identity, collision, accessibility, and rollback
+gates used by contact and handover.

@@ -41,7 +41,7 @@ await writeFile(bundlePath, result.outputFiles[0].text);
 const { render, renderPerformance } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const cases = {
@@ -104,8 +104,12 @@ const appBundle = await build({
       check(controls.getBoundingClientRect().bottom <= details.getBoundingClientRect().top, 'Controls overlap details');
       await submit('The first student gives book 1 to the second student');
       check(document.querySelectorAll('[data-owner-id="student-2"] [data-owned-id]').length === 2, 'Transfer failed');
+      check(document.querySelectorAll('.doodle-canvas [data-entity-id="book-1"]').length === 1, 'Transfer duplicated the object');
+      check(document.querySelectorAll('.handover-annotation').length === 1, 'Handover choreography is missing');
+      check(document.querySelector('[data-entity-id="book-1"]')?.dataset.handoverObject === 'true', 'Transferred object identity is not marked');
       document.querySelector('.undo-button').click(); await pause();
       check(document.querySelectorAll('[data-owner-id="student-1"] [data-owned-id]').length === 1, 'Undo failed');
+      check(!document.querySelector('.handover-annotation'), 'Undo left handover choreography behind');
       await submit('A dragon eats the books');
       check(!!document.querySelector('.clarification'), 'Missing clarification');
       check(document.querySelectorAll('.doodle-object').length === 6, 'Unsupported input changed scene');
@@ -145,7 +149,7 @@ const appBundle = await build({
       check(carrier?.getAttribute('transform') !== carrierBefore, 'Carrier did not move');
       check(carried?.getAttribute('transform') !== carriedBefore, 'Attached object did not follow carrier movement');
       if (new URLSearchParams(location.search).has('detail')) { detailButton.click(); await pause(); }
-      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, spoken performance, target lifecycle, contact attachment movement, character rigs, detail size, scroll, overview reset, layout';
+      document.getElementById('qa-result').textContent = 'PASS: teaching workflow, handover identity and Undo, spoken performance, target lifecycle, contact attachment movement, character rigs, detail size, scroll, overview reset, layout';
     }
     async function verifyQueue() {
       await pause();

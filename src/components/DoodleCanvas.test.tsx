@@ -80,13 +80,15 @@ describe("visible ownership groups", () => {
     expect(html).not.toContain('aria-label="Personal ownership"');
     expect(scene).toEqual(saved);
   });
-  it("updates a transferred book without changing other codes or positions", () => {
+  it("updates a transferred book without changing unrelated codes or positions", () => {
     const before = run("Three students each have a book");
     const after = run("The first student gives book 1 to the second student", before);
     expect(ownershipBadges(after).get("book-1")?.[0].code).toBe("O2");
     expect(ownershipBadges(after).get("book-3")).toEqual(ownershipBadges(before).get("book-3"));
     expect(ownershipBadges(after).get("student-2")).toHaveLength(1);
-    expect(after.entities).toEqual(before.entities);
+    expect(after.entities.map((entity) => entity.id)).toEqual(before.entities.map((entity) => entity.id));
+    expect(after.entities.filter((entity) => !["student-1", "student-2", "book-1"].includes(entity.id)))
+      .toEqual(before.entities.filter((entity) => !["student-1", "student-2", "book-1"].includes(entity.id)));
     expect(ownershipBadges(before).get("book-1")?.[0].code).toBe("O1");
   });
   it("does not mark shared books as individually owned", () => {

@@ -32,9 +32,9 @@ reference resolution, not unrestricted discourse understanding.
 Count changes apply to the discussed group, preserve retained IDs and positions,
 and update its relationship membership. Multiple roles or personal owners require
 clarification. Transfers require an existing sole owner and recipient, retain the
-object ID and position, and replace its ownership relation. They currently express
-the ownership change in the relationship key; physical handover animation remains
-unfinished. Existing sharing cannot silently become personal ownership.
+object ID, and replace its ownership relation. DoodleScript 1.7 now restages only
+the three explicit participants and renders a physical two-person handover. Existing
+sharing cannot silently become personal ownership.
 
 DoodleScript 1.2.0 adds explicit context and `unrelate`; 1.0.0 and 1.1.0 continue
 to be accepted under their original feature boundaries. Older scenes need no
@@ -99,7 +99,7 @@ to an owner. Shared-resource brackets and motion arrows remain separate.
 
 Codes derive from entity order and are display annotations, not permanent IDs.
 Transfers preserve codes for remaining owners and update the transferred item's
-badge without moving objects. Removing entities can renumber codes consistently.
+badge while the handover planner restages its three participants. Removing entities can renumber codes consistently.
 Undo renders codes from the restored scene. SVG regression checks cover ownership
 membership, transfers, sharing, removal and absence of scene mutation.
 
@@ -406,9 +406,29 @@ component fixtures now include holding and carrying, and the full 430 px browser
 workflow reports PASS after verifying that both carrier and carried-object transforms
 change together.
 
-Animated person-to-person transfer remains unfinished. It needs a bounded transient
-handover phase followed by the already-safe ownership reassignment, without storing a
-half-completed transfer if playback is interrupted.
+### Identity-preserving person-to-person handover
+
+DoodleScript 1.7 adds a triadic `handover` relationship. `sourceIds` names the giver,
+`targetIds` names the recipient, and `objectIds` names the transferred entity. This
+avoids overloading a binary ownership edge and makes stored or replayed scripts
+unambiguous. The ownership reassignment, participant moves, relationship, and context
+are one validated revision, so Undo restores the complete pre-transfer scene.
+
+The generic staging search moves only those three participants, treats every unrelated
+entity as a fixed obstacle, and accepts a candidate only when the two people remain
+separate and both can safely reach opposite surfaces of the same object. The renderer
+then applies the existing exact two-bone solver independently to both characters. No
+decorative duplicate is created. A short object lift and directional handover arc
+communicate the event; reduced-motion mode keeps the static two-hand pose and disables
+the motion.
+
+Seven focused tests cover the versioned role contract, atomic identity preservation,
+unrelated-scene stability, cross-vocabulary reuse, sub-pixel hand endpoints, accessible rendering, and legacy
+or malformed relation rejection. The complete checkpoint passes 178 tests. The actual
+React fixture was inspected at 1280×900: both hands meet the book edges, the giver and
+recipient face inward, and the ownership badge reflects the recipient. The full app
+workflow at 430 px reports PASS after checking a single object, handover presence, and
+Undo cleanup. Animation timing and Android device rendering remain unverified.
 
 ## Correctness boundaries
 

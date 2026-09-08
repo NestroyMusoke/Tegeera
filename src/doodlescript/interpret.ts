@@ -6,6 +6,7 @@ import { analyzeTeacherInput } from "./semanticFrame";
 import { entityKindForAlias, ordinalWords, parseCountToken, parseEntityPhrase } from "./lexicon";
 import { actionRegistry } from "./actionRegistry";
 import { releaseContactPair, stageContactPair, stageTargetedPair } from "./spatialStaging";
+import { stageHandover } from "./handover";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -49,15 +50,24 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentClause = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0"];
+  const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
+    if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
+  };
   const makeScript = (): DoodleScript => ({
     schemaVersion, sceneId: scene.sceneId, revision: scene.revision + 1, context,
     confidence: 1, sourceText: input, commands
   });
   const append = (command: DoodleCommand) => {
-    if (((command.action === "create" && command.entity.performance)
-      || (command.action === "update" && command.performance !== undefined)) && schemaVersion === "1.4.0") schemaVersion = "1.5.0";
-    if (command.action === "unrelate" && working.relations?.some((relation) => relation.id === command.relationId && relation.kind === "actsOn")) schemaVersion = "1.6.0";
-    if (command.action === "relate" && command.relation.kind === "actsOn") schemaVersion = "1.6.0";
+    if ((command.action === "create" && command.entity.performance)
+      || (command.action === "update" && command.performance !== undefined)) upgradeVersion("1.5.0");
+    if (command.action === "unrelate") {
+      const removedKind = working.relations?.find((relation) => relation.id === command.relationId)?.kind;
+      if (removedKind === "actsOn") upgradeVersion("1.6.0");
+      if (removedKind === "handover") upgradeVersion("1.7.0");
+    }
+    if (command.action === "relate" && command.relation.kind === "actsOn") upgradeVersion("1.6.0");
+    if (command.action === "relate" && command.relation.kind === "handover") upgradeVersion("1.7.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -219,6 +229,9 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const giver = resolve(transfer[1], working);
         const recipient = resolve(transfer[3], working);
         if (giver.id === recipient.id) throw new Clarification("The giver and recipient are the same person.");
+        if (![giver, recipient].every((entity) => ["person", "student", "teacher"].includes(entity.kind))) {
+          throw new Clarification("A handover needs a person giving to another person.");
+        }
         const possession = transfer[2].match(/^(her|his|their) (\w+)$/);
         let object: SceneEntity;
         if (possession) {
@@ -228,14 +241,25 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           if (matches.length !== 1) throw new Clarification("Which owned object should be given? Name it explicitly.");
           object = matches[0];
         } else object = resolve(transfer[2], working);
-        const links = (working.relations ?? []).filter((relation) => relation.targetIds.includes(object.id));
+        const links = (working.relations ?? []).filter((relation) => ["owns", "shares"].includes(relation.kind) && relation.targetIds.includes(object.id));
         if (links.length !== 1 || links[0].kind !== "owns" || links[0].sourceIds[0] !== giver.id) throw new Clarification("That object is not solely owned by the giver. Clarify its ownership first.");
+        for (const relation of (working.relations ?? []).filter((relation) =>
+          (relation.kind === "handover" && relation.objectIds?.includes(object.id))
+          || (relation.kind === "actsOn" && [...relation.sourceIds, ...relation.targetIds].some((id) => [giver.id, recipient.id, object.id].includes(id))))) {
+          append({ action: "unrelate", relationId: relation.id });
+        }
         const old = links[0];
         append({ action: "unrelate", relationId: old.id });
         const remaining = old.targetIds.filter((id) => id !== object.id);
         if (remaining.length) append({ action: "relate", relation: { ...old, targetIds: remaining } });
         relate("owns", [recipient.id], [object.id]);
-        focus([giver.id], [object.id]);
+        for (const move of stageHandover(working, giver.id, object.id, recipient.id)) append({ action: "move", ...move });
+        append({ action: "relate", relation: {
+          id: `relation-${scene.revision + 1}-${commands.length}`,
+          kind: "handover", predicate: "give",
+          sourceIds: [giver.id], targetIds: [recipient.id], objectIds: [object.id]
+        } });
+        focus([giver.id, recipient.id], [object.id]);
         continue;
       }
       const move = text.match(/^(move|turn|face) (.+?) (?:to the )?(left|right|up|down)$/);

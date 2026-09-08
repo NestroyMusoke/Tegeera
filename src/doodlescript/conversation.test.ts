@@ -56,7 +56,9 @@ describe("conversation continuity", () => {
   it("remembers the arriving subject even though her book was created last", () => {
     const scene = run("Three students share two books. Another student arrives with her own book");
     const result = run("She gives her book to the first student", scene);
-    expect(result.entities).toEqual(scene.entities);
+    expect(result.entities.map((entity) => entity.id)).toEqual(scene.entities.map((entity) => entity.id));
+    expect(result.entities.filter((entity) => !["student-4", "student-1", "book-3"].includes(entity.id)))
+      .toEqual(scene.entities.filter((entity) => !["student-4", "student-1", "book-3"].includes(entity.id)));
     expect(result.relations?.find((relation) => relation.kind === "shares")).toEqual(scene.relations?.[0]);
     expect(result.relations?.find((relation) => relation.kind === "owns")).toMatchObject({ sourceIds: ["student-1"], targetIds: ["book-3"] });
   });
@@ -64,7 +66,8 @@ describe("conversation continuity", () => {
   it("keeps an owner's other books when one is transferred", () => {
     const scene = run("A student owns two books. Add a teacher");
     const result = run("The student gives the first book to the teacher", scene);
-    expect(result.entities).toEqual(scene.entities);
+    expect(result.entities.map((entity) => entity.id)).toEqual(scene.entities.map((entity) => entity.id));
+    expect(result.entities.find((entity) => entity.id === "book-2")).toEqual(scene.entities.find((entity) => entity.id === "book-2"));
     expect(result.relations).toEqual(expect.arrayContaining([
       expect.objectContaining({ sourceIds: ["student-1"], targetIds: ["book-2"] }),
       expect.objectContaining({ sourceIds: ["teacher-1"], targetIds: ["book-1"] })

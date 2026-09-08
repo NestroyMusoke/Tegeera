@@ -6,6 +6,7 @@ import { isQueue, queueGeometry } from "../doodlescript/queue";
 import { EntityGlyph } from "./entityRenderers";
 import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
 import { actionForPredicate } from "../doodlescript/actionRegistry";
+import { applyHandoverPerformance, handoverParticipants, isHandover } from "../doodlescript/handover";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -75,8 +76,12 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           const attachment = scene.relations?.find((relation) => isAttachedPerformance(relation) && relation.targetIds[0] === entity.id);
           const carrier = scene.entities.find((item) => item.id === attachment?.sourceIds[0]);
           const attachmentPerformance = carrier?.performance ?? actionForPredicate(attachment?.predicate)?.performance;
+          const handover = scene.relations?.find((relation) => isHandover(relation)
+            && [...relation.sourceIds, ...relation.targetIds].includes(entity.id));
+          const handoverObject = scene.entities.find((item) => item.id === handover?.objectIds?.[0]);
           const directed = geometry ? { ...entity, direction: geometry.direction } : entity;
-          const performed = targeting && performanceTarget ? applyTargetedPerformance(directed, performanceTarget, targeting) : directed;
+          const targeted = targeting && performanceTarget ? applyTargetedPerformance(directed, performanceTarget, targeting) : directed;
+          const performed = handover && handoverObject ? applyHandoverPerformance(targeted, handoverObject) : targeted;
           return <DoodleEntity
             entity={performed}
             badges={ownership.get(entity.id) ?? []}
@@ -86,6 +91,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
               loop: attachmentPerformance.loop ?? "none",
               intensity: attachmentPerformance.intensity ?? 0
             } : undefined}
+            handoverObject={scene.relations?.some((relation) => relation.kind === "handover" && relation.objectIds?.includes(entity.id))}
             index={index}
             key={entity.id}
           />;
@@ -131,7 +137,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
             return (
               <div key={relation.id} className={`relationship-${relation.kind}`}>
                 <span>{labels(relation.sourceIds)}</span>
-                <strong>{relationLabel(relation)} →</strong>
+                <strong>{relation.kind === "handover" ? `gives ${labels(relation.objectIds ?? [])} to →` : `${relationLabel(relation)} →`}</strong>
                 <span>{labels(relation.targetIds)}</span>
               </div>
             );
@@ -143,13 +149,29 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, entities }: { relation: SceneRelation; entities: SceneEntity[] }) {
-  const members = [...relation.sourceIds, ...relation.targetIds]
+  const members = [...relation.sourceIds, ...relation.targetIds, ...(relation.objectIds ?? [])]
     .map((id) => entities.find((entity) => entity.id === id))
     .filter((entity): entity is SceneEntity => !!entity);
   if (!members.length) return null;
   // Ownership uses matching badges, avoiding brackets through unrelated objects.
   if (relation.kind === "owns") return null;
   if (isTargetedPerformance(relation)) return null;
+  if (relation.kind === "handover") {
+    const participants = handoverParticipants(relation, entities);
+    if (!participants) return null;
+    const startX = participants.giver.x * 10;
+    const endX = participants.recipient.x * 10;
+    const direction = Math.sign(endX - startX) || 1;
+    const centerX = participants.object.x * 10;
+    const y = Math.min(participants.giver.y, participants.recipient.y) * 6.2 - 92;
+    return (
+      <g className="handover-annotation" aria-label={`${participants.giver.label} gives ${participants.object.label} to ${participants.recipient.label}`}>
+        <path className="handover-flow" d={`M${startX} ${y} Q${centerX} ${y - 34} ${endX} ${y}`} fill="none" stroke="#b95f37" strokeWidth="3" strokeLinecap="round" />
+        <path d={`M${endX - direction * 11} ${y - 8} L${endX} ${y} L${endX - direction * 11} ${y + 8}`} fill="none" stroke="#b95f37" strokeWidth="3" strokeLinecap="round" />
+        <text x={centerX} y={y - 25} textAnchor="middle" fill="#8f4026" fontSize="15">handover</text>
+      </g>
+    );
+  }
   if (isQueue(relation)) {
     const geometry = queueGeometry(relation, entities);
     if (!geometry) return null;
@@ -205,18 +227,20 @@ function DoodleEntity({
   index,
   moving,
   badges,
-  attachment
+  attachment,
+  handoverObject
 }: {
   entity: SceneEntity;
   index: number;
   moving: boolean;
   badges: OwnershipBadge[];
   attachment?: { actorId: string; loop: string; intensity: number };
+  handoverObject?: boolean;
 }) {
   const x = entity.x * 10;
   const y = entity.y * 6.2;
   const transform = `translate(${x} ${y}) scale(${entity.scale})`;
-  const className = `doodle-object ${entity.highlighted ? "highlighted" : ""}`;
+  const className = `doodle-object ${entity.highlighted ? "highlighted" : ""}${handoverObject ? " handover-object" : ""}`;
   const delay = { "--draw-delay": `${index * 90}ms` } as React.CSSProperties;
   const attachmentStyle = attachment ? {
     "--performance-travel": `${-(2 + attachment.intensity * 4)}px`,
@@ -224,7 +248,7 @@ function DoodleEntity({
   } as React.CSSProperties : undefined;
 
   return (
-    <g className={className} data-entity-id={entity.id} data-attached-to={attachment?.actorId} transform={transform} style={delay}>
+    <g className={className} data-entity-id={entity.id} data-attached-to={attachment?.actorId} data-handover-object={handoverObject || undefined} transform={transform} style={delay}>
       <g className={attachment ? `attached-object motion-${attachment.loop}` : undefined} style={attachmentStyle}>
         <EntityGlyph entity={entity} moving={moving} />
       </g>

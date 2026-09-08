@@ -44,7 +44,9 @@ describe("individual versus shared quantities", () => {
   it("transfers only the specified owner's item and preserves its identity", () => {
     const before = run("Three students each have a book");
     const after = run("The first student gives book 1 to the second student", before);
-    expect(after.entities).toEqual(before.entities);
+    expect(after.entities.map((entity) => entity.id)).toEqual(before.entities.map((entity) => entity.id));
+    expect(after.entities.filter((entity) => !["student-1", "student-2", "book-1"].includes(entity.id)))
+      .toEqual(before.entities.filter((entity) => !["student-1", "student-2", "book-1"].includes(entity.id)));
     expect(after.relations?.find((relation) => relation.targetIds.includes("book-1"))?.sourceIds).toEqual(["student-2"]);
     expect(after.relations?.find((relation) => relation.targetIds.includes("book-3"))?.sourceIds).toEqual(["student-3"]);
     expect(before.relations?.[0].sourceIds).toEqual(["student-1"]);
