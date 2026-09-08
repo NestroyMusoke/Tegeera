@@ -89,7 +89,8 @@ export function planVisualPhrase(
       const object = withPosition(originalObject, objectPosition);
       if (!withinCanvas(object) || overlaps(subject, object) || obstacles.some((entity) => overlaps(object, entity))) continue;
       const projected = scene.entities.map((entity) => entity.id === subject.id ? subject : entity.id === object.id ? object : entity);
-      if (!visualPhraseGeometry(relation, projected)) continue;
+      const retained = [...(scene.relations ?? []).filter(isVisualAction), relation];
+      if (!labelsAreClear(retained, projected)) continue;
       const movement = Math.abs(subject.x - originalSubject.x) + Math.abs(subject.y - originalSubject.y)
         + Math.abs(object.x - originalObject.x) + Math.abs(object.y - originalObject.y);
       const score = Math.abs(subject.y - object.y) * 7
@@ -106,4 +107,125 @@ export function planVisualPhrase(
       return entity.x !== original.x || entity.y !== original.y;
     })
     .map(({ id, x, y }) => ({ targetId: id, x, y }));
+}
+
+function renderedEdge(relation: SceneRelation): [string, string] | null {
+  const definition = visualActionForPredicate(relation.predicate);
+  if (!definition || !isVisualAction(relation)) return null;
+  return definition.direction === "subject-to-object"
+    ? [relation.sourceIds[0], relation.targetIds[0]]
+    : [relation.targetIds[0], relation.sourceIds[0]];
+}
+
+function labelsAreClear(relations: SceneRelation[], entities: SceneEntity[]): boolean {
+  const labels = relations.map((relation) => visualPhraseGeometry(relation, entities));
+  if (labels.some((geometry) => !geometry)) return false;
+  return labels.every((geometry, index) => labels.slice(index + 1).every((other) => {
+    if (!geometry || !other) return false;
+    const combinedHalfWidth = (geometry.definition.label.length + other.definition.label.length) * 2.2;
+    return Math.abs(geometry.labelX - other.labelX) >= combinedHalfWidth
+      || Math.abs(geometry.labelY - other.labelY) >= 20;
+  }));
+}
+
+/**
+ * Coordinates all relations from one explanation before any edge is persisted.
+ * A fully new acyclic component receives a topology layout; continuations fall
+ * back to bounded pair planning while still validating the whole final graph.
+ */
+export function planVisualPhraseGraph(
+  scene: SceneState,
+  relations: SceneRelation[],
+  movableIds: ReadonlySet<string>
+): VisualPhraseMove[] | null {
+  if (!relations.length || relations.some((relation) => !isVisualAction(relation))) return null;
+  const nodeIds = new Set(relations.flatMap((relation) => [...relation.sourceIds, ...relation.targetIds]));
+  const nodes = scene.entities.filter((entity) => nodeIds.has(entity.id));
+  if (nodes.length !== nodeIds.size) return null;
+
+  if ([...nodeIds].every((id) => movableIds.has(id))) {
+    const incoming = new Map(nodes.map((node) => [node.id, 0]));
+    const outgoing = new Map(nodes.map((node) => [node.id, [] as string[]]));
+    for (const relation of relations) {
+      const edge = renderedEdge(relation);
+      if (!edge) return null;
+      incoming.set(edge[1], (incoming.get(edge[1]) ?? 0) + 1);
+      outgoing.get(edge[0])?.push(edge[1]);
+    }
+    const rank = new Map(nodes.map((node) => [node.id, 0]));
+    const queue = nodes.filter((node) => incoming.get(node.id) === 0).sort((a, b) => a.id.localeCompare(b.id));
+    let visited = 0;
+    while (queue.length) {
+      const node = queue.shift()!;
+      visited += 1;
+      for (const targetId of [...(outgoing.get(node.id) ?? [])].sort()) {
+        rank.set(targetId, Math.max(rank.get(targetId) ?? 0, (rank.get(node.id) ?? 0) + 1));
+        incoming.set(targetId, (incoming.get(targetId) ?? 0) - 1);
+        if (incoming.get(targetId) === 0) {
+          queue.push(nodes.find((candidate) => candidate.id === targetId)!);
+          queue.sort((a, b) => a.id.localeCompare(b.id));
+        }
+      }
+    }
+    if (visited !== nodes.length) return null;
+    const maxRank = Math.max(...rank.values());
+    const layers = Array.from({ length: maxRank + 1 }, (_, layer) => nodes
+      .filter((node) => rank.get(node.id) === layer)
+      .sort((a, b) => a.id.localeCompare(b.id)));
+    if (layers.some((layer) => layer.length > 3)) return null;
+    const widths = layers.map((layer) => Math.max(...layer.map(entityHalfWidth)));
+    const minimumGaps = Array.from({ length: maxRank }, (_, layer) => widths[layer] + widths[layer + 1] + 6);
+    const minimumSpan = minimumGaps.reduce((total, gap) => total + gap, 0);
+    const availableSpan = 98 - widths[0] - widths.at(-1)!;
+    if (minimumSpan > availableSpan) return null;
+    const desiredSpan = maxRank ? Math.max(minimumSpan, Math.min(availableSpan, maxRank * 32)) : 0;
+    const gapBonus = maxRank ? (desiredSpan - minimumSpan) / maxRank : 0;
+    const xByLayer = [50 - desiredSpan / 2];
+    for (let layer = 1; layer < layers.length; layer += 1) {
+      xByLayer.push(xByLayer[layer - 1] + minimumGaps[layer - 1] + gapBonus);
+    }
+    const rowsFor = (count: number) => count === 1 ? [44] : count === 2 ? [27, 61] : [18, 44, 70];
+    const base = layers.flatMap((layer, layerIndex) => layer.map((node, rowIndex) => ({
+      ...node, x: xByLayer[layerIndex], y: rowsFor(layer.length)[rowIndex]
+    })));
+    const obstacles = scene.entities.filter((entity) => !nodeIds.has(entity.id));
+    const candidates = [0, 10, -10].map((offset) => base.map((entity) => ({ ...entity, y: entity.y + offset })))
+      .filter((planned) => planned.every((entity) => withinCanvas(entity)
+        && !obstacles.some((obstacle) => overlaps(entity, obstacle))))
+      .filter((planned) => planned.every((entity, index) => !planned.slice(index + 1).some((other) => overlaps(entity, other))))
+      .filter((planned) => {
+        const projected = scene.entities.map((entity) => planned.find((candidate) => candidate.id === entity.id) ?? entity);
+        return labelsAreClear(relations, projected);
+      })
+      .sort((a, b) => {
+        const movement = (planned: SceneEntity[]) => planned.reduce((total, entity) => {
+          const original = scene.entities.find((candidate) => candidate.id === entity.id)!;
+          return total + Math.abs(entity.x - original.x) + Math.abs(entity.y - original.y);
+        }, 0);
+        return movement(a) - movement(b);
+      });
+    const best = candidates[0];
+    if (!best) return null;
+    return best.filter((entity) => {
+      const original = scene.entities.find((candidate) => candidate.id === entity.id)!;
+      return entity.x !== original.x || entity.y !== original.y;
+    }).map(({ id, x, y }) => ({ targetId: id, x, y }));
+  }
+
+  let projected = scene;
+  const finalMoves = new Map<string, VisualPhraseMove>();
+  for (const relation of relations) {
+    const moves = planVisualPhrase(projected, relation, movableIds);
+    if (!moves) return null;
+    moves.forEach((move) => finalMoves.set(move.targetId, move));
+    projected = {
+      ...projected,
+      entities: projected.entities.map((entity) => {
+        const move = moves.find((candidate) => candidate.targetId === entity.id);
+        return move ? { ...entity, x: move.x, y: move.y } : entity;
+      })
+    };
+  }
+  if (!labelsAreClear([...(scene.relations ?? []).filter(isVisualAction), ...relations], projected.entities)) return null;
+  return [...finalMoves.values()].sort((a, b) => a.targetId.localeCompare(b.targetId));
 }

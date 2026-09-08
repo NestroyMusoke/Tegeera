@@ -141,4 +141,27 @@ describe("semantic input frames", () => {
     expect(frame.visualActions[0].predicate).toBe("evaporate");
     expect(frame.visualActions[0].preposition).toBe("into");
   });
+
+  it("expands coordinated objects and explicitly inherits one unambiguous subject", () => {
+    const result = analyzeTeacherInput("A plant absorbs sunlight and water, then produces oxygen");
+    expect(result.frames).toHaveLength(2);
+    expect(result.frames[0].visualActions.map((action) => action.predicate)).toEqual(["absorb", "absorb"]);
+    expect(result.frames[0].visualActions.map((action) => action.objectMentionId)).toEqual([
+      result.frames[0].entities[1].mentionId,
+      result.frames[0].entities[2].mentionId
+    ]);
+    expect(result.frames[1].visualActions).toEqual([expect.objectContaining({
+      predicate: "produce",
+      subjectMentionId: result.frames[0].entities[0].mentionId,
+      inheritedSubjectFromFrameId: result.frames[0].frameId
+    })]);
+    expect(result.frames[1].evidence[0].text).toBe("produces oxygen");
+  });
+
+  it("does not invent a subject for an isolated or unsafe elided action", () => {
+    expect(analyzeTeacherInput("Produces oxygen").frames[0].visualActions).toEqual([]);
+    const uncertain = analyzeTeacherInput("A plant absorbs sunlight, then maybe produces oxygen");
+    expect(uncertain.frames[1].visualActions).toEqual([]);
+    expect(uncertain.frames[1].discourse.uncertain).toBe(true);
+  });
 });

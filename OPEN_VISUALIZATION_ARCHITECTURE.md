@@ -239,6 +239,20 @@ unrelated glyph bounds and separately checks the relationship label against enti
 labels. Static arrows, action text, and the relationship key carry the meaning;
 motion particles are supplementary and stop under `prefers-reduced-motion`.
 
+The coordinated visual-phrase planner expands two or three conjunction-separated
+objects into separate roles and can inherit an omitted subject after a clause boundary
+only when the preceding frame exposes exactly one subject. The inherited action stores
+the source frame ID explicitly; it is not treated as utterance evidence. Consecutive
+visual-action frames resolve every identity first, reject repeated semantic edges, and
+produce one graph plan and one revision.
+
+For a fully new acyclic component, rendered action direction determines topological
+rank. Inputs occupy up to three vertical lanes, a shared subject occupies the middle
+rank, and outputs retain right-side expansion space. Continued explanations use bounded
+pair search, but every candidate must preserve all previously accepted connector and
+label geometry. A fourth lane, cyclic component, ambiguous inherited subject, or unsafe
+path is clarified without partial scene mutation.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive
@@ -371,10 +385,9 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-Extend pairwise visual phrases into multi-relation explanation graphs. Coordinate
-shared subjects, multiple inputs and outputs, and clause-level ordering through one
-constraint plan instead of planning each connector independently. Add explicit
-clarification when two registry actions compete for the same words, and measure
-coverage on an independent teacher-authored phrase corpus. Preserve the current
-editable identities, conservative labelled fallback, rollback guarantees, and
-offline deterministic path.
+Add explicit ambiguity accounting and independent language evaluation. Detect when
+multiple registered frames compete for the same words, return the smallest useful
+clarification, and create a teacher-authored corpus that is stored separately from
+the grammar. Measure semantic correctness, safe clarification, unsupported-language
+rejection, and graph readability independently. Then use those results to expand
+actions and concepts without optimizing against authored regression phrases.

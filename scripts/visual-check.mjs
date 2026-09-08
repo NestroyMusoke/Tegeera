@@ -67,7 +67,7 @@ const cases = {
   timeline: ["Evaporation happens before condensation", "Condensation happens before rainfall"],
   causality: ["Heavy rain causes soil erosion"],
   eventGraph: ["Heat causes expansion", "Heat causes pressure", "Expansion causes damage", "Pressure causes damage", "Heat causes damage"],
-  visualPhrase: ["A plant absorbs sunlight", "The plant produces oxygen"],
+  visualPhrase: ["A plant absorbs sunlight and water, then produces oxygen"],
   transformation: ["Water evaporates into a cloud"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
@@ -220,16 +220,16 @@ const appBundle = await build({
     }
     async function verifyPhrases() {
       await pause();
-      await submit('A plant absorbs sunlight');
-      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 2, 'Visual phrase did not create two identities');
-      check(document.querySelectorAll('.visual-action-annotation').length === 1, 'Absorption connector is missing');
+      await submit('A plant absorbs sunlight and water, then produces oxygen');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
+      check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
-      check(document.querySelector('.visual-action-annotation')?.getAttribute('aria-label') === 'plant absorbs sunlight', 'Accessible absorption meaning is wrong');
-      await submit('The plant produces oxygen');
       check(document.querySelectorAll('[data-symbol-id="plant"]').length === 1, 'Continued phrase duplicated the plant');
-      check(document.querySelectorAll('.visual-action-annotation').length === 2, 'Continued phrase did not preserve both actions');
-      check(document.querySelector('[data-entity-id="concept-3"] [data-symbol-fallback="true"]'), 'Unknown oxygen concept did not retain honest fallback');
+      check([...document.querySelectorAll('.visual-action-annotation')].some(node => node.getAttribute('aria-label') === 'plant absorbs sunlight'), 'Accessible sunlight absorption is wrong');
+      check([...document.querySelectorAll('.visual-action-annotation')].some(node => node.getAttribute('aria-label') === 'plant absorbs water'), 'Accessible water absorption is wrong');
+      check([...document.querySelectorAll('.visual-action-annotation')].some(node => node.getAttribute('aria-label') === 'plant produces oxygen'), 'Inherited output meaning is wrong');
+      check(document.querySelector('[data-entity-id="concept-4"] [data-symbol-fallback="true"]'), 'Unknown oxygen concept did not retain honest fallback');
       const before = document.querySelector('.doodle-canvas').innerHTML;
       await submit('The plant does not release oxygen');
       check(!!document.querySelector('.clarification'), 'Negated visual action did not request clarification');
@@ -240,7 +240,7 @@ const appBundle = await build({
       check(document.querySelector('[data-symbol-id="water"]'), 'Water symbol is missing');
       check(document.querySelector('[data-symbol-id="cloud"]'), 'Cloud symbol is missing');
       check(document.documentElement.scrollWidth <= innerWidth, 'Visual phrase caused horizontal overflow');
-      document.getElementById('qa-result').textContent = 'PASS: visual phrase extraction, identity reuse, semantic direction, composed symbols, honest fallback, negation rollback, transformation, accessibility, layout';
+      document.getElementById('qa-result').textContent = 'PASS: coordinated objects, inherited subject, atomic graph planning, identity reuse, semantic direction, composed symbols, honest fallback, negation rollback, transformation, accessibility, layout';
     }
     const params = new URLSearchParams(location.search);
     (params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });

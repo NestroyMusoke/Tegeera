@@ -6,7 +6,7 @@ import { applyDoodleScript, initialScene } from "./scene";
 import { analyzeTeacherInput } from "./semanticFrame";
 import type { DoodleScript, SceneEntity, SceneRelation, SceneState } from "./schema";
 import { validateDoodleScript } from "./validator";
-import { planVisualPhrase, visualPhraseGeometry } from "./visualPhrase";
+import { planVisualPhrase, planVisualPhraseGraph, visualPhraseGeometry } from "./visualPhrase";
 import { validateVisualActionRegistry, visualActionRegistry } from "./visualActionRegistry";
 
 function interpret(text: string, scene = initialScene): DoodleScript {
@@ -71,7 +71,7 @@ describe("evidence-backed visual phrases", () => {
     expect(geometry.definition.direction).toBe("object-to-subject");
     expect(geometry.from.label).toBe("sunlight");
     expect(geometry.to.label).toBe("plant");
-    expect(Math.sign(geometry.endX - geometry.startX)).toBe(-1);
+    expect(Math.sign(geometry.endX - geometry.startX)).toBe(1);
   });
 
   it("aims output and transformation arrows from subject to object", () => {
@@ -118,8 +118,7 @@ describe("evidence-backed visual phrases", () => {
 
   it("rejects duplicate and malformed visual-action claims", () => {
     const scene = run("A plant absorbs sunlight");
-    const duplicate = validateDoodleScript(interpret("The plant absorbs sunlight", scene), scene);
-    expect(duplicate.ok).toBe(false);
+    expect(interpretTeacherText("The plant absorbs sunlight", scene).ok).toBe(false);
     const valid = interpret("A plant absorbs sunlight");
     expect(validateDoodleScript({ ...valid, schemaVersion: "1.8.0" }, initialScene).ok).toBe(false);
     const malformed = structuredClone(valid);
@@ -155,5 +154,39 @@ describe("evidence-backed visual phrases", () => {
     const removed = run("Remove sunlight", scene);
     expect(removed.entities.map((entity) => entity.label)).toEqual(["plant"]);
     expect(removed.relations).toEqual([]);
+  });
+
+  it("plans multiple inputs and an inherited output as one atomic graph", () => {
+    const source = "A plant absorbs sunlight and water, then produces oxygen";
+    const script = interpret(source);
+    expect(script.schemaVersion).toBe("1.9.0");
+    expect(script.commands.filter((command) => command.action === "create")).toHaveLength(4);
+    expect(script.commands.filter((command) => command.action === "relate")).toHaveLength(3);
+    const scene = run(source);
+    expect(scene.revision).toBe(1);
+    expect(scene.entities.filter((entity) => entity.label === "plant")).toHaveLength(1);
+    const byLabel = new Map(scene.entities.map((entity) => [entity.label, entity]));
+    expect(byLabel.get("sunlight")?.x).toBe(byLabel.get("water")?.x);
+    expect(byLabel.get("sunlight")!.x).toBeLessThan(byLabel.get("plant")!.x);
+    expect(byLabel.get("plant")!.x).toBeLessThan(byLabel.get("oxygen")!.x);
+    expect(scene.relations?.every((relation) => visualPhraseGeometry(relation, scene.entities))).toBe(true);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html.match(/class="visual-action-annotation/g)).toHaveLength(3);
+    expect(html).toContain("plant absorbs sunlight");
+    expect(html).toContain("plant absorbs water");
+    expect(html).toContain("plant produces oxygen");
+  });
+
+  it("rejects a fourth simultaneous graph lane instead of overlapping it", () => {
+    const entities = ["plant", "alpha", "beta", "gamma", "delta"].map((label, index): SceneEntity => ({
+      id: label, kind: "generic", label, x: 12 + index * 18, y: 28, scale: 1, direction: "right", highlighted: false
+    }));
+    const scene: SceneState = { sceneId: "wide-star", revision: 0, entities, relations: [] };
+    const relations: SceneRelation[] = ["alpha", "beta", "gamma", "delta"].map((target, index) => ({
+      id: `edge-${index}`, kind: "visualAction", predicate: "absorb", sourceIds: ["plant"], targetIds: [target]
+    }));
+    expect(planVisualPhraseGraph(scene, relations, new Set(entities.map((entity) => entity.id)))).toBeNull();
+    expect(interpretTeacherText("A plant absorbs sunlight and water and minerals and carbon dioxide", initialScene).ok).toBe(false);
+    expect(initialScene.entities).toEqual([]);
   });
 });

@@ -8,7 +8,7 @@ import { actionRegistry } from "./actionRegistry";
 import { releaseContactPair, stageContactPair, stageTargetedPair } from "./spatialStaging";
 import { stageHandover } from "./handover";
 import { planEventGraph } from "./eventRelations";
-import { planVisualPhrase } from "./visualPhrase";
+import { planVisualPhraseGraph } from "./visualPhrase";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -141,7 +141,8 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (!input.trim() || input.length > 500) throw new Clarification("Explain one short scene or change, up to 500 characters.");
     const semanticInput = analyzeTeacherInput(input);
     if (!semanticInput.frames.length) throw new Clarification("Explain one short scene or change, up to 500 characters.");
-    for (const frame of semanticInput.frames) {
+    for (let frameIndex = 0; frameIndex < semanticInput.frames.length; frameIndex += 1) {
+      const frame = semanticInput.frames[frameIndex];
       currentClause = frame.sourceText.toLowerCase();
       const text = frame.normalizedText;
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
@@ -183,25 +184,38 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       }
       const visualAction = frame.visualActions[0];
       if (visualAction) {
-        const mentionText = (mentionId: string) => frame.entities.find((mention) => mention.mentionId === mentionId)?.text
-          ?? frame.references.find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        let phraseEnd = frameIndex;
+        while (phraseEnd + 1 < semanticInput.frames.length && semanticInput.frames[phraseEnd + 1].visualActions.length) phraseEnd += 1;
+        const phraseFrames = semanticInput.frames.slice(frameIndex, phraseEnd + 1);
+        const mentionText = (mentionId: string) => semanticInput.frames.flatMap((candidate) => [...candidate.entities, ...candidate.references])
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
         const idsBefore = new Set(working.entities.map((entity) => entity.id));
-        const subjectId = eventNode(mentionText(visualAction.subjectMentionId));
-        const objectId = eventNode(mentionText(visualAction.objectMentionId));
-        if (subjectId === objectId) throw new Clarification("A visual action needs two distinct concepts or objects.");
-        const relation = {
-          id: `relation-${scene.revision + 1}-${commands.length}`,
+        const resolved = phraseFrames.flatMap((candidate) => candidate.visualActions).map((action) => ({
+          action,
+          subjectId: eventNode(mentionText(action.subjectMentionId)),
+          objectId: eventNode(mentionText(action.objectMentionId))
+        }));
+        if (resolved.some(({ subjectId, objectId }) => subjectId === objectId)) {
+          throw new Clarification("A visual action needs two distinct concepts or objects.");
+        }
+        const uniqueEdges = new Set(resolved.map(({ action, subjectId, objectId }) => `${action.predicate}:${subjectId}:${objectId}`));
+        if (uniqueEdges.size !== resolved.length) throw new Clarification("That visual action is repeated in the same explanation.");
+        const relationNumber = commands.length;
+        const relations = resolved.map(({ action, subjectId, objectId }, index) => ({
+          id: `relation-${scene.revision + 1}-${relationNumber + index}`,
           kind: "visualAction" as const,
-          predicate: visualAction.predicate,
-          preposition: visualAction.preposition,
+          predicate: action.predicate,
+          preposition: action.preposition,
           sourceIds: [subjectId], targetIds: [objectId]
-        };
+        }));
         const movableIds = new Set(working.entities.filter((entity) => !idsBefore.has(entity.id)).map((entity) => entity.id));
-        const moves = planVisualPhrase(working, relation, movableIds);
-        if (!moves) throw new Clarification("That visual phrase cannot fit readably yet. Remove an object or start a new scene.");
+        const moves = planVisualPhraseGraph(working, relations, movableIds);
+        if (!moves) throw new Clarification("That explanation graph cannot fit readably yet. Shorten a label or use fewer simultaneous ideas.");
         moves.forEach((move) => append({ action: "move", ...move }));
-        append({ action: "relate", relation });
-        focus([subjectId], [objectId]);
+        relations.forEach((relation) => append({ action: "relate", relation }));
+        focus([...new Set(resolved.map(({ subjectId }) => subjectId))], [...new Set(resolved.map(({ objectId }) => objectId))]);
+        currentClause = phraseFrames.at(-1)?.sourceText.toLowerCase() ?? currentClause;
+        frameIndex = phraseEnd;
         continue;
       }
       const motion = text.match(/^(.+?) (approaches|approaching|moves? towards?|moving towards?|drives? towards?|driving towards?|walks? towards?|walking towards?|moves? away from|moving away from|drives? away from|driving away from|walks? away from|walking away from) (.+)$/);

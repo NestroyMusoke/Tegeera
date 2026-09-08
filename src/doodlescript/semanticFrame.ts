@@ -43,6 +43,7 @@ export interface SemanticVisualActionMention {
   subjectMentionId: string;
   objectMentionId: string;
   preposition?: string;
+  inheritedSubjectFromFrameId?: string;
 }
 
 export interface SemanticQuantity {
@@ -106,6 +107,31 @@ const targetedActionPattern = new RegExp(`^(.+?) (?:is |are )?(${targetableActio
 const directTargetActionPattern = new RegExp(`^(.+?) (?:is |are )?(${directTargetActionAliases().join("|")}) (.+)$`);
 const visualPrepositionalActionPattern = new RegExp(`^(.+?) (?:is |are )?(${visualActionAliases("prepositional").join("|")}) (${visualActionPrepositions().join("|")}) (.+)$`);
 const visualDirectActionPattern = new RegExp(`^(.+?) (?:is |are )?(${visualActionAliases("direct").join("|")}) (.+)$`);
+const inheritedVisualPrepositionalActionPattern = new RegExp(`^(${visualActionAliases("prepositional").join("|")}) (${visualActionPrepositions().join("|")}) (.+)$`);
+const inheritedVisualDirectActionPattern = new RegExp(`^(${visualActionAliases("direct").join("|")}) (.+)$`);
+
+function addParticipant(frame: SemanticFrame, text: string): string {
+  const mentionId = `${frame.frameId}-mention-${frame.entities.length + frame.references.length + 1}`;
+  if (referencePattern.test(text)) {
+    frame.references.push({ mentionId, text, resolvedEntityIds: [] });
+    return mentionId;
+  }
+  const parsed = parseEntityPhrase(text);
+  frame.entities.push({ mentionId, text, kind: parsed?.kind });
+  if (parsed && parsed.count >= 0) frame.quantities.push({ mentionId, value: parsed.count });
+  return mentionId;
+}
+
+function coordinatedObjects(text: string): string[] | null {
+  const parts = text.split(/\s+and\s+/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length > 3) return null;
+  return parts.length >= 2 ? parts : [text];
+}
+
+function visualSlotsAreReadable(frame: SemanticFrame): boolean {
+  return [...frame.entities, ...frame.references].every(({ text }) => text.length <= 40
+    && text.split(/\s+/).length <= 7 && /^[a-z0-9][a-z0-9 '-]*$/.test(text));
+}
 
 function entityMentionsAreResolved(frame: SemanticFrame): boolean {
   return frame.entities.every(({ text }) => {
@@ -120,18 +146,6 @@ function entityMentionsAreResolved(frame: SemanticFrame): boolean {
 function populateMeaning(frame: SemanticFrame): void {
   if (frame.discourse.negated || frame.discourse.conditional || frame.discourse.uncertain) return;
 
-  const addParticipant = (text: string): string => {
-    const mentionId = `${frame.frameId}-mention-${frame.entities.length + frame.references.length + 1}`;
-    if (referencePattern.test(text)) {
-      frame.references.push({ mentionId, text, resolvedEntityIds: [] });
-      return mentionId;
-    }
-    const parsed = parseEntityPhrase(text);
-    frame.entities.push({ mentionId, text, kind: parsed?.kind });
-    if (parsed && parsed.count >= 0) frame.quantities.push({ mentionId, value: parsed.count });
-    return mentionId;
-  };
-
   const stoppedAction = frame.normalizedText.match(stopActionPattern);
   const targetedAction = frame.normalizedText.match(targetedActionPattern);
   const directTargetAction = frame.normalizedText.match(directTargetActionPattern);
@@ -140,9 +154,9 @@ function populateMeaning(frame: SemanticFrame): void {
   if (action) {
     const definition = actionForAlias(action[2]);
     if (!definition) return;
-    const actorMentionId = addParticipant(action[1]);
-    const targetMentionId = targetedAction ? addParticipant(targetedAction[4])
-      : directTargetAction ? addParticipant(directTargetAction[3]) : undefined;
+    const actorMentionId = addParticipant(frame, action[1]);
+    const targetMentionId = targetedAction ? addParticipant(frame, targetedAction[4])
+      : directTargetAction ? addParticipant(frame, directTargetAction[3]) : undefined;
     frame.intent = stoppedAction ? "update" : "describe";
     frame.actions.push({
       predicate: definition.predicate,
@@ -157,8 +171,8 @@ function populateMeaning(frame: SemanticFrame): void {
 
   const relationship = frame.normalizedText.match(relationshipPattern);
   if (relationship) {
-    const sourceMentionId = addParticipant(relationship[1]);
-    const targetMentionId = addParticipant(relationship[3]);
+    const sourceMentionId = addParticipant(frame, relationship[1]);
+    const targetMentionId = addParticipant(frame, relationship[3]);
     const predicate = relationLexemes.find(({ words }) => (words as readonly string[]).includes(relationship[2]))?.predicate;
     if (!predicate) return;
     frame.intent = "describe";
@@ -177,19 +191,15 @@ function populateMeaning(frame: SemanticFrame): void {
   if (visualAction) {
     const definition = visualActionForAlias(visualAction[2]);
     if (!definition) return;
-    const subjectMentionId = addParticipant(visualAction[1]);
-    const objectMentionId = addParticipant(visualPrepositionalAction ? visualAction[4] : visualAction[3]);
-    const mentions = [...frame.entities, ...frame.references];
-    const readable = mentions.every(({ text }) => text.length <= 40 && text.split(/\s+/).length <= 7
-      && /^[a-z0-9][a-z0-9 '-]*$/.test(text));
+    const subjectMentionId = addParticipant(frame, visualAction[1]);
+    const objects = coordinatedObjects(visualPrepositionalAction ? visualAction[4] : visualAction[3]);
+    if (!objects) { frame.resolutionStatus = "needs-clarification"; return; }
     frame.intent = "describe";
-    frame.visualActions.push({
-      predicate: definition.predicate,
-      subjectMentionId,
-      objectMentionId,
-      preposition: visualPrepositionalAction?.[3]
+    for (const object of objects) frame.visualActions.push({
+      predicate: definition.predicate, subjectMentionId,
+      objectMentionId: addParticipant(frame, object), preposition: visualPrepositionalAction?.[3]
     });
-    frame.resolutionStatus = readable ? "resolved" : "needs-clarification";
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
 
@@ -197,7 +207,7 @@ function populateMeaning(frame: SemanticFrame): void {
   const phrases = description.split(/\s+and\s+/);
   const parsed = phrases.map((phrase) => parseEntityPhrase(phrase));
   if (!parsed.every(Boolean)) return;
-  phrases.forEach(addParticipant);
+  phrases.forEach((phrase) => addParticipant(frame, phrase));
   frame.intent = "describe";
   frame.resolutionStatus = entityMentionsAreResolved(frame) ? "resolved" : "needs-clarification";
 }
@@ -243,6 +253,30 @@ export function analyzeTeacherInput(input: string): SemanticInput {
     cursor = separatorStart + separator[0].length;
   }
   addFrame(cursor, body.length);
+
+  for (let index = 1; index < frames.length; index += 1) {
+    const frame = frames[index];
+    if (frame.intent !== "unresolved" || frame.discourse.negated || frame.discourse.conditional || frame.discourse.uncertain) continue;
+    const previousSubjects = [...new Set(frames[index - 1].visualActions.map((action) => action.subjectMentionId))];
+    if (previousSubjects.length !== 1) continue;
+    const prepositional = frame.normalizedText.match(inheritedVisualPrepositionalActionPattern);
+    const direct = frame.normalizedText.match(inheritedVisualDirectActionPattern);
+    const match = prepositional ?? direct;
+    if (!match) continue;
+    const definition = visualActionForAlias(match[1]);
+    if (!definition) continue;
+    const objects = coordinatedObjects(prepositional ? match[3] : match[2]);
+    if (!objects) { frame.resolutionStatus = "needs-clarification"; continue; }
+    frame.intent = "describe";
+    for (const object of objects) frame.visualActions.push({
+      predicate: definition.predicate,
+      subjectMentionId: previousSubjects[0],
+      objectMentionId: addParticipant(frame, object),
+      preposition: prepositional?.[2],
+      inheritedSubjectFromFrameId: frames[index - 1].frameId
+    });
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+  }
 
   return { sourceText: input, frames };
 }

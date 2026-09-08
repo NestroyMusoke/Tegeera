@@ -574,6 +574,37 @@ gzip). Lint, production build, Android synchronization, desktop inspection, and 
 430-pixel real-app phrase workflow pass. The action vocabulary is deliberately small;
 independent teacher-language coverage and physical Android rendering remain unverified.
 
+## Coordinated multi-relation explanation graphs
+
+Visual phrases can now express two or three coordinated objects and a following
+subject-elided clause in one atomic revision. The semantic layer expands each object
+into its own evidenced mention. Subject inheritance occurs only across an explicit
+clause boundary when the preceding frame has exactly one unique subject, and the
+derived action records that source frame ID. Negated, conditional, uncertain,
+isolated, or ambiguous elisions do not inherit.
+
+The interpreter resolves all identities before planning, reuses a shared subject,
+rejects repeated edges, and submits every relation only after the complete layout is
+safe. New acyclic components use rendered action direction for topological ranks, so
+sunlight and water converge from separate input lanes on one plant and oxygen leaves
+through an output rank. Two-node layouts remain centered to reserve expansion space.
+Continued explanations preserve every existing identity and validate all retained
+curves and labels while searching positions for only the newly introduced concepts.
+
+The planner supports at most three nodes per rank. A fourth coordinated lane is
+rejected instead of becoming one misleading compound label. Curve sampling, label
+collision checks, canvas bounds, deterministic replay, unknown-symbol fallback,
+accessibility text, reduced motion, and atomic rollback remain enforced.
+
+The complete checkpoint passes 225 tests across 24 files and generates 18
+actual-component fixtures. The final 250-iteration meaning-pipeline run measures
+0.64 ms median and 3.35 ms p95, excluding speech recognition, DOM work, and SVG
+painting. Production JavaScript is 387.26 kB (118.76 kB gzip), an increase of 4.58 kB
+raw and 1.41 kB gzip from the pairwise-phrase checkpoint; CSS remains 11.49 kB
+(3.46 kB gzip). Lint, production build, Android synchronization, desktop inspection,
+and the 430-pixel real-app workflow pass. Independent teacher-language evaluation,
+physical Android rendering, and cyclic visual-action layout remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

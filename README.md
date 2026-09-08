@@ -70,6 +70,14 @@ existing identities, moves only concepts created by the active utterance, sample
 the actual connector curve for glyph collisions, and keeps relation labels clear.
 Animated particles reinforce direction, while the static arrow and accessible
 relationship text retain the meaning when reduced motion is enabled.
+
+Multi-relation explanations are planned atomically. A clause such as “A plant
+absorbs sunlight and water, then produces oxygen” expands coordinated objects into
+separate semantic roles, explicitly inherits the one unambiguous prior subject,
+and lays out the complete input–process–output graph before persisting any edge.
+The topology planner reserves future growth space, protects retained connectors,
+and refuses a fourth simultaneous lane rather than merging concepts or overlapping
+the drawing.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.
