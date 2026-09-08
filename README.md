@@ -120,6 +120,10 @@ is normalized into the same earlier-to-later graph; `leads to` and `results in` 
 the same causal relation. Matching concepts are reused, cycles and duplicate claims
 are rejected atomically, and unknown verbs outside these structures still require
 clarification.
+Connected event graphs are laid out by topological rank. A cause can branch into
+multiple results, several causes can converge on one result, and long edges use an
+outer routing lane instead of crossing intermediate nodes. Existing readable linear
+timelines and unrelated scene objects retain their positions.
 
 No language model draws directly onto the canvas. Every parser or model must produce DoodleScript, and every script must pass four gates before it changes a lesson:
 

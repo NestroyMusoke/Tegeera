@@ -218,6 +218,13 @@ into `before`; causal paraphrases converge on `causes`. The validator enforces a
 reference integrity, unique edges, acyclic graphs, readable left-to-right geometry,
 and version compatibility before any revision is applied.
 
+The bounded topology planner operates on the connected event component, assigns
+topological ranks, preserves valid linear layouts, and restages only when a branch or
+convergence requires it. Label-aware layer spacing and alternate vertical bands avoid
+fixed scene coordinates. Straight, curved, and upper-lane connector strategies keep
+long edges out of intermediate nodes. The planner refuses more than three nodes in a
+rank until a larger-canvas navigation model exists.
+
 ## Broad-language strategy
 
 The system needs layered interpretation rather than one increasingly permissive
@@ -350,8 +357,9 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-Generalize the completed linear event edges into a topology-aware graph planner. It
-should place branches and convergences across rows, route connectors around node and
-label bounds, preserve established node positions where possible, and reject layouts
-whose crossings cannot be made readable. Keep event vocabulary, layout, and rendering
-separate so the same planner can serve scientific cycles, histories, and causal maps.
+Replace generic initial-letter concept bubbles with a compositional visual-symbol
+system. Add a versioned local symbol ontology, reusable stroke primitives, and
+capability-based retrieval so unfamiliar concept labels can select or combine simple
+doodles without sentence-specific render branches. Unknown mappings must retain the
+honest labeled-node fallback, and generated symbols must pass the existing bounds,
+identity, accessibility, and deterministic replay gates.

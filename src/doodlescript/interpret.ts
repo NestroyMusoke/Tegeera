@@ -7,6 +7,7 @@ import { entityKindForAlias, ordinalWords, parseCountToken, parseEntityPhrase } 
 import { actionRegistry } from "./actionRegistry";
 import { releaseContactPair, stageContactPair, stageTargetedPair } from "./spatialStaging";
 import { stageHandover } from "./handover";
+import { planEventGraph } from "./eventRelations";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -165,7 +166,15 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const sourceId = eventNode(reverse ? rightPhrase : leftPhrase);
         const targetId = eventNode(reverse ? leftPhrase : rightPhrase);
         if (sourceId === targetId) throw new Clarification("An event cannot be ordered before or caused by itself.");
-        relate(eventRelation.predicate === "causes" ? "causes" : "before", [sourceId], [targetId]);
+        const relation = {
+          id: `relation-${scene.revision + 1}-${commands.length}`,
+          kind: eventRelation.predicate === "causes" ? "causes" as const : "before" as const,
+          sourceIds: [sourceId], targetIds: [targetId]
+        };
+        const moves = planEventGraph(working, relation);
+        if (!moves) throw new Clarification("That event graph cannot fit readably yet. Shorten a label or remove an unrelated object.");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation });
         focus([sourceId], [targetId]);
         continue;
       }

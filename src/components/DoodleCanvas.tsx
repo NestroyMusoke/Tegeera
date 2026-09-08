@@ -180,10 +180,10 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
     const label = relation.kind === "causes" ? "causes" : "before";
     return (
       <g className={`event-annotation event-${relation.kind}`} aria-label={`${geometry.source.label} ${label} ${geometry.target.label}`}>
-        <path className="event-flow" d={`M${geometry.startX} ${geometry.y} H${geometry.endX}`} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
-        <path d={`M${geometry.endX - 11} ${geometry.y - 8} L${geometry.endX} ${geometry.y} L${geometry.endX - 11} ${geometry.y + 8}`} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
-        {relation.kind === "causes" && <path d={`M${geometry.startX - 7} ${geometry.y - 10} V${geometry.y + 10} M${geometry.startX - 13} ${geometry.y - 6} L${geometry.startX - 2} ${geometry.y + 6}`} stroke={color} strokeWidth="2" />}
-        <text x={(geometry.startX + geometry.endX) / 2} y={geometry.y - 14} textAnchor="middle" fill={color} fontSize="15">{label}</text>
+        <path className="event-flow" data-route={geometry.route} d={geometry.path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={`M${geometry.endX - 11} ${geometry.endY - 8} L${geometry.endX} ${geometry.endY} L${geometry.endX - 11} ${geometry.endY + 8}`} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+        {relation.kind === "causes" && <path d={`M${geometry.startX - 7} ${geometry.startY - 10} V${geometry.startY + 10} M${geometry.startX - 13} ${geometry.startY - 6} L${geometry.startX - 2} ${geometry.startY + 6}`} stroke={color} strokeWidth="2" />}
+        <text x={geometry.labelX} y={geometry.labelY} textAnchor="middle" fill={color} fontSize="15">{label}</text>
       </g>
     );
   }

@@ -230,10 +230,8 @@ export function validateDoodleScript(
       owned.add(id);
     }
   }
-  for (const kind of ["before", "causes"] as const) {
-    if (hasDirectedCycle(projected.relations ?? [], kind)) {
-      issues.push({ gate: "semantic", message: `${kind === "before" ? "Time order" : "Causality"} cannot contain a cycle.` });
-    }
+  if (hasDirectedCycle(projected.relations ?? [])) {
+    issues.push({ gate: "semantic", message: "A directed event graph cannot contain a temporal or causal cycle." });
   }
   if (hasDenseOverlap(projected) || projected.entities.some((entity) => !withinCanvas(entity))) {
     issues.push({

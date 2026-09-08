@@ -57,6 +57,7 @@ const cases = {
   carrying: ["A student carries a book"],
   timeline: ["Evaporation happens before condensation", "Condensation happens before rainfall"],
   causality: ["Heavy rain causes soil erosion"],
+  eventGraph: ["Heat causes expansion", "Heat causes pressure", "Expansion causes damage", "Pressure causes damage", "Heat causes damage"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -188,8 +189,17 @@ const appBundle = await build({
       await submit('Heavy rain causes soil erosion');
       check(document.querySelectorAll('.event-causes').length === 1, 'Causal relation did not render');
       check(document.querySelector('.relationship-causes')?.textContent.includes('causes'), 'Accessible causal key is missing');
+      await submit('Clear everything');
+      await submit('Heat causes expansion');
+      await submit('Heat causes pressure');
+      await submit('Expansion causes damage');
+      await submit('Pressure causes damage');
+      await submit('Heat causes damage');
+      check(document.querySelectorAll('.event-causes').length === 5, 'Branching causal graph did not render every edge');
+      check(document.querySelectorAll('[data-renderer="generic"]').length === 4, 'Branching graph duplicated a converged concept');
+      check(document.querySelectorAll('.event-flow[data-route="outer"]').length >= 1, 'Long edge did not use an outer route');
       check(document.documentElement.scrollWidth <= innerWidth, 'Event diagram caused horizontal overflow');
-      document.getElementById('qa-result').textContent = 'PASS: temporal chain, concept reuse, cycle rollback, Undo, causality, accessibility, layout';
+      document.getElementById('qa-result').textContent = 'PASS: temporal chain, concept reuse, cycle rollback, Undo, branching, convergence, outer routing, accessibility, layout';
     }
     const params = new URLSearchParams(location.search);
     (params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });

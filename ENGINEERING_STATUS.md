@@ -457,8 +457,36 @@ schema attacks, negation, cleanup, and DoodleScript 1.7/1.8 composition. The com
 checkpoint passes 189 tests. Thirteen actual-component fixtures include timeline and
 causality scenes. Desktop captures were inspected, and the 430 px real-app workflow
 reports PASS for chain construction, cycle rollback, Undo, causality, accessibility,
-and layout. Branching graphs, cross-row routing, physical Android rendering, and
-speech-to-event latency remain unverified.
+and layout. Physical Android rendering and speech-to-event latency remain unverified.
+
+### Topology-aware event graph layout
+
+The DoodleScript 1.8 event representation now feeds a deterministic graph planner.
+It gathers only the connected component touched by the proposed edge, topologically
+ranks the nodes, and places branches or convergences in up to three readable rows per
+rank. Unrelated entities remain fixed obstacles. Already-readable linear timelines
+return no move commands, preserving their exact positions; graph restaging is atomic
+with the relationship revision.
+
+Layer spacing derives from live label bounds rather than fixed sentence coordinates.
+The planner tries multiple vertical bands, rejects canvas clipping and pair overlap,
+and selects the valid candidate with the lowest total movement. A combined temporal
+and causal cycle is rejected before a script is emitted. A fourth branch is rejected
+without mutation when the bounded three-row layout is full.
+
+Connector geometry now supports straight, curved, and outer-lane routes. Adjacent
+cross-row edges use smooth curves; an edge that skips occupied ranks travels through a
+stable upper lane and cannot cut through the intermediate glyphs. Renderer markup
+exposes the selected route for visual and browser verification.
+
+Seven additional tests cover branching, convergence without cloning, deterministic
+restaging, compact linear preservation, unrelated-object stability, outer routing,
+bounded branch overflow, and mixed temporal/causal cycles. The complete checkpoint
+passes 196 tests. Fourteen real-component fixtures include a five-edge diamond graph;
+its desktop capture was inspected. The expanded 430 px app workflow reports PASS for
+branching, convergence, outer routing, cycle rollback, Undo, accessibility, and page
+containment. The current planner remains intentionally bounded to three nodes per
+rank and the finite canvas; arbitrary large graphs need semantic zoom or pagination.
 
 ## Correctness boundaries
 
@@ -499,8 +527,8 @@ grammar fixtures as real-world accuracy.
 ## Outstanding work
 
 General language planning/retrieval, references beyond the recent explicit focus,
-branching event layout, advanced CPU scheduling semantics, academic renderers, rich poses, connector
-routing, calibrated speech confidence and device benchmarks remain unfinished.
+large-graph navigation, advanced CPU scheduling semantics, academic renderers, rich
+poses, calibrated speech confidence and device benchmarks remain unfinished.
 Android speech still uses a system recognition service: its prefer-offline flag
 does not guarantee local processing. Native speech must be audited and verified
 before presenting it as private/offline production recognition.

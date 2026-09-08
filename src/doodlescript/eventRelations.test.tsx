@@ -77,6 +77,16 @@ describe("general event relationships", () => {
     expect(html).toContain("condensation before rainfall");
   });
 
+  it("preserves an already-readable linear layout and unrelated scene objects", () => {
+    const base = run("A tree");
+    const treeBefore = structuredClone(base.entities[0]);
+    const pair = run("Heat causes expansion", base);
+    expect(pair.entities.find((entity) => entity.id === treeBefore.id)).toEqual(treeBefore);
+    const heatBefore = structuredClone(pair.entities.find((entity) => entity.label === "heat"));
+    const chain = run("Expansion causes damage", pair);
+    expect(chain.entities.find((entity) => entity.label === "heat")).toEqual(heatBefore);
+  });
+
   it("uses the same causal plan for causes, leads to, and results in", () => {
     const project = (text: string) => {
       const scene = run(text);
@@ -92,12 +102,65 @@ describe("general event relationships", () => {
   it("rejects cycles and duplicate claims without mutating the accepted scene", () => {
     const chain = run("Condensation happens before rainfall", run("Evaporation happens before condensation"));
     const saved = structuredClone(chain);
-    for (const text of ["Rainfall happens before evaporation", "Evaporation happens before condensation"]) {
-      const checked = validateDoodleScript(interpret(text, chain), chain);
-      expect(checked.ok, text).toBe(false);
-      if (!checked.ok) expect(checked.issues.some((issue) => issue.gate === "semantic"), text).toBe(true);
-      expect(chain).toEqual(saved);
-    }
+    expect(interpretTeacherText("Rainfall happens before evaporation", chain)).toMatchObject({ ok: false });
+    const duplicate = validateDoodleScript(interpret("Evaporation happens before condensation", chain), chain);
+    expect(duplicate.ok).toBe(false);
+    if (!duplicate.ok) expect(duplicate.issues.some((issue) => issue.gate === "semantic")).toBe(true);
+    expect(chain).toEqual(saved);
+  });
+
+  it("lays a branch into separate rows and routes both edges", () => {
+    const branch = run("Heat causes pressure", run("Heat causes expansion"));
+    const heat = branch.entities.find((entity) => entity.label === "heat")!;
+    const results = branch.entities.filter((entity) => ["expansion", "pressure"].includes(entity.label ?? ""));
+    expect(new Set(results.map((entity) => entity.x))).toEqual(new Set([results[0].x]));
+    expect(new Set(results.map((entity) => entity.y)).size).toBe(2);
+    expect(results.every((entity) => entity.x > heat.x)).toBe(true);
+    expect(branch.relations?.every((relation) => eventFlowGeometry(relation, branch.entities))).toBe(true);
+  });
+
+  it("converges multiple causes on one stable result without cloning it", () => {
+    let graph = run("Heat causes expansion");
+    graph = run("Heat causes pressure", graph);
+    graph = run("Expansion causes damage", graph);
+    graph = run("Pressure causes damage", graph);
+    expect(graph.entities.filter((entity) => entity.label === "damage")).toHaveLength(1);
+    expect(graph.relations?.filter((relation) => relation.targetIds[0] === graph.entities.find((entity) => entity.label === "damage")?.id)).toHaveLength(2);
+    expect(graph.relations?.every((relation) => eventFlowGeometry(relation, graph.entities))).toBe(true);
+  });
+
+  it("uses an outer lane for a long edge that skips an occupied rank", () => {
+    let graph = run("Heat causes expansion");
+    graph = run("Expansion causes damage", graph);
+    graph = run("Heat causes damage", graph);
+    const direct = graph.relations!.find((relation) => {
+      const source = graph.entities.find((entity) => entity.id === relation.sourceIds[0]);
+      const target = graph.entities.find((entity) => entity.id === relation.targetIds[0]);
+      return source?.label === "heat" && target?.label === "damage";
+    })!;
+    expect(eventFlowGeometry(direct, graph.entities)?.route).toBe("outer");
+    expect(renderToStaticMarkup(<DoodleCanvas scene={graph} />)).toContain('data-route="outer"');
+  });
+
+  it("produces identical topology positions from identical command sequences", () => {
+    const build = () => run("Pressure causes damage", run("Expansion causes damage", run("Heat causes pressure", run("Heat causes expansion"))));
+    expect(build()).toEqual(build());
+  });
+
+  it("rejects a fourth branch atomically when three readable rows are occupied", () => {
+    let graph = run("Heat causes alpha");
+    graph = run("Heat causes beta", graph);
+    graph = run("Heat causes gamma", graph);
+    const saved = structuredClone(graph);
+    expect(interpretTeacherText("Heat causes delta", graph)).toMatchObject({ ok: false });
+    expect(graph).toEqual(saved);
+  });
+
+  it("rejects a directed cycle composed across temporal and causal edges", () => {
+    const graph = run("Alpha happens before beta");
+    const saved = structuredClone(graph);
+    expect(interpretTeacherText("Beta causes alpha", graph)).toMatchObject({ ok: false });
+    expect(graph).toEqual(saved);
   });
 
   it("rejects old-version, multi-source, and self-referential event scripts", () => {
