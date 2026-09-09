@@ -27,6 +27,12 @@ DoodleScript is necessary but insufficient. Missing meaning after validation is 
 as false-confident acceptance. Visual-cue claims cannot hide missing concepts or
 relations, and unobserved cues keep drawing cases from passing.
 
+Even complete automated evidence produces only `automatedReady`. Every drawing case
+sets `requiresHumanVisualReview`; it passes strictly only when the observation records
+an explicit `approved` review. A pending review is not false confidence, while missing
+semantic or rendered evidence still is. Tests may exercise the approval transition to
+prove the gate, but they do not record a real reviewer decision in the corpus.
+
 These gold annotations make their cases development tests, not a hidden accuracy split.
 Add new frozen, independently collected utterances before publishing generalization
 figures.

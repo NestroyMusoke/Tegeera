@@ -11,6 +11,8 @@ import { eventFlowGeometry, isEventRelation } from "../doodlescript/eventRelatio
 import { isVisualAction, visualPhraseGeometry } from "../doodlescript/visualPhrase";
 import { RELATION_REGISTRY_VERSION, relationForKind } from "../doodlescript/relationRegistry";
 import { LAYOUT_FAMILY_REGISTRY_VERSION, layoutFamilyFor } from "../doodlescript/layoutFamilyRegistry";
+import { isPartWholeFlowRelation, partWholeFlowGeometry } from "../doodlescript/partWholeFlow";
+import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -220,6 +222,30 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
         <text x={geometry.labelX} y={geometry.labelY} textAnchor="middle" fill={color} fontSize="15">{geometry.definition.label}</text>
       </g>
     );
+  }
+  if (isPartWholeFlowRelation(relation)) {
+    const geometry = partWholeFlowGeometry(relation, entities);
+    if (!geometry) return null;
+    const isPart = relation.kind === "partOf";
+    const color = isPart ? "#66715a" : relation.kind === "illuminates" ? "#c58a20" : "#28745a";
+    const arrow = !isPart;
+    const arrowX = geometry.endX - geometry.unitX * 11;
+    const arrowY = geometry.endY - geometry.unitY * 11;
+    const normalX = -geometry.unitY * 7;
+    const normalY = geometry.unitX * 7;
+    const sourceCues = resolveVisualSymbol(geometry.source.label ?? geometry.source.kind).visualCues;
+    return <g className={`part-whole-annotation relation-${relation.kind}`}
+      data-visual-cue={relation.kind === "flowsInto" ? "water-entry-arrow" : relation.kind === "illuminates" ? "leaf-targeted-ray" : undefined}
+      aria-label={`${geometry.source.label} ${relationLabel(relation)} ${geometry.target.label}`}>
+      {isPart && sourceCues.includes("visible-roots") && <path data-visual-cue="soil-boundary" className="doodle-detail" d={`M${geometry.source.x * 10 - 65} ${geometry.source.y * 6.2 + 48} Q${geometry.source.x * 10} ${geometry.source.y * 6.2 + 40} ${geometry.source.x * 10 + 65} ${geometry.source.y * 6.2 + 48}`} />}
+      <path className={relation.kind === "illuminates" ? "accent-stroke" : "visual-action-flow"}
+        d={`M${geometry.startX} ${geometry.startY} L${geometry.endX} ${geometry.endY}`}
+        fill="none" stroke={color} strokeWidth={isPart ? 2 : 3} strokeDasharray={isPart ? "7 6" : undefined} />
+      {arrow && <path d={`M${arrowX + normalX} ${arrowY + normalY} L${geometry.endX} ${geometry.endY} L${arrowX - normalX} ${arrowY - normalY}`}
+        fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />}
+      <text x={(geometry.startX + geometry.endX) / 2} y={(geometry.startY + geometry.endY) / 2 - 10}
+        textAnchor="middle" fill={color} fontSize="14">{relationLabel(relation)}</text>
+    </g>;
   }
   if (isQueue(relation)) {
     const geometry = queueGeometry(relation, entities);

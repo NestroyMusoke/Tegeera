@@ -175,6 +175,20 @@ describe("semantic input frames", () => {
     expect(frame.visualActions[0].preposition).toBe("into");
   });
 
+  it("extracts reusable part-whole-flow roles before generic direct intake", () => {
+    const frame = analyzeTeacherInput("A machine takes in fuel through its inlet and air through its vent").frames[0];
+    expect(frame.visualActions).toEqual([]);
+    expect(frame.compositions).toEqual([{
+      construction: "part-whole-flow",
+      wholeMentionId: frame.entities[0].mentionId,
+      channels: [
+        { inputMentionId: frame.entities[1].mentionId, partMentionId: frame.entities[2].mentionId, flowPredicate: "flowsInto" },
+        { inputMentionId: frame.entities[3].mentionId, partMentionId: frame.entities[4].mentionId, flowPredicate: "flowsInto" }
+      ]
+    }]);
+    expect(frame.meaningCandidates).toEqual([{ family: "composition", predicate: "part-whole-flow" }]);
+  });
+
   it("expands coordinated objects and explicitly inherits one unambiguous subject", () => {
     const result = analyzeTeacherInput("A plant absorbs sunlight and water, then produces oxygen");
     expect(result.frames).toHaveLength(2);

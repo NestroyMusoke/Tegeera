@@ -4,10 +4,10 @@ import { relationSchema, type DoodleScript, type SceneRelation } from "./schema"
 import { visualActionForPredicate } from "./visualActionRegistry";
 import type { ConceptCapability } from "./conceptRegistry";
 
-export const RELATION_REGISTRY_VERSION = "1.0.0";
+export const RELATION_REGISTRY_VERSION = "2.0.0";
 
 export type RelationKind = SceneRelation["kind"];
-export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual";
+export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional";
 
 interface Cardinality {
   min: number;
@@ -78,7 +78,10 @@ export const relationRegistry: readonly RelationDefinition[] = [
   { kind: "handover", family: "performance", label: "gives", aliases: [], minimumVersion: "1.7.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 1, max: 1 }, directed: true, layout: "contact" },
   { kind: "before", family: "event", label: "before", aliases: ["happens before", "happen before", "occurs before", "occur before", "comes before", "come before"], inverseAliases: ["happens after", "happen after", "occurs after", "occur after", "comes after", "come after"], minimumVersion: "1.8.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "event-graph" },
   { kind: "causes", family: "event", label: "causes", aliases: ["causes", "cause", "leads to", "lead to", "results in", "result in"], minimumVersion: "1.8.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "event-graph" },
-  { kind: "visualAction", family: "visual", label: "acts on", aliases: [], minimumVersion: "1.9.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "visual-flow" }
+  { kind: "visualAction", family: "visual", label: "acts on", aliases: [], minimumVersion: "1.9.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "visual-flow" },
+  { kind: "partOf", family: "compositional", label: "part of", aliases: [], minimumVersion: "2.0.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "part-whole-flow" },
+  { kind: "flowsInto", family: "compositional", label: "flows into", aliases: [], minimumVersion: "2.0.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "part-whole-flow" },
+  { kind: "illuminates", family: "compositional", label: "illuminates", aliases: [], minimumVersion: "2.0.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "part-whole-flow" }
 ];
 
 const byKind = new Map(relationRegistry.map((definition) => [definition.kind, definition] as const));
@@ -139,7 +142,7 @@ export function matchRegisteredRelation(text: string): RegisteredRelationMatch |
   };
 }
 
-const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"];
+const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0"];
 
 export function relationSupportsVersion(kind: RelationKind, version: DoodleScript["schemaVersion"]): boolean {
   return versionOrder.indexOf(version) >= versionOrder.indexOf(relationForKind(kind).minimumVersion);

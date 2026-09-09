@@ -877,6 +877,43 @@ third-party Zod annotation notices. The remaining 52 gold annotations, human vis
 cue observations, physical Android rendering, speech latency, and independent hidden
 generalization corpus remain unfinished.
 
+## DoodleScript 2 part-whole-flow construction
+
+Case 1 no longer collapses routed inputs and anatomical parts into compound labels.
+The semantic frame now has a registered `part-whole-flow` construction with open slots
+for one whole and one to three input/part channels. The action registry, rather than a
+lesson sentence, declares which intake actions support part routing. Visual-symbol
+capabilities select `flowsInto` for flowing material and `illuminates` for radiating
+energy. An unrelated fixture using a machine, fuel, inlet, air, and vent proves the
+grammar is not tied to plants.
+
+DoodleScript 2.0 adds `partOf`, `flowsInto`, and `illuminates` relations. The relation
+and layout registries move to 2.0.0 and declare a compositional semantic family plus a
+left-to-right `part-whole-flow` topology. The symbol ontology moves to 1.1.0 with
+original plant and roots primitives, independent leaf meaning, and inspectable visual
+cues. A shared candidate search places five distinct concepts, rejects overlap and
+invalid connector geometry, preserves pre-existing fixed identities, and clarifies if
+the construction cannot fit.
+
+Case 1 now creates `plant`, `roots`, `leaves`, `water`, and `sunlight` as separate
+identities. Its four typed relations preserve part ownership and route water to roots
+and sunlight to leaves. The renderer exposes visible roots, soil boundary, water-entry
+arrow, sun symbol, and leaf-targeted-ray cues. Its gold result is 0/8 strict passes,
+one automated-ready case, and zero false-confident acceptances because human visual
+approval is mandatory and has not been recorded. Tests exercise—but do not fabricate—
+the explicit approval transition.
+
+The complete checkpoint passes 267 tests across 32 files and generates 20
+actual-component fixtures plus the full-app phone workflows. A standalone 250-iteration
+meaning-pipeline run measures 0.51 ms median and 1.23 ms p95, excluding speech, DOM,
+SVG painting, and device work. Production JavaScript is 410.24 kB (124.94 kB gzip);
+CSS remains 11.59 kB (3.49 kB gzip). Lint, TypeScript, production build, Android asset
+synchronization, registry validation, diff integrity, and the 390-pixel real browser
+case-1 workflow pass. The workflow verifies five identities, four relations, all five
+cues, accessibility meaning, versioned metadata, and layout. The build reports only
+the existing third-party Zod annotation notices. Human visual approval, physical
+Android rendering, speech latency, and projector inspection remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

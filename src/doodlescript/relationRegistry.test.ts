@@ -20,9 +20,9 @@ const relation = (kind: SceneRelation["kind"], overrides: Partial<SceneRelation>
 
 describe("versioned relation registry", () => {
   it("covers every schema relationship with a validated semantic contract", () => {
-    expect(RELATION_REGISTRY_VERSION).toBe("1.0.0");
+    expect(RELATION_REGISTRY_VERSION).toBe("2.0.0");
     expect(relationRegistry.map(({ kind }) => kind).sort()).toEqual([
-      "actsOn", "away", "before", "causes", "handover", "owns", "queuedFor", "shares", "toward", "visualAction"
+      "actsOn", "away", "before", "causes", "flowsInto", "handover", "illuminates", "owns", "partOf", "queuedFor", "shares", "toward", "visualAction"
     ]);
     expect(validateRelationRegistry()).toEqual([]);
   });
@@ -69,6 +69,8 @@ describe("versioned relation registry", () => {
     expect(relationSupportsVersion("toward", "1.2.0")).toBe(false);
     expect(relationSupportsVersion("toward", "1.3.0")).toBe(true);
     expect(relationSupportsVersion("visualAction", "1.8.0")).toBe(false);
+    expect(relationSupportsVersion("partOf", "1.9.0")).toBe(false);
+    expect(relationSupportsVersion("partOf", "2.0.0")).toBe(true);
     expect(relationCardinalityIssues(relation("queuedFor", { sourceIds: ["a", "b", "c", "d", "e"] }))).toContain("waits in queue requires 1-4 source roles.");
     expect(relationCardinalityIssues(relation("handover"))).toContain("gives requires 1 object role.");
     expect(relationCardinalityIssues(relation("handover", { objectIds: ["object"] }))).toEqual([]);
@@ -81,6 +83,7 @@ describe("versioned relation registry", () => {
     expect(relationLabel(relation("actsOn", { predicate: "point", preposition: "at" }))).toBe("point at");
     expect(relationLabel(relation("visualAction", { predicate: "absorb" }))).toBe("absorbs");
     expect(relationForKind("causes")).toMatchObject({ family: "event", directed: true, layout: "event-graph" });
+    expect(relationForKind("flowsInto")).toMatchObject({ family: "compositional", directed: true, layout: "part-whole-flow" });
   });
 
   it("rejects duplicate aliases, kinds, and invalid cardinalities", () => {

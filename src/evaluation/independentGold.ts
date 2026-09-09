@@ -21,6 +21,7 @@ const requiredRelationSchema = z.object({
 
 const drawExpectationSchema = z.object({
   intent: z.literal("draw"),
+  requiresHumanVisualReview: z.literal(true),
   visualGrammar: z.string().min(1),
   concepts: z.array(conceptSchema).min(1),
   relations: z.array(requiredRelationSchema),
@@ -68,6 +69,8 @@ type DrawGoldCase = { id: number; expected: DrawExpectation };
 
 export interface IndependentGoldObservation {
   visualCueIds?: readonly string[];
+  visualGrammarId?: string;
+  humanVisualReview?: "approved" | "rejected";
 }
 
 export interface IndependentGoldCaseResult {
@@ -76,6 +79,7 @@ export interface IndependentGoldCaseResult {
   expectedIntent: IndependentExpectedIntent;
   observedIntent: "draw" | "clarify";
   falseConfident: boolean;
+  automatedReady: boolean;
   failures: string[];
 }
 
@@ -83,6 +87,7 @@ export interface IndependentGoldResult {
   total: number;
   passed: number;
   falseConfident: number;
+  automatedReady: number;
   results: IndependentGoldCaseResult[];
 }
 
@@ -108,14 +113,14 @@ function scoreDraw(
   if (!interpretation.ok) {
     return {
       id: goldCase.id, passed: false, expectedIntent: "draw", observedIntent: "clarify",
-      falseConfident: false, failures: [`unexpected clarification: ${interpretation.clarification.code}`]
+      falseConfident: false, automatedReady: false, failures: [`unexpected clarification: ${interpretation.clarification.code}`]
     };
   }
   const validation = validateDoodleScript(interpretation.script, initialScene);
   if (!validation.ok) {
     return {
       id: goldCase.id, passed: false, expectedIntent: "draw", observedIntent: "draw",
-      falseConfident: true, failures: [`invalid DoodleScript: ${validation.issues[0]?.message ?? "unknown issue"}`]
+      falseConfident: true, automatedReady: false, failures: [`invalid DoodleScript: ${validation.issues[0]?.message ?? "unknown issue"}`]
     };
   }
   const scene = applyDoodleScript(initialScene, validation.script);
@@ -138,10 +143,17 @@ function scoreDraw(
     if (!found) failures.push(`missing relation: ${required.source} -${required.predicate}-> ${required.target}`);
   }
   const observedCues = new Set(observation.visualCueIds ?? []);
+  if (observation.visualGrammarId !== goldCase.expected.visualGrammar) {
+    failures.push(`unverified visual grammar: ${goldCase.expected.visualGrammar}`);
+  }
   for (const cue of goldCase.expected.visualCues) if (!observedCues.has(cue)) failures.push(`unverified visual cue: ${cue}`);
+  const automatedReady = failures.length === 0;
+  if (goldCase.expected.requiresHumanVisualReview && observation.humanVisualReview !== "approved") {
+    failures.push(observation.humanVisualReview === "rejected" ? "human visual review rejected" : "human visual review pending");
+  }
   return {
     id: goldCase.id, passed: failures.length === 0, expectedIntent: "draw", observedIntent: "draw",
-    falseConfident: failures.length > 0, failures
+    falseConfident: !automatedReady, automatedReady, failures
   };
 }
 
@@ -156,7 +168,7 @@ export function evaluateIndependentGold(
     const teacherCase = teacherById.get(goldCase.id);
     if (!teacherCase) return {
       id: goldCase.id, passed: false, expectedIntent: goldCase.expected.intent,
-      observedIntent: "clarify", falseConfident: false, failures: ["teacher statement is missing"]
+      observedIntent: "clarify", falseConfident: false, automatedReady: false, failures: ["teacher statement is missing"]
     };
     if (goldCase.expected.intent === "draw") return scoreDraw(
       { id: goldCase.id, expected: goldCase.expected },
@@ -167,25 +179,26 @@ export function evaluateIndependentGold(
     if (goldCase.expected.intent === "hold") return {
       id: goldCase.id, passed: false, expectedIntent: "hold",
       observedIntent: interpretation.ok ? "draw" : "clarify",
-      falseConfident: interpretation.ok, failures: [interpretation.ok
+      falseConfident: interpretation.ok, automatedReady: false, failures: [interpretation.ok
         ? "changed the scene when the utterance should be non-visual"
         : `clarified instead of preserving the scene: ${interpretation.clarification.code}`]
     };
     if (interpretation.ok) return {
       id: goldCase.id, passed: false, expectedIntent: "clarify", observedIntent: "draw",
-      falseConfident: true, failures: ["accepted an utterance that requires clarification"]
+      falseConfident: true, automatedReady: false, failures: ["accepted an utterance that requires clarification"]
     };
     const received = interpretation.clarification.code as ClarificationCode;
     const passed = goldCase.expected.clarificationCodes.includes(received);
     return {
       id: goldCase.id, passed, expectedIntent: "clarify", observedIntent: "clarify",
-      falseConfident: false, failures: passed ? [] : [`expected ${goldCase.expected.clarificationCodes.join(" or ")}; received ${received}`]
+      falseConfident: false, automatedReady: passed, failures: passed ? [] : [`expected ${goldCase.expected.clarificationCodes.join(" or ")}; received ${received}`]
     };
   });
   return {
     total: results.length,
     passed: results.filter(({ passed }) => passed).length,
     falseConfident: results.filter(({ falseConfident }) => falseConfident).length,
+    automatedReady: results.filter(({ automatedReady }) => automatedReady).length,
     results
   };
 }

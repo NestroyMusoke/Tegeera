@@ -109,6 +109,7 @@ function Generic({ entity }: EntityRendererProps) {
       data-symbol-category={plan.category}
       data-symbol-confidence={plan.confidence}
       data-symbol-fallback="false"
+      data-visual-cue={plan.visualCues.join(" ") || undefined}
     >
       <ComposedSymbol category={plan.category} primitives={plan.primitives} capabilities={plan.capabilities} rotation={rotation} />
     </g>;

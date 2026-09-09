@@ -70,6 +70,7 @@ const cases = {
   visualPhrase: ["A plant absorbs sunlight and water, then produces oxygen"],
   transformation: ["Water evaporates into a cloud"],
   conceptRegistry: ["Two tables"],
+  partWholeFlow: ["A plant takes in water through its roots and sunlight through its leaves"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -234,8 +235,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '1.0.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '1.0.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.0.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.0.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -287,8 +288,23 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Motion scene caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: registered directional roles, persisted motion mode, contextual correction, capability rejection, rollback, accessibility, layout';
     }
+    async function verifyPartWhole() {
+      await pause();
+      await submit('A plant takes in water through its roots and sunlight through its leaves');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 5, 'Part-whole explanation did not create five distinct identities');
+      check(document.querySelectorAll('[data-relation-family="compositional"][data-relation-layout="part-whole-flow"]').length === 4, 'Registered part-whole relations are missing');
+      check(document.querySelectorAll('[data-layout-topology="part-whole"]').length === 4, 'Part-whole topology metadata is missing');
+      for (const cue of ['visible-roots', 'soil-boundary', 'water-entry-arrow', 'sun-symbol', 'leaf-targeted-ray']) {
+        check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), 'Required visual cue is missing: ' + cue);
+      }
+      check(document.querySelector('[aria-label="water flows into roots"]'), 'Water-to-roots accessibility meaning is missing');
+      check(document.querySelector('[aria-label="sunlight illuminates leaves"]'), 'Sunlight-to-leaves accessibility meaning is missing');
+      check([...document.querySelectorAll('.entity-label')].map(node => node.textContent).sort().join('|') === 'leaves|plant|roots|sunlight|water', 'Concept labels are merged or incomplete');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Part-whole scene caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: five semantic identities, part ownership, typed flows, original symbols, required cues, accessibility, registry metadata, layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -304,3 +320,4 @@ await writeFile(resolve(output, "app-events-phone.html"), framedApp(390, "?event
 await writeFile(resolve(output, "app-phrases-phone.html"), framedApp(390, "?phrases"));
 await writeFile(resolve(output, "app-concepts-phone.html"), framedApp(390, "?concepts"));
 await writeFile(resolve(output, "app-motion-phone.html"), framedApp(390, "?motion"));
+await writeFile(resolve(output, "app-parts-phone.html"), framedApp(390, "?parts"));

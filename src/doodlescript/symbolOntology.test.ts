@@ -3,7 +3,7 @@ import { resolveVisualSymbol, SYMBOL_ONTOLOGY_VERSION, symbolOntology, validateS
 
 describe("visual symbol ontology", () => {
   it("has a valid versioned registry without duplicate identities or aliases", () => {
-    expect(SYMBOL_ONTOLOGY_VERSION).toBe("1.0.0");
+    expect(SYMBOL_ONTOLOGY_VERSION).toBe("1.1.0");
     expect(symbolOntology.length).toBeGreaterThan(10);
     expect(validateSymbolOntology()).toEqual([]);
   });
@@ -33,15 +33,22 @@ describe("visual symbol ontology", () => {
 
   it("uses an honest fallback when no mapping is supported", () => {
     expect(resolveVisualSymbol("constitutional legitimacy")).toEqual({
-      ontologyVersion: "1.0.0",
+      ontologyVersion: "1.1.0",
       symbolId: "labelled-node",
       category: "unknown",
       primitives: [],
       capabilities: [],
+      visualCues: [],
       matchedTerms: [],
       confidence: 0,
       fallback: true
     });
+  });
+
+  it("exposes composable plant-part cues without sentence knowledge", () => {
+    expect(resolveVisualSymbol("roots")).toMatchObject({ symbolId: "roots", primitives: ["roots"], visualCues: ["visible-roots"] });
+    expect(resolveVisualSymbol("leaves")).toMatchObject({ symbolId: "leaf", primitives: ["leaf"] });
+    expect(resolveVisualSymbol("sunlight").visualCues).toContain("sun-symbol");
   });
 
   it("does not turn one generic context word into a confident pictorial claim", () => {

@@ -417,8 +417,14 @@ concept identities, semantic relations, valid DoodleScript, and observed visual 
 case 1 is therefore recorded as false-confident instead of receiving credit for merely
 passing schema validation.
 
-Next, introduce semantic-frame v2 primitives for part-whole structure, containment,
-source/path/destination, force, measurement, and non-visual intent. Implement them as
-typed roles consumed by registries and planners, then make case 1 correct through the
-general part-whole-flow grammar. Do not add a branch for its sentence or import gold
-annotations into production code.
+The first DoodleScript 2 construction now implements reusable part-whole input paths.
+Registered intake actions expose the construction; open concept slots bind the whole,
+inputs, and conduit parts; symbol capabilities choose `flowsInto` or `illuminates`; and
+the shared layout kernel applies the versioned `part-whole-flow` family. Case 1 is
+automated-ready with five identities, four typed relations, all declared cues, and a
+passing real browser workflow. It remains strict-pending until human visual approval.
+
+Next, generalize the same semantic-frame v2 boundary with force/opposition/contact roles
+for case 11. Its implementation must also compose unseen force-domain nouns and must not
+contain the corpus sentence. Containment, measurement, landscape flow, non-visual hold,
+and correction intent follow as separate verified capabilities.

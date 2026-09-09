@@ -12,6 +12,7 @@ import { planVisualPhraseGraph } from "./visualPhrase";
 import { Clarification, type ClarificationRequest } from "./clarification";
 import { conceptSupports, sharedOrderedDomain } from "./conceptRegistry";
 import { isQueue, planOrderedRow } from "./queue";
+import { planPartWholeFlow } from "./partWholeFlow";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -55,7 +56,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -76,6 +77,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && command.relation.kind === "handover") upgradeVersion("1.7.0");
     if (command.action === "relate" && ["before", "causes"].includes(command.relation.kind)) upgradeVersion("1.8.0");
     if (command.action === "relate" && command.relation.kind === "visualAction") upgradeVersion("1.9.0");
+    if (command.action === "relate" && ["partOf", "flowsInto", "illuminates"].includes(command.relation.kind)) upgradeVersion("2.0.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -212,6 +214,38 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         moves.forEach((move) => append({ action: "move", ...move }));
         append({ action: "relate", relation });
         focus([sourceId], [targetId]);
+        continue;
+      }
+      const composition = frame.compositions[0];
+      if (composition?.construction === "part-whole-flow") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const wholeId = eventNode(mentionText(composition.wholeMentionId));
+        const channels = composition.channels.map((channel) => ({
+          inputId: eventNode(mentionText(channel.inputMentionId)),
+          partId: eventNode(mentionText(channel.partMentionId)),
+          flowPredicate: channel.flowPredicate
+        }));
+        const identities = [wholeId, ...channels.flatMap(({ inputId, partId }) => [inputId, partId])];
+        if (new Set(identities).size !== identities.length) {
+          throw new Clarification("A part-whole explanation needs distinct inputs, parts, and a whole.", "conflicting-scene");
+        }
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planPartWholeFlow(working, wholeId, channels, movableIds);
+        if (!moves) throw new Clarification("That part-whole flow cannot fit readably yet.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        channels.forEach((channel) => {
+          append({ action: "relate", relation: {
+            id: `relation-${scene.revision + 1}-${commands.length}`,
+            kind: "partOf", sourceIds: [channel.partId], targetIds: [wholeId]
+          } });
+          append({ action: "relate", relation: {
+            id: `relation-${scene.revision + 1}-${commands.length}`,
+            kind: channel.flowPredicate, sourceIds: [channel.inputId], targetIds: [channel.partId]
+          } });
+        });
+        focus([wholeId], channels.flatMap(({ inputId, partId }) => [inputId, partId]));
         continue;
       }
       const visualAction = frame.visualActions[0];

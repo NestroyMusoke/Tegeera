@@ -47,7 +47,7 @@ describe("entity renderer registry", () => {
   it("renders known open concepts as deterministic composed symbols", () => {
     const rainfall = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic", "rain-1"), label: "heavy rainfall" }} />);
     expect(rainfall).toContain('data-symbol-id="rain"');
-    expect(rainfall).toContain('data-symbol-version="1.0.0"');
+    expect(rainfall).toContain('data-symbol-version="1.1.0"');
     expect(rainfall).toContain('data-primitive="cloud"');
     expect(rainfall).toContain('data-primitive="droplet"');
     expect(rainfall).toContain("symbol-cue");

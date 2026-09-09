@@ -9,12 +9,13 @@ export interface VisualActionDefinition {
   prepositions: readonly string[];
   direction: VisualActionDirection;
   cue: VisualActionCue;
+  supportsPartRouting?: boolean;
 }
 
 // A visual action is a reusable semantic connector, never a complete sentence
 // or a set of coordinates. Nouns remain open concept slots.
 export const visualActionRegistry: readonly VisualActionDefinition[] = [
-  { predicate: "absorb", label: "absorbs", aliases: ["absorb", "absorbs", "absorbing", "take in", "takes in"], syntax: "direct", prepositions: [], direction: "object-to-subject", cue: "intake" },
+  { predicate: "absorb", label: "absorbs", aliases: ["absorb", "absorbs", "absorbing", "take in", "takes in"], syntax: "direct", prepositions: [], direction: "object-to-subject", cue: "intake", supportsPartRouting: true },
   { predicate: "release", label: "releases", aliases: ["release", "releases", "releasing", "emit", "emits", "emitting", "give off", "gives off"], syntax: "direct", prepositions: [], direction: "subject-to-object", cue: "output" },
   { predicate: "produce", label: "produces", aliases: ["produce", "produces", "producing", "generate", "generates", "generating"], syntax: "direct", prepositions: [], direction: "subject-to-object", cue: "output" },
   { predicate: "affect", label: "affects", aliases: ["affect", "affects", "affecting", "influence", "influences", "influencing"], syntax: "direct", prepositions: [], direction: "subject-to-object", cue: "influence" },

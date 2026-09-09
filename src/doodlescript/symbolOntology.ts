@@ -1,4 +1,4 @@
-export const SYMBOL_ONTOLOGY_VERSION = "1.0.0";
+export const SYMBOL_ONTOLOGY_VERSION = "1.1.0";
 
 export type VisualCategory =
   | "nature"
@@ -20,7 +20,9 @@ export type SymbolPrimitive =
   | "ground"
   | "leaf"
   | "lightning"
+  | "plant"
   | "rays"
+  | "roots"
   | "snowflake"
   | "sun"
   | "water";
@@ -42,6 +44,7 @@ interface SymbolDefinition {
   category: VisualCategory;
   anchor: SymbolPrimitive;
   capabilities: readonly VisualCapability[];
+  visualCues?: readonly string[];
 }
 
 export interface VisualSymbolPlan {
@@ -50,6 +53,7 @@ export interface VisualSymbolPlan {
   category: VisualCategory | "unknown";
   primitives: SymbolPrimitive[];
   capabilities: VisualCapability[];
+  visualCues: string[];
   matchedTerms: string[];
   confidence: number;
   fallback: boolean;
@@ -59,14 +63,16 @@ export interface VisualSymbolPlan {
 // coordinates, or lesson-specific layouts. New vocabulary extends this data only.
 export const symbolOntology: readonly SymbolDefinition[] = [
   { id: "heat", aliases: ["heat", "temperature", "warmth", "thermal energy"], tags: ["thermal", "hot"], category: "energy", anchor: "flame", capabilities: ["radiates"] },
-  { id: "sunlight", aliases: ["sun", "sunlight", "sunshine", "solar energy"], tags: ["solar", "light"], category: "energy", anchor: "sun", capabilities: ["radiates"] },
+  { id: "sunlight", aliases: ["sun", "sunlight", "sunshine", "solar energy"], tags: ["solar", "light"], category: "energy", anchor: "sun", capabilities: ["radiates"], visualCues: ["sun-symbol"] },
   { id: "electricity", aliases: ["electricity", "electric current", "electric charge", "voltage"], tags: ["electric", "power", "charge"], category: "energy", anchor: "lightning", capabilities: ["flows"] },
   { id: "water", aliases: ["water", "liquid", "river", "stream"], tags: ["fluid", "wet"], category: "material", anchor: "water", capabilities: ["flows"] },
   { id: "rain", aliases: ["rain", "rainfall", "heavy rain", "heavy rainfall", "storm"], tags: ["weather", "precipitation"], category: "weather", anchor: "cloud", capabilities: ["falls"] },
   { id: "cloud", aliases: ["cloud", "clouds"], tags: ["weather", "sky"], category: "weather", anchor: "cloud", capabilities: [] },
   { id: "condensation", aliases: ["condensation", "dew"], tags: ["condense", "vapor", "gas", "liquid"], category: "process", anchor: "cloud", capabilities: ["falls"] },
   { id: "evaporation", aliases: ["evaporation", "vaporization"], tags: ["evaporate", "vapor", "liquid", "gas"], category: "process", anchor: "water", capabilities: ["rises"] },
-  { id: "plant", aliases: ["plant", "leaf", "vegetation", "crop"], tags: ["botany", "green"], category: "nature", anchor: "leaf", capabilities: ["spreads"] },
+  { id: "plant", aliases: ["plant", "vegetation", "crop"], tags: ["botany", "green"], category: "nature", anchor: "plant", capabilities: ["spreads"] },
+  { id: "roots", aliases: ["root", "roots"], tags: ["plant root", "underground"], category: "nature", anchor: "roots", capabilities: [], visualCues: ["visible-roots"] },
+  { id: "leaf", aliases: ["leaf", "leaves"], tags: ["plant leaf", "foliage"], category: "nature", anchor: "leaf", capabilities: [] },
   { id: "photosynthesis", aliases: ["photosynthesis"], tags: ["plant", "sunlight", "energy", "chlorophyll"], category: "process", anchor: "leaf", capabilities: ["cycles", "radiates"] },
   { id: "soil-erosion", aliases: ["soil erosion", "erosion"], tags: ["soil", "earth", "land", "weathering"], category: "process", anchor: "ground", capabilities: ["flows", "breaks"] },
   { id: "pressure", aliases: ["pressure", "compression"], tags: ["compress", "force", "stress"], category: "force", anchor: "gear", capabilities: ["compresses"] },
@@ -145,6 +151,7 @@ export function resolveVisualSymbol(label: string): VisualSymbolPlan {
       category: "unknown",
       primitives: [],
       capabilities: [],
+      visualCues: [],
       matchedTerms: [],
       confidence: 0,
       fallback: true
@@ -162,6 +169,7 @@ export function resolveVisualSymbol(label: string): VisualSymbolPlan {
     category: best.definition.category,
     primitives,
     capabilities,
+    visualCues: [...(best.definition.visualCues ?? [])],
     matchedTerms: best.matched,
     confidence: best.score === 100 ? 1 : Math.min(0.9, 0.5 + best.score / 100),
     fallback: false

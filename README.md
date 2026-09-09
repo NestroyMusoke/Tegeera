@@ -203,9 +203,17 @@ requires comparison with the separately written intended visual.
 The first cross-domain subset now has versioned machine-readable gold scenes in
 [`evaluation/independent-scene-gold-v1.json`](evaluation/independent-scene-gold-v1.json).
 Its strict scorer requires independent concept identities, semantic endpoints, correct
-intent routing, and observed visual cues. Consequently, the previously accepted plant
-example is explicitly classified as false-confident rather than a pass: validation can
-prove script safety, but it cannot substitute for semantic or visual completeness.
+intent routing, observed visual cues, and explicit human visual approval. DoodleScript 2
+now makes the plant example automated-ready through a reusable `part-whole-flow`
+construction, but the strict result remains pending until a reviewer accepts the actual
+doodle. Validation can prove script safety; it cannot substitute for semantic or visual
+completeness.
+
+The construction is not plant-specific. A registered intake action binds an open whole,
+one to three inputs, and the named parts they travel through. Symbol capabilities choose
+flow versus illumination, while the shared layout planner preserves distinct identities
+and left-to-right reading order. The resulting plant scene contains separate `plant`,
+`roots`, `leaves`, `water`, and `sunlight` identities plus four typed relations.
 
 Temporal and causal concept diagrams accept open, readable labels inside registered
 relationship structures. Try `Evaporation happens before condensation`, followed by

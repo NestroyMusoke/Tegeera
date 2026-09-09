@@ -1,9 +1,9 @@
 import type { RelationFamily } from "./relationRegistry";
 
-export const LAYOUT_FAMILY_REGISTRY_VERSION = "1.0.0";
+export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.0.0";
 
-export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow";
-export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph";
+export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow";
+export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole";
 
 export interface LayoutFamilyDefinition {
   id: LayoutFamilyId;
@@ -24,7 +24,8 @@ export const layoutFamilyRegistry: readonly LayoutFamilyDefinition[] = [
   { id: "queue", topology: "ordered-row", relationFamilies: ["ordered"], readingDirection: "left-to-right", maximumVisibleNodes: 5, maximumNodesPerRank: 1, movementWeight: 1, connectorCrossingPenalty: 0 },
   { id: "contact", topology: "directed-pair", relationFamilies: ["performance"], readingDirection: "left-to-right", maximumVisibleNodes: 3, movementWeight: 0.15, connectorCrossingPenalty: 10_000 },
   { id: "event-graph", topology: "ranked-dag", relationFamilies: ["event"], readingDirection: "left-to-right", maximumVisibleNodes: 10, maximumNodesPerRank: 3, movementWeight: 1, connectorCrossingPenalty: 10_000 },
-  { id: "visual-flow", topology: "directed-graph", relationFamilies: ["visual"], readingDirection: "left-to-right", maximumVisibleNodes: 10, maximumNodesPerRank: 3, movementWeight: 0.18, connectorCrossingPenalty: 10_000 }
+  { id: "visual-flow", topology: "directed-graph", relationFamilies: ["visual"], readingDirection: "left-to-right", maximumVisibleNodes: 10, maximumNodesPerRank: 3, movementWeight: 0.18, connectorCrossingPenalty: 10_000 },
+  { id: "part-whole-flow", topology: "part-whole", relationFamilies: ["compositional"], readingDirection: "left-to-right", maximumVisibleNodes: 7, maximumNodesPerRank: 3, movementWeight: 0.12, connectorCrossingPenalty: 10_000 }
 ];
 
 const byId = new Map(layoutFamilyRegistry.map((definition) => [definition.id, definition] as const));

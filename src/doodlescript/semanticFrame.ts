@@ -4,6 +4,7 @@ import { matchRegisteredRelation } from "./relationRegistry";
 import { actionAliases, actionForAlias, directTargetActionAliases, targetableActionAliases, targetPrepositions } from "./actionRegistry";
 import { visualActionAliases, visualActionForAlias, visualActionPrepositions } from "./visualActionRegistry";
 import type { ConceptCapability, ConceptCategory } from "./conceptRegistry";
+import { matchPartWholeFlow, type PartWholeChannel } from "./partWholeFlow";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -52,6 +53,15 @@ export interface SemanticVisualActionMention {
   inheritedSubjectFromFrameId?: string;
 }
 
+export interface SemanticPartWholeFlowMention {
+  construction: "part-whole-flow";
+  wholeMentionId: string;
+  channels: (Omit<PartWholeChannel, "inputText" | "partText"> & {
+    inputMentionId: string;
+    partMentionId: string;
+  })[];
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -63,7 +73,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -86,6 +96,7 @@ export interface SemanticFrame {
   relations: SemanticRelationMention[];
   actions: SemanticActionMention[];
   visualActions: SemanticVisualActionMention[];
+  compositions: SemanticPartWholeFlowMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   meaningCandidates: SemanticMeaningCandidate[];
@@ -179,10 +190,12 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
   add("human-action", human ? actionForAlias(human[2])?.predicate : undefined);
   const relationship = matchRegisteredRelation(text);
   add("relationship", relationship?.predicate);
+  const composition = matchPartWholeFlow(text);
+  add("composition", composition ? "part-whole-flow" : undefined);
   const visualPrepositional = text.match(visualPrepositionalActionPattern);
   const visualDirect = text.match(visualDirectActionPattern);
   const visual = visualPrepositional ?? visualDirect;
-  add("visual-action", visual ? visualActionForAlias(visual[2])?.predicate : undefined);
+  if (!composition) add("visual-action", visual ? visualActionForAlias(visual[2])?.predicate : undefined);
   return candidates;
 }
 
@@ -195,6 +208,22 @@ function populateMeaning(frame: SemanticFrame): void {
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
   if (meaningIsAmbiguous(frame.meaningCandidates)) {
     frame.resolutionStatus = "needs-clarification";
+    return;
+  }
+
+  const composition = matchPartWholeFlow(frame.normalizedText);
+  if (composition) {
+    frame.intent = "describe";
+    frame.compositions.push({
+      construction: "part-whole-flow",
+      wholeMentionId: addParticipant(frame, composition.wholeText),
+      channels: composition.channels.map((channel) => ({
+        flowPredicate: channel.flowPredicate,
+        inputMentionId: addParticipant(frame, channel.inputText),
+        partMentionId: addParticipant(frame, channel.partText)
+      }))
+    });
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
 
@@ -291,6 +320,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       relations: [],
       actions: [],
       visualActions: [],
+      compositions: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
