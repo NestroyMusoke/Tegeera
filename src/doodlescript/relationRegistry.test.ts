@@ -6,6 +6,8 @@ import {
   relationLabel,
   relationLexemes,
   matchRegisteredRelation,
+  relationPredicateIsRegistered,
+  relationSourceCapability,
   relationRegistry,
   relationSupportsVersion,
   validateRelationRegistry
@@ -30,6 +32,10 @@ describe("versioned relation registry", () => {
     expect(relationLexemes.find(({ predicate }) => predicate === "before")?.words).toContain("occurs before");
     expect(relationLexemes.find(({ predicate }) => predicate === "after")?.words).toContain("occurs after");
     expect(relationLexemes.find(({ predicate }) => predicate === "causes")?.words).toContain("results in");
+    expect(relationLexemes.find(({ predicate }) => predicate === "toward")?.words).toContain("drives towards");
+    expect(relationSourceCapability("toward", "drive")).toBe("drive");
+    expect(relationPredicateIsRegistered("away", "walk")).toBe(true);
+    expect(relationPredicateIsRegistered("toward", "fly")).toBe(false);
   });
 
   it("binds ordered-container roles through reusable registered templates", () => {
@@ -44,6 +50,21 @@ describe("versioned relation registry", () => {
     });
   });
 
+  it("binds directional roles and capability requirements as registry data", () => {
+    expect(matchRegisteredRelation("a car drives towards a school")).toEqual({
+      predicate: "toward", relationPredicate: "drive", sourceCapability: "drive",
+      sourceText: "a car", targetText: "a school"
+    });
+    expect(matchRegisteredRelation("a student walks away from a tree")).toEqual({
+      predicate: "away", relationPredicate: "walk", sourceCapability: "walk",
+      sourceText: "a student", targetText: "a tree"
+    });
+    expect(matchRegisteredRelation("a ball approaches a wall")).toEqual({
+      predicate: "toward", relationPredicate: "move", sourceCapability: undefined,
+      sourceText: "a ball", targetText: "a wall"
+    });
+  });
+
   it("centralizes minimum versions and role cardinality", () => {
     expect(relationSupportsVersion("toward", "1.2.0")).toBe(false);
     expect(relationSupportsVersion("toward", "1.3.0")).toBe(true);
@@ -55,6 +76,8 @@ describe("versioned relation registry", () => {
 
   it("provides static and predicate-aware readable labels", () => {
     expect(relationLabel(relation("toward"))).toBe("moves toward");
+    expect(relationLabel(relation("toward", { predicate: "drive" }))).toBe("drives toward");
+    expect(relationLabel(relation("away", { predicate: "walk" }))).toBe("walks away from");
     expect(relationLabel(relation("actsOn", { predicate: "point", preposition: "at" }))).toBe("point at");
     expect(relationLabel(relation("visualAction", { predicate: "absorb" }))).toBe("absorbs");
     expect(relationForKind("causes")).toMatchObject({ family: "event", directed: true, layout: "event-graph" });

@@ -2,6 +2,7 @@ import { actionForPredicate } from "./actionRegistry";
 import { layoutFamilySupportsRelation, type LayoutFamilyId } from "./layoutFamilyRegistry";
 import { relationSchema, type DoodleScript, type SceneRelation } from "./schema";
 import { visualActionForPredicate } from "./visualActionRegistry";
+import type { ConceptCapability } from "./conceptRegistry";
 
 export const RELATION_REGISTRY_VERSION = "1.0.0";
 
@@ -26,6 +27,14 @@ export interface RelationDefinition {
   directed: boolean;
   layout: LayoutFamilyId;
   languageTemplates?: readonly RelationLanguageTemplate[];
+  aliasRules?: readonly RelationAliasRule[];
+}
+
+export interface RelationAliasRule {
+  aliases: readonly string[];
+  relationPredicate: string;
+  readableLabel: string;
+  sourceCapability?: ConceptCapability;
 }
 
 export interface RelationLanguageTemplate {
@@ -38,13 +47,29 @@ export interface RegisteredRelationMatch {
   predicate: string;
   sourceText: string;
   targetText: string;
+  relationPredicate?: string;
+  sourceCapability?: ConceptCapability;
 }
+
+const towardMotionRules: readonly RelationAliasRule[] = [
+  { aliases: ["approaches", "approach", "approaching", "moves toward", "move toward", "moving toward", "moves towards", "move towards", "moving towards"], relationPredicate: "move", readableLabel: "moves toward" },
+  { aliases: ["drives toward", "drive toward", "driving toward", "drives towards", "drive towards", "driving towards"], relationPredicate: "drive", readableLabel: "drives toward", sourceCapability: "drive" },
+  { aliases: ["walks toward", "walk toward", "walking toward", "walks towards", "walk towards", "walking towards"], relationPredicate: "walk", readableLabel: "walks toward", sourceCapability: "walk" }
+];
+
+const awayMotionRules: readonly RelationAliasRule[] = [
+  { aliases: ["moves away from", "move away from", "moving away from"], relationPredicate: "move", readableLabel: "moves away from" },
+  { aliases: ["drives away from", "drive away from", "driving away from"], relationPredicate: "drive", readableLabel: "drives away from", sourceCapability: "drive" },
+  { aliases: ["walks away from", "walk away from", "walking away from"], relationPredicate: "walk", readableLabel: "walks away from", sourceCapability: "walk" }
+];
+
+const aliasesFrom = (rules: readonly RelationAliasRule[]): string[] => rules.flatMap(({ aliases }) => aliases);
 
 export const relationRegistry: readonly RelationDefinition[] = [
   { kind: "shares", family: "structural", label: "share", aliases: ["sharing", "share", "shares"], minimumVersion: "1.1.0", source: { min: 1, max: 12 }, target: { min: 1, max: 12 }, object: { min: 0, max: 0 }, directed: false, layout: "group" },
   { kind: "owns", family: "structural", label: "owns", aliases: ["owns", "own", "has", "have"], minimumVersion: "1.1.0", source: { min: 1, max: 1 }, target: { min: 1, max: 12 }, object: { min: 0, max: 0 }, directed: true, layout: "ownership" },
-  { kind: "toward", family: "directional", label: "moves toward", aliases: [], minimumVersion: "1.3.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "arrow" },
-  { kind: "away", family: "directional", label: "moves away from", aliases: [], minimumVersion: "1.3.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "arrow" },
+  { kind: "toward", family: "directional", label: "moves toward", aliases: aliasesFrom(towardMotionRules), aliasRules: towardMotionRules, minimumVersion: "1.3.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "arrow" },
+  { kind: "away", family: "directional", label: "moves away from", aliases: aliasesFrom(awayMotionRules), aliasRules: awayMotionRules, minimumVersion: "1.3.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "arrow" },
   { kind: "queuedFor", family: "ordered", label: "waits in queue", aliases: [], minimumVersion: "1.4.0", source: { min: 1, max: 4 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "queue", languageTemplates: [
     { shape: "source-verb-target-container", verbs: ["waiting in", "wait in", "waits in"], containers: ["ready queue", "queue"] },
     { shape: "target-container-verb-source", verbs: ["contains", "has"], containers: ["ready queue", "queue"] }
@@ -60,6 +85,19 @@ const byKind = new Map(relationRegistry.map((definition) => [definition.kind, de
 
 export function relationForKind(kind: RelationKind): RelationDefinition {
   return byKind.get(kind)!;
+}
+
+export function relationSourceCapability(kind: RelationKind, predicate?: string): ConceptCapability | undefined {
+  if (!predicate) return undefined;
+  return relationForKind(kind).aliasRules?.find((rule) => rule.relationPredicate === predicate)?.sourceCapability;
+}
+
+export function relationPredicateIsRegistered(kind: RelationKind, predicate?: string): boolean {
+  return !predicate || Boolean(relationForKind(kind).aliasRules?.some((rule) => rule.relationPredicate === predicate));
+}
+
+export function relationPredicateLabel(kind: RelationKind, predicate?: string): string | undefined {
+  return relationForKind(kind).aliasRules?.find((rule) => rule.relationPredicate === predicate)?.readableLabel;
 }
 
 export const relationLexemes: readonly { predicate: string; words: readonly string[] }[] = [...relationRegistry
@@ -92,7 +130,13 @@ export function matchRegisteredRelation(text: string): RegisteredRelationMatch |
   const binary = text.match(new RegExp(`^(.+?) (?:are )?(${words}) (.+)$`));
   if (!binary) return null;
   const predicate = relationLexemes.find(({ words: aliases }) => aliases.includes(binary[2]))?.predicate;
-  return predicate ? { predicate, sourceText: binary[1], targetText: binary[3] } : null;
+  if (!predicate) return null;
+  const definition = relationRegistry.find((candidate) => candidate.kind === predicate);
+  const rule = definition?.aliasRules?.find(({ aliases }) => aliases.includes(binary[2]));
+  return {
+    predicate, sourceText: binary[1], targetText: binary[3],
+    ...(rule ? { relationPredicate: rule.relationPredicate, sourceCapability: rule.sourceCapability } : {})
+  };
 }
 
 const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"];
@@ -114,6 +158,9 @@ export function relationCardinalityIssues(relation: SceneRelation): string[] {
 }
 
 export function relationLabel(relation: SceneRelation): string {
+  if (relation.kind === "toward" || relation.kind === "away") {
+    return relationPredicateLabel(relation.kind, relation.predicate) ?? relationForKind(relation.kind).label;
+  }
   if (relation.kind === "actsOn") {
     return relation.preposition ? `${relation.predicate ?? "acts"} ${relation.preposition}`
       : actionForPredicate(relation.predicate)?.relationLabel ?? relation.predicate ?? relationForKind(relation.kind).label;
@@ -138,6 +185,10 @@ export function validateRelationRegistry(registry: readonly RelationDefinition[]
     }
     for (const template of definition.languageTemplates ?? []) {
       if (!template.verbs.length || !template.containers.length) issues.push(`Incomplete language template: ${definition.kind}`);
+    }
+    for (const rule of definition.aliasRules ?? []) {
+      if (!rule.aliases.length || !rule.relationPredicate || !rule.readableLabel) issues.push(`Incomplete alias rule: ${definition.kind}`);
+      if (rule.aliases.some((alias) => !definition.aliases.includes(alias))) issues.push(`Unregistered ruled alias: ${definition.kind}`);
     }
     if (!layoutFamilySupportsRelation(definition.layout, definition.family)) {
       issues.push(`Layout family ${definition.layout} does not support relation family ${definition.family}: ${definition.kind}`);

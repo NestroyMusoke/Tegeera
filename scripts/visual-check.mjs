@@ -267,8 +267,28 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Concept registry scene caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: data-only aliases, semantic categories, version metadata, renderer selection, quantity, layout';
     }
+    async function verifyMotion() {
+      await pause();
+      await submit('A car drives toward a building');
+      const drive = document.querySelector('[data-relation-kind="toward"][data-relation-predicate="drive"]');
+      check(!!drive, 'Registered drive mode is not persisted as relation metadata');
+      check(drive.dataset.relationFamily === 'directional', 'Directional relation family metadata is missing');
+      check(drive.dataset.relationLayout === 'arrow', 'Directional layout family metadata is missing');
+      check(!!drive.querySelector('.motion-annotation'), 'Directional arrow is missing');
+      check(drive.querySelector('.motion-annotation')?.getAttribute('aria-label') === 'drives toward', 'Drive relation accessibility text is wrong');
+      await submit('It moves away from the building');
+      const away = document.querySelector('[data-relation-kind="away"][data-relation-predicate="move"]');
+      check(!!away, 'Contextual away movement did not replace the prior direction');
+      check(document.querySelectorAll('.motion-annotation').length === 1, 'Direction correction left conflicting motion arrows');
+      const before = document.querySelector('.doodle-canvas').innerHTML;
+      await submit('The car walks toward the building');
+      check(!!document.querySelector('.clarification'), 'Incapable actor did not request clarification');
+      check(document.querySelector('.doodle-canvas').innerHTML === before, 'Rejected capability mismatch changed the scene');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Motion scene caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: registered directional roles, persisted motion mode, contextual correction, capability rejection, rollback, accessibility, layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -283,3 +303,4 @@ await writeFile(resolve(output, "app-queue-phone.html"), framedApp(390, "?queue"
 await writeFile(resolve(output, "app-events-phone.html"), framedApp(390, "?events"));
 await writeFile(resolve(output, "app-phrases-phone.html"), framedApp(390, "?phrases"));
 await writeFile(resolve(output, "app-concepts-phone.html"), framedApp(390, "?concepts"));
+await writeFile(resolve(output, "app-motion-phone.html"), framedApp(390, "?motion"));

@@ -804,6 +804,46 @@ browser workflow creates and edits both CPU-scheduling and school-service queues
 The build reports only the existing third-party Zod annotation notices. Physical
 Android rendering, speech latency, and projector inspection remain unverified.
 
+## Original character contract and independent language baseline
+
+`TEGEERA_POSE_EXPRESSION_SPEC.md` now freezes the design boundary before further
+procedural-rig code. It defines an original rounded-monoline Tegeera identity,
+14 semantic poses, 10 combinable expressions, speaking and gaze overlays, separated
+SVG layers, contact ownership, deterministic variation, animation channels, reduced
+motion, and acceptance gates. Open Peeps informs only pose/expression coverage and
+modularity. DiceBear informs only the software pattern of schema-validated named
+components and deterministic generation. No external artwork, paths, proportions,
+style definitions, or option names are implementation inputs.
+
+The 60-statement independent teacher corpus is stored under `evaluation/` and parsed
+only from the test module through a raw text import. Production language registries
+cannot read it. Structural tests freeze all 60 unique cases, their six ten-case
+subject groups, difficulty distribution, and intended-visual notes. The observational
+baseline currently accepts 1/60 and safely clarifies 59/60; every accepted script
+passes all DoodleScript gates. This is accepted coverage, not semantic accuracy.
+Human review still has to compare accepted graphs with the independent intended
+visuals before reporting correctness or false-confident acceptance.
+
+Directional motion has moved from an interpreter-specific sentence regular
+expression into the relation registry. Each alias rule owns surface forms, canonical
+motion mode, readable label, and optional actor capability. The semantic frame binds
+source and target roles, DoodleScript persists the canonical mode, and the validator
+independently rejects unknown modes and capability-forged scripts. The same mechanism
+supports `move`, `walk`, `drive`, `toward`, and `away` without storing complete lesson
+sentences. Geometry remains specialist and continues to reject mixed-row arrows.
+
+The complete checkpoint passes 256 tests across 30 files and generates 19
+actual-component fixtures plus the full-app phone workflows. The final 250-iteration
+meaning pipeline measures 1.20 ms median and 6.58 ms p95, excluding speech, DOM, SVG
+painting, and device work. Production JavaScript is 403.25 kB (123.02 kB gzip); CSS
+is 11.59 kB (3.49 kB gzip). Lint, production build, Android asset synchronization,
+and the 390-pixel registry-driven motion browser workflow pass. That workflow checks
+persisted mode metadata, contextual direction replacement, capability rejection,
+atomic rollback, accessibility, and overflow. The build reports only the existing
+third-party Zod annotation notices. Human semantic scoring, physical Android
+rendering, speech latency, projector inspection, and original pose-sheet visual QA
+remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

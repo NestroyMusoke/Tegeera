@@ -14,7 +14,7 @@ import { handoverIsVisuallySafe, handoverParticipants } from "./handover";
 import { eventFlowGeometry, hasDirectedCycle, isEventRelation } from "./eventRelations";
 import { visualPhraseGeometry, isVisualAction } from "./visualPhrase";
 import { visualActionForPredicate } from "./visualActionRegistry";
-import { relationCardinalityIssues, relationForKind, relationSupportsVersion } from "./relationRegistry";
+import { relationCardinalityIssues, relationForKind, relationPredicateIsRegistered, relationSourceCapability, relationSupportsVersion } from "./relationRegistry";
 import { conceptSupports, sharedOrderedDomain } from "./conceptRegistry";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
@@ -251,6 +251,11 @@ export function validateDoodleScript(
     if (isMotion(relation)) {
       const actor = projected.entities.find((entity) => entity.id === relation.sourceIds[0]);
       const target = projected.entities.find((entity) => entity.id === relation.targetIds[0]);
+      const requiredCapability = relationSourceCapability(relation.kind, relation.predicate);
+      if (!relationPredicateIsRegistered(relation.kind, relation.predicate)) issues.push({ gate: "semantic", message: "That directional movement is not registered." });
+      if (actor && requiredCapability && !conceptSupports(actor.kind, requiredCapability)) {
+        issues.push({ gate: "semantic", message: `That actor cannot perform the registered ${relation.predicate} movement.` });
+      }
       if (moving.has(relation.sourceIds[0])) issues.push({ gate: "semantic", message: "An actor cannot have conflicting simultaneous directions." });
       moving.add(relation.sourceIds[0]);
       if (actor && target && !motionGeometry(actor, target, relation.kind as "toward" | "away")) issues.push({ gate: "layout", message: "Place the moving object and its reference on the same row with room for an arrow." });

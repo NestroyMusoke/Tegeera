@@ -98,6 +98,17 @@ describe("semantic input frames", () => {
     expect(project("Two students share three books")).toEqual(project("There are two learners sharing three books"));
   });
 
+  it("extracts registered directional roles before scene interpretation", () => {
+    const frame = analyzeTeacherInput("A student walks towards a school").frames[0];
+    expect(frame.relations).toEqual([{
+      predicate: "toward", relationPredicate: "walk", sourceCapability: "walk",
+      sourceMentionIds: [frame.entities[0].mentionId],
+      targetMentionIds: [frame.entities[1].mentionId]
+    }]);
+    expect(frame.entities.map(({ kind }) => kind)).toEqual(["student", "building"]);
+    expect(frame.resolutionStatus).toBe("resolved");
+  });
+
   it("recognizes a plural concept without inventing its missing quantity", () => {
     const frame = analyzeTeacherInput("Students share books").frames[0];
 

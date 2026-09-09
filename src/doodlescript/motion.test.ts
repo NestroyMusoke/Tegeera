@@ -21,6 +21,10 @@ describe("directed action meaning", () => {
       expect(scene.relations?.[0]).toMatchObject({ kind: text.includes("away") ? "away" : "toward", sourceIds: [scene.entities[0].id], targetIds: [scene.entities[1].id] });
     });
   }
+  it("persists registered motion mode for independent validation", () => {
+    expect(run("A car drives toward a building").relations?.[0]).toMatchObject({ kind: "toward", predicate: "drive" });
+    expect(run("A student walks away from a tree").relations?.[0]).toMatchObject({ kind: "away", predicate: "walk" });
+  });
   it("reverses existing motion without recreating objects or leaving two directions", () => {
     const scene = run("A car approaches a person");
     const next = run("Make the car go the other way", scene);
@@ -89,5 +93,32 @@ describe("direction geometry and gates", () => {
     expect(validateDoodleScript({ ...result.script, schemaVersion: "1.2.0" }, initialScene).ok).toBe(false);
     const conflicting = { ...result.script, commands: [...result.script.commands, { action: "relate", relation: { id: "conflict", kind: "away", sourceIds: ["car-1"], targetIds: ["person-1"] } }] };
     expect(validateDoodleScript(conflicting, initialScene).ok).toBe(false);
+  });
+  it("independently rejects forged motion modes and incapable actors", () => {
+    const result = interpretTeacherText("A car drives toward a building", initialScene);
+    if (!result.ok) throw new Error(result.message);
+    const relationCommand = result.script.commands.find((command) => command.action === "relate");
+    if (!relationCommand || relationCommand.action !== "relate") throw new Error("Motion relation missing");
+    const unknownMode = {
+      ...result.script,
+      commands: result.script.commands.map((command) => command === relationCommand
+        ? { ...command, relation: { ...command.relation, predicate: "teleport" } }
+        : command)
+    };
+    expect(validateDoodleScript(unknownMode, initialScene)).toMatchObject({
+      ok: false,
+      issues: expect.arrayContaining([expect.objectContaining({ gate: "semantic", message: "That directional movement is not registered." })])
+    });
+
+    const incapable = {
+      ...result.script,
+      commands: result.script.commands.map((command) => command.action === "create" && command.entity.id === "car-1"
+        ? { ...command, entity: { ...command.entity, kind: "person" as const } }
+        : command)
+    };
+    expect(validateDoodleScript(incapable, initialScene)).toMatchObject({
+      ok: false,
+      issues: expect.arrayContaining([expect.objectContaining({ gate: "semantic", message: "That actor cannot perform the registered drive movement." })])
+    });
   });
 });

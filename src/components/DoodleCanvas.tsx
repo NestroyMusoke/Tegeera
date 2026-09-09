@@ -74,6 +74,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           return <g key={relation.id}
             data-relation-family={definition.family}
             data-relation-kind={definition.kind}
+            data-relation-predicate={relation.predicate}
             data-relation-layout={definition.layout}
             data-relation-registry-version={RELATION_REGISTRY_VERSION}
             data-layout-topology={layout.topology}

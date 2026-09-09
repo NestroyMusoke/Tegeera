@@ -6,6 +6,12 @@ The path from the current bounded grammar to broad, compositional visualization
 is specified in [`OPEN_VISUALIZATION_ARCHITECTURE.md`](OPEN_VISUALIZATION_ARCHITECTURE.md).
 New domains should not add sentence-specific parser branches.
 
+The original procedural-character contract is documented in
+[`TEGEERA_POSE_EXPRESSION_SPEC.md`](TEGEERA_POSE_EXPRESSION_SPEC.md). Open Peeps is
+used only to study coverage and modularity; DiceBear is used only to study typed,
+deterministic component architecture. Tegeera imports neither project's artwork,
+paths, proportions, nor style definitions.
+
 Tegeera is an offline-first visual teaching instrument that turns explanations into in-session editable, hand-drawn scenes. It began with a simple experience at Uganda Christian University: sometimes words are not enough, and drawing the idea is what finally makes it understandable.
 
 ## First working slice
@@ -181,6 +187,18 @@ Directed motion examples: `A car approaches a person`, `Make it go the other way
 and `Stop it`. Human figures also support `A student walks toward a school`.
 These show direction with arrows and facing/pose changes, not physical movement
 or collision simulation. Objects must share a row with room for an arrow.
+Directional phrasing is registered as semantic relation data. Canonical modes such
+as `move`, `walk`, and `drive`, their aliases, readable labels, and required actor
+capabilities share one registry; the interpreter no longer owns a sentence-specific
+motion regular expression. This remains a bounded verb vocabulary, not arbitrary
+motion understanding.
+
+An independent 60-statement teacher corpus lives at
+[`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
+It is parsed only by evaluation code and is deliberately invisible to the production
+grammar. The present baseline safely accepts 1/60 and asks for clarification on
+59/60. That number is coverage, not semantic accuracy: each accepted graph still
+requires comparison with the separately written intended visual.
 
 Temporal and causal concept diagrams accept open, readable labels inside registered
 relationship structures. Try `Evaporation happens before condensation`, followed by

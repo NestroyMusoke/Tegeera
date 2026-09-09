@@ -351,6 +351,14 @@ them through the shared candidate evaluator. CPU scheduling and school-service
 queues exercise the same code, including count correction and reordering. The
 `queuedFor` schema name remains for DoodleScript 1.x compatibility.
 
+Directional motion has also crossed the registry boundary. `toward` and `away`
+definitions own their surface aliases, canonical motion mode, readable label, and
+optional source capability. Semantic frames retain those roles, the interpreter
+plans from the frame rather than re-matching the sentence, DoodleScript persists the
+canonical mode, and the independent validator rejects forged modes or incapable
+actors. Motion geometry remains a specialist planner because directional spacing
+and facing are part of its visual truth contract.
+
 ### Milestone 4 — local template retrieval
 
 - Store templates as versioned semantic graphs with examples and capabilities.
@@ -401,9 +409,10 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-Add explicit ambiguity accounting and independent language evaluation. Detect when
-multiple registered frames compete for the same words, return the smallest useful
-clarification, and create a teacher-authored corpus that is stored separately from
-the grammar. Measure semantic correctness, safe clarification, unsupported-language
-rejection, and graph readability independently. Then use those results to expand
-actions and concepts without optimizing against authored regression phrases.
+The independent 60-statement teacher corpus is now stored separately from production
+grammar and its observational harness distinguishes accepted coverage from safe
+clarification. Current coverage is intentionally low rather than inflated with new
+sentence cases. Next, freeze human-reviewed expected semantic graphs for a carefully
+selected first slice, then implement versioned local template retrieval against
+semantic structures—not corpus strings. Measure false-confident acceptance before
+expanding coverage, and keep ambiguous or unsupported statements scene-preserving.

@@ -250,21 +250,31 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         frameIndex = phraseEnd;
         continue;
       }
-      const motion = text.match(/^(.+?) (approaches|approaching|moves? towards?|moving towards?|drives? towards?|driving towards?|walks? towards?|walking towards?|moves? away from|moving away from|drives? away from|driving away from|walks? away from|walking away from) (.+)$/);
-      if (motion) {
+      const directional = frame.relations.find((relation) => relation.predicate === "toward" || relation.predicate === "away");
+      if (directional) {
+        const mentionText = (mentionId: string) => frame.entities.find((mention) => mention.mentionId === mentionId)?.text
+          ?? frame.references.find((mention) => mention.mentionId === mentionId)?.text ?? "";
         const participant = (phrase: string, actor: boolean) => {
-          if (/^(a|an|one) /.test(phrase)) return create(phrase)[0];
+          if (/^(a|an|one) /.test(phrase)) {
+            if (nounPhrase(phrase).count !== 1) throw new Clarification("Directional movement needs one moving object and one reference object.");
+            return create(phrase)[0];
+          }
           if (actor && phrase === "it" && context?.subjectIds.length === 1) return context.subjectIds[0];
           return resolve(phrase, working).id;
         };
-        const actorId = participant(motion[1], true);
-        const targetId = participant(motion[3], false);
+        const actorId = participant(mentionText(directional.sourceMentionIds[0]), true);
+        const targetId = participant(mentionText(directional.targetMentionIds[0]), false);
         if (actorId === targetId) throw new Clarification("An object cannot approach itself. Name the other object.", "conflicting-scene");
         const actor = working.entities.find((entity) => entity.id === actorId)!;
-        if (/^driv/.test(motion[2]) && !conceptSupports(actor.kind, "drive")) throw new Clarification("Which car is moving? Name the vehicle.");
-        if (/^walk/.test(motion[2]) && !conceptSupports(actor.kind, "walk")) throw new Clarification("Which person is walking?");
+        if (directional.sourceCapability && !conceptSupports(actor.kind, directional.sourceCapability)) {
+          throw new Clarification(`That concept cannot perform the registered ${directional.relationPredicate} movement.`);
+        }
         stopMotion(actorId);
-        relate(motion[2].includes("away") ? "away" : "toward", [actorId], [targetId]);
+        append({ action: "relate", relation: {
+          id: `relation-${scene.revision + 1}-${commands.length}`,
+          kind: directional.predicate as "toward" | "away", predicate: directional.relationPredicate,
+          sourceIds: [actorId], targetIds: [targetId]
+        } });
         focus([actorId], [targetId]);
         continue;
       }

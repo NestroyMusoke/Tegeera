@@ -3,7 +3,7 @@ import { parseEntityPhrase } from "./lexicon";
 import { matchRegisteredRelation } from "./relationRegistry";
 import { actionAliases, actionForAlias, directTargetActionAliases, targetableActionAliases, targetPrepositions } from "./actionRegistry";
 import { visualActionAliases, visualActionForAlias, visualActionPrepositions } from "./visualActionRegistry";
-import type { ConceptCategory } from "./conceptRegistry";
+import type { ConceptCapability, ConceptCategory } from "./conceptRegistry";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -32,6 +32,8 @@ export interface SemanticRelationMention {
   predicate: string;
   sourceMentionIds: string[];
   targetMentionIds: string[];
+  relationPredicate?: string;
+  sourceCapability?: ConceptCapability;
 }
 
 export interface SemanticActionMention {
@@ -225,7 +227,11 @@ function populateMeaning(frame: SemanticFrame): void {
     const targetMentionId = addParticipant(frame, relationship.targetText);
     const predicate = relationship.predicate;
     frame.intent = "describe";
-    frame.relations.push({ predicate, sourceMentionIds: [sourceMentionId], targetMentionIds: [targetMentionId] });
+    frame.relations.push({
+      predicate, sourceMentionIds: [sourceMentionId], targetMentionIds: [targetMentionId],
+      ...(relationship.relationPredicate ? { relationPredicate: relationship.relationPredicate } : {}),
+      ...(relationship.sourceCapability ? { sourceCapability: relationship.sourceCapability } : {})
+    });
     const openConceptRelation = ["before", "after", "causes"].includes(predicate);
     const conceptSlotsAreReadable = [...frame.entities, ...frame.references]
       .every(({ text }) => text.length <= 40 && text.split(/\s+/).length <= 7 && /^[a-z0-9][a-z0-9 '-]*$/.test(text));
