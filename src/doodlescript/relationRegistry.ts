@@ -1,4 +1,5 @@
 import { actionForPredicate } from "./actionRegistry";
+import { layoutFamilySupportsRelation, type LayoutFamilyId } from "./layoutFamilyRegistry";
 import { relationSchema, type DoodleScript, type SceneRelation } from "./schema";
 import { visualActionForPredicate } from "./visualActionRegistry";
 
@@ -23,7 +24,7 @@ export interface RelationDefinition {
   target: Cardinality;
   object: Cardinality;
   directed: boolean;
-  layout: "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow";
+  layout: LayoutFamilyId;
   languageTemplates?: readonly RelationLanguageTemplate[];
 }
 
@@ -137,6 +138,9 @@ export function validateRelationRegistry(registry: readonly RelationDefinition[]
     }
     for (const template of definition.languageTemplates ?? []) {
       if (!template.verbs.length || !template.containers.length) issues.push(`Incomplete language template: ${definition.kind}`);
+    }
+    if (!layoutFamilySupportsRelation(definition.layout, definition.family)) {
+      issues.push(`Layout family ${definition.layout} does not support relation family ${definition.family}: ${definition.kind}`);
     }
     for (const [role, bounds] of [["source", definition.source], ["target", definition.target], ["object", definition.object]] as const) {
       if (bounds.min < 0 || bounds.max < bounds.min || bounds.max > 12) issues.push(`Invalid ${role} cardinality: ${definition.kind}`);

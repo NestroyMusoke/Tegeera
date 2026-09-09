@@ -1,4 +1,5 @@
 import { overlaps, withinCanvas } from "./layout";
+import { layoutFamilyFor, type LayoutFamilyId } from "./layoutFamilyRegistry";
 import type { SceneEntity, SceneState } from "./schema";
 
 export interface LayoutEdge {
@@ -20,8 +21,8 @@ export interface LayoutCandidateResult {
 }
 
 export interface LayoutCandidateOptions {
+  family: LayoutFamilyId;
   connectorEdges?: readonly LayoutEdge[];
-  movementWeight?: number;
   validate?: (projected: readonly SceneEntity[]) => boolean;
   preference?: (planned: readonly SceneEntity[], projected: readonly SceneEntity[]) => number;
 }
@@ -72,8 +73,9 @@ function signature(entities: readonly SceneEntity[]): string {
 export function selectLayoutCandidate(
   scene: SceneState,
   candidates: readonly (readonly SceneEntity[])[],
-  options: LayoutCandidateOptions = {}
+  options: LayoutCandidateOptions
 ): LayoutCandidateResult | null {
+  const family = layoutFamilyFor(options.family);
   const originalById = new Map(scene.entities.map((entity) => [entity.id, entity]));
   const accepted: LayoutCandidateResult[] = [];
 
@@ -94,10 +96,12 @@ export function selectLayoutCandidate(
     }, 0);
     const connectorCrossings = connectorCrossingCount(options.connectorEdges ?? [], projected);
     const preference = Math.max(0, options.preference?.(candidate, projected) ?? 0);
-    const movementWeight = Math.max(0, options.movementWeight ?? 1);
     accepted.push({
       entities: [...candidate], projected,
-      score: { movement, connectorCrossings, preference, total: connectorCrossings * 10_000 + movement * movementWeight + preference }
+      score: {
+        movement, connectorCrossings, preference,
+        total: connectorCrossings * family.connectorCrossingPenalty + movement * family.movementWeight + preference
+      }
     });
   }
 

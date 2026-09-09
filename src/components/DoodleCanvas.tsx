@@ -10,6 +10,7 @@ import { applyHandoverPerformance, handoverParticipants, isHandover } from "../d
 import { eventFlowGeometry, isEventRelation } from "../doodlescript/eventRelations";
 import { isVisualAction, visualPhraseGeometry } from "../doodlescript/visualPhrase";
 import { RELATION_REGISTRY_VERSION, relationForKind } from "../doodlescript/relationRegistry";
+import { LAYOUT_FAMILY_REGISTRY_VERSION, layoutFamilyFor } from "../doodlescript/layoutFamilyRegistry";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -69,11 +70,14 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
         <rect width="1000" height="620" filter="url(#paper-grain)" opacity=".5" />
         {scene.relations?.map((relation) => {
           const definition = relationForKind(relation.kind);
+          const layout = layoutFamilyFor(definition.layout);
           return <g key={relation.id}
             data-relation-family={definition.family}
             data-relation-kind={definition.kind}
             data-relation-layout={definition.layout}
-            data-relation-registry-version={RELATION_REGISTRY_VERSION}>
+            data-relation-registry-version={RELATION_REGISTRY_VERSION}
+            data-layout-topology={layout.topology}
+            data-layout-registry-version={LAYOUT_FAMILY_REGISTRY_VERSION}>
             <Relationship relation={relation} entities={scene.entities} />
           </g>;
         })}

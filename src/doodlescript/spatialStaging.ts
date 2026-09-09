@@ -35,7 +35,7 @@ export function stageTargetedPair(scene: SceneState, actorId: string, targetId: 
     withPosition(originalActor, actorPosition), withPosition(originalTarget, targetPosition)
   ]));
   const best = selectLayoutCandidate(scene, candidates, {
-    movementWeight: 0.15,
+    family: "contact",
     preference: (planned) => placementScore(
       planned.find((entity) => entity.id === actorId)!,
       planned.find((entity) => entity.id === targetId)!

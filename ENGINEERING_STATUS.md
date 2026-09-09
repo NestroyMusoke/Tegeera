@@ -750,6 +750,33 @@ integrity, and the real browser teaching workflow pass. The build reports only t
 existing third-party Zod annotation notices. Physical Android rendering, speech
 latency, and projector inspection remain unverified.
 
+## Versioned layout-family registry
+
+The shared layout kernel no longer receives hidden movement weights from individual
+call sites. A versioned registry now defines seven active visual grammars: group,
+ownership, arrow, queue, contact, event graph, and visual flow. Each definition owns
+its topology, compatible semantic relation families, reading direction, visible-node
+capacity, optional rank limit, movement weight, and connector-crossing penalty.
+These are reusable visual contracts rather than stored lesson sentences or fixed
+scene coordinates.
+
+Relation-registry startup validation rejects an incompatible semantic-family and
+layout-family pairing. The event, visual-flow, and actor-target planners identify
+their layout family when entering the shared evaluator, so tuning is centralized and
+observable. Rendered relationship groups now expose the layout topology and registry
+version alongside their existing relation metadata. The browser gate checks those
+attributes after building a coordinated plant input/output explanation and then a
+water-to-cloud transformation.
+
+The complete checkpoint passes 248 tests across 29 files and generates 19
+actual-component fixtures. The final 250-iteration meaning pipeline measures
+1.28 ms median and 6.91 ms p95, excluding speech, DOM, SVG painting, and device work.
+Production JavaScript is 398.88 kB (122.01 kB gzip); CSS remains 11.59 kB
+(3.49 kB gzip). Lint, production build, Android asset synchronization, registry
+validation, diff integrity, and the real browser visual-flow workflow pass. The
+build reports only the existing third-party Zod annotation notices. Physical Android
+rendering, speech latency, and projector inspection remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

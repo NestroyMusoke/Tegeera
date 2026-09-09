@@ -17,7 +17,7 @@ describe("shared layout candidate evaluation", () => {
       [entity("a", 1, 28)],
       [entity("a", 48, 28)],
       [entity("a", 30, 28)]
-    ]);
+    ], { family: "event-graph" });
     expect(result?.entities[0]).toMatchObject({ id: "a", x: 30, y: 28 });
   });
 
@@ -27,7 +27,7 @@ describe("shared layout candidate evaluation", () => {
       [entity("a", 24, 28)],
       [entity("a", 36, 28)],
       [entity("a", 30, 60)]
-    ]);
+    ], { family: "event-graph" });
     expect(result?.entities[0].x).toBe(24);
     expect(result?.score.movement).toBe(6);
   });
@@ -42,7 +42,7 @@ describe("shared layout candidate evaluation", () => {
     const clear = [entity("a", 20, 20), entity("b", 20, 60), entity("c", 80, 60), entity("d", 80, 20)];
     expect(connectorCrossingCount(edges, crossed)).toBe(1);
     expect(connectorCrossingCount(edges, clear)).toBe(0);
-    const result = selectLayoutCandidate(scene(...crossed), [crossed, clear], { connectorEdges: edges });
+    const result = selectLayoutCandidate(scene(...crossed), [crossed, clear], { family: "visual-flow", connectorEdges: edges });
     expect(result?.score.connectorCrossings).toBe(0);
   });
 });

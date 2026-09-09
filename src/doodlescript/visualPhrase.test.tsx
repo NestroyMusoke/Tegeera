@@ -175,6 +175,8 @@ describe("evidence-backed visual phrases", () => {
     expect(html.match(/data-relation-family="visual"/g)).toHaveLength(6);
     expect(html.match(/data-relation-layout="visual-flow"/g)).toHaveLength(3);
     expect(html).toContain('data-relation-registry-version="1.0.0"');
+    expect(html.match(/data-layout-topology="directed-graph"/g)).toHaveLength(3);
+    expect(html).toContain('data-layout-registry-version="1.0.0"');
     expect(html).toContain("plant absorbs sunlight");
     expect(html).toContain("plant absorbs water");
     expect(html).toContain("plant produces oxygen");

@@ -67,5 +67,10 @@ describe("versioned relation registry", () => {
       "Duplicate relation alias: share (shares, shares)",
       "Invalid target cardinality: shares"
     ]));
+    const incompatible = relationRegistry.map((definition) => definition.kind === "shares"
+      ? { ...definition, layout: "event-graph" as const } : definition);
+    expect(validateRelationRegistry(incompatible)).toContain(
+      "Layout family event-graph does not support relation family structural: shares"
+    );
   });
 });

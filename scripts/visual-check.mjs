@@ -227,6 +227,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
       check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '1.0.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '1.0.0'), 'Layout registry version is missing');
+      check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
       check(document.querySelectorAll('[data-symbol-id="plant"]').length === 1, 'Continued phrase duplicated the plant');
@@ -245,7 +247,7 @@ const appBundle = await build({
       check(document.querySelector('[data-symbol-id="water"]'), 'Water symbol is missing');
       check(document.querySelector('[data-symbol-id="cloud"]'), 'Cloud symbol is missing');
       check(document.documentElement.scrollWidth <= innerWidth, 'Visual phrase caused horizontal overflow');
-      document.getElementById('qa-result').textContent = 'PASS: coordinated objects, inherited subject, atomic graph planning, identity reuse, semantic direction, composed symbols, honest fallback, negation rollback, transformation, accessibility, layout';
+      document.getElementById('qa-result').textContent = 'PASS: coordinated objects, inherited subject, atomic graph planning, identity reuse, semantic direction, registered layout family, composed symbols, honest fallback, negation rollback, transformation, accessibility, layout';
     }
     async function verifyConcepts() {
       await pause();

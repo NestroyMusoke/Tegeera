@@ -80,6 +80,7 @@ export function planEventGraph(scene: SceneState, proposed: SceneRelation) {
   })));
   const candidates = [0, 16, -16, 28, -28].map((offset) => plannedBase.map((entity) => ({ ...entity, y: entity.y + offset })))
   const planned = selectLayoutCandidate(scene, candidates, {
+    family: "event-graph",
     connectorEdges: edges.map((edge) => ({ sourceId: edge.sourceIds[0], targetId: edge.targetIds[0] })),
     validate: (projected) => edges.every((edge) => Boolean(eventFlowGeometry(edge, [...projected])))
   })?.entities;

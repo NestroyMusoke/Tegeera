@@ -86,9 +86,9 @@ export function planVisualPhrase(
     ]));
   const retained = [...(scene.relations ?? []).filter(isVisualAction), relation];
   const best = selectLayoutCandidate(scene, candidates, {
+    family: "visual-flow",
     connectorEdges: retained.map((candidate) => renderedEdge(candidate))
       .flatMap((edge) => edge ? [{ sourceId: edge[0], targetId: edge[1] }] : []),
-    movementWeight: 0.18,
     validate: (projected) => labelsAreClear(retained, [...projected]),
     preference: (planned) => {
       const subject = planned.find((entity) => entity.id === originalSubject.id)!;
@@ -191,6 +191,7 @@ export function planVisualPhraseGraph(
     const connectorEdges = relations.map((relation) => renderedEdge(relation))
       .flatMap((edge) => edge ? [{ sourceId: edge[0], targetId: edge[1] }] : []);
     const best = selectLayoutCandidate(scene, candidates, {
+      family: "visual-flow",
       connectorEdges,
       validate: (projected) => labelsAreClear(relations, [...projected])
     })?.entities;

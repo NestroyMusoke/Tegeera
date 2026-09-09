@@ -117,11 +117,13 @@ has been removed from the interpreter. Queue-member and queue-target capabilitie
 then validate the extracted concepts, so “Three processes wait in a CPU queue” and
 “A CPU queue has three processes” produce the same semantic roles and scene graph.
 
-Milestone 3 begins with a shared constraint-based layout kernel. Event graphs,
-open visual flows, and ordinary actor-target staging now submit candidates through
-the same deterministic bounds, collision, movement-stability, and connector-crossing
-evaluation. Each family still supplies its own semantic geometry check, so sharing
-the safety machinery does not erase the visual meaning of a flow, event, or gesture.
+Milestone 3 includes a shared constraint-based layout kernel and a versioned registry
+for seven active visual grammars. Event graphs, open visual flows, and ordinary
+actor-target staging submit candidates through the same deterministic bounds,
+collision, movement-stability, and connector-crossing evaluation. Each registered
+family owns its topology, capacity, reading direction and scoring policy while still
+supplying its own semantic geometry check, so sharing safety machinery does not erase
+the visual meaning of a flow, event, queue, ownership group, or gesture.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.

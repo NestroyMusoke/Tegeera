@@ -75,6 +75,8 @@ describe("general event relationships", () => {
     expect(html.match(/class="event-annotation event-before"/g)).toHaveLength(2);
     expect(html.match(/data-relation-family="event"/g)).toHaveLength(4);
     expect(html.match(/data-relation-layout="event-graph"/g)).toHaveLength(2);
+    expect(html.match(/data-layout-topology="ranked-dag"/g)).toHaveLength(2);
+    expect(html).toContain('data-layout-registry-version="1.0.0"');
     expect(html).toContain("evaporation before condensation");
     expect(html).toContain("condensation before rainfall");
   });
