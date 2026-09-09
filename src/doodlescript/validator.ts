@@ -15,7 +15,7 @@ import { eventFlowGeometry, hasDirectedCycle, isEventRelation } from "./eventRel
 import { visualPhraseGeometry, isVisualAction } from "./visualPhrase";
 import { visualActionForPredicate } from "./visualActionRegistry";
 import { relationCardinalityIssues, relationForKind, relationSupportsVersion } from "./relationRegistry";
-import { conceptSupports } from "./conceptRegistry";
+import { conceptSupports, sharedOrderedDomain } from "./conceptRegistry";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -94,8 +94,7 @@ export function validateDoodleScript(
         if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "Motion needs one actor and one reference object." });
       }
       if (isQueue(relation)) {
-        if (!["1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Ordered CPU queues require DoodleScript 1.4.0 or later." });
-        if (relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "A ready queue needs exactly one CPU." });
+        if (relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "An ordered queue needs exactly one destination." });
       }
       if (relation.kind === "actsOn") {
         if (!["1.6.0", "1.7.0", "1.8.0", "1.9.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Targeted performances require DoodleScript 1.6.0 or later." });
@@ -243,9 +242,11 @@ export function validateDoodleScript(
       const sources = relation.sourceIds.map((id) => projected.entities.find((entity) => entity.id === id));
       const targets = relation.targetIds.map((id) => projected.entities.find((entity) => entity.id === id));
       const validRoles = relation.sourceIds.length <= 4 && relation.targetIds.length === 1 &&
-        sources.every((entity) => entity?.kind === "process") && targets[0]?.kind === "cpu";
-      if (!validRoles) issues.push({ gate: "semantic", message: "A CPU ready queue needs one to four processes and exactly one CPU." });
-      else if (!queueGeometry(relation, projected.entities)) issues.push({ gate: "layout", message: "Keep the ordered processes on the same row before their CPU." });
+        sources.every((entity) => entity && conceptSupports(entity.kind, "queue-member")
+          && targets[0] && sharedOrderedDomain(entity.kind, targets[0].kind)) &&
+        Boolean(targets[0] && conceptSupports(targets[0].kind, "queue-target"));
+      if (!validRoles) issues.push({ gate: "semantic", message: "An ordered queue needs one to four compatible members and one registered destination." });
+      else if (!queueGeometry(relation, projected.entities)) issues.push({ gate: "layout", message: "Keep the ordered members on the same row before their destination." });
     }
     if (isMotion(relation)) {
       const actor = projected.entities.find((entity) => entity.id === relation.sourceIds[0]);

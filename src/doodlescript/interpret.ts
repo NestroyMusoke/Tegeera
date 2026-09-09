@@ -10,7 +10,8 @@ import { stageHandover } from "./handover";
 import { planEventGraph } from "./eventRelations";
 import { planVisualPhraseGraph } from "./visualPhrase";
 import { Clarification, type ClarificationRequest } from "./clarification";
-import { conceptSupports } from "./conceptRegistry";
+import { conceptSupports, sharedOrderedDomain } from "./conceptRegistry";
+import { isQueue, planOrderedRow } from "./queue";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -178,10 +179,16 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const targetSpec = nounPhrase(targetPhrase);
         if (!conceptSupports(sourceSpec.kind, "queue-member")) throw new Clarification("That ordered queue needs registered queue members.");
         if (!conceptSupports(targetSpec.kind, "queue-target") || targetSpec.count !== 1) throw new Clarification("Name one registered system for that ordered queue.");
+        if (!sharedOrderedDomain(sourceSpec.kind, targetSpec.kind)) throw new Clarification("Those members and that destination do not share a registered queue domain.", "unsupported-meaning");
         if (sourceSpec.count > 4) throw new Clarification("Show one to four queue members so the ordered row stays readable.", "layout-limit");
         const sources = create(sourcePhrase);
         const targets = create(targetPhrase);
         relate("queuedFor", sources, targets);
+        const ordered = working.relations?.find((relation) => relation.kind === "queuedFor"
+          && relation.sourceIds.every((id) => sources.includes(id)) && relation.targetIds[0] === targets[0]);
+        const moves = ordered ? planOrderedRow(working, ordered) : null;
+        if (!moves) throw new Clarification("That ordered queue cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
         focus(sources, targets);
         continue;
       }
@@ -274,15 +281,17 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       const first = text.match(/^(?:what if )?(.+?) (?:goes|went) first$/)
         ?? text.match(/^move (.+?) to (?:the )?(?:front|first position)$/);
       if (first) {
-        const process = resolve(first[1], working);
-        const queues = (working.relations ?? []).filter((relation) => relation.kind === "queuedFor" && relation.sourceIds.includes(process.id));
-        if (process.kind !== "process" || queues.length !== 1) throw new Clarification("Which queued process should go first? Name its position in the CPU queue.");
+        const member = resolve(first[1], working);
+        const queues = (working.relations ?? []).filter((relation) => isQueue(relation) && relation.sourceIds.includes(member.id));
+        if (!conceptSupports(member.kind, "queue-member") || queues.length !== 1) throw new Clarification("Which queued member should go first? Name its position in the ordered queue.");
         const previous = queues[0];
-        const ordered = [process.id, ...previous.sourceIds.filter((id) => id !== process.id)];
-        const row = working.entities.find((entity) => entity.id === previous.sourceIds[0])!.y;
-        ordered.forEach((targetId, index) => append({ action: "move", targetId, x: 12 + index * 18, y: row, direction: "right" }));
+        const ordered = [member.id, ...previous.sourceIds.filter((id) => id !== member.id)];
         append({ action: "unrelate", relationId: previous.id });
-        append({ action: "relate", relation: { ...previous, sourceIds: ordered } });
+        const updated = { ...previous, sourceIds: ordered };
+        append({ action: "relate", relation: updated });
+        const moves = planOrderedRow(working, updated);
+        if (!moves) throw new Clarification("That reordered queue cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
         focus(ordered, previous.targetIds);
         continue;
       }
@@ -314,7 +323,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         if (amount === members.length) throw new Clarification(`That group already has ${amount} objects.`, "conflicting-scene");
         const ids = members.map((entity) => entity.id);
         const affected = (working.relations ?? []).filter((relation) => [...relation.sourceIds, ...relation.targetIds].some((id) => ids.includes(id)));
-        if (affected.some((relation) => relation.kind === "queuedFor") && amount > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.", "layout-limit");
+        if (affected.some(isQueue) && amount > 4) throw new Clarification("Show one to four members so the ordered queue stays readable.", "layout-limit");
         if (affected.length > 1 || affected.some((relation) => {
           const side = relation.sourceIds.some((id) => ids.includes(id)) ? relation.sourceIds : relation.targetIds;
           return side.length !== ids.length || side.some((id) => !ids.includes(id)) || (relation.kind === "owns" && side === relation.sourceIds);
@@ -331,9 +340,9 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           };
           append({ action: "relate", relation: updated });
           if (updated.kind === "queuedFor" && sourceChanged) {
-            const row = members[0].y;
-            retained.forEach((targetId, index) => append({ action: "move", targetId, x: 12 + index * 18, y: row, direction: "right" }));
-            append({ action: "move", targetId: updated.targetIds[0], x: 12 + retained.length * 18, y: row, direction: "right" });
+            const moves = planOrderedRow(working, updated);
+            if (!moves) throw new Clarification("That resized queue cannot fit readably in the current scene.", "layout-limit");
+            moves.forEach((move) => append({ action: "move", ...move }));
           }
         }
         focus(context?.subjectIds.some((id) => ids.includes(id)) ? retained : context?.subjectIds ?? [],
@@ -385,7 +394,8 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const direction = move[3] as "left" | "right" | "up" | "down";
         if (move[1] !== "move") append({ action: "update", targetId: target.id, direction });
         else {
-          const nextX = target.kind === "cpu" && direction === "right" ? Math.min(92, target.x + 18)
+          const orderedTarget = (working.relations ?? []).some((relation) => isQueue(relation) && relation.targetIds.includes(target.id));
+          const nextX = orderedTarget && direction === "right" ? Math.min(92, target.x + 18)
             : target.x + (direction === "left" ? -18 : direction === "right" ? 18 : 0);
           const nextY = target.y + (direction === "up" ? -32 : direction === "down" ? 32 : 0);
           const delta = { x: nextX - target.x, y: nextY - target.y };

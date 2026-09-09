@@ -45,7 +45,7 @@ export const relationRegistry: readonly RelationDefinition[] = [
   { kind: "owns", family: "structural", label: "owns", aliases: ["owns", "own", "has", "have"], minimumVersion: "1.1.0", source: { min: 1, max: 1 }, target: { min: 1, max: 12 }, object: { min: 0, max: 0 }, directed: true, layout: "ownership" },
   { kind: "toward", family: "directional", label: "moves toward", aliases: [], minimumVersion: "1.3.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "arrow" },
   { kind: "away", family: "directional", label: "moves away from", aliases: [], minimumVersion: "1.3.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "arrow" },
-  { kind: "queuedFor", family: "ordered", label: "waits for CPU", aliases: [], minimumVersion: "1.4.0", source: { min: 1, max: 4 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "queue", languageTemplates: [
+  { kind: "queuedFor", family: "ordered", label: "waits in queue", aliases: [], minimumVersion: "1.4.0", source: { min: 1, max: 4 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "queue", languageTemplates: [
     { shape: "source-verb-target-container", verbs: ["waiting in", "wait in", "waits in"], containers: ["ready queue", "queue"] },
     { shape: "target-container-verb-source", verbs: ["contains", "has"], containers: ["ready queue", "queue"] }
   ] },

@@ -48,7 +48,7 @@ describe("versioned relation registry", () => {
     expect(relationSupportsVersion("toward", "1.2.0")).toBe(false);
     expect(relationSupportsVersion("toward", "1.3.0")).toBe(true);
     expect(relationSupportsVersion("visualAction", "1.8.0")).toBe(false);
-    expect(relationCardinalityIssues(relation("queuedFor", { sourceIds: ["a", "b", "c", "d", "e"] }))).toContain("waits for CPU requires 1-4 source roles.");
+    expect(relationCardinalityIssues(relation("queuedFor", { sourceIds: ["a", "b", "c", "d", "e"] }))).toContain("waits in queue requires 1-4 source roles.");
     expect(relationCardinalityIssues(relation("handover"))).toContain("gives requires 1 object role.");
     expect(relationCardinalityIssues(relation("handover", { objectIds: ["object"] }))).toEqual([]);
   });

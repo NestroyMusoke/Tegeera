@@ -114,8 +114,9 @@ Ordered-container language is also registered. Reusable templates bind either
 `sources → verb → target container` or the inverse `target container → verb →
 sources` before scene planning. The old CPU-specific sentence regular expression
 has been removed from the interpreter. Queue-member and queue-target capabilities
-then validate the extracted concepts, so “Three processes wait in a CPU queue” and
-“A CPU queue has three processes” produce the same semantic roles and scene graph.
+plus registered domain compatibility validate the extracted concepts. CPU processes
+and students waiting at a school therefore use the same ordered-row planner, while
+cross-domain combinations such as students in a CPU scheduling queue are rejected.
 
 Milestone 3 includes a shared constraint-based layout kernel and a versioned registry
 for seven active visual grammars. Event graphs, open visual flows, and ordinary

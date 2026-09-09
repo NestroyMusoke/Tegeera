@@ -223,16 +223,17 @@ function Relationship({ relation, entities }: { relation: SceneRelation; entitie
   if (isQueue(relation)) {
     const geometry = queueGeometry(relation, entities);
     if (!geometry) return null;
-    const { processes, cpu, y, startX, endX } = geometry;
+    const { members, target, y, startX, endX } = geometry;
+    const targetLabel = target.label ?? target.kind;
     return (
-      <g className="queue-annotation" fill="none" stroke="#355f78" strokeWidth="3" aria-label={`CPU ready queue: ${processes.map((process) => process.label).join(", ")}, then ${cpu.label}`}>
+      <g className="queue-annotation" fill="none" stroke="#355f78" strokeWidth="3" aria-label={`Ordered queue: ${members.map((member) => member.label).join(", ")}, then ${targetLabel}`}>
         <path d={`M${startX} ${y} H${endX}`} />
         <path d={`M${endX - 11} ${y - 8} L${endX} ${y} L${endX - 11} ${y + 8}`} />
-        {processes.map((process, index) => <g key={process.id}>
-          <path d={`M${process.x * 10} ${y - 7} V${y + 7}`} />
-          <text x={process.x * 10} y={y - 13} textAnchor="middle" stroke="none" fill="#355f78" fontSize="14">{index + 1}</text>
+        {members.map((member, index) => <g key={member.id}>
+          <path d={`M${member.x * 10} ${y - 7} V${y + 7}`} />
+          <text x={member.x * 10} y={y - 13} textAnchor="middle" stroke="none" fill="#355f78" fontSize="14">{index + 1}</text>
         </g>)}
-        <text x={(startX + endX) / 2} y={y + 24} textAnchor="middle" stroke="none" fill="#355f78" fontSize="14">ready queue → CPU</text>
+        <text x={(startX + endX) / 2} y={y + 24} textAnchor="middle" stroke="none" fill="#355f78" fontSize="14">queue → {targetLabel}</text>
       </g>
     );
   }

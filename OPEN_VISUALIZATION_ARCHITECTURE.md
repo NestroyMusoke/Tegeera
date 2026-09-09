@@ -342,8 +342,14 @@ tie-breaking. A versioned layout-family registry owns topology, capacity, readin
 direction, movement weight, crossing policy, and compatible relation families for
 the seven active visual grammars. Event graphs, open visual-flow graphs,
 visual-action pairs, and ordinary actor-target staging use this kernel. Contact,
-handover, queues, and motion retain specialist geometry until they can migrate
+handover, and motion retain specialist geometry until they can migrate
 without weakening reach, attachment, ordering, or directional guarantees.
+
+The ordered-row family has migrated. Queue membership and destination compatibility
+come from concept-registry domains; its planner receives semantic roles and places
+them through the shared candidate evaluator. CPU scheduling and school-service
+queues exercise the same code, including count correction and reordering. The
+`queuedFor` schema name remains for DoodleScript 1.x compatibility.
 
 ### Milestone 4 — local template retrieval
 

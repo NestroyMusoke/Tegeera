@@ -777,6 +777,33 @@ validation, diff integrity, and the real browser visual-flow workflow pass. The
 build reports only the existing third-party Zod annotation notices. Physical Android
 rendering, speech latency, and projector inspection remain unverified.
 
+## Capability-based ordered-row planning
+
+The ordered-row path no longer tests for literal `process` and `cpu` kinds in its
+semantic validator or renderer geometry. Structural concepts can register queue-member
+or queue-target capabilities together with compatible ordered-domain identifiers.
+The registry currently proves two independent domains: processes targeting a CPU for
+CPU scheduling, and people, students, or teachers targeting a building for a service
+queue. Cross-domain combinations are rejected rather than drawn confidently.
+
+`planOrderedRow` receives only the relation roles and current scene. It derives its
+columns from the general layout grid, tries bounded rows through the shared `queue`
+family evaluator, preserves a valid existing arrangement, treats unrelated entities
+as fixed obstacles, and refuses any candidate that fails capability-aware ordered
+geometry. Creation, count correction, destination movement, and “goes first” now call
+this same planner. The DoodleScript `queuedFor` name remains unchanged for 1.x schema
+compatibility, but visible and accessible labels are destination-neutral.
+
+The complete checkpoint passes 250 tests across 29 files and generates 19
+actual-component fixtures. The final 250-iteration meaning pipeline measures
+1.07 ms median and 8.53 ms p95, excluding speech, DOM, SVG painting, and device work.
+Production JavaScript is 400.85 kB (122.55 kB gzip); CSS remains 11.59 kB
+(3.49 kB gzip). Lint, production build, Android asset synchronization, registry
+validation, diff integrity, and the real browser ordered-row workflow pass. That
+browser workflow creates and edits both CPU-scheduling and school-service queues.
+The build reports only the existing third-party Zod annotation notices. Physical
+Android rendering, speech latency, and projector inspection remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

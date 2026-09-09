@@ -5,6 +5,7 @@ import {
   conceptForKind,
   conceptRegistry,
   conceptSupports,
+  sharedOrderedDomain,
   validateConceptRegistry
 } from "./conceptRegistry";
 import type { EntityKind } from "./schema";
@@ -33,6 +34,9 @@ describe("versioned concept registry", () => {
     expect(conceptSupports("book", "drive")).toBe(false);
     expect(conceptSupports("process", "queue-member")).toBe(true);
     expect(conceptSupports("cpu", "queue-target")).toBe(true);
+    expect(sharedOrderedDomain("process", "cpu")).toBe("cpu-scheduling");
+    expect(sharedOrderedDomain("student", "building")).toBe("service");
+    expect(sharedOrderedDomain("student", "cpu")).toBeUndefined();
   });
 
   it("carries registry identity and category through noun parsing", () => {

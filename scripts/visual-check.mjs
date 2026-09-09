@@ -184,8 +184,16 @@ const appBundle = await build({
       check(document.querySelectorAll('.queue-annotation text').length === 5, 'Queue position labels missing');
       document.querySelector('.undo-button').click(); await pause();
       check(document.querySelector('.queue-annotation').getAttribute('aria-label').includes('process 1, process 2'), 'Queue Undo failed');
+      await submit('Clear everything');
+      await submit('Three students wait in the school queue');
+      check(document.querySelectorAll('[data-entity-id^="student-"]').length === 3, 'Service queue members are missing');
+      check(document.querySelector('[data-entity-id="building-1"]'), 'Service queue destination is missing');
+      check(document.querySelector('.queue-annotation').getAttribute('aria-label').includes('student 1, student 2, student 3, then building 1'), 'Generic ordered roles are wrong');
+      await submit('Make that four students');
+      await submit('What if the second student goes first');
+      check(document.querySelector('.queue-annotation').getAttribute('aria-label').includes('student 2, student 1'), 'Generic queue order did not change');
       check(document.documentElement.scrollWidth <= innerWidth, 'Queue caused page overflow');
-      document.getElementById('qa-result').textContent = 'PASS: registered ordered roles, CPU queue create, count correction, CPU move, reorder, undo, layout';
+      document.getElementById('qa-result').textContent = 'PASS: registered ordered roles, CPU scheduling queue, service queue, capability compatibility, count correction, destination move, generic reorder, undo, layout';
     }
     async function verifyEvents() {
       await pause();

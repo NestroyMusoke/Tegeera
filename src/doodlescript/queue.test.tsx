@@ -15,7 +15,7 @@ function run(text: string, scene = initialScene): SceneState {
   return applyDoodleScript(scene, checked.script);
 }
 
-describe("CPU ready queue", () => {
+describe("capability-based ordered queues", () => {
   for (const text of [
     "Imagine three processes waiting in a CPU queue",
     "Three processes are waiting in the CPU ready queue",
@@ -27,6 +27,32 @@ describe("CPU ready queue", () => {
     expect(scene.entities.map((entity) => entity.kind)).toEqual(["process", "process", "process", "cpu"]);
     expect(scene.relations?.[0]).toMatchObject({ kind: "queuedFor", sourceIds: ["process-1", "process-2", "process-3"], targetIds: ["cpu-1"] });
     expect(queueGeometry(scene.relations![0], scene.entities)).not.toBeNull();
+  });
+
+  it("reuses the ordered-row grammar for a different registered domain", () => {
+    const scene = run("Three students wait in the school queue");
+    expect(scene.entities.map((entity) => entity.kind)).toEqual(["student", "student", "student", "building"]);
+    expect(scene.relations?.[0]).toMatchObject({
+      kind: "queuedFor", sourceIds: ["student-1", "student-2", "student-3"], targetIds: ["building-1"]
+    });
+    expect(queueGeometry(scene.relations![0], scene.entities)).not.toBeNull();
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html).toContain("queue → building 1");
+    expect(html).toContain("Ordered queue: student 1, student 2, student 3, then building 1");
+  });
+
+  it("resizes and reorders a non-CPU queue through the same planner", () => {
+    const before = run("Three students wait in the school queue");
+    const resized = run("Make that four students", before);
+    expect(resized.relations?.[0].sourceIds).toEqual(["student-1", "student-2", "student-3", "student-4"]);
+    expect(resized.entities.filter((entity) => entity.kind === "student").map(({ x }) => x)).toEqual([12, 30, 48, 66]);
+    expect(resized.entities.find((entity) => entity.kind === "building")?.x).toBe(84);
+
+    const reordered = run("What if the second student goes first", resized);
+    expect(reordered.relations?.[0].sourceIds).toEqual(["student-2", "student-1", "student-3", "student-4"]);
+    expect(reordered.entities.find((entity) => entity.id === "student-2")?.x).toBe(12);
+    expect(reordered.entities.find((entity) => entity.id === "student-1")?.x).toBe(30);
+    expect(reordered.entities.map(({ id }) => id).sort()).toEqual(resized.entities.map(({ id }) => id).sort());
   });
 
   it("extracts queue roles before scene planning", async () => {
@@ -71,10 +97,10 @@ describe("CPU ready queue", () => {
   it("renders a labelled ordered queue and dedicated doodles", () => {
     const html = renderToStaticMarkup(<DoodleCanvas scene={run("Three processes waiting in a CPU queue")} />);
     expect(html).toContain('class="queue-annotation"');
-    expect(html).toContain("ready queue → CPU");
+    expect(html).toContain("queue → cpu 1");
     expect(html).toContain(">CPU</text>");
     expect(html.match(/>P<\/text>/g)).toHaveLength(3);
-    expect(html).toContain("CPU ready queue: process 1, process 2, process 3, then cpu 1");
+    expect(html).toContain("Ordered queue: process 1, process 2, process 3, then cpu 1");
   });
 
   it("rejects misleading or unreadable queue descriptions atomically", () => {
@@ -83,6 +109,7 @@ describe("CPU ready queue", () => {
     for (const text of [
       "Five processes waiting in a CPU queue",
       "Three students waiting in a CPU queue",
+      "Three processes waiting in a school queue",
       "Processes waiting in a CPU queue",
       "Three processes waiting in two CPU queues",
       "What if the second process crashes first"
