@@ -200,6 +200,13 @@ grammar. The present baseline safely accepts 1/60 and asks for clarification on
 59/60. That number is coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
+The first cross-domain subset now has versioned machine-readable gold scenes in
+[`evaluation/independent-scene-gold-v1.json`](evaluation/independent-scene-gold-v1.json).
+Its strict scorer requires independent concept identities, semantic endpoints, correct
+intent routing, and observed visual cues. Consequently, the previously accepted plant
+example is explicitly classified as false-confident rather than a pass: validation can
+prove script safety, but it cannot substitute for semantic or visual completeness.
+
 Temporal and causal concept diagrams accept open, readable labels inside registered
 relationship structures. Try `Evaporation happens before condensation`, followed by
 `Condensation comes before rainfall`, or `Heavy rain causes soil erosion`. `After`

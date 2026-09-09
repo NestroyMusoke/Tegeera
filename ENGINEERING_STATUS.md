@@ -844,6 +844,39 @@ third-party Zod annotation notices. Human semantic scoring, physical Android
 rendering, speech latency, projector inspection, and original pose-sheet visual QA
 remain unverified.
 
+## Strict independent semantic-scene scoring
+
+The independent corpus now has a versioned, schema-validated gold layer instead of
+only an accepted-versus-clarified counter. Its first eight annotations span Biology,
+Physics, Computer Science, Mathematics, Geography, ambiguous meaning, unresolved
+reference, and non-visual classroom speech. Expected outcomes distinguish `draw`,
+`clarify`, and `hold`; a future correction batch can extend the same contract with
+scene setup and `modify` expectations.
+
+Drawing cases declare distinct concepts, directed relations, a visual-grammar ID,
+and observable cue IDs. Exact identity matching prevents a compound fallback label
+from satisfying multiple concepts. Relation endpoints must name declared concepts,
+case IDs must be unique, and forged cue observations cannot hide missing semantics.
+A validated script that omits required meaning is explicitly false-confident rather
+than partially correct. Clarification receives credit only for an allowed reason;
+non-visual speech must preserve the scene rather than merely fail parsing.
+
+The deliberately honest starting result is 0/8 strict passes and one false-confident
+acceptance: case 1. The broader observational counter remains 1/60 accepted and 59/60
+clarified. Neither number is classroom accuracy, and the annotated eight are now a
+development conformance set rather than a hidden generalization set.
+
+The complete checkpoint passes 261 tests across 31 files. A separate 250-iteration
+meaning-pipeline run measures 1.76 ms median and 4.76 ms p95, excluding speech, DOM,
+SVG painting, and device work. Production JavaScript remains 403.25 kB (123.02 kB
+gzip); CSS remains 11.59 kB (3.49 kB gzip). Lint, TypeScript, production build, and
+Android asset synchronization pass. No production rendering changed, so the prior
+390-pixel visual workflow evidence remains applicable; a new browser snapshot was not
+claimed for this evaluation-only build. The build reports only the existing
+third-party Zod annotation notices. The remaining 52 gold annotations, human visual
+cue observations, physical Android rendering, speech latency, and independent hidden
+generalization corpus remain unfinished.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.
@@ -852,11 +885,12 @@ Contextual-corrections checkpoint: 55 tests passed. The same local benchmark
 reported median 0.44 ms and p95 1.14 ms over 250 iterations; speech and screen
 rendering remain excluded. Lint, build and browser interaction checks were run.
 
-Next evaluation needs independent explanations written by teachers, including
-unseen phrasing, with accepted scene graphs and explicit unsupported labels.
-Track coverage separately from correctness, false confident interpretations,
-correction success and latency. Do not advertise a percentage from the authored
-grammar fixtures as real-world accuracy.
+Next evaluation work must annotate the remaining independent statements without
+loosening the first batch, then obtain a second frozen corpus from teachers for hidden
+generalization measurement. Track coverage separately from correctness, false-confident
+interpretations, correction success, visual review, and latency. Do not advertise a
+percentage from authored grammar fixtures or development gold cases as real-world
+accuracy.
 
 ## Outstanding work
 

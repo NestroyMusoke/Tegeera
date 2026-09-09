@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "1.0.0",
+  "annotationStatus": "development-conformance",
+  "cases": [
+    {
+      "id": 1,
+      "expected": {
+        "intent": "draw",
+        "visualGrammar": "part-whole-flow",
+        "concepts": [
+          { "key": "plant", "labels": ["plant"] },
+          { "key": "roots", "labels": ["roots", "root"] },
+          { "key": "leaves", "labels": ["leaves", "leaf"] },
+          { "key": "water", "labels": ["water"] },
+          { "key": "sunlight", "labels": ["sunlight", "light"] }
+        ],
+        "relations": [
+          { "predicate": "partOf", "source": "roots", "target": "plant" },
+          { "predicate": "partOf", "source": "leaves", "target": "plant" },
+          { "predicate": "flowsInto", "source": "water", "target": "roots" },
+          { "predicate": "illuminates", "source": "sunlight", "target": "leaves" }
+        ],
+        "visualCues": ["visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray"]
+      }
+    },
+    {
+      "id": 11,
+      "expected": {
+        "intent": "draw",
+        "visualGrammar": "force-diagram",
+        "concepts": [
+          { "key": "box", "labels": ["box"] },
+          { "key": "rough-floor", "labels": ["rough floor", "floor"] },
+          { "key": "push", "labels": ["push", "applied force"] },
+          { "key": "friction", "labels": ["friction"] }
+        ],
+        "relations": [
+          { "predicate": "appliedTo", "source": "push", "target": "box" },
+          { "predicate": "opposes", "source": "friction", "target": "push" },
+          { "predicate": "contacts", "source": "box", "target": "rough-floor" }
+        ],
+        "visualCues": ["surface-line", "forward-force-arrow", "opposing-friction-arrow", "friction-arrow-smaller"]
+      }
+    },
+    {
+      "id": 21,
+      "expected": {
+        "intent": "draw",
+        "visualGrammar": "labelled-container",
+        "concepts": [
+          { "key": "variable", "labels": ["variable"] },
+          { "key": "value", "labels": ["value"] }
+        ],
+        "relations": [
+          { "predicate": "contains", "source": "variable", "target": "value" }
+        ],
+        "visualCues": ["container-outline", "variable-label", "value-inside-container"]
+      }
+    },
+    {
+      "id": 31,
+      "expected": {
+        "intent": "draw",
+        "visualGrammar": "geometric-construction",
+        "concepts": [
+          { "key": "right-angle", "labels": ["right angle"] },
+          { "key": "ninety-degrees", "labels": ["90 degrees", "ninety degrees"] }
+        ],
+        "relations": [
+          { "predicate": "measures", "source": "right-angle", "target": "ninety-degrees" }
+        ],
+        "visualCues": ["perpendicular-rays", "right-angle-square", "ninety-degree-label"]
+      }
+    },
+    {
+      "id": 41,
+      "expected": {
+        "intent": "draw",
+        "visualGrammar": "landscape-flow",
+        "concepts": [
+          { "key": "river", "labels": ["river", "rivers"] },
+          { "key": "higher-ground", "labels": ["higher ground", "high ground"] },
+          { "key": "sea", "labels": ["sea", "ocean"] }
+        ],
+        "relations": [
+          { "predicate": "flowsFrom", "source": "river", "target": "higher-ground" },
+          { "predicate": "flowsTo", "source": "river", "target": "sea" }
+        ],
+        "visualCues": ["elevation-cross-section", "continuous-river-path", "downhill-flow-arrow", "sea-shape"]
+      }
+    },
+    {
+      "id": 53,
+      "expected": {
+        "intent": "clarify",
+        "clarificationCodes": ["ambiguous-meaning"]
+      }
+    },
+    {
+      "id": 56,
+      "expected": {
+        "intent": "clarify",
+        "clarificationCodes": ["ambiguous-reference"]
+      }
+    },
+    {
+      "id": 60,
+      "expected": {
+        "intent": "hold"
+      }
+    }
+  ]
+}

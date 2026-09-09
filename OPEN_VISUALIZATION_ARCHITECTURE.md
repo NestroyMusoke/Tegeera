@@ -409,10 +409,16 @@ exists, or “real time” because the meaning-only benchmark is fast.
 
 ## Immediate next implementation
 
-The independent 60-statement teacher corpus is now stored separately from production
+The independent 60-statement teacher corpus is stored separately from production
 grammar and its observational harness distinguishes accepted coverage from safe
-clarification. Current coverage is intentionally low rather than inflated with new
-sentence cases. Next, freeze human-reviewed expected semantic graphs for a carefully
-selected first slice, then implement versioned local template retrieval against
-semantic structures—not corpus strings. Measure false-confident acceptance before
-expanding coverage, and keep ambiguous or unsupported statements scene-preserving.
+clarification. A first versioned gold batch now spans all five academic domains plus
+ambiguity, reference failure, and scene-hold behavior. Its scorer requires distinct
+concept identities, semantic relations, valid DoodleScript, and observed visual cues;
+case 1 is therefore recorded as false-confident instead of receiving credit for merely
+passing schema validation.
+
+Next, introduce semantic-frame v2 primitives for part-whole structure, containment,
+source/path/destination, force, measurement, and non-visual intent. Implement them as
+typed roles consumed by registries and planners, then make case 1 correct through the
+general part-whole-flow grammar. Do not add a branch for its sentence or import gold
+annotations into production code.
