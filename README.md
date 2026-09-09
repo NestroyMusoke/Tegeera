@@ -78,6 +78,20 @@ and lays out the complete input–process–output graph before persisting any e
 The topology planner reserves future growth space, protects retained connectors,
 and refuses a fourth simultaneous lane rather than merging concepts or overlapping
 the drawing.
+
+Interpretation failures now return a structured clarification reason, the exact
+clause that triggered it, and bounded response alternatives. Negation, conditions,
+uncertainty, missing quantities, unresolved references, ambiguous meanings, layout
+limits, conflicts, and unsupported meanings have stable machine-readable codes.
+The semantic layer enumerates candidate parser families before choosing one; if
+future registry growth makes a clause match more than one meaning, Tegeera pauses
+instead of silently relying on parser order.
+
+The separate `evaluation/synthetic-language-holdout.json` corpus measures expected
+predicates, valid scripts, safe clarification, and false-confident acceptance. It is
+explicitly synthetic regression evidence—not a classroom accuracy percentage. Real
+accuracy still requires a frozen, consented corpus from teachers who did not author
+the grammar.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.

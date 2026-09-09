@@ -9,6 +9,7 @@ import {
 } from "./doodlescript/validator";
 import { useSpeechSession } from "./speech/useSpeechSession";
 import { relationLabel } from "./doodlescript/motion";
+import type { ClarificationRequest } from "./doodlescript/clarification";
 
 const suggestions = [
   "Three students share two books",
@@ -21,6 +22,7 @@ function App() {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<SceneState[]>([initialScene]);
   const [issues, setIssues] = useState<GateIssue[]>([]);
+  const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
   const scene = history.at(-1) ?? initialScene;
   const canUndo = history.length > 1;
 
@@ -38,6 +40,7 @@ function App() {
   const submit = (text = input) => {
     const interpretation = interpretTeacherText(text, scene);
     if (!interpretation.ok) {
+      setClarification(interpretation.clarification);
       setIssues([
         {
           gate: "confidence",
@@ -48,18 +51,21 @@ function App() {
     }
     const result = validateDoodleScript(interpretation.script, scene);
     if (!result.ok) {
+      setClarification(null);
       setIssues(result.issues);
       return;
     }
     setHistory((current) => [...current, applyDoodleScript(scene, result.script)]);
     setInput("");
     setIssues([]);
+    setClarification(null);
   };
 
   const undo = () => {
     if (!canUndo) return;
     setHistory((current) => current.slice(0, -1));
     setIssues([]);
+    setClarification(null);
   };
 
   const speech = useSpeechSession((transcript) => submit(transcript));
@@ -154,9 +160,12 @@ function App() {
         </div>
 
         {issues.length ? (
-          <div className="clarification" role="status">
+          <div className="clarification" role="status" data-clarification-code={clarification?.code}>
             <strong>Help me understand</strong>
             <span>{issues[0].message}</span>
+            {clarification?.alternatives.length ? (
+              <small>{clarification.alternatives.join(" · ")}</small>
+            ) : null}
           </div>
         ) : null}
 

@@ -122,8 +122,26 @@ describe("semantic input frames", () => {
     expect(result).toEqual({
       ok: false,
       message: "Explain one short scene or change, up to 500 characters.",
-      clause: "..."
+      clause: "...",
+      clarification: {
+        code: "empty-input",
+        question: "Explain one short scene or change, up to 500 characters.",
+        alternatives: [],
+        evidenceText: "..."
+      }
     });
+  });
+
+  it("keeps competing parser meanings explicit instead of choosing by priority", async () => {
+    const { meaningIsAmbiguous } = await import("./semanticFrame");
+    expect(meaningIsAmbiguous([
+      { family: "human-action", predicate: "hold" },
+      { family: "visual-action", predicate: "absorb" }
+    ])).toBe(true);
+    expect(meaningIsAmbiguous([
+      { family: "visual-action", predicate: "absorb" },
+      { family: "visual-action", predicate: "absorb" }
+    ])).toBe(false);
   });
 
   it("preserves the lowercase failed-clause contract of the legacy adapter", () => {

@@ -31,6 +31,7 @@ describe("teaching workflow", () => {
     const scene = container.querySelector(".doodle-canvas")!.innerHTML;
     explain("Could you not clear everything");
     expect(screen.getByText("Help me understand")).toBeTruthy();
+    expect(container.querySelector('[data-clarification-code="negated-claim"]')).not.toBeNull();
     expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(scene);
   });
   it("changes view without changing scene revision or consuming Undo", () => {

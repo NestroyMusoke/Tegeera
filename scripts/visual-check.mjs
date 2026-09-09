@@ -233,6 +233,7 @@ const appBundle = await build({
       const before = document.querySelector('.doodle-canvas').innerHTML;
       await submit('The plant does not release oxygen');
       check(!!document.querySelector('.clarification'), 'Negated visual action did not request clarification');
+      check(document.querySelector('.clarification')?.dataset.clarificationCode === 'negated-claim', 'Negation did not expose a structured reason');
       check(document.querySelector('.doodle-canvas').innerHTML === before, 'Rejected negation changed the scene');
       await submit('Clear everything');
       await submit('Water evaporates into a cloud');

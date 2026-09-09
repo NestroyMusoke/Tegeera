@@ -605,6 +605,37 @@ raw and 1.41 kB gzip from the pairwise-phrase checkpoint; CSS remains 11.49 kB
 and the 430-pixel real-app workflow pass. Independent teacher-language evaluation,
 physical Android rendering, and cyclic visual-action layout remain unverified.
 
+## Structured clarification and synthetic language evaluation
+
+The interpreter now returns a typed clarification object alongside its legacy
+message and failed-clause fields. Stable reason codes distinguish empty input,
+negation, conditions, uncertainty, competing meanings, unresolved references,
+missing quantities, layout limits, scene conflicts, and unsupported meaning.
+Evidence text and bounded alternatives let the UI explain why the scene was
+preserved without inventing a drawing. The real App exposes the reason in testable
+markup and displays alternatives beneath the clarification message.
+
+Semantic frames now enumerate every matching human-action, relationship, and
+visual-action candidate before extraction. More than one distinct candidate marks
+the frame unresolved and requests clarification; registry insertion order is no
+longer an implicit semantic tie-breaker. Explicit correction, rename, and CPU
+scenario commands keep their established meaning while safety words in semantic
+positions remain protected.
+
+An 18-case JSON corpus lives outside the production grammar and checks supported
+predicates, script validity, expected clarification codes, and false-confident
+acceptance. It passes 18/18 with zero false-confident acceptances. This corpus is
+developer-authored and synthetic: it is a conformance/regression gate, not an
+estimate of performance on real teachers or speech-recognition errors.
+
+The complete checkpoint passes 227 tests across 25 files. The final 250-iteration
+local meaning pipeline measures 0.88 ms median and 5.17 ms p95, excluding speech, DOM,
+SVG painting, and device work. Production JavaScript is 389.70 kB (119.53 kB gzip)
+and CSS is 11.59 kB (3.49 kB gzip). Lint, production build, Android asset sync,
+desktop-width graph rendering, phone-width live input, structured negation,
+scene rollback, and revision preservation pass. Physical Android and independent
+teacher-language validation remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

@@ -9,17 +9,17 @@ import { releaseContactPair, stageContactPair, stageTargetedPair } from "./spati
 import { stageHandover } from "./handover";
 import { planEventGraph } from "./eventRelations";
 import { planVisualPhraseGraph } from "./visualPhrase";
+import { Clarification, type ClarificationRequest } from "./clarification";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
-  | { ok: false; message: string; clause: string };
-class Clarification extends Error {}
+  | { ok: false; message: string; clause: string; clarification: ClarificationRequest };
 
 function nounPhrase(phrase: string): { kind: EntityKind; count: number } {
   const parsed = parseEntityPhrase(phrase);
-  if (!parsed) throw new Clarification(`I cannot yet represent “${phrase}”. Please describe its objects separately.`);
-  if (parsed.count < 1 || parsed.count > 12) throw new Clarification("Use a count from one to twelve; I have not changed the scene.");
-  if (!parsed.countToken && (parsed.noun.endsWith("s") || parsed.noun === "people")) throw new Clarification(`How many ${parsed.noun} should I draw?`);
+  if (!parsed) throw new Clarification(`I cannot yet represent “${phrase}”. Please describe its objects separately.`, "unsupported-meaning");
+  if (parsed.count < 1 || parsed.count > 12) throw new Clarification("Use a count from one to twelve; I have not changed the scene.", "missing-quantity");
+  if (!parsed.countToken && (parsed.noun.endsWith("s") || parsed.noun === "people")) throw new Clarification(`How many ${parsed.noun} should I draw?`, "missing-quantity");
   return { kind: parsed.kind, count: parsed.count };
 }
 
@@ -43,13 +43,14 @@ function resolve(phrase: string, scene: SceneState): SceneEntity {
   if (/^(it|that)$/.test(normalized) && scene.entities.length === 1) return scene.entities[0];
   throw new Clarification(candidates.length > 1
     ? `Which ${kind}? Say “the first ${kind}” or “the second ${kind}”.`
-    : `I cannot identify “${phrase}” in this scene. Name an existing object.`);
+    : `I cannot identify “${phrase}” in this scene. Name an existing object.`, "ambiguous-reference");
 }
 
 export function interpretTeacherText(input: string, scene: SceneState): Interpretation {
   const commands: DoodleCommand[] = [];
   let working = scene;
   let currentClause = input;
+  let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
   const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"];
@@ -84,7 +85,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     const ids: string[] = [];
     for (let i = 0; i < spec.count; i++) {
       const position = nextPosition(working.entities);
-      if (!position) throw new Clarification("There is no readable space left. Remove an object or start a new scene.");
+      if (!position) throw new Clarification("There is no readable space left. Remove an object or start a new scene.", "layout-limit");
       let number = 1;
       while (working.entities.some((entity) => entity.id === `${spec.kind}-${number}`)) number++;
       const id = `${spec.kind}-${number}`;
@@ -114,7 +115,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     const normalized = phrase.trim().replace(/^(?:a|an|the) /, "");
     if (!normalized || normalized.length > 40 || normalized.split(/\s+/).length > 7
       || !/^[a-z0-9][a-z0-9 '-]*$/.test(normalized)) {
-      throw new Clarification("Keep each event or concept to seven words so its timeline label stays readable.");
+      throw new Clarification("Keep each event or concept to seven words so its timeline label stays readable.", "layout-limit");
     }
     const exact = working.entities.filter((entity) => entity.label?.toLowerCase() === normalized);
     if (exact.length === 1) return exact[0].id;
@@ -127,7 +128,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       return create(normalized)[0];
     }
     const position = nextPositionFor(working.entities, "generic", normalized);
-    if (!position) throw new Clarification("There is no readable space left for that event. Remove an object or start a new scene.");
+    if (!position) throw new Clarification("There is no readable space left for that event. Remove an object or start a new scene.", "layout-limit");
     let number = 1;
     while (working.entities.some((entity) => entity.id === `concept-${number}`)) number++;
     const id = `concept-${number}`;
@@ -138,13 +139,31 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     return id;
   };
   try {
-    if (!input.trim() || input.length > 500) throw new Clarification("Explain one short scene or change, up to 500 characters.");
+    if (!input.trim() || input.length > 500) throw new Clarification("Explain one short scene or change, up to 500 characters.", "empty-input");
     const semanticInput = analyzeTeacherInput(input);
-    if (!semanticInput.frames.length) throw new Clarification("Explain one short scene or change, up to 500 characters.");
+    if (!semanticInput.frames.length) throw new Clarification("Explain one short scene or change, up to 500 characters.", "empty-input");
     for (let frameIndex = 0; frameIndex < semanticInput.frames.length; frameIndex += 1) {
       const frame = semanticInput.frames[frameIndex];
       currentClause = frame.sourceText.toLowerCase();
+      currentEvidence = frame.sourceText;
       const text = frame.normalizedText;
+      if (frame.discourse.negated) throw new Clarification(
+        "I heard a negation, so I left the drawing unchanged. Say the positive scene you want shown.",
+        "negated-claim", ["Describe the scene positively", "Leave the scene unchanged"]
+      );
+      if (frame.discourse.conditional) throw new Clarification(
+        "I heard a condition. Tell me whether to draw the condition or its result.",
+        "conditional-claim", ["Draw the condition", "Draw the result"]
+      );
+      if (frame.discourse.uncertain) throw new Clarification(
+        "I heard uncertainty. Tell me the definite scene you want shown.",
+        "uncertain-claim", ["Draw the possible scene", "Leave the scene unchanged"]
+      );
+      if (frame.meaningCandidates.length > 1) throw new Clarification(
+        "That phrase has more than one drawable meaning. Rephrase it with one clear action or relationship.",
+        "ambiguous-meaning",
+        frame.meaningCandidates.map(({ family, predicate }) => `${family}: ${predicate}`)
+      );
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
         append({ action: "clear" }); focus([]); continue;
       }
@@ -153,7 +172,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       if (queue) {
         const spec = nounPhrase(queue[1]);
         if (spec.kind !== "process") throw new Clarification("A CPU ready queue contains processes. Say how many processes are waiting.");
-        if (spec.count > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.");
+        if (spec.count > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.", "layout-limit");
         const processes = create(queue[1]);
         const cpu = create("a cpu");
         relate("queuedFor", processes, cpu);
@@ -169,14 +188,14 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const reverse = eventRelation.predicate === "after";
         const sourceId = eventNode(reverse ? rightPhrase : leftPhrase);
         const targetId = eventNode(reverse ? leftPhrase : rightPhrase);
-        if (sourceId === targetId) throw new Clarification("An event cannot be ordered before or caused by itself.");
+        if (sourceId === targetId) throw new Clarification("An event cannot be ordered before or caused by itself.", "conflicting-scene");
         const relation = {
           id: `relation-${scene.revision + 1}-${commands.length}`,
           kind: eventRelation.predicate === "causes" ? "causes" as const : "before" as const,
           sourceIds: [sourceId], targetIds: [targetId]
         };
         const moves = planEventGraph(working, relation);
-        if (!moves) throw new Clarification("That event graph cannot fit readably yet. Shorten a label or remove an unrelated object.");
+        if (!moves) throw new Clarification("That event graph cannot fit readably yet. Shorten a label or remove an unrelated object.", "layout-limit");
         moves.forEach((move) => append({ action: "move", ...move }));
         append({ action: "relate", relation });
         focus([sourceId], [targetId]);
@@ -196,10 +215,10 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           objectId: eventNode(mentionText(action.objectMentionId))
         }));
         if (resolved.some(({ subjectId, objectId }) => subjectId === objectId)) {
-          throw new Clarification("A visual action needs two distinct concepts or objects.");
+          throw new Clarification("A visual action needs two distinct concepts or objects.", "conflicting-scene");
         }
         const uniqueEdges = new Set(resolved.map(({ action, subjectId, objectId }) => `${action.predicate}:${subjectId}:${objectId}`));
-        if (uniqueEdges.size !== resolved.length) throw new Clarification("That visual action is repeated in the same explanation.");
+        if (uniqueEdges.size !== resolved.length) throw new Clarification("That visual action is repeated in the same explanation.", "conflicting-scene");
         const relationNumber = commands.length;
         const relations = resolved.map(({ action, subjectId, objectId }, index) => ({
           id: `relation-${scene.revision + 1}-${relationNumber + index}`,
@@ -210,7 +229,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         }));
         const movableIds = new Set(working.entities.filter((entity) => !idsBefore.has(entity.id)).map((entity) => entity.id));
         const moves = planVisualPhraseGraph(working, relations, movableIds);
-        if (!moves) throw new Clarification("That explanation graph cannot fit readably yet. Shorten a label or use fewer simultaneous ideas.");
+        if (!moves) throw new Clarification("That explanation graph cannot fit readably yet. Shorten a label or use fewer simultaneous ideas.", "layout-limit");
         moves.forEach((move) => append({ action: "move", ...move }));
         relations.forEach((relation) => append({ action: "relate", relation }));
         focus([...new Set(resolved.map(({ subjectId }) => subjectId))], [...new Set(resolved.map(({ objectId }) => objectId))]);
@@ -227,7 +246,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         };
         const actorId = participant(motion[1], true);
         const targetId = participant(motion[3], false);
-        if (actorId === targetId) throw new Clarification("An object cannot approach itself. Name the other object.");
+        if (actorId === targetId) throw new Clarification("An object cannot approach itself. Name the other object.", "conflicting-scene");
         const actor = working.entities.find((entity) => entity.id === actorId)!;
         if (/^driv/.test(motion[2]) && actor.kind !== "car") throw new Clarification("Which car is moving? Name the vehicle.");
         if (/^walk/.test(motion[2]) && !["person", "student", "teacher"].includes(actor.kind)) throw new Clarification("Which person is walking?");
@@ -275,7 +294,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       const correction = text.match(/^(?:make that|make it|change (?:that|it) to) (\w+)(?: (\w+))?$/);
       if (correction) {
         const amount = parseCountToken(correction[1]);
-        if (amount < 1 || amount > 10) throw new Clarification("Choose a count from one to ten for this scene.");
+        if (amount < 1 || amount > 10) throw new Clarification("Choose a count from one to ten for this scene.", "missing-quantity");
         const explicitKind = correction[2] ? entityKindForAlias(correction[2]) : undefined;
         if (correction[2] && !explicitKind) throw new Clarification("Which existing type of object should change?");
         const subjects = working.entities.filter((entity) => context?.subjectIds.includes(entity.id));
@@ -286,10 +305,10 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
             : objects.filter((entity) => entity.kind === explicitKind)
           : subjects;
         if (!members.length || new Set(members.map((entity) => entity.kind)).size !== 1) throw new Clarification("Which group should change? Name the objects in the last explanation.");
-        if (amount === members.length) throw new Clarification(`That group already has ${amount} objects.`);
+        if (amount === members.length) throw new Clarification(`That group already has ${amount} objects.`, "conflicting-scene");
         const ids = members.map((entity) => entity.id);
         const affected = (working.relations ?? []).filter((relation) => [...relation.sourceIds, ...relation.targetIds].some((id) => ids.includes(id)));
-        if (affected.some((relation) => relation.kind === "queuedFor") && amount > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.");
+        if (affected.some((relation) => relation.kind === "queuedFor") && amount > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.", "layout-limit");
         if (affected.length > 1 || affected.some((relation) => {
           const side = relation.sourceIds.some((id) => ids.includes(id)) ? relation.sourceIds : relation.targetIds;
           return side.length !== ids.length || side.some((id) => !ids.includes(id)) || (relation.kind === "owns" && side === relation.sourceIds);
@@ -319,7 +338,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       if (transfer) {
         const giver = resolve(transfer[1], working);
         const recipient = resolve(transfer[3], working);
-        if (giver.id === recipient.id) throw new Clarification("The giver and recipient are the same person.");
+        if (giver.id === recipient.id) throw new Clarification("The giver and recipient are the same person.", "conflicting-scene");
         if (![giver, recipient].every((entity) => ["person", "student", "teacher"].includes(entity.kind))) {
           throw new Clarification("A handover needs a person giving to another person.");
         }
@@ -417,7 +436,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const members = working.entities.filter((entity) => owners.includes(entity.id));
         if (!members.length || new Set(members.map((entity) => entity.kind)).size !== 1) throw new Clarification("Which group has an item each? Name one type of object.");
         const spec = nounPhrase(distributed[2]);
-        if (working.entities.length + owners.length * spec.count > 10) throw new Clarification("Those individual items would exceed the ten-object scene limit. Use a smaller group or fewer items each.");
+        if (working.entities.length + owners.length * spec.count > 10) throw new Clarification("Those individual items would exceed the ten-object scene limit. Use a smaller group or fewer items each.", "layout-limit");
         const objects: string[] = [];
         for (const owner of owners) {
           const owned = create(distributed[2]);
@@ -551,6 +570,16 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     return { ok: true, script: makeScript() };
   } catch (error) {
     if (!(error instanceof Clarification)) throw error;
-    return { ok: false, message: error.message, clause: currentClause };
+    return {
+      ok: false,
+      message: error.message,
+      clause: currentClause,
+      clarification: {
+        code: error.code,
+        question: error.message,
+        alternatives: error.alternatives,
+        evidenceText: currentEvidence
+      }
+    };
   }
 }

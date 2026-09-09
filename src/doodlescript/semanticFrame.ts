@@ -57,6 +57,13 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action";
+
+export interface SemanticMeaningCandidate {
+  family: SemanticCandidateFamily;
+  predicate: string;
+}
+
 /**
  * The stable boundary between language input and scene interpretation.
  *
@@ -75,6 +82,7 @@ export interface SemanticFrame {
   visualActions: SemanticVisualActionMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
+  meaningCandidates: SemanticMeaningCandidate[];
   discourse: DiscourseSignals;
   evidence: EvidenceSpan[];
   confidence: number;
@@ -89,11 +97,14 @@ export interface SemanticInput {
 const clauseSeparator = /\s*(?:[.;]|,?\s+(?:and\s+)?then\s+)\s*/g;
 
 function discourseSignals(text: string): DiscourseSignals {
+  const correction = text.replace(/^no,?\s+(?=(?:make that|change (?:that|it) to)\b)/, "");
+  const explicitLabelEdit = /^rename\b/.test(correction);
+  const explicitQueueScenario = /^what if .+ (?:goes|went) first$/.test(correction);
   return {
-    negated: /\b(?:no|not|never|don't|doesn't|isn't|aren't|without)\b/.test(text),
-    conditional: /\b(?:if|unless|provided|assuming)\b/.test(text),
-    uncertain: /\b(?:maybe|perhaps|possibly|probably|might)\b/.test(text)
-      || /\bcould\b(?!\s+you\b)/.test(text)
+    negated: !explicitLabelEdit && /\b(?:no|not|never|don't|doesn't|isn't|aren't|without)\b/.test(correction),
+    conditional: !explicitQueueScenario && /\b(?:if|unless|provided|assuming)\b/.test(correction),
+    uncertain: /\b(?:maybe|perhaps|possibly|probably|might)\b/.test(correction)
+      || /\bcould\b(?!\s+you\b)/.test(correction)
   };
 }
 
@@ -143,8 +154,41 @@ function entityMentionsAreResolved(frame: SemanticFrame): boolean {
   });
 }
 
+export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[] {
+  const candidates: SemanticMeaningCandidate[] = [];
+  const add = (family: SemanticCandidateFamily, predicate?: string) => {
+    if (predicate && !candidates.some((candidate) => candidate.family === family && candidate.predicate === predicate)) {
+      candidates.push({ family, predicate });
+    }
+  };
+  const stopped = text.match(stopActionPattern);
+  const targeted = text.match(targetedActionPattern);
+  const directTarget = text.match(directTargetActionPattern);
+  const started = text.match(actionPattern);
+  const human = stopped ?? targeted ?? directTarget ?? started;
+  add("human-action", human ? actionForAlias(human[2])?.predicate : undefined);
+  const relationship = text.match(relationshipPattern);
+  add("relationship", relationship
+    ? relationLexemes.find(({ words }) => (words as readonly string[]).includes(relationship[2]))?.predicate
+    : undefined);
+  const visualPrepositional = text.match(visualPrepositionalActionPattern);
+  const visualDirect = text.match(visualDirectActionPattern);
+  const visual = visualPrepositional ?? visualDirect;
+  add("visual-action", visual ? visualActionForAlias(visual[2])?.predicate : undefined);
+  return candidates;
+}
+
+export function meaningIsAmbiguous(candidates: readonly SemanticMeaningCandidate[]): boolean {
+  return new Set(candidates.map(({ family, predicate }) => `${family}:${predicate}`)).size > 1;
+}
+
 function populateMeaning(frame: SemanticFrame): void {
   if (frame.discourse.negated || frame.discourse.conditional || frame.discourse.uncertain) return;
+  frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
+  if (meaningIsAmbiguous(frame.meaningCandidates)) {
+    frame.resolutionStatus = "needs-clarification";
+    return;
+  }
 
   const stoppedAction = frame.normalizedText.match(stopActionPattern);
   const targetedAction = frame.normalizedText.match(targetedActionPattern);
@@ -238,6 +282,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       visualActions: [],
       quantities: [],
       references: [],
+      meaningCandidates: [],
       discourse: discourseSignals(normalizedSource),
       evidence: [{ kind: "utterance", text: sourceText, start, end: start + sourceText.length }],
       confidence: 1,

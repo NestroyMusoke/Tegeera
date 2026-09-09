@@ -1,0 +1,25 @@
+{
+  "name": "Tegeera synthetic teacher-language conformance corpus",
+  "version": "1.0.0",
+  "provenance": "Developer-authored synthetic examples stored outside the grammar implementation. This is a regression corpus, not evidence of accuracy with real teachers.",
+  "cases": [
+    { "id": "visual-01", "category": "visual-action", "text": "Vegetation takes in solar energy", "expected": { "outcome": "accepted", "relationPredicates": ["absorb"] } },
+    { "id": "visual-02", "category": "visual-action", "text": "A crop absorbs water and sunlight, then generates oxygen", "expected": { "outcome": "accepted", "relationPredicates": ["absorb", "absorb", "produce"] } },
+    { "id": "visual-03", "category": "visual-action", "text": "Water changes into vapor", "expected": { "outcome": "accepted", "relationPredicates": ["transform"] } },
+    { "id": "visual-04", "category": "visual-action", "text": "Electrical current flows through a processor", "expected": { "outcome": "accepted", "relationPredicates": ["flow"] } },
+    { "id": "visual-05", "category": "visual-action", "text": "A storm influences soil erosion", "expected": { "outcome": "accepted", "relationPredicates": ["affect"] } },
+    { "id": "visual-06", "category": "visual-action", "text": "Heat gives off light", "expected": { "outcome": "accepted", "relationPredicates": ["release"] } },
+    { "id": "event-01", "category": "event-graph", "text": "Evaporation occurs before condensation", "expected": { "outcome": "accepted", "relationPredicates": ["before"] } },
+    { "id": "event-02", "category": "event-graph", "text": "Heavy rain leads to flooding", "expected": { "outcome": "accepted", "relationPredicates": ["causes"] } },
+    { "id": "people-01", "category": "human-action", "text": "One learner cheers", "expected": { "outcome": "accepted", "relationPredicates": [] } },
+    { "id": "people-02", "category": "human-action", "text": "A teacher points at a book", "expected": { "outcome": "accepted", "relationPredicates": ["point"] } },
+    { "id": "relation-01", "category": "relationship", "text": "Two learners share three books", "expected": { "outcome": "accepted", "relationPredicates": [] } },
+    { "id": "safe-01", "category": "negation", "text": "A plant does not release oxygen", "expected": { "outcome": "clarified", "clarificationCode": "negated-claim" } },
+    { "id": "safe-02", "category": "condition", "text": "If heat rises, water evaporates", "expected": { "outcome": "clarified", "clarificationCode": "conditional-claim" } },
+    { "id": "safe-03", "category": "uncertainty", "text": "Maybe a storm causes flooding", "expected": { "outcome": "clarified", "clarificationCode": "uncertain-claim" } },
+    { "id": "safe-04", "category": "quantity", "text": "Learners share books", "expected": { "outcome": "clarified", "clarificationCode": "missing-quantity" } },
+    { "id": "safe-05", "category": "unsupported", "text": "A dragon eats the moon", "expected": { "outcome": "clarified", "clarificationCode": "unsupported-meaning" } },
+    { "id": "safe-06", "category": "coordination-limit", "text": "A plant absorbs water and sunlight and minerals and carbon dioxide", "expected": { "outcome": "clarified", "clarificationCode": "unsupported-meaning" } },
+    { "id": "safe-07", "category": "empty", "text": "...", "expected": { "outcome": "clarified", "clarificationCode": "empty-input" } }
+  ]
+}
