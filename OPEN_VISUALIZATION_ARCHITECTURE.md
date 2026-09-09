@@ -335,6 +335,14 @@ renderer; CPU queue parsing no longer contains a CPU-specific sentence matcher.
 Exit: the same relation works across different nouns; representative desktop,
 phone and projector snapshots pass readability checks without manual coordinates.
 
+Status: in progress. A shared deterministic candidate evaluator now provides canvas
+bounds, fixed-obstacle and pair-collision rejection, movement-stability scoring,
+connector-crossing accounting, family validation callbacks, and deterministic
+tie-breaking. Event graphs, open visual-flow graphs, visual-action pairs, and ordinary
+actor-target staging use this kernel. Contact, handover, queues, and motion retain
+their specialist planners until their geometry contracts can be migrated without
+weakening reach, attachment, ordering, or directional guarantees.
+
 ### Milestone 4 — local template retrieval
 
 - Store templates as versioned semantic graphs with examples and capabilities.

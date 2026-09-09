@@ -723,6 +723,33 @@ relation metadata, queue creation, count correction, CPU movement, reordering,
 Undo, and layout before reporting PASS. Physical Android rendering and speech
 latency remain unverified.
 
+## Shared constraint-based layout kernel
+
+Milestone 3 now has a reusable deterministic candidate evaluator rather than
+separate copies of basic layout safety logic. Every participating family receives
+the same hard rejection for canvas clipping, collision with fixed scene objects,
+candidate-to-candidate overlap, unknown or duplicate entity identities, and a
+family-supplied geometry failure. Accepted candidates are scored for movement from
+the current scene and proper connector crossings, then resolved with a stable
+coordinate signature so equivalent runs cannot depend on iteration order.
+
+Event graphs and open visual-flow graphs now use the shared evaluator for topology
+candidates. Visual-action pairs and ordinary actor-target staging use it for bounded
+pair searches with family-specific reading-direction, distance, label, corridor,
+and geometry preferences. Connector crossings carry a dominant penalty while
+movement remains independently weighted per layout family. Contact, handover,
+queue, and motion planners remain specialized because reach, attachment, ordering,
+and directional contracts must not be weakened merely to centralize code.
+
+The complete checkpoint passes 245 tests across 28 files and generates 19
+actual-component fixtures. The final 250-iteration meaning pipeline measures
+2.86 ms median and 20.71 ms p95, excluding speech, DOM, SVG painting, and device
+work. Production JavaScript is 396.61 kB (121.40 kB gzip); CSS remains 11.59 kB
+(3.49 kB gzip). Lint, production build, Android asset synchronization, diff
+integrity, and the real browser teaching workflow pass. The build reports only the
+existing third-party Zod annotation notices. Physical Android rendering, speech
+latency, and projector inspection remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

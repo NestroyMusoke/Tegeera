@@ -1,5 +1,6 @@
 import { entityVisualGeometry } from "./entityGeometry";
-import { entityHalfWidth, layoutPositions, overlaps, withinCanvas } from "./layout";
+import { entityHalfWidth, layoutPositions } from "./layout";
+import { selectLayoutCandidate } from "./layoutPlanner";
 import type { SceneEntity, SceneRelation, SceneState } from "./schema";
 import { visualActionForPredicate } from "./visualActionRegistry";
 
@@ -76,31 +77,29 @@ export function planVisualPhrase(
   const originalSubject = scene.entities.find((entity) => entity.id === relation.sourceIds[0]);
   const originalObject = scene.entities.find((entity) => entity.id === relation.targetIds[0]);
   if (!originalSubject || !originalObject || originalSubject.id === originalObject.id) return null;
-  const obstacles = scene.entities.filter((entity) => entity.id !== originalSubject.id && entity.id !== originalObject.id);
   const candidatePositions = (entity: SceneEntity) => movableIds.has(entity.id)
     ? [{ x: entity.x, y: entity.y }, ...phrasePositions.filter((position) => position.x !== entity.x || position.y !== entity.y)]
     : [{ x: entity.x, y: entity.y }];
-  let best: { subject: SceneEntity; object: SceneEntity; score: number } | undefined;
-
-  for (const subjectPosition of candidatePositions(originalSubject)) {
-    const subject = withPosition(originalSubject, subjectPosition);
-    if (!withinCanvas(subject) || obstacles.some((entity) => overlaps(subject, entity))) continue;
-    for (const objectPosition of candidatePositions(originalObject)) {
-      const object = withPosition(originalObject, objectPosition);
-      if (!withinCanvas(object) || overlaps(subject, object) || obstacles.some((entity) => overlaps(object, entity))) continue;
-      const projected = scene.entities.map((entity) => entity.id === subject.id ? subject : entity.id === object.id ? object : entity);
-      const retained = [...(scene.relations ?? []).filter(isVisualAction), relation];
-      if (!labelsAreClear(retained, projected)) continue;
-      const movement = Math.abs(subject.x - originalSubject.x) + Math.abs(subject.y - originalSubject.y)
-        + Math.abs(object.x - originalObject.x) + Math.abs(object.y - originalObject.y);
-      const score = Math.abs(subject.y - object.y) * 7
+  const candidates = candidatePositions(originalSubject).flatMap((subjectPosition) =>
+    candidatePositions(originalObject).map((objectPosition) => [
+      withPosition(originalSubject, subjectPosition), withPosition(originalObject, objectPosition)
+    ]));
+  const retained = [...(scene.relations ?? []).filter(isVisualAction), relation];
+  const best = selectLayoutCandidate(scene, candidates, {
+    connectorEdges: retained.map((candidate) => renderedEdge(candidate))
+      .flatMap((edge) => edge ? [{ sourceId: edge[0], targetId: edge[1] }] : []),
+    movementWeight: 0.18,
+    validate: (projected) => labelsAreClear(retained, [...projected]),
+    preference: (planned) => {
+      const subject = planned.find((entity) => entity.id === originalSubject.id)!;
+      const object = planned.find((entity) => entity.id === originalObject.id)!;
+      return Math.abs(subject.y - object.y) * 7
         + Math.abs(Math.abs(subject.x - object.x) - 28) * 1.5
-        + (object.x < subject.x ? 4 : 0) + movement * 0.18;
-      if (!best || score < best.score) best = { subject, object, score };
+        + (object.x < subject.x ? 4 : 0);
     }
-  }
+  })?.entities;
   if (!best) return null;
-  return [best.subject, best.object]
+  return best
     .filter((entity) => movableIds.has(entity.id))
     .filter((entity) => {
       const original = entity.id === originalSubject.id ? originalSubject : originalObject;
@@ -188,23 +187,13 @@ export function planVisualPhraseGraph(
     const base = layers.flatMap((layer, layerIndex) => layer.map((node, rowIndex) => ({
       ...node, x: xByLayer[layerIndex], y: rowsFor(layer.length)[rowIndex]
     })));
-    const obstacles = scene.entities.filter((entity) => !nodeIds.has(entity.id));
     const candidates = [0, 10, -10].map((offset) => base.map((entity) => ({ ...entity, y: entity.y + offset })))
-      .filter((planned) => planned.every((entity) => withinCanvas(entity)
-        && !obstacles.some((obstacle) => overlaps(entity, obstacle))))
-      .filter((planned) => planned.every((entity, index) => !planned.slice(index + 1).some((other) => overlaps(entity, other))))
-      .filter((planned) => {
-        const projected = scene.entities.map((entity) => planned.find((candidate) => candidate.id === entity.id) ?? entity);
-        return labelsAreClear(relations, projected);
-      })
-      .sort((a, b) => {
-        const movement = (planned: SceneEntity[]) => planned.reduce((total, entity) => {
-          const original = scene.entities.find((candidate) => candidate.id === entity.id)!;
-          return total + Math.abs(entity.x - original.x) + Math.abs(entity.y - original.y);
-        }, 0);
-        return movement(a) - movement(b);
-      });
-    const best = candidates[0];
+    const connectorEdges = relations.map((relation) => renderedEdge(relation))
+      .flatMap((edge) => edge ? [{ sourceId: edge[0], targetId: edge[1] }] : []);
+    const best = selectLayoutCandidate(scene, candidates, {
+      connectorEdges,
+      validate: (projected) => labelsAreClear(relations, [...projected])
+    })?.entities;
     if (!best) return null;
     return best.filter((entity) => {
       const original = scene.entities.find((candidate) => candidate.id === entity.id)!;

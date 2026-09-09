@@ -1,5 +1,6 @@
 import { entityVisualGeometry } from "./entityGeometry";
-import { entityHalfWidth, overlaps, withinCanvas } from "./layout";
+import { entityHalfWidth } from "./layout";
+import { selectLayoutCandidate } from "./layoutPlanner";
 import type { SceneEntity, SceneRelation, SceneState } from "./schema";
 
 export const isEventRelation = (relation: SceneRelation): boolean => relation.kind === "before" || relation.kind === "causes";
@@ -77,18 +78,11 @@ export function planEventGraph(scene: SceneState, proposed: SceneRelation) {
   const plannedBase = layers.flatMap((layer, layerIndex) => layer.map((node, rowIndex) => ({
     ...node, x: xByLayer[layerIndex], y: rowsFor(layer.length)[rowIndex]
   })));
-  const obstacles = scene.entities.filter((entity) => !componentIds.has(entity.id));
   const candidates = [0, 16, -16, 28, -28].map((offset) => plannedBase.map((entity) => ({ ...entity, y: entity.y + offset })))
-    .filter((planned) => planned.every((entity) => withinCanvas(entity) && !obstacles.some((obstacle) => overlaps(entity, obstacle))))
-    .filter((planned) => planned.every((entity, index) => !planned.slice(index + 1).some((other) => overlaps(entity, other))))
-    .sort((a, b) => {
-      const movement = (planned: SceneEntity[]) => planned.reduce((total, entity) => {
-        const original = scene.entities.find((candidate) => candidate.id === entity.id)!;
-        return total + Math.abs(original.x - entity.x) + Math.abs(original.y - entity.y);
-      }, 0);
-      return movement(a) - movement(b);
-    });
-  const planned = candidates[0];
+  const planned = selectLayoutCandidate(scene, candidates, {
+    connectorEdges: edges.map((edge) => ({ sourceId: edge.sourceIds[0], targetId: edge.targetIds[0] })),
+    validate: (projected) => edges.every((edge) => Boolean(eventFlowGeometry(edge, [...projected])))
+  })?.entities;
   if (!planned) return null;
   return planned.filter((entity) => {
     const original = scene.entities.find((candidate) => candidate.id === entity.id)!;
