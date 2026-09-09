@@ -92,6 +92,15 @@ predicates, valid scripts, safe clarification, and false-confident acceptance. I
 explicitly synthetic regression evidence—not a classroom accuracy percentage. Real
 accuracy still requires a frozen, consented corpus from teachers who did not author
 the grammar.
+
+Concrete concepts now come from a versioned registry shared by noun parsing,
+semantic frames, capability checks, and renderer selection. Every schema entity kind
+declares singular/plural forms, aliases, a semantic category, glyph key, countability,
+and supported behaviors. Startup validation rejects missing kinds, duplicate IDs,
+duplicate aliases, and renderer-key mismatches. Semantic frames retain the resolved
+concept ID and category, while rendered SVG exposes the same registry version and
+meaning as inspectable metadata. Adding an alias such as `table`/`tables` requires
+registry data only; unfamiliar open concepts still use honest labelled nodes.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.

@@ -9,6 +9,14 @@ const entity = (kind: SceneEntity["kind"], id = `${kind}-1`): SceneEntity => ({
 });
 
 describe("entity renderer registry", () => {
+  it("exposes versioned concept metadata selected from the shared registry", () => {
+    const html = renderToStaticMarkup(<EntityGlyph entity={entity("desk")} />);
+    expect(html).toContain('data-concept-id="desk"');
+    expect(html).toContain('data-concept-category="furniture"');
+    expect(html).toContain('data-concept-registry-version="1.0.0"');
+    expect(html).toContain('data-renderer="desk"');
+  });
+
   it("has a renderer for every schema entity kind", () => {
     for (const kind of entityKindSchema.options) {
       expect(renderToStaticMarkup(<EntityGlyph entity={entity(kind)} />)).toContain(`data-renderer="${kind}"`);

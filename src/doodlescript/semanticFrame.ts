@@ -2,6 +2,7 @@ import { normalizeTeacherClause } from "./language";
 import { parseEntityPhrase, relationLexemes } from "./lexicon";
 import { actionAliases, actionForAlias, directTargetActionAliases, targetableActionAliases, targetPrepositions } from "./actionRegistry";
 import { visualActionAliases, visualActionForAlias, visualActionPrepositions } from "./visualActionRegistry";
+import type { ConceptCategory } from "./conceptRegistry";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -22,6 +23,8 @@ export interface SemanticEntityMention {
   mentionId: string;
   text: string;
   kind?: string;
+  conceptId?: string;
+  category?: ConceptCategory;
 }
 
 export interface SemanticRelationMention {
@@ -128,7 +131,13 @@ function addParticipant(frame: SemanticFrame, text: string): string {
     return mentionId;
   }
   const parsed = parseEntityPhrase(text);
-  frame.entities.push({ mentionId, text, kind: parsed?.kind });
+  frame.entities.push({
+    mentionId,
+    text,
+    kind: parsed?.kind,
+    conceptId: parsed?.conceptId,
+    category: parsed?.category
+  });
   if (parsed && parsed.count >= 0) frame.quantities.push({ mentionId, value: parsed.count });
   return mentionId;
 }

@@ -57,6 +57,10 @@ describe("semantic input frames", () => {
       { text: "two learners", kind: "student" },
       { text: "three books", kind: "book" }
     ]);
+    expect(frame.entities.map(({ conceptId, category }) => ({ conceptId, category }))).toEqual([
+      { conceptId: "student", category: "actor" },
+      { conceptId: "book", category: "object" }
+    ]);
     expect(frame.quantities.map(({ value }) => value)).toEqual([2, 3]);
     expect(frame.relations).toEqual([{
       predicate: "shares",

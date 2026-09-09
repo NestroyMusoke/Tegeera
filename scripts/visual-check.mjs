@@ -69,6 +69,7 @@ const cases = {
   eventGraph: ["Heat causes expansion", "Heat causes pressure", "Expansion causes damage", "Pressure causes damage", "Heat causes damage"],
   visualPhrase: ["A plant absorbs sunlight and water, then produces oxygen"],
   transformation: ["Water evaporates into a cloud"],
+  conceptRegistry: ["Two tables"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -243,8 +244,18 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Visual phrase caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: coordinated objects, inherited subject, atomic graph planning, identity reuse, semantic direction, composed symbols, honest fallback, negation rollback, transformation, accessibility, layout';
     }
+    async function verifyConcepts() {
+      await pause();
+      await submit('Two tables');
+      check(document.querySelectorAll('[data-concept-id="desk"]').length === 2, 'Registry alias did not create two desk concepts');
+      check(document.querySelectorAll('[data-concept-category="furniture"]').length === 2, 'Semantic concept category is missing');
+      check([...document.querySelectorAll('[data-concept-registry-version]')].every(node => node.dataset.conceptRegistryVersion === '1.0.0'), 'Concept registry version is missing');
+      check(document.querySelectorAll('[data-renderer="desk"]').length === 2, 'Registry glyph key did not select the desk renderer');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Concept registry scene caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: data-only aliases, semantic categories, version metadata, renderer selection, quantity, layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -258,3 +269,4 @@ await writeFile(resolve(output, "app-detail-phone.html"), framedApp(390, "?detai
 await writeFile(resolve(output, "app-queue-phone.html"), framedApp(390, "?queue"));
 await writeFile(resolve(output, "app-events-phone.html"), framedApp(390, "?events"));
 await writeFile(resolve(output, "app-phrases-phone.html"), framedApp(390, "?phrases"));
+await writeFile(resolve(output, "app-concepts-phone.html"), framedApp(390, "?concepts"));

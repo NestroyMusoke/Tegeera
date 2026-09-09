@@ -636,6 +636,33 @@ desktop-width graph rendering, phone-width live input, structured negation,
 scene rollback, and revision preservation pass. Physical Android and independent
 teacher-language validation remain unverified.
 
+## Versioned structural concept registry
+
+The transitional noun table is replaced by a versioned structural concept registry
+shared across language extraction, semantic frames, behavioral constraints, and
+rendering. Every schema entity kind declares canonical singular and plural forms,
+aliases, a semantic category, glyph key, countability, and reusable capabilities.
+Human performance, walking, driving, and queue membership now query capabilities
+instead of repeating entity-kind lists inside the interpreter.
+
+Noun parsing carries the registry concept ID and category into each semantic entity
+mention. The renderer resolves the same concept definition and exposes its ID,
+category, glyph key, and registry version in SVG metadata. Startup validation derives
+required coverage from the schema and rejects duplicate IDs, kinds, aliases, missing
+kinds, or mismatched glyph keys. Adding `table` and `tables` therefore required only
+registry data; the production app resolved “Two tables” into two desk glyphs without
+a new sentence branch.
+
+The complete checkpoint passes 233 tests across 26 files and generates 19
+actual-component fixtures. The final 250-iteration meaning pipeline measures
+0.76 ms median and 4.25 ms p95, excluding speech, DOM, SVG painting, and device work.
+Production JavaScript is 391.93 kB (120.47 kB gzip); CSS remains 11.59 kB
+(3.49 kB gzip). Lint, production build, Android asset synchronization, registry
+startup validation, static renderer metadata, and the phone-width live alias workflow
+pass. Adding an entirely new structural entity kind still requires a schema entry and
+renderer; open event and visual-action concepts continue to use honest generic nodes.
+Physical Android rendering remains unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

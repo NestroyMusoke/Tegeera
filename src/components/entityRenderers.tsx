@@ -3,6 +3,7 @@ import type { EntityKind, SceneEntity } from "../doodlescript/schema";
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { characterPoseFor, type LimbPose } from "./characterPerformance";
 import { ComposedSymbol } from "./symbolPrimitives";
+import { CONCEPT_REGISTRY_VERSION, conceptForKind } from "../doodlescript/conceptRegistry";
 
 export interface EntityRendererProps {
   entity: SceneEntity;
@@ -131,6 +132,12 @@ const entityRendererRegistry: Record<EntityKind, ComponentType<EntityRendererPro
 };
 
 export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
-  const Renderer = entityRendererRegistry[entity.kind] ?? Generic;
-  return <g data-renderer={entity.kind}><Renderer entity={entity} moving={moving} /></g>;
+  const concept = conceptForKind(entity.kind);
+  const Renderer = entityRendererRegistry[concept.glyphKey] ?? Generic;
+  return <g
+    data-concept-id={concept.id}
+    data-concept-category={concept.category}
+    data-concept-registry-version={CONCEPT_REGISTRY_VERSION}
+    data-renderer={concept.glyphKey}
+  ><Renderer entity={entity} moving={moving} /></g>;
 }

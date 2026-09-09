@@ -10,6 +10,7 @@ import { stageHandover } from "./handover";
 import { planEventGraph } from "./eventRelations";
 import { planVisualPhraseGraph } from "./visualPhrase";
 import { Clarification, type ClarificationRequest } from "./clarification";
+import { conceptSupports } from "./conceptRegistry";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -30,7 +31,7 @@ function resolve(phrase: string, scene: SceneState): SceneEntity {
       ? (scene.context?.objectIds.length ? scene.context.objectIds : scene.context?.subjectIds ?? [])
       : scene.context?.subjectIds ?? [];
     const candidates = scene.entities.filter((entity) => ids.includes(entity.id));
-    if (candidates.length === 1 && (/^(it|that)$/.test(normalized) || ["student", "teacher", "person"].includes(candidates[0].kind))) return candidates[0];
+    if (candidates.length === 1 && (/^(it|that)$/.test(normalized) || conceptSupports(candidates[0].kind, "human-performance"))) return candidates[0];
   }
   const exact = scene.entities.filter((entity) => entity.label?.toLowerCase() === normalized);
   if (exact.length === 1) return exact[0];
@@ -79,7 +80,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   };
   const create = (phrase: string, performance?: CharacterPerformance): string[] => {
     const spec = nounPhrase(phrase);
-    if (performance && !["person", "student", "teacher"].includes(spec.kind)) {
+    if (performance && !conceptSupports(spec.kind, "human-performance")) {
       throw new Clarification(`A ${spec.kind} cannot perform that human action. Name a person instead.`);
     }
     const ids: string[] = [];
@@ -171,7 +172,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         ?? text.match(/^(?:a|the) cpu (?:ready )?queue (?:has|contains) (.+)$/);
       if (queue) {
         const spec = nounPhrase(queue[1]);
-        if (spec.kind !== "process") throw new Clarification("A CPU ready queue contains processes. Say how many processes are waiting.");
+        if (!conceptSupports(spec.kind, "queue-member")) throw new Clarification("A CPU ready queue contains processes. Say how many processes are waiting.");
         if (spec.count > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.", "layout-limit");
         const processes = create(queue[1]);
         const cpu = create("a cpu");
@@ -248,8 +249,8 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const targetId = participant(motion[3], false);
         if (actorId === targetId) throw new Clarification("An object cannot approach itself. Name the other object.", "conflicting-scene");
         const actor = working.entities.find((entity) => entity.id === actorId)!;
-        if (/^driv/.test(motion[2]) && actor.kind !== "car") throw new Clarification("Which car is moving? Name the vehicle.");
-        if (/^walk/.test(motion[2]) && !["person", "student", "teacher"].includes(actor.kind)) throw new Clarification("Which person is walking?");
+        if (/^driv/.test(motion[2]) && !conceptSupports(actor.kind, "drive")) throw new Clarification("Which car is moving? Name the vehicle.");
+        if (/^walk/.test(motion[2]) && !conceptSupports(actor.kind, "walk")) throw new Clarification("Which person is walking?");
         stopMotion(actorId);
         relate(motion[2].includes("away") ? "away" : "toward", [actorId], [targetId]);
         focus([actorId], [targetId]);
@@ -339,7 +340,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const giver = resolve(transfer[1], working);
         const recipient = resolve(transfer[3], working);
         if (giver.id === recipient.id) throw new Clarification("The giver and recipient are the same person.", "conflicting-scene");
-        if (![giver, recipient].every((entity) => ["person", "student", "teacher"].includes(entity.kind))) {
+        if (![giver, recipient].every((entity) => conceptSupports(entity.kind, "human-performance"))) {
           throw new Clarification("A handover needs a person giving to another person.");
         }
         const possession = transfer[2].match(/^(her|his|their) (\w+)$/);
@@ -479,7 +480,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         }
         const actors = working.entities.filter((entity) => actorIds.includes(entity.id));
         if (!actors.length) throw new Clarification("Which person performs that action?");
-        if (actors.some((entity) => !["person", "student", "teacher"].includes(entity.kind))) {
+        if (actors.some((entity) => !conceptSupports(entity.kind, "human-performance"))) {
           throw new Clarification("That performance needs a person, student or teacher.");
         }
         const targetMentionId = semanticAction.targetMentionIds[0];
