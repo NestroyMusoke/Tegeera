@@ -695,6 +695,34 @@ browser workflow pass. The browser fixture also verifies `visual`, `visual-flow`
 and relation-registry version metadata before reporting PASS. Physical Android
 rendering and speech latency remain unverified.
 
+## Registered ordered-container language
+
+The CPU ready-queue workflow no longer depends on a CPU-specific sentence regular
+expression in the interpreter. The relation registry now owns reusable
+ordered-container language templates with two semantic shapes:
+`source-verb-target-container` and `target-container-verb-source`. The templates
+register lexical components rather than complete lesson sentences, and
+`matchRegisteredRelation` binds their source and target text before semantic-frame
+population.
+
+The interpreter consumes the resulting `queuedFor` relation and validates its
+participants through the reusable `queue-member` and `queue-target` concept
+capabilities. Existing correction, reordering, Undo, and queue geometry behavior is
+preserved. Consequently, “Three processes wait in a CPU queue” and “A CPU queue has
+three processes” extract the same semantic roles and generate the same scene graph.
+This removes one brittle sentence parser; it does not claim that every possible
+ordered-container concept or spoken paraphrase is supported yet.
+
+The complete checkpoint passes 242 tests across 27 files and generates 19
+actual-component fixtures. The final 250-iteration meaning pipeline measures
+1.41 ms median and 6.05 ms p95, excluding speech, DOM, SVG painting, and device work.
+Production JavaScript is 395.93 kB (121.12 kB gzip); CSS remains 11.59 kB
+(3.49 kB gzip). Lint, production build, Android asset synchronization, and the
+390-pixel browser workflow pass. The browser fixture verifies registered ordered
+relation metadata, queue creation, count correction, CPU movement, reordering,
+Undo, and layout before reporting PASS. Physical Android rendering and speech
+latency remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.

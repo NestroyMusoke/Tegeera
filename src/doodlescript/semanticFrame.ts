@@ -1,6 +1,6 @@
 import { normalizeTeacherClause } from "./language";
 import { parseEntityPhrase } from "./lexicon";
-import { relationLexemes } from "./relationRegistry";
+import { matchRegisteredRelation } from "./relationRegistry";
 import { actionAliases, actionForAlias, directTargetActionAliases, targetableActionAliases, targetPrepositions } from "./actionRegistry";
 import { visualActionAliases, visualActionForAlias, visualActionPrepositions } from "./visualActionRegistry";
 import type { ConceptCategory } from "./conceptRegistry";
@@ -112,8 +112,6 @@ function discourseSignals(text: string): DiscourseSignals {
   };
 }
 
-const relationWordPattern = relationLexemes.flatMap(({ words }) => words).join("|");
-const relationshipPattern = new RegExp(`^(.+?) (?:are )?(${relationWordPattern}) (.+)$`);
 const referencePattern = /^(?:she|he|her|him|they|them|it|that|the .+)$/;
 const actionWordPattern = actionAliases().join("|");
 const actionPattern = new RegExp(`^(.+?) (?:is |are )?(${actionWordPattern})$`);
@@ -177,10 +175,8 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
   const started = text.match(actionPattern);
   const human = stopped ?? targeted ?? directTarget ?? started;
   add("human-action", human ? actionForAlias(human[2])?.predicate : undefined);
-  const relationship = text.match(relationshipPattern);
-  add("relationship", relationship
-    ? relationLexemes.find(({ words }) => (words as readonly string[]).includes(relationship[2]))?.predicate
-    : undefined);
+  const relationship = matchRegisteredRelation(text);
+  add("relationship", relationship?.predicate);
   const visualPrepositional = text.match(visualPrepositionalActionPattern);
   const visualDirect = text.match(visualDirectActionPattern);
   const visual = visualPrepositional ?? visualDirect;
@@ -223,12 +219,11 @@ function populateMeaning(frame: SemanticFrame): void {
     return;
   }
 
-  const relationship = frame.normalizedText.match(relationshipPattern);
+  const relationship = matchRegisteredRelation(frame.normalizedText);
   if (relationship) {
-    const sourceMentionId = addParticipant(frame, relationship[1]);
-    const targetMentionId = addParticipant(frame, relationship[3]);
-    const predicate = relationLexemes.find(({ words }) => (words as readonly string[]).includes(relationship[2]))?.predicate;
-    if (!predicate) return;
+    const sourceMentionId = addParticipant(frame, relationship.sourceText);
+    const targetMentionId = addParticipant(frame, relationship.targetText);
+    const predicate = relationship.predicate;
     frame.intent = "describe";
     frame.relations.push({ predicate, sourceMentionIds: [sourceMentionId], targetMentionIds: [targetMentionId] });
     const openConceptRelation = ["before", "after", "causes"].includes(predicate);

@@ -109,6 +109,13 @@ capability for every schema relation. Semantic extraction, validation, accessibl
 labels, relationship keys, and SVG metadata consume that registry. Specialist
 geometry remains separate: the registry selects `queue`, `contact`, `event-graph`,
 or `visual-flow`; the relevant planner still proves that the actual geometry is safe.
+
+Ordered-container language is also registered. Reusable templates bind either
+`sources → verb → target container` or the inverse `target container → verb →
+sources` before scene planning. The old CPU-specific sentence regular expression
+has been removed from the interpreter. Queue-member and queue-target capabilities
+then validate the extracted concepts, so “Three processes wait in a CPU queue” and
+“A CPU queue has three processes” produce the same semantic roles and scene graph.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.

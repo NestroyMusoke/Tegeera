@@ -5,6 +5,7 @@ import {
   relationForKind,
   relationLabel,
   relationLexemes,
+  matchRegisteredRelation,
   relationRegistry,
   relationSupportsVersion,
   validateRelationRegistry
@@ -29,6 +30,18 @@ describe("versioned relation registry", () => {
     expect(relationLexemes.find(({ predicate }) => predicate === "before")?.words).toContain("occurs before");
     expect(relationLexemes.find(({ predicate }) => predicate === "after")?.words).toContain("occurs after");
     expect(relationLexemes.find(({ predicate }) => predicate === "causes")?.words).toContain("results in");
+  });
+
+  it("binds ordered-container roles through reusable registered templates", () => {
+    expect(matchRegisteredRelation("three processes are waiting in the cpu ready queue")).toEqual({
+      predicate: "queuedFor", sourceText: "three processes", targetText: "a cpu"
+    });
+    expect(matchRegisteredRelation("the cpu queue contains three processes")).toEqual({
+      predicate: "queuedFor", sourceText: "three processes", targetText: "a cpu"
+    });
+    expect(matchRegisteredRelation("two students share a book")).toEqual({
+      predicate: "shares", sourceText: "two students", targetText: "a book"
+    });
   });
 
   it("centralizes minimum versions and role cardinality", () => {

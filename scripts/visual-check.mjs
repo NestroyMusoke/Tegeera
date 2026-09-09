@@ -172,6 +172,7 @@ const appBundle = await build({
       await submit('Imagine three processes waiting in a CPU queue');
       check(document.querySelectorAll('[data-entity-id^="process-"]').length === 3, 'Initial process count failed');
       check(document.querySelectorAll('[data-entity-id="cpu-1"]').length === 1, 'CPU missing');
+      check(document.querySelector('[data-relation-kind="queuedFor"][data-relation-family="ordered"][data-relation-layout="queue"]'), 'Registered ordered relation metadata is missing');
       await submit('Make that four processes');
       check(document.querySelectorAll('[data-entity-id^="process-"]').length === 4, 'Queue correction failed');
       const cpu = document.querySelector('[data-entity-id="cpu-1"]');
@@ -184,7 +185,7 @@ const appBundle = await build({
       document.querySelector('.undo-button').click(); await pause();
       check(document.querySelector('.queue-annotation').getAttribute('aria-label').includes('process 1, process 2'), 'Queue Undo failed');
       check(document.documentElement.scrollWidth <= innerWidth, 'Queue caused page overflow');
-      document.getElementById('qa-result').textContent = 'PASS: CPU queue create, count correction, CPU move, reorder, undo, layout';
+      document.getElementById('qa-result').textContent = 'PASS: registered ordered roles, CPU queue create, count correction, CPU move, reorder, undo, layout';
     }
     async function verifyEvents() {
       await pause();

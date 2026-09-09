@@ -168,16 +168,21 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
         append({ action: "clear" }); focus([]); continue;
       }
-      const queue = text.match(/^(.+?) (?:are )?waiting in (?:a|the) cpu (?:ready )?queue$/)
-        ?? text.match(/^(?:a|the) cpu (?:ready )?queue (?:has|contains) (.+)$/);
-      if (queue) {
-        const spec = nounPhrase(queue[1]);
-        if (!conceptSupports(spec.kind, "queue-member")) throw new Clarification("A CPU ready queue contains processes. Say how many processes are waiting.");
-        if (spec.count > 4) throw new Clarification("Show one to four processes so the CPU queue stays readable.", "layout-limit");
-        const processes = create(queue[1]);
-        const cpu = create("a cpu");
-        relate("queuedFor", processes, cpu);
-        focus(processes, cpu);
+      const orderedRelation = frame.relations.find((relation) => relation.predicate === "queuedFor");
+      if (orderedRelation) {
+        const mentionText = (mentionId: string) => frame.entities.find((mention) => mention.mentionId === mentionId)?.text
+          ?? frame.references.find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const sourcePhrase = mentionText(orderedRelation.sourceMentionIds[0]);
+        const targetPhrase = mentionText(orderedRelation.targetMentionIds[0]);
+        const sourceSpec = nounPhrase(sourcePhrase);
+        const targetSpec = nounPhrase(targetPhrase);
+        if (!conceptSupports(sourceSpec.kind, "queue-member")) throw new Clarification("That ordered queue needs registered queue members.");
+        if (!conceptSupports(targetSpec.kind, "queue-target") || targetSpec.count !== 1) throw new Clarification("Name one registered system for that ordered queue.");
+        if (sourceSpec.count > 4) throw new Clarification("Show one to four queue members so the ordered row stays readable.", "layout-limit");
+        const sources = create(sourcePhrase);
+        const targets = create(targetPhrase);
+        relate("queuedFor", sources, targets);
+        focus(sources, targets);
         continue;
       }
       const eventRelation = frame.relations.find((relation) => ["before", "after", "causes"].includes(relation.predicate));

@@ -19,12 +19,28 @@ describe("CPU ready queue", () => {
   for (const text of [
     "Imagine three processes waiting in a CPU queue",
     "Three processes are waiting in the CPU ready queue",
-    "The CPU ready queue contains three processes"
+    "The CPU ready queue contains three processes",
+    "Three processes wait in a CPU queue",
+    "A CPU queue has three processes"
   ]) it(text, () => {
     const scene = run(text);
     expect(scene.entities.map((entity) => entity.kind)).toEqual(["process", "process", "process", "cpu"]);
     expect(scene.relations?.[0]).toMatchObject({ kind: "queuedFor", sourceIds: ["process-1", "process-2", "process-3"], targetIds: ["cpu-1"] });
     expect(queueGeometry(scene.relations![0], scene.entities)).not.toBeNull();
+  });
+
+  it("extracts queue roles before scene planning", async () => {
+    const { analyzeTeacherInput } = await import("./semanticFrame");
+    for (const text of ["Three processes wait in a CPU queue", "A CPU queue has three processes"]) {
+      const frame = analyzeTeacherInput(text).frames[0];
+      expect(frame.relations).toEqual([{
+        predicate: "queuedFor",
+        sourceMentionIds: [frame.entities[0].mentionId],
+        targetMentionIds: [frame.entities[1].mentionId]
+      }]);
+      expect(frame.entities.map(({ kind }) => kind)).toEqual(["process", "cpu"]);
+      expect(frame.resolutionStatus).toBe("resolved");
+    }
   });
 
   it("increases the queue while preserving IDs and compacting before the CPU", () => {
