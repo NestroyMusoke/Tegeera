@@ -9,6 +9,7 @@ import { actionForPredicate } from "../doodlescript/actionRegistry";
 import { applyHandoverPerformance, handoverParticipants, isHandover } from "../doodlescript/handover";
 import { eventFlowGeometry, isEventRelation } from "../doodlescript/eventRelations";
 import { isVisualAction, visualPhraseGeometry } from "../doodlescript/visualPhrase";
+import { RELATION_REGISTRY_VERSION, relationForKind } from "../doodlescript/relationRegistry";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -66,9 +67,16 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
         </defs>
         <rect width="1000" height="620" fill="#fbf7ed" />
         <rect width="1000" height="620" filter="url(#paper-grain)" opacity=".5" />
-        {scene.relations?.map((relation) => (
-          <Relationship relation={relation} entities={scene.entities} key={relation.id} />
-        ))}
+        {scene.relations?.map((relation) => {
+          const definition = relationForKind(relation.kind);
+          return <g key={relation.id}
+            data-relation-family={definition.family}
+            data-relation-kind={definition.kind}
+            data-relation-layout={definition.layout}
+            data-relation-registry-version={RELATION_REGISTRY_VERSION}>
+            <Relationship relation={relation} entities={scene.entities} />
+          </g>;
+        })}
         {scene.entities.map((entity, index) => {
           const motion = scene.relations?.find((relation) => isMotion(relation) && relation.sourceIds[0] === entity.id);
           const target = scene.entities.find((item) => item.id === motion?.targetIds[0]);
@@ -137,7 +145,9 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
               return entity?.label ?? id;
             }).join(", ");
             return (
-              <div key={relation.id} className={`relationship-${relation.kind}`}>
+              <div key={relation.id} className={`relationship-${relation.kind}`}
+                data-relation-family={relationForKind(relation.kind).family}
+                data-relation-registry-version={RELATION_REGISTRY_VERSION}>
                 <span>{labels(relation.sourceIds)}</span>
                 <strong>{relation.kind === "handover" ? `gives ${labels(relation.objectIds ?? [])} to →` : `${relationLabel(relation)} →`}</strong>
                 <span>{labels(relation.targetIds)}</span>

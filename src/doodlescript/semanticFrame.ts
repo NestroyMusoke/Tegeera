@@ -1,5 +1,6 @@
 import { normalizeTeacherClause } from "./language";
-import { parseEntityPhrase, relationLexemes } from "./lexicon";
+import { parseEntityPhrase } from "./lexicon";
+import { relationLexemes } from "./relationRegistry";
 import { actionAliases, actionForAlias, directTargetActionAliases, targetableActionAliases, targetPrepositions } from "./actionRegistry";
 import { visualActionAliases, visualActionForAlias, visualActionPrepositions } from "./visualActionRegistry";
 import type { ConceptCategory } from "./conceptRegistry";

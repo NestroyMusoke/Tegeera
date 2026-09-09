@@ -14,6 +14,8 @@ import { handoverIsVisuallySafe, handoverParticipants } from "./handover";
 import { eventFlowGeometry, hasDirectedCycle, isEventRelation } from "./eventRelations";
 import { visualPhraseGeometry, isVisualAction } from "./visualPhrase";
 import { visualActionForPredicate } from "./visualActionRegistry";
+import { relationCardinalityIssues, relationForKind, relationSupportsVersion } from "./relationRegistry";
+import { conceptSupports } from "./conceptRegistry";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -69,10 +71,11 @@ export function validateDoodleScript(
       issues.push({ gate: "schema", message: "Character performances require DoodleScript 1.5.0." });
     }
     if (command.action === "unrelate") {
-      if (relationKinds.get(command.relationId) === "actsOn" && !["1.6.0", "1.7.0", "1.8.0", "1.9.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Targeted performance edits require DoodleScript 1.6.0 or later." });
-      if (relationKinds.get(command.relationId) === "handover" && !["1.7.0", "1.8.0", "1.9.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Handover edits require DoodleScript 1.7.0 or later." });
-      if (["before", "causes"].includes(relationKinds.get(command.relationId) ?? "") && !["1.8.0", "1.9.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Event relationship edits require DoodleScript 1.8.0 or later." });
-      if (relationKinds.get(command.relationId) === "visualAction" && script.schemaVersion !== "1.9.0") issues.push({ gate: "schema", message: "Visual action edits require DoodleScript 1.9.0." });
+      const existingKind = relationKinds.get(command.relationId);
+      if (existingKind && !relationSupportsVersion(existingKind, script.schemaVersion)) {
+        const definition = relationForKind(existingKind);
+        issues.push({ gate: "schema", message: `${definition.label} edits require DoodleScript ${definition.minimumVersion} or later.` });
+      }
       if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0 or later." });
       if (!relationIds.delete(command.relationId)) issues.push({ gate: "semantic", message: "That relationship no longer exists." });
       relationKinds.delete(command.relationId);
@@ -81,6 +84,11 @@ export function validateDoodleScript(
     if (command.action === "relate") {
       const relation = command.relation;
       const members = [...relation.sourceIds, ...relation.targetIds, ...(relation.objectIds ?? [])];
+      const definition = relationForKind(relation.kind);
+      if (!relationSupportsVersion(relation.kind, script.schemaVersion)) {
+        issues.push({ gate: "schema", message: `${definition.label} requires DoodleScript ${definition.minimumVersion} or later.` });
+      }
+      for (const message of relationCardinalityIssues(relation)) issues.push({ gate: "semantic", message });
       if (isMotion(relation)) {
         if (!["1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Directed motion requires DoodleScript 1.3.0 or later." });
         if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "Motion needs one actor and one reference object." });
@@ -176,7 +184,7 @@ export function validateDoodleScript(
   const eventEdges = new Set<string>();
   const visualActionEdges = new Set<string>();
   for (const entity of projected.entities) {
-    if (entity.performance && !["person", "student", "teacher"].includes(entity.kind)) {
+    if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });
     }
   }
@@ -200,7 +208,7 @@ export function validateDoodleScript(
     if (relation.kind === "handover") {
       const participants = handoverParticipants(relation, projected.entities);
       const objectId = relation.objectIds?.[0];
-      if (!participants || ![participants.giver, participants.recipient].every((entity) => ["person", "student", "teacher"].includes(entity.kind))) {
+      if (!participants || ![participants.giver, participants.recipient].every((entity) => conceptSupports(entity.kind, "human-performance"))) {
         issues.push({ gate: "semantic", message: "A handover needs two people and one existing object." });
       } else {
         const recipientOwnsObject = projected.relations?.some((candidate) => candidate.kind === "owns"
@@ -221,7 +229,7 @@ export function validateDoodleScript(
       const actor = projected.entities.find((entity) => entity.id === relation.sourceIds[0]);
       const target = projected.entities.find((entity) => entity.id === relation.targetIds[0]);
       const action = actionRegistry.find((candidate) => candidate.predicate === relation.predicate);
-      if (!actor || !["person", "student", "teacher"].includes(actor.kind)) issues.push({ gate: "semantic", message: "A targeted performance needs a person as its actor." });
+      if (!actor || !conceptSupports(actor.kind, "human-performance")) issues.push({ gate: "semantic", message: "A targeted performance needs a person as its actor." });
       if (actor && target && action?.targeting?.gesture === "contact") {
         const contact = solveContactArm(actor, target, actor.performance?.bodyLean ?? 0);
         if (!contact.solution.reachable || !contactPairIsVisuallySafe(actor, target)) {

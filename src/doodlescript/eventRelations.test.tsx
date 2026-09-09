@@ -73,6 +73,8 @@ describe("general event relationships", () => {
     expect(hasDirectedCycle(chain.relations ?? [], "before")).toBe(false);
     const html = renderToStaticMarkup(<DoodleCanvas scene={chain} />);
     expect(html.match(/class="event-annotation event-before"/g)).toHaveLength(2);
+    expect(html.match(/data-relation-family="event"/g)).toHaveLength(4);
+    expect(html.match(/data-relation-layout="event-graph"/g)).toHaveLength(2);
     expect(html).toContain("evaporation before condensation");
     expect(html).toContain("condensation before rainfall");
   });

@@ -101,6 +101,14 @@ duplicate aliases, and renderer-key mismatches. Semantic frames retain the resol
 concept ID and category, while rendered SVG exposes the same registry version and
 meaning as inspectable metadata. Adding an alias such as `table`/`tables` requires
 registry data only; unfamiliar open concepts still use honest labelled nodes.
+
+Relationships now have the same kind of shared contract. A versioned relation
+registry owns semantic family, forward/inverse aliases, readable label, minimum
+DoodleScript version, source/target/object cardinality, directionality, and layout
+capability for every schema relation. Semantic extraction, validation, accessible
+labels, relationship keys, and SVG metadata consume that registry. Specialist
+geometry remains separate: the registry selects `queue`, `contact`, `event-graph`,
+or `visual-flow`; the relevant planner still proves that the actual geometry is safe.
 Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
 browser for the real typed-input workflow check. Each ends with PASS or FAIL.
 These checks do not substitute for Android touch, keyboard and speech testing.

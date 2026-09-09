@@ -43,11 +43,3 @@ export function parseEntityPhrase(phrase: string): ParsedEntityPhrase | null {
     noun: match[2]
   };
 }
-
-export const relationLexemes = [
-  { predicate: "shares", words: ["sharing", "share", "shares"] },
-  { predicate: "owns", words: ["owns", "own", "has", "have"] },
-  { predicate: "before", words: ["happens before", "happen before", "occurs before", "occur before", "comes before", "come before"] },
-  { predicate: "after", words: ["happens after", "happen after", "occurs after", "occur after", "comes after", "come after"] },
-  { predicate: "causes", words: ["causes", "cause", "leads to", "lead to", "results in", "result in"] }
-] as const;

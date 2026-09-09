@@ -1,16 +1,9 @@
 import type { SceneEntity, SceneRelation } from "./schema";
-import { actionForPredicate } from "./actionRegistry";
-import { visualActionForPredicate } from "./visualActionRegistry";
+import { relationLabel } from "./relationRegistry";
 
 export const isMotion = (relation: SceneRelation) => relation.kind === "toward" || relation.kind === "away";
 
-export const relationLabel = (relation: SceneRelation): string => ({
-  shares: "share", owns: "owns", toward: "moves toward", away: "moves away from", queuedFor: "waits for CPU",
-  actsOn: relation.preposition ? `${relation.predicate ?? "acts"} ${relation.preposition}`
-    : actionForPredicate(relation.predicate)?.relationLabel ?? relation.predicate ?? "acts",
-  handover: "gives", before: "before", causes: "causes",
-  visualAction: visualActionForPredicate(relation.predicate)?.label ?? relation.predicate ?? "acts on"
-})[relation.kind];
+export { relationLabel };
 
 // A directional illustration, not a physical simulation or a collision trajectory.
 export function motionGeometry(actor: SceneEntity, target: SceneEntity, kind: "toward" | "away") {

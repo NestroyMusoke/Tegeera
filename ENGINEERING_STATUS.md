@@ -663,6 +663,38 @@ pass. Adding an entirely new structural entity kind still requires a schema entr
 renderer; open event and visual-action concepts continue to use honest generic nodes.
 Physical Android rendering remains unverified.
 
+## Versioned relation registry
+
+All ten schema relationship kinds now share one versioned registry contract. Each
+definition declares its semantic family, forward aliases, inverse aliases where
+applicable, readable label, minimum DoodleScript version, source/target/object
+cardinality, directionality, and layout capability. The former relationship word
+table is removed from the noun lexicon. `after` remains an explicit inverse alias
+of `before`, so extraction reverses its endpoints without adding a schema-only kind.
+
+The validator queries registry version and cardinality rules before running
+specialist semantic and geometry gates. Accessible summaries and relationship keys
+use registry labels, including predicate-aware labels for targeted performances and
+visual actions. Each rendered relation group exposes its kind, family, layout, and
+registry version, allowing the browser workflow to prove that the same semantic
+contract reached the SVG.
+
+This separation is deliberate: registry layout values select capabilities such as
+group, ownership, arrow, queue, contact, event graph, and visual flow, while the
+existing specialist planners still prove reach, ordering, cycles, connector space,
+and collision safety. Centralizing relation meaning does not weaken those checks or
+claim a universal geometry engine.
+
+The complete checkpoint passes 238 tests across 27 files and generates 19
+actual-component fixtures. The final 250-iteration meaning pipeline measures
+0.82 ms median and 10.26 ms p95, excluding speech, DOM, SVG painting, and device
+work. Production JavaScript is 394.76 kB (120.73 kB gzip); CSS remains 11.59 kB
+(3.49 kB gzip). Lint, production build, Android asset synchronization, startup
+registry validation, legacy scene equality, and the 390-pixel coordinated-phrase
+browser workflow pass. The browser fixture also verifies `visual`, `visual-flow`,
+and relation-registry version metadata before reporting PASS. Physical Android
+rendering and speech latency remain unverified.
+
 At the first checkpoint: 39 tests passed; the 250-iteration
 meaning pipeline had median 0.38 ms and p95 1.03 ms. This is a local synthetic
 measurement, not an Android real-time speech benchmark.
