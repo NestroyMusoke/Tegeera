@@ -1,9 +1,9 @@
 import type { RelationFamily } from "./relationRegistry";
 
-export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.0.0";
+export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.1.0";
 
-export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow";
-export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole";
+export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram";
+export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body";
 
 export interface LayoutFamilyDefinition {
   id: LayoutFamilyId;
@@ -25,7 +25,8 @@ export const layoutFamilyRegistry: readonly LayoutFamilyDefinition[] = [
   { id: "contact", topology: "directed-pair", relationFamilies: ["performance"], readingDirection: "left-to-right", maximumVisibleNodes: 3, movementWeight: 0.15, connectorCrossingPenalty: 10_000 },
   { id: "event-graph", topology: "ranked-dag", relationFamilies: ["event"], readingDirection: "left-to-right", maximumVisibleNodes: 10, maximumNodesPerRank: 3, movementWeight: 1, connectorCrossingPenalty: 10_000 },
   { id: "visual-flow", topology: "directed-graph", relationFamilies: ["visual"], readingDirection: "left-to-right", maximumVisibleNodes: 10, maximumNodesPerRank: 3, movementWeight: 0.18, connectorCrossingPenalty: 10_000 },
-  { id: "part-whole-flow", topology: "part-whole", relationFamilies: ["compositional"], readingDirection: "left-to-right", maximumVisibleNodes: 7, maximumNodesPerRank: 3, movementWeight: 0.12, connectorCrossingPenalty: 10_000 }
+  { id: "part-whole-flow", topology: "part-whole", relationFamilies: ["compositional"], readingDirection: "left-to-right", maximumVisibleNodes: 7, maximumNodesPerRank: 3, movementWeight: 0.12, connectorCrossingPenalty: 10_000 },
+  { id: "force-diagram", topology: "force-body", relationFamilies: ["mechanical"], readingDirection: "bidirectional", maximumVisibleNodes: 4, maximumNodesPerRank: 3, movementWeight: 0.1, connectorCrossingPenalty: 10_000 }
 ];
 
 const byId = new Map(layoutFamilyRegistry.map((definition) => [definition.id, definition] as const));

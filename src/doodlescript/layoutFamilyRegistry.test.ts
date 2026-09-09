@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.0.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.1.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "contact", "event-graph", "group", "ownership", "part-whole-flow", "queue", "visual-flow"
+      "arrow", "contact", "event-graph", "force-diagram", "group", "ownership", "part-whole-flow", "queue", "visual-flow"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });

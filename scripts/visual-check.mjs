@@ -71,6 +71,7 @@ const cases = {
   transformation: ["Water evaporates into a cloud"],
   conceptRegistry: ["Two tables"],
   partWholeFlow: ["A plant takes in water through its roots and sunlight through its leaves"],
+  forceDiagram: ["If you push a box on a rough floor, friction slows it down"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -235,8 +236,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.0.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.0.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.1.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.1.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -303,8 +304,22 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Part-whole scene caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: five semantic identities, part ownership, typed flows, original symbols, required cues, accessibility, registry metadata, layout';
     }
+    async function verifyForce() {
+      await pause();
+      await submit('If you push a box on a rough floor, friction slows it down');
+      check(document.querySelectorAll('[data-relation-family="mechanical"][data-relation-layout="force-diagram"]').length === 3, 'Mechanical role graph is incomplete');
+      check(document.querySelectorAll('[data-layout-topology="force-body"]').length === 3, 'Force-body topology metadata is missing');
+      for (const cue of ['surface-line', 'forward-force-arrow', 'opposing-friction-arrow', 'friction-arrow-smaller', 'slowing-motion']) {
+        check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), 'Force visual cue is missing: ' + cue);
+      }
+      check(document.querySelector('[data-primitive="box"]'), 'Original box primitive is missing');
+      check(document.querySelector('[data-visual-role="force"]'), 'Semantic force identities are missing');
+      check(document.querySelectorAll('.force-diagram-annotation').length === 1, 'Force diagram rendered duplicate annotations');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Force diagram caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: open mechanical slots, force identities, relative magnitude, opposition, contact surface, slowing cue, accessibility, layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -321,3 +336,4 @@ await writeFile(resolve(output, "app-phrases-phone.html"), framedApp(390, "?phra
 await writeFile(resolve(output, "app-concepts-phone.html"), framedApp(390, "?concepts"));
 await writeFile(resolve(output, "app-motion-phone.html"), framedApp(390, "?motion"));
 await writeFile(resolve(output, "app-parts-phone.html"), framedApp(390, "?parts"));
+await writeFile(resolve(output, "app-force-phone.html"), framedApp(390, "?force"));

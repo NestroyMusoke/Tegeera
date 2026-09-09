@@ -939,3 +939,34 @@ does not guarantee local processing. Native speech must be audited and verified
 before presenting it as private/offline production recognition.
 
 No commits or pushes are performed by the agent.
+
+## DoodleScript 2.1 force-diagram construction
+
+Case 11 now uses an open mechanical-role grammar rather than a stored classroom
+sentence. The semantic frame binds a body, contact surface, applied force, opposing
+force, and direction from reusable push/pull, surface, resistance, and slowing roles.
+An unrelated sled/packed-snow/drag fixture exercises the same construction and a
+crate/concrete/resistance fixture exercises its validation path.
+
+DoodleScript 2.1 adds `appliedTo`, `opposes`, and `contacts`. The relation and layout
+registries move to 2.1.0 with a mechanical family and `force-body` topology. Semantic
+force and surface identities stay available to validation and accessibility while the
+renderer presents them as physical arrows and a textured contact line rather than
+disconnected concept bubbles. The original box primitive, forward push arrow, shorter
+opposing friction arrow, surface texture, and motion-loss marks are inspectable cues.
+
+The independent baseline now accepts 2/60 and safely clarifies 58/60. In the strict
+first batch, cases 1 and 11 are automated-ready, zero are false-confident, and the
+strict pass count remains 0/8 until a human explicitly approves each rendered visual.
+This is expanded verified coverage, not a claim of real-classroom accuracy.
+
+The complete checkpoint passes 273 tests across 33 files. The 250-iteration
+meaning-only benchmark measured 1.54 ms median and 13.68 ms p95 in the full concurrent
+test run; speech, DOM, SVG painting, and device work are excluded. Production
+JavaScript is 418.63 kB (127.20 kB gzip); CSS is 11.59 kB (3.49 kB gzip). Lint,
+TypeScript, production build, Android asset synchronization, registry validation, and
+strict-gold scoring pass. Twenty-one real-component fixtures are generated, and the
+390-pixel full-app force workflow passes after visual inspection corrected floor
+contact and label hierarchy. The build reports only the existing third-party Zod
+annotation notices. Physical Android rendering, speech latency, projector inspection,
+and independent hidden generalization remain unverified.

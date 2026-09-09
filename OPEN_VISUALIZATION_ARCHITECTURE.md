@@ -424,7 +424,12 @@ the shared layout kernel applies the versioned `part-whole-flow` family. Case 1 
 automated-ready with five identities, four typed relations, all declared cues, and a
 passing real browser workflow. It remains strict-pending until human visual approval.
 
-Next, generalize the same semantic-frame v2 boundary with force/opposition/contact roles
-for case 11. Its implementation must also compose unseen force-domain nouns and must not
-contain the corpus sentence. Containment, measurement, landscape flow, non-visual hold,
-and correction intent follow as separate verified capabilities.
+The semantic-frame v2 boundary now also owns force/opposition/contact roles for case 11.
+It composes unseen body, surface, and resistance nouns, preserves forces as semantic
+identities, renders relative magnitude and direction through the registered
+`force-diagram` family, and contains no complete corpus sentence.
+
+Next, implement the labelled-container capability for case 21 with separate variable
+and value identities, genuine containment geometry, and a non-programming container
+fixture. Measurement, landscape flow, non-visual hold, and correction intent follow as
+separate verified capabilities.

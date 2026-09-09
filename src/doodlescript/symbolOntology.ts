@@ -13,6 +13,7 @@ export type VisualCategory =
 
 export type SymbolPrimitive =
   | "cloud"
+  | "box"
   | "crack"
   | "droplet"
   | "flame"
@@ -62,6 +63,7 @@ export interface VisualSymbolPlan {
 // Concepts describe reusable visual meaning. They contain no sentence patterns,
 // coordinates, or lesson-specific layouts. New vocabulary extends this data only.
 export const symbolOntology: readonly SymbolDefinition[] = [
+  { id: "box", aliases: ["box", "crate", "block", "carton"], tags: ["object", "container"], category: "system", anchor: "box", capabilities: [] },
   { id: "heat", aliases: ["heat", "temperature", "warmth", "thermal energy"], tags: ["thermal", "hot"], category: "energy", anchor: "flame", capabilities: ["radiates"] },
   { id: "sunlight", aliases: ["sun", "sunlight", "sunshine", "solar energy"], tags: ["solar", "light"], category: "energy", anchor: "sun", capabilities: ["radiates"], visualCues: ["sun-symbol"] },
   { id: "electricity", aliases: ["electricity", "electric current", "electric charge", "voltage"], tags: ["electric", "power", "charge"], category: "energy", anchor: "lightning", capabilities: ["flows"] },

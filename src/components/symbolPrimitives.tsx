@@ -3,6 +3,7 @@ import type { SymbolPrimitive, VisualCapability, VisualCategory } from "../doodl
 type PrimitiveRenderer = () => React.ReactNode;
 
 const primitiveRenderers: Readonly<Record<SymbolPrimitive, PrimitiveRenderer>> = {
+  box: () => <g><path className="doodle-stroke" d="M-39-31 L34-36 L41 34 L-37 38 Z" /><path className="doodle-detail" d="M-39-31 L-8-13 L41-17 M-8-13 L-7 38 M-39-31 L12-47 L34-36" /></g>,
   cloud: () => <path className="doodle-stroke" d="M-28 10 C-42 7-42-14-27-17 C-22-37 6-42 16-24 C38-27 44-1 29 10 Z" />,
   crack: () => <path className="doodle-stroke" d="M-8-38 L5-17 L-6-2 L11 14 L1 36 M5-17 L21-25 M-6-2 L-24 7" />,
   droplet: () => <path className="doodle-detail" d="M0-12 C-14 5-14 15 0 18 C14 15 14 5 0-12 Z" />,

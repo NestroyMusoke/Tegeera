@@ -12,8 +12,8 @@ import { parseIndependentTeacherCorpus } from "./independentCorpus";
 
 describe("independent semantic-scene gold annotations", () => {
   const teacherCases = parseIndependentTeacherCorpus(corpusMarkdown);
-  const observeCaseOne = () => {
-    const teacherCase = teacherCases.find(({ id }) => id === 1)!;
+  const observeCase = (id: number) => {
+    const teacherCase = teacherCases.find((item) => item.id === id)!;
     const interpreted = interpretTeacherText(teacherCase.statement, initialScene);
     if (!interpreted.ok) throw new Error(interpreted.message);
     const checked = validateDoodleScript(interpreted.script, initialScene);
@@ -59,7 +59,7 @@ describe("independent semantic-scene gold annotations", () => {
   });
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
-    const result = evaluateIndependentGold(teacherCases, gold, { 1: observeCaseOne() });
+    const result = evaluateIndependentGold(teacherCases, gold, { 1: observeCase(1), 11: observeCase(11) });
     expect(result.total).toBe(8);
     expect(result.results).toHaveLength(8);
     expect(result.passed).toBeLessThan(result.total);
@@ -74,7 +74,7 @@ describe("independent semantic-scene gold annotations", () => {
   });
 
   it("requires explicit human approval after its real grammar and cues are observed", () => {
-    const observation = observeCaseOne();
+    const observation = observeCase(1);
     expect(new Set(observation.visualCueIds)).toEqual(new Set([
       "visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray"
     ]));
@@ -86,5 +86,15 @@ describe("independent semantic-scene gold annotations", () => {
     }).results.find(({ id }) => id === 1)).toMatchObject({
       passed: true, falseConfident: false, automatedReady: true, failures: []
     });
+  });
+
+  it("makes case 11 automated-ready while preserving human visual review", () => {
+    const observation = observeCase(11);
+    expect(new Set(observation.visualCueIds)).toEqual(new Set([
+      "surface-line", "forward-force-arrow", "opposing-friction-arrow", "friction-arrow-smaller", "slowing-motion"
+    ]));
+    expect(observation.visualGrammarId).toBe("force-diagram");
+    expect(evaluateIndependentGold(teacherCases, gold, { 11: observation }).results.find(({ id }) => id === 11))
+      .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
   });
 });

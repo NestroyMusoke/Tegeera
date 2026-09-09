@@ -13,6 +13,7 @@ import { Clarification, type ClarificationRequest } from "./clarification";
 import { conceptSupports, sharedOrderedDomain } from "./conceptRegistry";
 import { isQueue, planOrderedRow } from "./queue";
 import { planPartWholeFlow } from "./partWholeFlow";
+import { planForceDiagram } from "./forceDiagram";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -56,7 +57,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -78,6 +79,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["before", "causes"].includes(command.relation.kind)) upgradeVersion("1.8.0");
     if (command.action === "relate" && command.relation.kind === "visualAction") upgradeVersion("1.9.0");
     if (command.action === "relate" && ["partOf", "flowsInto", "illuminates"].includes(command.relation.kind)) upgradeVersion("2.0.0");
+    if (command.action === "relate" && ["appliedTo", "opposes", "contacts"].includes(command.relation.kind)) upgradeVersion("2.1.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -115,7 +117,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       append({ action: "unrelate", relationId: relation.id });
     }
   };
-  const eventNode = (phrase: string): string => {
+  const eventNode = (phrase: string, visualRole?: SceneEntity["visualRole"]): string => {
     const normalized = phrase.trim().replace(/^(?:a|an|the) /, "");
     if (!normalized || normalized.length > 40 || normalized.split(/\s+/).length > 7
       || !/^[a-z0-9][a-z0-9 '-]*$/.test(normalized)) {
@@ -129,7 +131,13 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       if (parsed.count !== 1) throw new Clarification("Use one event or concept at each end of a timeline relationship.");
       const existingKind = working.entities.filter((entity) => entity.kind === parsed.kind);
       if (phrase.startsWith("the ") && existingKind.length) return resolve(phrase, working).id;
-      return create(normalized)[0];
+      const id = create(normalized)[0];
+      if (visualRole) {
+        const created = commands.find((command) => command.action === "create" && command.entity.id === id);
+        if (created?.action === "create") created.entity.visualRole = visualRole;
+        working = applyDoodleScript(scene, makeScript());
+      }
+      return id;
     }
     const position = nextPositionFor(working.entities, "generic", normalized);
     if (!position) throw new Clarification("There is no readable space left for that event. Remove an object or start a new scene.", "layout-limit");
@@ -138,7 +146,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     const id = `concept-${number}`;
     append({ action: "create", entity: {
       id, kind: "generic", label: normalized, ...position,
-      scale: 1, direction: "right", highlighted: false
+      scale: 1, direction: "right", highlighted: false, ...(visualRole ? { visualRole } : {})
     } });
     return id;
   };
@@ -155,7 +163,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         "I heard a negation, so I left the drawing unchanged. Say the positive scene you want shown.",
         "negated-claim", ["Describe the scene positively", "Leave the scene unchanged"]
       );
-      if (frame.discourse.conditional) throw new Clarification(
+      if (frame.discourse.conditional && !frame.forceDiagrams.length) throw new Clarification(
         "I heard a condition. Tell me whether to draw the condition or its result.",
         "conditional-claim", ["Draw the condition", "Draw the result"]
       );
@@ -170,6 +178,27 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       );
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
         append({ action: "clear" }); focus([]); continue;
+      }
+      const forceDiagram = frame.forceDiagrams[0];
+      if (forceDiagram?.construction === "force-diagram") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const bodyId = eventNode(mentionText(forceDiagram.bodyMentionId), "object");
+        const surfaceId = eventNode(mentionText(forceDiagram.surfaceMentionId), "surface");
+        const appliedForceId = eventNode(mentionText(forceDiagram.appliedForceMentionId), "force");
+        const opposingForceId = eventNode(mentionText(forceDiagram.opposingForceMentionId), "force");
+        const ids = { bodyId, surfaceId, appliedForceId, opposingForceId };
+        if (new Set(Object.values(ids)).size !== 4) throw new Clarification("A force diagram needs a distinct body, surface, applied force, and opposing force.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planForceDiagram(working, ids, movableIds, forceDiagram.appliedDirection);
+        if (!moves) throw new Clarification("That force diagram cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "appliedTo", sourceIds: [appliedForceId], targetIds: [bodyId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "opposes", sourceIds: [opposingForceId], targetIds: [appliedForceId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "contacts", sourceIds: [bodyId], targetIds: [surfaceId] } });
+        focus([bodyId], [surfaceId, appliedForceId, opposingForceId]);
+        continue;
       }
       const orderedRelation = frame.relations.find((relation) => relation.predicate === "queuedFor");
       if (orderedRelation) {

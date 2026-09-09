@@ -5,6 +5,7 @@ import { actionAliases, actionForAlias, directTargetActionAliases, targetableAct
 import { visualActionAliases, visualActionForAlias, visualActionPrepositions } from "./visualActionRegistry";
 import type { ConceptCapability, ConceptCategory } from "./conceptRegistry";
 import { matchPartWholeFlow, type PartWholeChannel } from "./partWholeFlow";
+import { matchForceDiagram } from "./forceDiagram";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -62,6 +63,15 @@ export interface SemanticPartWholeFlowMention {
   })[];
 }
 
+export interface SemanticForceDiagramMention {
+  construction: "force-diagram";
+  bodyMentionId: string;
+  surfaceMentionId: string;
+  appliedForceMentionId: string;
+  opposingForceMentionId: string;
+  appliedDirection: "left" | "right";
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -73,7 +83,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -97,6 +107,7 @@ export interface SemanticFrame {
   actions: SemanticActionMention[];
   visualActions: SemanticVisualActionMention[];
   compositions: SemanticPartWholeFlowMention[];
+  forceDiagrams: SemanticForceDiagramMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   meaningCandidates: SemanticMeaningCandidate[];
@@ -192,6 +203,8 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
   add("relationship", relationship?.predicate);
   const composition = matchPartWholeFlow(text);
   add("composition", composition ? "part-whole-flow" : undefined);
+  const forceDiagram = matchForceDiagram(text);
+  add("mechanical", forceDiagram ? "force-diagram" : undefined);
   const visualPrepositional = text.match(visualPrepositionalActionPattern);
   const visualDirect = text.match(visualDirectActionPattern);
   const visual = visualPrepositional ?? visualDirect;
@@ -204,10 +217,25 @@ export function meaningIsAmbiguous(candidates: readonly SemanticMeaningCandidate
 }
 
 function populateMeaning(frame: SemanticFrame): void {
-  if (frame.discourse.negated || frame.discourse.conditional || frame.discourse.uncertain) return;
+  const forceDiagram = matchForceDiagram(frame.normalizedText);
+  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram)) return;
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
   if (meaningIsAmbiguous(frame.meaningCandidates)) {
     frame.resolutionStatus = "needs-clarification";
+    return;
+  }
+
+  if (forceDiagram) {
+    frame.intent = "describe";
+    frame.forceDiagrams.push({
+      construction: "force-diagram",
+      bodyMentionId: addParticipant(frame, forceDiagram.bodyText),
+      surfaceMentionId: addParticipant(frame, forceDiagram.surfaceText),
+      appliedForceMentionId: addParticipant(frame, forceDiagram.appliedForceText),
+      opposingForceMentionId: addParticipant(frame, forceDiagram.opposingForceText),
+      appliedDirection: forceDiagram.appliedDirection
+    });
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
 
@@ -321,6 +349,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       actions: [],
       visualActions: [],
       compositions: [],
+      forceDiagrams: [],
       quantities: [],
       references: [],
       meaningCandidates: [],

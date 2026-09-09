@@ -20,9 +20,9 @@ const relation = (kind: SceneRelation["kind"], overrides: Partial<SceneRelation>
 
 describe("versioned relation registry", () => {
   it("covers every schema relationship with a validated semantic contract", () => {
-    expect(RELATION_REGISTRY_VERSION).toBe("2.0.0");
+    expect(RELATION_REGISTRY_VERSION).toBe("2.1.0");
     expect(relationRegistry.map(({ kind }) => kind).sort()).toEqual([
-      "actsOn", "away", "before", "causes", "flowsInto", "handover", "illuminates", "owns", "partOf", "queuedFor", "shares", "toward", "visualAction"
+      "actsOn", "appliedTo", "away", "before", "causes", "contacts", "flowsInto", "handover", "illuminates", "opposes", "owns", "partOf", "queuedFor", "shares", "toward", "visualAction"
     ]);
     expect(validateRelationRegistry()).toEqual([]);
   });

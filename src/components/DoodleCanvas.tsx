@@ -13,6 +13,7 @@ import { RELATION_REGISTRY_VERSION, relationForKind } from "../doodlescript/rela
 import { LAYOUT_FAMILY_REGISTRY_VERSION, layoutFamilyFor } from "../doodlescript/layoutFamilyRegistry";
 import { isPartWholeFlowRelation, partWholeFlowGeometry } from "../doodlescript/partWholeFlow";
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
+import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiagram";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -81,7 +82,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
             data-relation-registry-version={RELATION_REGISTRY_VERSION}
             data-layout-topology={layout.topology}
             data-layout-registry-version={LAYOUT_FAMILY_REGISTRY_VERSION}>
-            <Relationship relation={relation} entities={scene.entities} />
+            <Relationship relation={relation} relations={scene.relations ?? []} entities={scene.entities} />
           </g>;
         })}
         {scene.entities.map((entity, index) => {
@@ -101,6 +102,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           const performed = handover && handoverObject ? applyHandoverPerformance(targeted, handoverObject) : targeted;
           return <DoodleEntity
             entity={performed}
+            forceBody={scene.relations?.some((relation) => relation.kind === "appliedTo" && relation.targetIds.includes(entity.id))}
             badges={ownership.get(entity.id) ?? []}
             moving={!!geometry}
             attachment={attachment && attachmentPerformance ? {
@@ -167,13 +169,40 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   );
 }
 
-function Relationship({ relation, entities }: { relation: SceneRelation; entities: SceneEntity[] }) {
+function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
   const members = [...relation.sourceIds, ...relation.targetIds, ...(relation.objectIds ?? [])]
     .map((id) => entities.find((entity) => entity.id === id))
     .filter((entity): entity is SceneEntity => !!entity);
   if (!members.length) return null;
   // Ownership uses matching badges, avoiding brackets through unrelated objects.
   if (relation.kind === "owns") return null;
+  if (isForceRelation(relation)) {
+    if (relation.kind !== "appliedTo") return null;
+    const geometry = forceDiagramGeometry(relations.filter(isForceRelation), entities);
+    if (!geometry) return null;
+    const arrowHead = (endX: number, direction: 1 | -1, y: number) =>
+      `M${endX - direction * 12} ${y - 9} L${endX} ${y} L${endX - direction * 12} ${y + 9}`;
+    const appliedY = geometry.bodyY - 4;
+    const frictionY = geometry.bodyY + 52;
+    return <g className="force-diagram-annotation" aria-label={`${geometry.appliedForce.label} acts on ${geometry.body.label}; ${geometry.opposingForce.label} opposes it on ${geometry.surface.label}`}>
+      <g data-visual-cue="surface-line">
+        <path d={`M${geometry.bodyX - 205} ${geometry.contactY} Q${geometry.bodyX} ${geometry.contactY - 6} ${geometry.bodyX + 205} ${geometry.contactY}`} fill="none" stroke="#514e47" strokeWidth="4" strokeLinecap="round" />
+        <path d={`M${geometry.bodyX - 190} ${geometry.contactY + 13} l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9`} fill="none" stroke="#8b8173" strokeWidth="2" />
+        <text x={geometry.bodyX} y={geometry.contactY + 31} textAnchor="middle" fill="#514e47" fontSize="15">{geometry.surface.label}</text>
+      </g>
+      <g data-visual-cue="forward-force-arrow" className="force-applied">
+        <path d={`M${geometry.appliedStartX} ${appliedY} H${geometry.appliedEndX}`} fill="none" stroke="#2e6f91" strokeWidth="5" strokeLinecap="round" />
+        <path d={arrowHead(geometry.appliedEndX, geometry.direction, appliedY)} fill="none" stroke="#2e6f91" strokeWidth="5" strokeLinecap="round" />
+        <text x={(geometry.appliedStartX + geometry.appliedEndX) / 2} y={appliedY - 15} textAnchor="middle" fill="#245a76" fontSize="17" fontWeight="700">{geometry.appliedForce.label}</text>
+      </g>
+      <g data-visual-cue="opposing-friction-arrow friction-arrow-smaller" className="force-opposing">
+        <path d={`M${geometry.opposingStartX} ${frictionY} H${geometry.opposingEndX}`} fill="none" stroke="#b35b37" strokeWidth="4" strokeLinecap="round" />
+        <path d={arrowHead(geometry.opposingEndX, -geometry.direction as 1 | -1, frictionY)} fill="none" stroke="#b35b37" strokeWidth="4" strokeLinecap="round" />
+        <text x={(geometry.opposingStartX + geometry.opposingEndX) / 2} y={frictionY + 24} textAnchor="middle" fill="#944526" fontSize="16" fontWeight="700">{geometry.opposingForce.label}</text>
+      </g>
+      <path data-visual-cue="slowing-motion" d={`M${geometry.bodyX + 55} ${geometry.bodyY - 69} h56 m-47 -12 h38`} fill="none" stroke="#777168" strokeWidth="2" strokeDasharray="7 6" />
+    </g>;
+  }
   if (isTargetedPerformance(relation)) return null;
   if (relation.kind === "handover") {
     const participants = handoverParticipants(relation, entities);
@@ -304,7 +333,8 @@ function DoodleEntity({
   moving,
   badges,
   attachment,
-  handoverObject
+  handoverObject,
+  forceBody
 }: {
   entity: SceneEntity;
   index: number;
@@ -312,6 +342,7 @@ function DoodleEntity({
   badges: OwnershipBadge[];
   attachment?: { actorId: string; loop: string; intensity: number };
   handoverObject?: boolean;
+  forceBody?: boolean;
 }) {
   const x = entity.x * 10;
   const y = entity.y * 6.2;
@@ -323,12 +354,16 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
+  if (entity.visualRole === "force" || entity.visualRole === "surface") {
+    return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
+  }
+
   return (
     <g className={className} data-entity-id={entity.id} data-attached-to={attachment?.actorId} data-handover-object={handoverObject || undefined} transform={transform} style={delay}>
       <g className={attachment ? `attached-object motion-${attachment.loop}` : undefined} style={attachmentStyle}>
         <EntityGlyph entity={entity} moving={moving} />
       </g>
-      <text className="entity-label" x="0" y="84" textAnchor="middle">
+      <text className="entity-label" x="0" y={forceBody ? -68 : 84} textAnchor="middle">
         {entity.label ?? entity.kind}
       </text>
       {badges.map((badge, index) => (

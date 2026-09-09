@@ -15,6 +15,7 @@ export const entityKindSchema = z.enum([
 ]);
 
 export const directionSchema = z.enum(["left", "right", "up", "down"]);
+export const visualRoleSchema = z.enum(["object", "surface", "force"]);
 
 export const limbPerformanceSchema = z.object({
   upper: z.number().min(-240).max(240),
@@ -50,12 +51,13 @@ export const sceneEntitySchema = z.object({
   scale: z.number().min(0.5).max(2).default(1),
   direction: directionSchema.default("right"),
   highlighted: z.boolean().default(false),
+  visualRole: visualRoleSchema.optional(),
   performance: characterPerformanceSchema.optional()
 });
 
 export const relationSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["shares", "owns", "toward", "away", "queuedFor", "actsOn", "handover", "before", "causes", "visualAction", "partOf", "flowsInto", "illuminates"]),
+  kind: z.enum(["shares", "owns", "toward", "away", "queuedFor", "actsOn", "handover", "before", "causes", "visualAction", "partOf", "flowsInto", "illuminates", "appliedTo", "opposes", "contacts"]),
   sourceIds: z.array(z.string().min(1)).min(1).max(12),
   targetIds: z.array(z.string().min(1)).min(1).max(12),
   objectIds: z.array(z.string().min(1)).min(1).max(12).optional(),
@@ -100,7 +102,7 @@ export const contextSchema = z.object({
 });
 
 export const doodleScriptSchema = z.object({
-  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0"]),
+  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0"]),
   context: contextSchema.optional(),
   sceneId: z.string().min(1),
   revision: z.number().int().nonnegative(),

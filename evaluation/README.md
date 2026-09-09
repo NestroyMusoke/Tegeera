@@ -36,3 +36,8 @@ prove the gate, but they do not record a real reviewer decision in the corpus.
 These gold annotations make their cases development tests, not a hidden accuracy split.
 Add new frozen, independently collected utterances before publishing generalization
 figures.
+
+Current automated evidence covers case 1 (`part-whole-flow`) and case 11
+(`force-diagram`). Both remain human-review pending, so the strict pass count is still
+zero. This separation is intentional: implementation and cue presence can be tested,
+but visual quality cannot be self-certified by the code that produced it.
