@@ -17,6 +17,7 @@ import { planForceDiagram } from "./forceDiagram";
 import { planLabelledContainer } from "./labelledContainer";
 import { planGeometricConstruction } from "./geometricConstruction";
 import { planLandscapeFlow } from "./landscapeFlow";
+import { planCirculationLoop } from "./circulationLoop";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -60,7 +61,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -87,6 +88,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && command.relation.kind === "contains") upgradeVersion("2.2.0");
     if (command.action === "relate" && command.relation.kind === "measures") upgradeVersion("2.3.0");
     if (command.action === "relate" && ["flowsFrom", "flowsTo"].includes(command.relation.kind)) upgradeVersion("2.4.0");
+    if (command.action === "relate" && ["pumpsTo", "returnsTo", "carries"].includes(command.relation.kind)) upgradeVersion("2.6.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -200,6 +202,27 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       );
       if (/^(?:clear(?: everything| the scene)?|erase everything|start over)$/.test(text)) {
         append({ action: "clear" }); focus([]); continue;
+      }
+      const circulation = frame.circulationLoops[0];
+      if (circulation?.construction === "circulation-loop") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const sourceId = eventNode(mentionText(circulation.sourceMentionId), "circulation-source");
+        const destinationId = eventNode(mentionText(circulation.destinationMentionId), "circulation-destination");
+        const payloadId = eventNode(mentionText(circulation.payloadMentionId), "circulation-payload");
+        const enrichmentId = eventNode(mentionText(circulation.enrichmentMentionId), "circulation-enrichment");
+        const ids = { sourceId, destinationId, payloadId, enrichmentId };
+        if (new Set(Object.values(ids)).size !== 4) throw new Clarification("A circulation loop needs distinct source, destination, payload, and enrichment identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planCirculationLoop(working, ids, movableIds);
+        if (!moves) throw new Clarification("That circulation loop cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "pumpsTo", sourceIds: [sourceId], targetIds: [destinationId], objectIds: [payloadId], predicate: "pumpsTo" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "returnsTo", sourceIds: [destinationId], targetIds: [sourceId], objectIds: [payloadId], predicate: "returnsTo" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "carries", sourceIds: [payloadId], targetIds: [enrichmentId], predicate: "carries" } });
+        focus([sourceId, destinationId], [payloadId, enrichmentId]);
+        continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
       if (forceDiagram?.construction === "force-diagram") {

@@ -49,3 +49,16 @@ case 60 passes strictly with a validated no-op scene hold. Therefore the first b
 3/8 strict, 8/8 automated-ready, and zero false-confident. The remaining five failures
 are only the explicit human-review gate on the drawing cases; no visual approval has
 been fabricated.
+
+The second frozen development batch adds cases 2, 12, 22, 32, and 42 before their
+production grammars exist. They specify circulation-loop, changing-speed-motion,
+call-return-flow, fraction-subtraction, and water-cycle-loop semantics respectively.
+Each declaration names independently scoreable concepts, directed relations, and
+visible cues. Until those capabilities exist, safe clarification is recorded as a
+failure without being mislabeled false confidence.
+
+Case 2 is now automated-ready through the `circulation-loop` grammar. Its four concepts,
+three relations, closed-loop topology, anatomy cues, direction cues, and accessibility
+meaning are observed from the real component output. It remains human-review pending.
+The batch currently measures 3/13 strict, 9/13 automated-ready, and zero false-confident;
+cases 12, 22, 32, and 42 remain safely unsupported.

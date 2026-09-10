@@ -1101,3 +1101,44 @@ browser opening of the local fixture was blocked by the browser's `file://` secu
 policy, so this milestone does not claim that browser inspection. Physical Android
 rendering, live speech behavior, projector inspection, human visual review, and
 independent hidden generalization remain unverified.
+
+## DoodleScript 2.6 circulation-loop capability
+
+The second independent gold batch is frozen before its production implementations.
+Cases 2, 12, 22, 32, and 42 now declare immutable concept, relation, visual-grammar,
+cue, and human-review expectations for circulation, changing-speed motion, call/return,
+fraction subtraction, and the water cycle. Their safe clarifications remain visible
+failures until each corresponding kernel is implemented.
+
+Case 2 now resolves through an open circulation-loop construction with four roles:
+source, destination, transported payload, and return enrichment. The same grammar and
+planner accept a pump/filter/water/minerals loop, reject a mismatched return source and
+incomplete one-way transport, and contain no complete corpus sentence.
+
+DoodleScript 2.6 adds `pumpsTo`, `returnsTo`, and `carries` relations plus four
+circulation visual roles. Both transport paths reference the same payload identity.
+The relation and layout registries move to 2.6.0 with a `circulation` family and
+`closed-loop` topology. A bounded candidate layout separates the two endpoints, payload
+label, and enrichment label. The renderer combines the relation triple into one original
+heart/lung scene with blue outbound flow and red oxygenated return flow; generic sources
+and destinations use neutral shapes rather than pretending to be anatomy.
+
+Validation independently requires exactly one outbound edge, one reverse edge, a shared
+payload, a payload-to-enrichment relation, correct roles, distinct identities, safe
+geometry, and DoodleScript 2.6. Forged incomplete, wrong-role, missing-payload, and old
+version scripts fail. Reduced-motion styling disables circulation animation.
+
+The observational corpus now records 6/60 drawn, 1/60 held, and 53/60 clarified. The
+expanded gold set is 3/13 strict, 9/13 automated-ready, and zero false-confident. Case 2
+has complete automated semantic and rendered-cue evidence but remains correctly pending
+human visual approval, as do the other five drawing capabilities.
+
+The complete checkpoint passes 304 tests across 38 files. The 250-iteration
+meaning-only benchmark measured 1.36 ms median and 11.45 ms p95; it excludes speech,
+DOM, SVG painting, and device work. Twenty-five real-component static fixtures and a
+full-App circulation workflow are generated. Production JavaScript is 448.82 kB
+(134.38 kB gzip); CSS is 11.99 kB (3.61 kB gzip). Lint, TypeScript, production build,
+and Android asset synchronization pass. Live browser inspection remains unclaimed
+because the browser security policy blocks the local fixture URL. Physical Android
+rendering, live speech latency, projector inspection, human visual review, and hidden
+generalization remain unverified.

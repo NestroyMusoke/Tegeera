@@ -25,6 +25,26 @@
       }
     },
     {
+      "id": 2,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "circulation-loop",
+        "concepts": [
+          { "key": "heart", "labels": ["heart"] },
+          { "key": "lungs", "labels": ["lungs", "lung"] },
+          { "key": "blood", "labels": ["blood"] },
+          { "key": "oxygen", "labels": ["oxygen"] }
+        ],
+        "relations": [
+          { "predicate": "pumpsTo", "source": "heart", "target": "lungs" },
+          { "predicate": "returnsTo", "source": "lungs", "target": "heart" },
+          { "predicate": "carries", "source": "blood", "target": "oxygen" }
+        ],
+        "visualCues": ["heart-shape", "paired-lung-shapes", "outbound-blood-arrow", "oxygenated-return-arrow", "closed-circulation-loop"]
+      }
+    },
+    {
       "id": 11,
       "expected": {
         "intent": "draw",
@@ -45,6 +65,25 @@
       }
     },
     {
+      "id": 12,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "changing-speed-motion",
+        "concepts": [
+          { "key": "ball", "labels": ["ball"] },
+          { "key": "apex", "labels": ["apex", "highest point", "top"] },
+          { "key": "gravity", "labels": ["gravity"] }
+        ],
+        "relations": [
+          { "predicate": "risesTo", "source": "ball", "target": "apex" },
+          { "predicate": "fallsFrom", "source": "ball", "target": "apex" },
+          { "predicate": "accelerates", "source": "gravity", "target": "ball" }
+        ],
+        "visualCues": ["vertical-flight-path", "shrinking-upward-velocity", "apex-pause", "growing-downward-velocity"]
+      }
+    },
+    {
       "id": 21,
       "expected": {
         "intent": "draw",
@@ -58,6 +97,24 @@
           { "predicate": "contains", "source": "variable", "target": "value" }
         ],
         "visualCues": ["container-outline", "variable-label", "value-inside-container"]
+      }
+    },
+    {
+      "id": 22,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "call-return-flow",
+        "concepts": [
+          { "key": "main-program", "labels": ["main program", "program"] },
+          { "key": "function", "labels": ["function"] },
+          { "key": "call-site", "labels": ["call site", "return point"] }
+        ],
+        "relations": [
+          { "predicate": "calls", "source": "main-program", "target": "function" },
+          { "predicate": "returnsTo", "source": "function", "target": "call-site" }
+        ],
+        "visualCues": ["main-flow-line", "function-block", "call-arrow", "return-arrow", "same-return-point"]
       }
     },
     {
@@ -77,6 +134,26 @@
       }
     },
     {
+      "id": 32,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "fraction-subtraction",
+        "concepts": [
+          { "key": "pizza", "labels": ["pizza"] },
+          { "key": "three-quarters", "labels": ["three quarters", "3/4"] },
+          { "key": "one-quarter", "labels": ["one quarter", "1/4", "one slice"] },
+          { "key": "one-half", "labels": ["one half", "1/2", "two quarters"] }
+        ],
+        "relations": [
+          { "predicate": "partOf", "source": "three-quarters", "target": "pizza" },
+          { "predicate": "subtracts", "source": "one-quarter", "target": "three-quarters" },
+          { "predicate": "resultsIn", "source": "three-quarters", "target": "one-half" }
+        ],
+        "visualCues": ["quartered-circle", "three-initially-shaded", "one-slice-removed", "two-quarters-remain", "remainder-label"]
+      }
+    },
+    {
       "id": 41,
       "expected": {
         "intent": "draw",
@@ -92,6 +169,27 @@
           { "predicate": "flowsTo", "source": "river", "target": "sea" }
         ],
         "visualCues": ["elevation-cross-section", "continuous-river-path", "downhill-flow-arrow", "sea-shape"]
+      }
+    },
+    {
+      "id": 42,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "water-cycle-loop",
+        "concepts": [
+          { "key": "cloud", "labels": ["cloud"] },
+          { "key": "rain", "labels": ["rain"] },
+          { "key": "soil", "labels": ["soil", "ground"] },
+          { "key": "water", "labels": ["water"] },
+          { "key": "evaporation", "labels": ["evaporation"] }
+        ],
+        "relations": [
+          { "predicate": "fallsTo", "source": "rain", "target": "soil" },
+          { "predicate": "infiltrates", "source": "water", "target": "soil" },
+          { "predicate": "evaporatesTo", "source": "evaporation", "target": "cloud" }
+        ],
+        "visualCues": ["cloud-symbol", "rain-arrow-down", "soil-infiltration", "evaporation-arrow-up", "closed-water-loop"]
       }
     },
     {

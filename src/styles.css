@@ -605,4 +605,17 @@ button {
     animation-duration: 1ms;
     animation-delay: 0ms;
   }
+
+  .circulation-flow {
+    animation: none !important;
+  }
+}
+
+.circulation-flow {
+  animation: draw-line 0.8s ease both;
+  stroke-dasharray: 16 10;
+}
+
+.circulation-return {
+  animation-delay: 0.2s;
 }

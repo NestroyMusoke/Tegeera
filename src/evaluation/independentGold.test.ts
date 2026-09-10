@@ -27,7 +27,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("validates a unique, cross-domain first annotation batch", () => {
     const parsed = independentGoldCorpusSchema.parse(gold);
-    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 11, 21, 31, 41, 53, 56, 60]);
+    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 2, 11, 12, 21, 22, 31, 32, 41, 42, 53, 56, 60]);
     expect(new Set(parsed.cases.map(({ id }) => teacherCases.find((item) => item.id === id)?.subject))).toEqual(new Set([
       "Biology", "Physics", "Computer Science", "Mathematics", "Geography",
       "Everyday / cross-cutting / deliberately ambiguous"
@@ -60,25 +60,40 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
-      1: observeCase(1), 11: observeCase(11), 21: observeCase(21), 31: observeCase(31), 41: observeCase(41)
+      1: observeCase(1), 2: observeCase(2), 11: observeCase(11), 21: observeCase(21), 31: observeCase(31), 41: observeCase(41)
     });
-    expect(result.total).toBe(8);
-    expect(result.results).toHaveLength(8);
+    expect(result.total).toBe(13);
+    expect(result.results).toHaveLength(13);
     expect(result.passed).toBeLessThan(result.total);
     expect(result.results.find(({ id }) => id === 1)).toMatchObject({
       passed: false, falseConfident: false, automatedReady: true,
       failures: ["human visual review pending"]
     });
     expect(result.passed).toBe(3);
-    expect(result.automatedReady).toBe(8);
+    expect(result.automatedReady).toBe(9);
     expect(result.falseConfident).toBe(0);
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 60)).toMatchObject({ passed: true, observedIntent: "hold", automatedReady: true });
+    for (const id of [12, 22, 32, 42]) {
+      expect(result.results.find((caseResult) => caseResult.id === id)).toMatchObject({
+        passed: false, observedIntent: "clarify", falseConfident: false, automatedReady: false
+      });
+    }
     for (const caseResult of result.results) {
       expect(caseResult.passed || caseResult.failures.length > 0).toBe(true);
     }
     console.info(`Independent gold batch: passed=${result.passed}/${result.total}, automatedReady=${result.automatedReady}, falseConfident=${result.falseConfident}.`);
+  });
+
+  it("makes case 2 automated-ready while preserving human visual review", () => {
+    const observation = observeCase(2);
+    expect(new Set(observation.visualCueIds)).toEqual(new Set([
+      "heart-shape", "paired-lung-shapes", "outbound-blood-arrow", "oxygenated-return-arrow", "closed-circulation-loop"
+    ]));
+    expect(observation.visualGrammarId).toBe("circulation-loop");
+    expect(evaluateIndependentGold(teacherCases, gold, { 2: observation }).results.find(({ id }) => id === 2))
+      .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
   });
 
   it("requires explicit human approval after its real grammar and cues are observed", () => {

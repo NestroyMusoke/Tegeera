@@ -10,6 +10,7 @@ import { matchLabelledContainer } from "./labelledContainer";
 import { matchGeometricConstruction } from "./geometricConstruction";
 import { matchLandscapeFlow } from "./landscapeFlow";
 import { classifySafetyIntent, type SafetyIntent } from "./safetyIntent";
+import { matchCirculationLoop } from "./circulationLoop";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -97,6 +98,14 @@ export interface SemanticLandscapeFlowMention {
   destinationMentionId: string;
 }
 
+export interface SemanticCirculationLoopMention {
+  construction: "circulation-loop";
+  sourceMentionId: string;
+  destinationMentionId: string;
+  payloadMentionId: string;
+  enrichmentMentionId: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -108,7 +117,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -136,6 +145,7 @@ export interface SemanticFrame {
   containments: SemanticContainmentMention[];
   geometricConstructions: SemanticGeometricConstructionMention[];
   landscapeFlows: SemanticLandscapeFlowMention[];
+  circulationLoops: SemanticCirculationLoopMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -263,6 +273,20 @@ function populateMeaning(frame: SemanticFrame): void {
     frame.safetyIntent = safetyIntent;
     frame.intent = safetyIntent.kind === "non-visual-hold" ? "hold" : "unresolved";
     frame.resolutionStatus = safetyIntent.kind === "non-visual-hold" ? "resolved" : "needs-clarification";
+    return;
+  }
+  const circulation = matchCirculationLoop(frame.normalizedText);
+  if (circulation) {
+    frame.intent = "describe";
+    frame.circulationLoops.push({
+      construction: "circulation-loop",
+      sourceMentionId: addParticipant(frame, circulation.sourceText),
+      destinationMentionId: addParticipant(frame, circulation.destinationText),
+      payloadMentionId: addParticipant(frame, circulation.payloadText),
+      enrichmentMentionId: addParticipant(frame, circulation.enrichmentText)
+    });
+    frame.meaningCandidates = [{ family: "circulation", predicate: "circulation-loop" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
@@ -438,6 +462,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       containments: [],
       geometricConstructions: [],
       landscapeFlows: [],
+      circulationLoops: [],
       quantities: [],
       references: [],
       meaningCandidates: [],

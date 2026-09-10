@@ -454,8 +454,18 @@ also preserves revision and Undo depth. The safety classifier recognizes bounded
 structural signals and is tested against paraphrases and near-miss sentences instead of
 matching complete corpus utterances.
 
-Next, freeze the second independent gold batch before implementing it. Select cases
-that add genuinely different semantic and visual families, write distinct concept and
-relation expectations, and identify the smallest reusable grammar kernel for each.
-Do not expand accepted coverage until each new drawing has independent semantic,
-validator, rendered-cue, mobile-layout, and human-review gates.
+The second independent gold batch is frozen before implementation: cases 2, 12, 22,
+32, and 42 specify circulation loops, changing-speed motion, call/return control flow,
+fraction subtraction, and water-cycle loops. Every case declares distinct concepts,
+directed relations, required visual cues, and human review. Their current safe
+clarifications remain failures, preventing future work from moving the target.
+
+The circulation-loop kernel now implements case 2 with payload-aware outbound and return
+paths. It generalizes to non-anatomical pump/filter transport, preserves the payload and
+enrichment as distinct semantic identities, rejects incomplete or mismatched loops, and
+renders two unmistakably different directions without crossing their labels.
+
+Next, implement case 12 as a changing-speed-motion kernel. The semantic representation
+must distinguish ascent, apex, descent, and acceleration; the layout must use one
+continuous path with direction-aware velocity cues rather than duplicating the ball as
+unrelated objects. Variants must cover different moving objects and vertical magnitudes.

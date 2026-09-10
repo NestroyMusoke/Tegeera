@@ -257,4 +257,17 @@ describe("semantic input frames", () => {
     expect(hold).toMatchObject({ intent: "hold", safetyIntent: { kind: "non-visual-hold" }, resolutionStatus: "resolved" });
     expect(hold.entities).toEqual([]);
   });
+
+  it("extracts closed transport roles before generic action parsing", () => {
+    const frame = analyzeTeacherInput("A pump sends water to a filter, and the filter returns it back with minerals").frames[0];
+    expect(frame.circulationLoops).toEqual([{
+      construction: "circulation-loop",
+      sourceMentionId: frame.entities[0].mentionId,
+      destinationMentionId: frame.entities[1].mentionId,
+      payloadMentionId: frame.entities[2].mentionId,
+      enrichmentMentionId: frame.entities[3].mentionId
+    }]);
+    expect(frame.entities.map(({ text }) => text)).toEqual(["pump", "filter", "water", "minerals"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "circulation", predicate: "circulation-loop" }]);
+  });
 });

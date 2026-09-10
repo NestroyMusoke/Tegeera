@@ -17,6 +17,7 @@ import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiag
 import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
 import { geometricConstructionGeometry } from "../doodlescript/geometricConstruction";
 import { isLandscapeFlowRelation, landscapeFlowGeometry } from "../doodlescript/landscapeFlow";
+import { circulationLoopGeometry, isCirculationRelation } from "../doodlescript/circulationLoop";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -173,6 +174,40 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isCirculationRelation(relation)) {
+    if (relation.kind !== "pumpsTo") return null;
+    const geometry = circulationLoopGeometry(relations.filter(isCirculationRelation), entities);
+    if (!geometry) return null;
+    const heart = /\bheart\b/.test(geometry.source.label ?? "");
+    const lungs = /\blungs?\b/.test(geometry.destination.label ?? "");
+    const returnVerb = /s$/.test(geometry.destination.label ?? "") ? "return" : "returns";
+    const upperPath = `M${geometry.sourceX + 62} ${geometry.sourceY - 25} C${geometry.sourceX + 150} ${geometry.upperY - 35} ${geometry.destinationX - 150} ${geometry.upperY - 35} ${geometry.destinationX - 62} ${geometry.destinationY - 25}`;
+    const lowerPath = `M${geometry.destinationX - 62} ${geometry.destinationY + 25} C${geometry.destinationX - 150} ${geometry.lowerY + 35} ${geometry.sourceX + 150} ${geometry.lowerY + 35} ${geometry.sourceX + 62} ${geometry.sourceY + 25}`;
+    return <g className="circulation-loop-annotation" aria-label={`${geometry.source.label} pumps ${geometry.payload.label} to ${geometry.destination.label}; ${geometry.destination.label} ${returnVerb} ${geometry.payload.label} carrying ${geometry.enrichment.label} to ${geometry.source.label}`}>
+      <g data-visual-cue="heart-shape">
+        {heart
+          ? <path d={`M${geometry.sourceX} ${geometry.sourceY + 55} C${geometry.sourceX - 90} ${geometry.sourceY - 5} ${geometry.sourceX - 45} ${geometry.sourceY - 100} ${geometry.sourceX} ${geometry.sourceY - 45} C${geometry.sourceX + 45} ${geometry.sourceY - 100} ${geometry.sourceX + 90} ${geometry.sourceY - 5} ${geometry.sourceX} ${geometry.sourceY + 55} Z`} fill="#f3a09a" stroke="#843b3b" strokeWidth="4" />
+          : <circle cx={geometry.sourceX} cy={geometry.sourceY} r="62" fill="#f5c2b8" stroke="#843b3b" strokeWidth="4" />}
+        <text x={geometry.sourceX} y={geometry.sourceY + 88} textAnchor="middle" fill="#633235" fontSize="22" fontWeight="800">{geometry.source.label}</text>
+      </g>
+      <g data-visual-cue="paired-lung-shapes">
+        {lungs
+          ? <><path d={`M${geometry.destinationX - 9} ${geometry.destinationY - 58} C${geometry.destinationX - 78} ${geometry.destinationY - 62} ${geometry.destinationX - 91} ${geometry.destinationY + 43} ${geometry.destinationX - 25} ${geometry.destinationY + 54} Q${geometry.destinationX - 7} ${geometry.destinationY + 12} ${geometry.destinationX - 9} ${geometry.destinationY - 58} Z`} fill="#b9d9dc" stroke="#37656d" strokeWidth="4" /><path d={`M${geometry.destinationX + 9} ${geometry.destinationY - 58} C${geometry.destinationX + 78} ${geometry.destinationY - 62} ${geometry.destinationX + 91} ${geometry.destinationY + 43} ${geometry.destinationX + 25} ${geometry.destinationY + 54} Q${geometry.destinationX + 7} ${geometry.destinationY + 12} ${geometry.destinationX + 9} ${geometry.destinationY - 58} Z`} fill="#b9d9dc" stroke="#37656d" strokeWidth="4" /></>
+          : <rect x={geometry.destinationX - 68} y={geometry.destinationY - 56} width="136" height="112" rx="30" fill="#c8e1de" stroke="#37656d" strokeWidth="4" />}
+        <text x={geometry.destinationX} y={geometry.destinationY + 88} textAnchor="middle" fill="#315c62" fontSize="22" fontWeight="800">{geometry.destination.label}</text>
+      </g>
+      <g data-visual-cue="outbound-blood-arrow">
+        <path className="circulation-flow circulation-outbound" d={upperPath} fill="none" stroke="#326e9c" strokeWidth="8" strokeLinecap="round" />
+        <path d={`M${geometry.destinationX - 78} ${geometry.destinationY - 39} L${geometry.destinationX - 60} ${geometry.destinationY - 25} L${geometry.destinationX - 82} ${geometry.destinationY - 14}`} fill="none" stroke="#326e9c" strokeWidth="6" strokeLinecap="round" />
+        <text x={(geometry.sourceX + geometry.destinationX) / 2} y={geometry.upperY - 28} textAnchor="middle" fill="#285a82" fontSize="20" fontWeight="700">{geometry.payload.label}</text>
+      </g>
+      <g data-visual-cue="oxygenated-return-arrow closed-circulation-loop">
+        <path className="circulation-flow circulation-return" d={lowerPath} fill="none" stroke="#b04d4b" strokeWidth="8" strokeLinecap="round" />
+        <path d={`M${geometry.sourceX + 80} ${geometry.sourceY + 14} L${geometry.sourceX + 60} ${geometry.sourceY + 25} L${geometry.sourceX + 78} ${geometry.sourceY + 40}`} fill="none" stroke="#b04d4b" strokeWidth="6" strokeLinecap="round" />
+        <text x={(geometry.sourceX + geometry.destinationX) / 2} y={geometry.lowerY + 45} textAnchor="middle" fill="#913d3d" fontSize="20" fontWeight="700">{geometry.payload.label} + {geometry.enrichment.label}</text>
+      </g>
+    </g>;
+  }
   const members = [...relation.sourceIds, ...relation.targetIds, ...(relation.objectIds ?? [])]
     .map((id) => entities.find((entity) => entity.id === id))
     .filter((entity): entity is SceneEntity => !!entity);
@@ -437,7 +472,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 
