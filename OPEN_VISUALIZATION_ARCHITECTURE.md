@@ -429,7 +429,11 @@ It composes unseen body, surface, and resistance nouns, preserves forces as sema
 identities, renders relative magnitude and direction through the registered
 `force-diagram` family, and contains no complete corpus sentence.
 
-Next, implement the labelled-container capability for case 21 with separate variable
-and value identities, genuine containment geometry, and a non-programming container
-fixture. Measurement, landscape flow, non-visual hold, and correction intent follow as
-separate verified capabilities.
+The labelled-container capability now implements case 21 with separate variable and
+value identities, typed containment, genuine nesting geometry, and a non-programming
+specimen-container fixture. Its structural outline has a dedicated long-path stroke
+contract so draw-on animation styling cannot truncate the semantic boundary.
+
+Next, implement geometric construction for case 31: two genuinely perpendicular rays,
+a right-angle square, and an explicit 90-degree measure identity. Landscape flow,
+non-visual hold, and correction intent follow as separate verified capabilities.

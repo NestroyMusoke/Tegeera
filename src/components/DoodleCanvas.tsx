@@ -14,6 +14,7 @@ import { LAYOUT_FAMILY_REGISTRY_VERSION, layoutFamilyFor } from "../doodlescript
 import { isPartWholeFlowRelation, partWholeFlowGeometry } from "../doodlescript/partWholeFlow";
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiagram";
+import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -176,6 +177,25 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
   if (!members.length) return null;
   // Ownership uses matching badges, avoiding brackets through unrelated objects.
   if (relation.kind === "owns") return null;
+  if (relation.kind === "contains") {
+    const geometry = labelledContainerGeometry(relation, entities);
+    if (!geometry) return null;
+    const left = geometry.centerX - geometry.width / 2;
+    const top = geometry.centerY - geometry.height / 2;
+    return <g className="labelled-container-annotation" aria-label={`${geometry.container.label} contains ${geometry.content.label}`}>
+      <path data-visual-cue="container-outline" className="container-outline"
+        d={`M${left + 18} ${top} H${left + geometry.width - 18} Q${left + geometry.width} ${top} ${left + geometry.width} ${top + 18} V${top + geometry.height - 18} Q${left + geometry.width} ${top + geometry.height} ${left + geometry.width - 18} ${top + geometry.height} H${left + 18} Q${left} ${top + geometry.height} ${left} ${top + geometry.height - 18} V${top + 18} Q${left} ${top} ${left + 18} ${top}`} fill="none" stroke="#302e29" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path className="doodle-detail" d={`M${left + 12} ${top + 48} Q${geometry.centerX} ${top + 42} ${left + geometry.width - 12} ${top + 48}`} />
+      <g data-visual-cue="variable-label">
+        <path d={`M${geometry.centerX - 90} ${top - 15} Q${geometry.centerX} ${top - 25} ${geometry.centerX + 90} ${top - 15} V${top + 31} H${geometry.centerX - 90} Z`} fill="#fbf7ed" stroke="#32735d" strokeWidth="3" />
+        <text x={geometry.centerX} y={top + 15} textAnchor="middle" fill="#245c4b" fontSize="25" fontWeight="700">{geometry.container.label}</text>
+      </g>
+      <g data-visual-cue="value-inside-container">
+        <path d={`M${geometry.centerX - 98} ${geometry.centerY - 2} Q${geometry.centerX} ${geometry.centerY - 16} ${geometry.centerX + 98} ${geometry.centerY - 2} V${geometry.centerY + 60} Q${geometry.centerX} ${geometry.centerY + 72} ${geometry.centerX - 98} ${geometry.centerY + 60} Z`} fill="#f4dfaa" stroke="#9b6a22" strokeWidth="3" />
+        <text x={geometry.centerX} y={geometry.centerY + 41} textAnchor="middle" fill="#694512" fontSize="29" fontWeight="700">{geometry.content.label}</text>
+      </g>
+    </g>;
+  }
   if (isForceRelation(relation)) {
     if (relation.kind !== "appliedTo") return null;
     const geometry = forceDiagramGeometry(relations.filter(isForceRelation), entities);
@@ -354,7 +374,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (entity.visualRole === "force" || entity.visualRole === "surface") {
+  if (["force", "surface", "container", "contained"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

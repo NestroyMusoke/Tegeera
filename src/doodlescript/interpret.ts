@@ -14,6 +14,7 @@ import { conceptSupports, sharedOrderedDomain } from "./conceptRegistry";
 import { isQueue, planOrderedRow } from "./queue";
 import { planPartWholeFlow } from "./partWholeFlow";
 import { planForceDiagram } from "./forceDiagram";
+import { planLabelledContainer } from "./labelledContainer";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -57,7 +58,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -80,6 +81,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && command.relation.kind === "visualAction") upgradeVersion("1.9.0");
     if (command.action === "relate" && ["partOf", "flowsInto", "illuminates"].includes(command.relation.kind)) upgradeVersion("2.0.0");
     if (command.action === "relate" && ["appliedTo", "opposes", "contacts"].includes(command.relation.kind)) upgradeVersion("2.1.0");
+    if (command.action === "relate" && command.relation.kind === "contains") upgradeVersion("2.2.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -198,6 +200,25 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "opposes", sourceIds: [opposingForceId], targetIds: [appliedForceId] } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "contacts", sourceIds: [bodyId], targetIds: [surfaceId] } });
         focus([bodyId], [surfaceId, appliedForceId, opposingForceId]);
+        continue;
+      }
+      const containment = frame.containments[0];
+      if (containment?.construction === "labelled-container") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const containerId = eventNode(mentionText(containment.containerMentionId), "container");
+        const contentId = eventNode(mentionText(containment.contentMentionId), "contained");
+        if (containerId === contentId) throw new Clarification("A container and its content need distinct identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planLabelledContainer(working, containerId, contentId, movableIds);
+        if (!moves) throw new Clarification("That labelled container cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: {
+          id: `relation-${scene.revision + 1}-${commands.length}`,
+          kind: "contains", sourceIds: [containerId], targetIds: [contentId], predicate: "contains"
+        } });
+        focus([containerId], [contentId]);
         continue;
       }
       const orderedRelation = frame.relations.find((relation) => relation.predicate === "queuedFor");

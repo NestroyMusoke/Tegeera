@@ -189,6 +189,18 @@ describe("semantic input frames", () => {
     expect(frame.meaningCandidates).toEqual([{ family: "composition", predicate: "part-whole-flow" }]);
   });
 
+  it("extracts labelled containment roles before generic description", () => {
+    const frame = analyzeTeacherInput("A specimen jar is a labelled container that contains a sample").frames[0];
+    expect(frame.containments).toEqual([{
+      construction: "labelled-container",
+      containerMentionId: frame.entities[0].mentionId,
+      contentMentionId: frame.entities[1].mentionId,
+      shape: "container"
+    }]);
+    expect(frame.meaningCandidates).toEqual([{ family: "containment", predicate: "labelled-container" }]);
+    expect(frame.resolutionStatus).toBe("resolved");
+  });
+
   it("expands coordinated objects and explicitly inherits one unambiguous subject", () => {
     const result = analyzeTeacherInput("A plant absorbs sunlight and water, then produces oxygen");
     expect(result.frames).toHaveLength(2);

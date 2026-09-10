@@ -6,6 +6,7 @@ import { visualActionAliases, visualActionForAlias, visualActionPrepositions } f
 import type { ConceptCapability, ConceptCategory } from "./conceptRegistry";
 import { matchPartWholeFlow, type PartWholeChannel } from "./partWholeFlow";
 import { matchForceDiagram } from "./forceDiagram";
+import { matchLabelledContainer } from "./labelledContainer";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -72,6 +73,13 @@ export interface SemanticForceDiagramMention {
   appliedDirection: "left" | "right";
 }
 
+export interface SemanticContainmentMention {
+  construction: "labelled-container";
+  containerMentionId: string;
+  contentMentionId: string;
+  shape: "box" | "container" | "cell" | "jar" | "bin";
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -83,7 +91,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -108,6 +116,7 @@ export interface SemanticFrame {
   visualActions: SemanticVisualActionMention[];
   compositions: SemanticPartWholeFlowMention[];
   forceDiagrams: SemanticForceDiagramMention[];
+  containments: SemanticContainmentMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   meaningCandidates: SemanticMeaningCandidate[];
@@ -193,22 +202,28 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
       candidates.push({ family, predicate });
     }
   };
+  const composition = matchPartWholeFlow(text);
+  const forceDiagram = matchForceDiagram(text);
+  const containment = matchLabelledContainer(text);
   const stopped = text.match(stopActionPattern);
   const targeted = text.match(targetedActionPattern);
   const directTarget = text.match(directTargetActionPattern);
   const started = text.match(actionPattern);
   const human = stopped ?? targeted ?? directTarget ?? started;
-  add("human-action", human ? actionForAlias(human[2])?.predicate : undefined);
+  if (!composition && !forceDiagram && !containment) {
+    add("human-action", human ? actionForAlias(human[2])?.predicate : undefined);
+  }
   const relationship = matchRegisteredRelation(text);
   add("relationship", relationship?.predicate);
-  const composition = matchPartWholeFlow(text);
   add("composition", composition ? "part-whole-flow" : undefined);
-  const forceDiagram = matchForceDiagram(text);
   add("mechanical", forceDiagram ? "force-diagram" : undefined);
+  add("containment", containment ? "labelled-container" : undefined);
   const visualPrepositional = text.match(visualPrepositionalActionPattern);
   const visualDirect = text.match(visualDirectActionPattern);
   const visual = visualPrepositional ?? visualDirect;
-  if (!composition) add("visual-action", visual ? visualActionForAlias(visual[2])?.predicate : undefined);
+  if (!composition && !forceDiagram && !containment) {
+    add("visual-action", visual ? visualActionForAlias(visual[2])?.predicate : undefined);
+  }
   return candidates;
 }
 
@@ -234,6 +249,19 @@ function populateMeaning(frame: SemanticFrame): void {
       appliedForceMentionId: addParticipant(frame, forceDiagram.appliedForceText),
       opposingForceMentionId: addParticipant(frame, forceDiagram.opposingForceText),
       appliedDirection: forceDiagram.appliedDirection
+    });
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+
+  const containment = matchLabelledContainer(frame.normalizedText);
+  if (containment) {
+    frame.intent = "describe";
+    frame.containments.push({
+      construction: "labelled-container",
+      containerMentionId: addParticipant(frame, containment.containerText),
+      contentMentionId: addParticipant(frame, containment.contentText),
+      shape: containment.shape
     });
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
@@ -350,6 +378,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       visualActions: [],
       compositions: [],
       forceDiagrams: [],
+      containments: [],
       quantities: [],
       references: [],
       meaningCandidates: [],

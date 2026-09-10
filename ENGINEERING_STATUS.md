@@ -970,3 +970,35 @@ strict-gold scoring pass. Twenty-one real-component fixtures are generated, and 
 contact and label hierarchy. The build reports only the existing third-party Zod
 annotation notices. Physical Android rendering, speech latency, projector inspection,
 and independent hidden generalization remain unverified.
+
+## DoodleScript 2.2 labelled-container construction
+
+Case 21 now resolves through a reusable labelled-containment construction. Open slots
+bind the container identity, contained identity, and surface shape vocabulary; the
+production grammar contains no complete corpus sentence. A specimen-jar/sample fixture
+proves the same path outside programming, while incomplete “box holds value” language
+continues to clarify instead of silently assuming a labelled-container lesson.
+
+DoodleScript 2.2 adds a typed `contains` relation and `container`/`contained` visual
+roles. The relation and layout registries move to 2.2.0 with a containment family and
+`nested-container` topology. The renderer preserves both semantic identities while
+showing one closed, original container outline, a prominent container label, and the
+content visibly nested inside. Hidden semantic anchors do not leak as duplicate concept
+bubbles. The validator independently rejects wrong roles, old schema claims, missing
+endpoints, and unsafe nesting geometry.
+
+The independent baseline now accepts 3/60 and safely clarifies 57/60. In the strict
+first batch, cases 1, 11, and 21 are automated-ready, zero are false-confident, and
+strict passes remain 0/8 pending explicit human visual approval. The 390-pixel real-app
+workflow passes identity, relation, cue, accessibility, duplication, and overflow
+checks. Visual inspection caught and corrected an initially truncated long SVG outline
+before this milestone was accepted.
+
+The complete checkpoint passes 279 tests across 34 files. The concurrent 250-iteration
+meaning-only benchmark measured 2.82 ms median and 16.73 ms p95; it excludes speech,
+DOM, SVG painting, and device work. Twenty-two real-component fixtures are generated.
+Production JavaScript is 423.50 kB (128.39 kB gzip); CSS is 11.59 kB (3.49 kB
+gzip). Lint, TypeScript, production build, and Android asset synchronization pass; the
+only build notices are the existing third-party Zod annotation notices. Physical
+Android rendering, speech latency, projector inspection, and independent hidden
+generalization remain unverified.

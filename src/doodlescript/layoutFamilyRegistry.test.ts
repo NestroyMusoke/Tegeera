@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.1.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.2.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "contact", "event-graph", "force-diagram", "group", "ownership", "part-whole-flow", "queue", "visual-flow"
+      "arrow", "contact", "event-graph", "force-diagram", "group", "labelled-container", "ownership", "part-whole-flow", "queue", "visual-flow"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });
@@ -23,6 +23,7 @@ describe("versioned layout family registry", () => {
     });
     expect(layoutFamilyFor("visual-flow").movementWeight).toBe(0.18);
     expect(layoutFamilyFor("part-whole-flow")).toMatchObject({ topology: "part-whole", maximumVisibleNodes: 7 });
+    expect(layoutFamilyFor("labelled-container")).toMatchObject({ topology: "nested-container", maximumVisibleNodes: 2 });
     expect(layoutFamilySupportsRelation("contact", "performance")).toBe(true);
     expect(layoutFamilySupportsRelation("contact", "event")).toBe(false);
   });
