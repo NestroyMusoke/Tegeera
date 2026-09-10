@@ -50,7 +50,7 @@ await writeFile(bundlePath, result.outputFiles[0].text);
 const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const cases = {
@@ -76,6 +76,7 @@ const cases = {
   geometricConstruction: ["A right angle is exactly ninety degrees, like the corner of a square"],
   landscapeFlow: ["Rivers usually flow from higher ground down to the sea"],
   circulationLoop: ["The heart pumps blood to the lungs, and the lungs send it back full of oxygen"],
+  changingSpeedMotion: ["A ball thrown up in the air slows down, stops for a moment, then falls back faster and faster"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -240,8 +241,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.6.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.6.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.7.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.7.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -402,8 +403,23 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Circulation scene caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: four identities, payload-aware outbound and return paths, closed-loop topology, original heart and lung symbols, accessibility, mobile layout';
     }
+    async function verifyTrajectory() {
+      await pause();
+      await submit('A ball thrown up in the air slows down, stops for a moment, then falls back faster and faster');
+      check(document.querySelectorAll('[data-relation-family="kinematics"][data-relation-layout="changing-speed-motion"]').length === 3, 'Kinematics relation triple is incomplete');
+      check(document.querySelectorAll('[data-layout-topology="trajectory-profile"]').length === 3, 'Trajectory topology metadata is incomplete');
+      for (const cue of ['vertical-flight-path', 'shrinking-upward-velocity', 'apex-pause', 'growing-downward-velocity']) {
+        check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), 'Trajectory cue is missing: ' + cue);
+      }
+      check(document.querySelectorAll('.changing-speed-motion-annotation').length === 1, 'Trajectory rendered more than once');
+      check(document.querySelector('.changing-speed-motion-annotation')?.getAttribute('aria-label') === 'ball rises to highest point while slowing, pauses, then falls while speeding up under gravity', 'Trajectory accessibility meaning is wrong');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 0, 'Trajectory identities leaked as generic bubbles');
+      check([...document.querySelectorAll('[data-entity-id]')].filter(node => node.closest('.doodle-canvas')).length === 3, 'Three trajectory identities were not preserved');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Trajectory caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: one moving identity, shared apex, continuous path, changing velocity, gravity, accessibility, mobile layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -426,3 +442,4 @@ await writeFile(resolve(output, "app-geometry-phone.html"), framedApp(390, "?geo
 await writeFile(resolve(output, "app-landscape-phone.html"), framedApp(390, "?landscape"));
 await writeFile(resolve(output, "app-safety-phone.html"), framedApp(390, "?safety"));
 await writeFile(resolve(output, "app-circulation-phone.html"), framedApp(390, "?circulation"));
+await writeFile(resolve(output, "app-trajectory-phone.html"), framedApp(390, "?trajectory"));

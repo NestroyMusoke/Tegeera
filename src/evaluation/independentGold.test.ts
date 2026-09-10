@@ -60,7 +60,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
-      1: observeCase(1), 2: observeCase(2), 11: observeCase(11), 21: observeCase(21), 31: observeCase(31), 41: observeCase(41)
+      1: observeCase(1), 2: observeCase(2), 11: observeCase(11), 12: observeCase(12), 21: observeCase(21), 31: observeCase(31), 41: observeCase(41)
     });
     expect(result.total).toBe(13);
     expect(result.results).toHaveLength(13);
@@ -70,12 +70,12 @@ describe("independent semantic-scene gold annotations", () => {
       failures: ["human visual review pending"]
     });
     expect(result.passed).toBe(3);
-    expect(result.automatedReady).toBe(9);
+    expect(result.automatedReady).toBe(10);
     expect(result.falseConfident).toBe(0);
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 60)).toMatchObject({ passed: true, observedIntent: "hold", automatedReady: true });
-    for (const id of [12, 22, 32, 42]) {
+    for (const id of [22, 32, 42]) {
       expect(result.results.find((caseResult) => caseResult.id === id)).toMatchObject({
         passed: false, observedIntent: "clarify", falseConfident: false, automatedReady: false
       });
@@ -93,6 +93,16 @@ describe("independent semantic-scene gold annotations", () => {
     ]));
     expect(observation.visualGrammarId).toBe("circulation-loop");
     expect(evaluateIndependentGold(teacherCases, gold, { 2: observation }).results.find(({ id }) => id === 2))
+      .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
+  });
+
+  it("makes case 12 automated-ready while preserving human visual review", () => {
+    const observation = observeCase(12);
+    expect(new Set(observation.visualCueIds)).toEqual(new Set([
+      "vertical-flight-path", "shrinking-upward-velocity", "apex-pause", "growing-downward-velocity", "downward-gravity-force"
+    ]));
+    expect(observation.visualGrammarId).toBe("changing-speed-motion");
+    expect(evaluateIndependentGold(teacherCases, gold, { 12: observation }).results.find(({ id }) => id === 12))
       .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
   });
 

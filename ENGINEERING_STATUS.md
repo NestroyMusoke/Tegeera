@@ -1142,3 +1142,43 @@ and Android asset synchronization pass. Live browser inspection remains unclaime
 because the browser security policy blocks the local fixture URL. Physical Android
 rendering, live speech latency, projector inspection, human visual review, and hidden
 generalization remain unverified.
+
+## DoodleScript 2.7 changing-speed motion capability
+
+Case 12 now resolves through an open changing-speed trajectory construction with three
+semantic roles: one moving object, one shared apex, and one force. The recognizer treats
+the complete ascent, pause, and descent as one atomic frame even though the teacher says
+“then”; this prevents a partial ascent from being accepted as a complete explanation.
+The same construction accepts different moving nouns and controlled paraphrases such as
+`tossed straight up`, `decelerates`, `pauses briefly`, and `increasingly fast`. It rejects
+anonymous objects and incomplete trajectories, and contains no stored corpus sentence.
+
+DoodleScript 2.7 adds `risesTo`, `fallsFrom`, and `accelerates` relations plus trajectory
+object, apex, and force roles. The relation and layout registries move to 2.7.0 with a
+`kinematics` family and `trajectory-profile` topology. A bounded layout keeps the apex
+above the same object identity and gravity to its side. The renderer combines all three
+relations into one continuous flight path, shrinking upward velocity arrows, an explicit
+apex pause, growing downward velocity arrows, and a gravity arrow. It does not create
+multiple semantic balls to fake motion samples, and reduced-motion styling disables the
+trajectory animation.
+
+Validation independently requires exactly one rise, one fall, and one acceleration;
+the rise and fall must share the same object and apex, gravity must target that object,
+all roles must be correct, geometry must remain legible, and the script must be 2.7 or
+later. Forged old-version, incomplete, wrong-role, and split-apex graphs fail atomically.
+
+The observational corpus now records 7/60 drawn, 1/60 held, and 52/60 clarified. The
+expanded gold set is 3/13 strict, 10/13 automated-ready, and zero false-confident. Case
+12 has complete automated semantic and rendered-cue evidence but remains correctly
+pending human visual approval.
+
+The complete checkpoint passes 310 tests across 39 files. The 250-iteration
+meaning-only benchmark measured 1.29 ms median and 10.76 ms p95; it excludes speech,
+DOM, SVG painting, and device work. Twenty-six real-component static fixtures and a
+full-App changing-speed workflow are generated. Production JavaScript is 457.02 kB
+(136.25 kB gzip); CSS is 12.17 kB (3.65 kB gzip). Lint, TypeScript, production build,
+and Android asset synchronization pass. Live browser inspection remains unclaimed
+because the browser security policy blocks the local fixture URL. Physical Android
+rendering, live speech latency, projector inspection, human visual review, and hidden
+generalization remain unverified. The next frozen construction is case 22’s reusable
+call/return flow.

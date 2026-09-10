@@ -11,6 +11,7 @@ import { matchGeometricConstruction } from "./geometricConstruction";
 import { matchLandscapeFlow } from "./landscapeFlow";
 import { classifySafetyIntent, type SafetyIntent } from "./safetyIntent";
 import { matchCirculationLoop } from "./circulationLoop";
+import { matchChangingSpeedMotion } from "./changingSpeedMotion";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -106,6 +107,13 @@ export interface SemanticCirculationLoopMention {
   enrichmentMentionId: string;
 }
 
+export interface SemanticChangingSpeedMotionMention {
+  construction: "changing-speed-motion";
+  objectMentionId: string;
+  apexMentionId: string;
+  forceMentionId: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -117,7 +125,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -146,6 +154,7 @@ export interface SemanticFrame {
   geometricConstructions: SemanticGeometricConstructionMention[];
   landscapeFlows: SemanticLandscapeFlowMention[];
   circulationLoops: SemanticCirculationLoopMention[];
+  changingSpeedMotions: SemanticChangingSpeedMotionMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -286,6 +295,19 @@ function populateMeaning(frame: SemanticFrame): void {
       enrichmentMentionId: addParticipant(frame, circulation.enrichmentText)
     });
     frame.meaningCandidates = [{ family: "circulation", predicate: "circulation-loop" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+  const changingMotion = matchChangingSpeedMotion(frame.normalizedText);
+  if (changingMotion) {
+    frame.intent = "describe";
+    frame.changingSpeedMotions.push({
+      construction: "changing-speed-motion",
+      objectMentionId: addParticipant(frame, changingMotion.objectText),
+      apexMentionId: addParticipant(frame, changingMotion.apexText),
+      forceMentionId: addParticipant(frame, changingMotion.forceText)
+    });
+    frame.meaningCandidates = [{ family: "kinematics", predicate: "changing-speed-motion" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
@@ -463,6 +485,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       geometricConstructions: [],
       landscapeFlows: [],
       circulationLoops: [],
+      changingSpeedMotions: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -475,12 +498,18 @@ export function analyzeTeacherInput(input: string): SemanticInput {
     frames.push(frame);
   };
 
-  for (const separator of body.matchAll(clauseSeparator)) {
-    const separatorStart = separator.index ?? cursor;
-    addFrame(cursor, separatorStart);
-    cursor = separatorStart + separator[0].length;
+  const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
+  if (matchChangingSpeedMotion(wholeNormalized)) {
+    addFrame(0, body.length);
+    cursor = body.length;
+  } else {
+    for (const separator of body.matchAll(clauseSeparator)) {
+      const separatorStart = separator.index ?? cursor;
+      addFrame(cursor, separatorStart);
+      cursor = separatorStart + separator[0].length;
+    }
+    addFrame(cursor, body.length);
   }
-  addFrame(cursor, body.length);
 
   for (let index = 1; index < frames.length; index += 1) {
     const frame = frames[index];

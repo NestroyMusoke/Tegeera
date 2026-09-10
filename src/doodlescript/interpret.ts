@@ -18,6 +18,7 @@ import { planLabelledContainer } from "./labelledContainer";
 import { planGeometricConstruction } from "./geometricConstruction";
 import { planLandscapeFlow } from "./landscapeFlow";
 import { planCirculationLoop } from "./circulationLoop";
+import { planChangingSpeedMotion } from "./changingSpeedMotion";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -61,7 +62,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -89,6 +90,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && command.relation.kind === "measures") upgradeVersion("2.3.0");
     if (command.action === "relate" && ["flowsFrom", "flowsTo"].includes(command.relation.kind)) upgradeVersion("2.4.0");
     if (command.action === "relate" && ["pumpsTo", "returnsTo", "carries"].includes(command.relation.kind)) upgradeVersion("2.6.0");
+    if (command.action === "relate" && ["risesTo", "fallsFrom", "accelerates"].includes(command.relation.kind)) upgradeVersion("2.7.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -222,6 +224,26 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "returnsTo", sourceIds: [destinationId], targetIds: [sourceId], objectIds: [payloadId], predicate: "returnsTo" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "carries", sourceIds: [payloadId], targetIds: [enrichmentId], predicate: "carries" } });
         focus([sourceId, destinationId], [payloadId, enrichmentId]);
+        continue;
+      }
+      const changingMotion = frame.changingSpeedMotions[0];
+      if (changingMotion?.construction === "changing-speed-motion") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const objectId = eventNode(mentionText(changingMotion.objectMentionId), "trajectory-object");
+        const apexId = eventNode(mentionText(changingMotion.apexMentionId), "trajectory-apex");
+        const forceId = eventNode(mentionText(changingMotion.forceMentionId), "trajectory-force");
+        const ids = { objectId, apexId, forceId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("A changing-speed trajectory needs distinct object, apex, and force identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planChangingSpeedMotion(working, ids, movableIds);
+        if (!moves) throw new Clarification("That changing-speed trajectory cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "risesTo", sourceIds: [objectId], targetIds: [apexId], predicate: "risesTo" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "fallsFrom", sourceIds: [objectId], targetIds: [apexId], predicate: "fallsFrom" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "accelerates", sourceIds: [forceId], targetIds: [objectId], predicate: "accelerates" } });
+        focus([objectId], [apexId, forceId]);
         continue;
       }
       const forceDiagram = frame.forceDiagrams[0];

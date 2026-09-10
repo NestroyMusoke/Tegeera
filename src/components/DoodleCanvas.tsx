@@ -18,6 +18,7 @@ import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
 import { geometricConstructionGeometry } from "../doodlescript/geometricConstruction";
 import { isLandscapeFlowRelation, landscapeFlowGeometry } from "../doodlescript/landscapeFlow";
 import { circulationLoopGeometry, isCirculationRelation } from "../doodlescript/circulationLoop";
+import { changingSpeedGeometry, isChangingSpeedRelation } from "../doodlescript/changingSpeedMotion";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -174,6 +175,51 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isChangingSpeedRelation(relation)) {
+    if (relation.kind !== "risesTo") return null;
+    const geometry = changingSpeedGeometry(relations.filter(isChangingSpeedRelation), entities);
+    if (!geometry) return null;
+    const upwardArrows = [
+      { x: geometry.centerX - 91, y: geometry.bottomY - 52, length: 72 },
+      { x: geometry.centerX - 82, y: geometry.bottomY - 142, length: 49 },
+      { x: geometry.centerX - 55, y: geometry.apexY + 82, length: 28 }
+    ];
+    const downwardArrows = [
+      { x: geometry.centerX + 55, y: geometry.apexY + 58, length: 28 },
+      { x: geometry.centerX + 82, y: geometry.bottomY - 190, length: 49 },
+      { x: geometry.centerX + 91, y: geometry.bottomY - 105, length: 72 }
+    ];
+    const verticalArrow = (x: number, y: number, length: number, direction: 1 | -1, color: string) => {
+      const endY = y + direction * length;
+      return <><path d={`M${x} ${y} V${endY}`} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
+        <path d={`M${x - 8} ${endY - direction * 11} L${x} ${endY} L${x + 8} ${endY - direction * 11}`} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></>;
+    };
+    return <g className="changing-speed-motion-annotation" aria-label={`${geometry.object.label} rises to ${geometry.apex.label} while slowing, pauses, then falls while speeding up under ${geometry.force.label}`}>
+      <g data-visual-cue="vertical-flight-path">
+        <path className="trajectory-flow" d={geometry.path} fill="none" stroke="#315f79" strokeWidth="5" strokeLinecap="round" strokeDasharray="12 10" />
+        <circle cx={geometry.centerX - 90} cy={geometry.bottomY} r="25" fill="#e9a94b" stroke="#6d491d" strokeWidth="4" />
+        <path d={`M${geometry.centerX - 103} ${geometry.bottomY - 6} q13 -11 26 0 M${geometry.centerX - 99} ${geometry.bottomY + 8} q9 7 18 0`} fill="none" stroke="#8b5c20" strokeWidth="2" strokeLinecap="round" />
+        <text x={geometry.centerX - 90} y={geometry.bottomY + 45} textAnchor="middle" fill="#61451f" fontSize="21" fontWeight="800">{geometry.object.label}</text>
+      </g>
+      <g data-visual-cue="shrinking-upward-velocity">
+        {upwardArrows.map(({ x, y, length }) => <g key={`${x}-${y}`}>{verticalArrow(x, y, length, -1, "#2c7b65")}</g>)}
+        <text x={geometry.centerX - 155} y={(geometry.bottomY + geometry.apexY) / 2} textAnchor="middle" fill="#256551" fontSize="18" fontWeight="700" transform={`rotate(-90 ${geometry.centerX - 155} ${(geometry.bottomY + geometry.apexY) / 2})`}>slowing</text>
+      </g>
+      <g data-visual-cue="apex-pause">
+        <circle cx={geometry.centerX} cy={geometry.apexY} r="21" fill="#f7d88c" stroke="#7d5b25" strokeWidth="4" />
+        <path d={`M${geometry.centerX - 34} ${geometry.apexY - 36} h68 M${geometry.centerX - 12} ${geometry.apexY - 49} v13 M${geometry.centerX + 12} ${geometry.apexY - 49} v13`} fill="none" stroke="#a25635" strokeWidth="4" strokeLinecap="round" />
+        <text x={geometry.centerX} y={geometry.apexY - 62} textAnchor="middle" fill="#71411f" fontSize="20" fontWeight="800">{geometry.apex.label}: pause</text>
+      </g>
+      <g data-visual-cue="growing-downward-velocity">
+        {downwardArrows.map(({ x, y, length }) => <g key={`${x}-${y}`}>{verticalArrow(x, y, length, 1, "#b25235")}</g>)}
+        <text x={geometry.centerX + 155} y={(geometry.bottomY + geometry.apexY) / 2} textAnchor="middle" fill="#943f29" fontSize="18" fontWeight="700" transform={`rotate(90 ${geometry.centerX + 155} ${(geometry.bottomY + geometry.apexY) / 2})`}>speeding up</text>
+      </g>
+      <g data-visual-cue="downward-gravity-force">
+        {verticalArrow(geometry.force.x * 10, geometry.force.y * 6.2 - 45, 92, 1, "#674e86")}
+        <text x={geometry.force.x * 10} y={geometry.force.y * 6.2 + 70} textAnchor="middle" fill="#563f72" fontSize="20" fontWeight="800">{geometry.force.label}</text>
+      </g>
+    </g>;
+  }
   if (isCirculationRelation(relation)) {
     if (relation.kind !== "pumpsTo") return null;
     const geometry = circulationLoopGeometry(relations.filter(isCirculationRelation), entities);
@@ -472,7 +518,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

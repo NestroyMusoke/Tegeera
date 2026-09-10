@@ -196,8 +196,9 @@ motion understanding.
 An independent 60-statement teacher corpus lives at
 [`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
 It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present baseline safely accepts 1/60 and asks for clarification on
-59/60. That number is coverage, not semantic accuracy: each accepted graph still
+grammar. The present observational baseline draws 7/60, holds the scene for 1/60
+non-visual utterance, and asks for clarification on 52/60. Those numbers measure
+coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
 The first cross-domain subset now has versioned machine-readable gold scenes in
@@ -205,9 +206,10 @@ The first cross-domain subset now has versioned machine-readable gold scenes in
 Its strict scorer requires independent concept identities, semantic endpoints, correct
 intent routing, observed visual cues, and explicit human visual approval. DoodleScript 2
 now makes the plant example automated-ready through a reusable `part-whole-flow`
-construction, but the strict result remains pending until a reviewer accepts the actual
-doodle. Validation can prove script safety; it cannot substitute for semantic or visual
-completeness.
+construction. The expanded gold batch also has automated evidence for circulation-loop,
+force-diagram, changing-speed-motion, labelled-container, geometric-construction, and
+landscape-flow. Drawing cases remain pending until a reviewer accepts the actual doodles.
+Validation can prove script safety; it cannot substitute for semantic or visual completeness.
 
 The construction is not plant-specific. A registered intake action binds an open whole,
 one to three inputs, and the named parts they travel through. Symbol capabilities choose

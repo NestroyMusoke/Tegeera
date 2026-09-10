@@ -37,9 +37,9 @@ These gold annotations make their cases development tests, not a hidden accuracy
 Add new frozen, independently collected utterances before publishing generalization
 figures.
 
-Current automated evidence covers case 1 (`part-whole-flow`), case 11
-(`force-diagram`), case 21 (`labelled-container`), case 31
-(`geometric-construction`), and case 41 (`landscape-flow`). All remain human-review
+Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
+11 (`force-diagram`), 12 (`changing-speed-motion`), 21 (`labelled-container`), 31
+(`geometric-construction`), and 41 (`landscape-flow`). All remain human-review
 pending, so the strict pass count is still zero. This separation is intentional:
 implementation and cue presence can be tested, but visual quality cannot be
 self-certified by the code that produced it.
@@ -57,8 +57,11 @@ Each declaration names independently scoreable concepts, directed relations, and
 visible cues. Until those capabilities exist, safe clarification is recorded as a
 failure without being mislabeled false confidence.
 
-Case 2 is now automated-ready through the `circulation-loop` grammar. Its four concepts,
+Case 2 is automated-ready through the `circulation-loop` grammar. Its four concepts,
 three relations, closed-loop topology, anatomy cues, direction cues, and accessibility
 meaning are observed from the real component output. It remains human-review pending.
-The batch currently measures 3/13 strict, 9/13 automated-ready, and zero false-confident;
-cases 12, 22, 32, and 42 remain safely unsupported.
+Case 12 is now automated-ready through the `changing-speed-motion` grammar. Its single
+moving identity, shared apex, gravity relation, continuous flight path, changing velocity
+cues, and accessibility meaning are observed from the real component output. It also
+remains human-review pending. The batch currently measures 3/13 strict, 10/13
+automated-ready, and zero false-confident; cases 22, 32, and 42 remain safely unsupported.

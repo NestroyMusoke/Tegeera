@@ -20,9 +20,9 @@ const relation = (kind: SceneRelation["kind"], overrides: Partial<SceneRelation>
 
 describe("versioned relation registry", () => {
   it("covers every schema relationship with a validated semantic contract", () => {
-    expect(RELATION_REGISTRY_VERSION).toBe("2.6.0");
+    expect(RELATION_REGISTRY_VERSION).toBe("2.7.0");
     expect(relationRegistry.map(({ kind }) => kind).sort()).toEqual([
-      "actsOn", "appliedTo", "away", "before", "carries", "causes", "contacts", "contains", "flowsFrom", "flowsInto", "flowsTo", "handover", "illuminates", "measures", "opposes", "owns", "partOf", "pumpsTo", "queuedFor", "returnsTo", "shares", "toward", "visualAction"
+      "accelerates", "actsOn", "appliedTo", "away", "before", "carries", "causes", "contacts", "contains", "fallsFrom", "flowsFrom", "flowsInto", "flowsTo", "handover", "illuminates", "measures", "opposes", "owns", "partOf", "pumpsTo", "queuedFor", "returnsTo", "risesTo", "shares", "toward", "visualAction"
     ]);
     expect(validateRelationRegistry()).toEqual([]);
   });
@@ -90,6 +90,7 @@ describe("versioned relation registry", () => {
     expect(relationForKind("measures")).toMatchObject({ family: "measurement", directed: true, layout: "geometric-construction" });
     expect(relationForKind("flowsFrom")).toMatchObject({ family: "landscape", directed: true, layout: "landscape-flow" });
     expect(relationForKind("flowsTo")).toMatchObject({ family: "landscape", directed: true, layout: "landscape-flow" });
+    expect(relationForKind("risesTo")).toMatchObject({ family: "kinematics", directed: true, layout: "changing-speed-motion" });
   });
 
   it("rejects duplicate aliases, kinds, and invalid cardinalities", () => {

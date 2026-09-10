@@ -270,4 +270,18 @@ describe("semantic input frames", () => {
     expect(frame.entities.map(({ text }) => text)).toEqual(["pump", "filter", "water", "minerals"]);
     expect(frame.meaningCandidates).toEqual([{ family: "circulation", predicate: "circulation-loop" }]);
   });
+
+  it("keeps a changing-speed trajectory atomic across its then boundary", () => {
+    const result = analyzeTeacherInput("A stone tossed straight up decelerates, pauses briefly, then drops back increasingly fast");
+    expect(result.frames).toHaveLength(1);
+    const frame = result.frames[0];
+    expect(frame.changingSpeedMotions).toEqual([{
+      construction: "changing-speed-motion",
+      objectMentionId: frame.entities[0].mentionId,
+      apexMentionId: frame.entities[1].mentionId,
+      forceMentionId: frame.entities[2].mentionId
+    }]);
+    expect(frame.entities.map(({ text }) => text)).toEqual(["stone", "highest point", "gravity"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "kinematics", predicate: "changing-speed-motion" }]);
+  });
 });
