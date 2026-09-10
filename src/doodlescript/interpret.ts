@@ -16,6 +16,7 @@ import { planPartWholeFlow } from "./partWholeFlow";
 import { planForceDiagram } from "./forceDiagram";
 import { planLabelledContainer } from "./labelledContainer";
 import { planGeometricConstruction } from "./geometricConstruction";
+import { planLandscapeFlow } from "./landscapeFlow";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -59,7 +60,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -84,6 +85,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["appliedTo", "opposes", "contacts"].includes(command.relation.kind)) upgradeVersion("2.1.0");
     if (command.action === "relate" && command.relation.kind === "contains") upgradeVersion("2.2.0");
     if (command.action === "relate" && command.relation.kind === "measures") upgradeVersion("2.3.0");
+    if (command.action === "relate" && ["flowsFrom", "flowsTo"].includes(command.relation.kind)) upgradeVersion("2.4.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -240,6 +242,31 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           kind: "measures", sourceIds: [subjectId], targetIds: [measurementId], predicate: "measures"
         } });
         focus([subjectId], [measurementId]);
+        continue;
+      }
+      const landscape = frame.landscapeFlows[0];
+      if (landscape?.construction === "landscape-flow") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const watercourseId = eventNode(mentionText(landscape.watercourseMentionId), "watercourse");
+        const sourceId = eventNode(mentionText(landscape.sourceMentionId), "elevated-source");
+        const destinationId = eventNode(mentionText(landscape.destinationMentionId), "water-destination");
+        const ids = { watercourseId, sourceId, destinationId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("A landscape flow needs distinct watercourse, source, and destination identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planLandscapeFlow(working, ids, movableIds);
+        if (!moves) throw new Clarification("That landscape flow cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: {
+          id: `relation-${scene.revision + 1}-${commands.length}`,
+          kind: "flowsFrom", sourceIds: [watercourseId], targetIds: [sourceId], predicate: "flowsFrom"
+        } });
+        append({ action: "relate", relation: {
+          id: `relation-${scene.revision + 1}-${commands.length}`,
+          kind: "flowsTo", sourceIds: [watercourseId], targetIds: [destinationId], predicate: "flowsTo"
+        } });
+        focus([watercourseId], [sourceId, destinationId]);
         continue;
       }
       const orderedRelation = frame.relations.find((relation) => relation.predicate === "queuedFor");

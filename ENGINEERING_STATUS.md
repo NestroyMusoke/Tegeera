@@ -1033,3 +1033,37 @@ fixtures are generated. Production JavaScript is 428.99 kB (129.77 kB gzip); CSS
 synchronization, and browser inspection pass. Physical Android rendering, speech
 latency, projector inspection, human visual review, and independent hidden
 generalization remain unverified.
+
+## DoodleScript 2.4 landscape-flow capability
+
+Case 41 now resolves through a reusable landscape-flow grammar with independent
+watercourse, elevated-source, and water-destination slots. River, stream, creek, and
+watercourse vocabulary can combine with registered elevated terrain and receiving
+water bodies. A stream/mountain/lake fixture and a water/upland-slope/reservoir fixture
+exercise the same construction, while traffic flow and tank-to-bucket flow remain
+outside it rather than borrowing misleading geography.
+
+DoodleScript 2.4 adds typed `flowsFrom` and `flowsTo` relations plus `watercourse`,
+`elevated-source`, and `water-destination` visual roles. The relation and layout
+registries move to 2.4.0 with a landscape family and an `elevation-cross-section`
+topology. A shared candidate search places three semantic identities at strictly
+descending elevations. The renderer combines the relation pair into one original
+cross-section with hill, continuous river, downhill arrow, and receiving-water shape;
+the second relation does not duplicate the landscape. Validation rejects incomplete
+pairs, shared identities, wrong roles, inverted elevation, and pre-2.4 claims.
+
+The independent baseline now accepts 5/60 and safely clarifies 55/60. Cases 1, 11, 21,
+31, and 41 are automated-ready, zero are false-confident, and strict passes remain 0/8
+pending explicit human visual approval. The real narrow-browser workflow passes both
+typed meanings, all four required cues, accessibility, no-duplication, and overflow
+checks; visual inspection confirms the source, descending path, direction, and sea are
+readable as one scene.
+
+The complete checkpoint passes 291 tests across 36 files. The concurrent
+250-iteration meaning-only benchmark measured 1.30 ms median and 7.55 ms p95; speech,
+DOM, SVG painting, and device work are excluded. Twenty-four real-component fixtures
+are generated. Production JavaScript is 436.91 kB (131.78 kB gzip); CSS is 11.59 kB
+(3.49 kB gzip). Lint, TypeScript, production build, Android asset synchronization,
+registry validation, and browser inspection pass. Physical Android rendering, speech
+latency, projector inspection, human visual review, and independent hidden
+generalization remain unverified.

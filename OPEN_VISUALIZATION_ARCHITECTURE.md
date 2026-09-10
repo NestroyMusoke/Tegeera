@@ -440,6 +440,13 @@ perpendicular rays, a vertex-anchored right-angle square, and separate right-ang
 computes non-right angles from numeric and word-form measures and uses an arc instead
 of falsely displaying a square marker.
 
-Next, implement landscape flow for case 41 as another open construction rather than a
-stored geography sentence. Non-visual hold and correction intent follow as separate
-verified capabilities.
+The landscape-flow capability now implements case 41 with separate watercourse,
+elevated-source, and receiving-water identities. Two typed relations are rendered as
+one continuous cross-section, while elevation ordering is enforced by both planning
+and independent validation. Watercourse, terrain, and destination vocabularies remain
+open role slots within bounded semantic categories rather than a stored geography
+sentence.
+
+Next, complete the first strict batch's safety behaviors: ambiguous meaning for case
+53, unresolved reference for case 56, and explicit non-visual scene hold for case 60.
+These must preserve the prior scene atomically and report distinct reason codes.

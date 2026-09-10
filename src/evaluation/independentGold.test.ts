@@ -60,7 +60,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
-      1: observeCase(1), 11: observeCase(11), 21: observeCase(21), 31: observeCase(31)
+      1: observeCase(1), 11: observeCase(11), 21: observeCase(21), 31: observeCase(31), 41: observeCase(41)
     });
     expect(result.total).toBe(8);
     expect(result.results).toHaveLength(8);
@@ -117,6 +117,16 @@ describe("independent semantic-scene gold annotations", () => {
     ]));
     expect(observation.visualGrammarId).toBe("geometric-construction");
     expect(evaluateIndependentGold(teacherCases, gold, { 31: observation }).results.find(({ id }) => id === 31))
+      .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
+  });
+
+  it("makes case 41 automated-ready while preserving human visual review", () => {
+    const observation = observeCase(41);
+    expect(new Set(observation.visualCueIds)).toEqual(new Set([
+      "elevation-cross-section", "continuous-river-path", "downhill-flow-arrow", "sea-shape"
+    ]));
+    expect(observation.visualGrammarId).toBe("landscape-flow");
+    expect(evaluateIndependentGold(teacherCases, gold, { 41: observation }).results.find(({ id }) => id === 41))
       .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
   });
 });

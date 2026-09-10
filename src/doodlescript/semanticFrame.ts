@@ -8,6 +8,7 @@ import { matchPartWholeFlow, type PartWholeChannel } from "./partWholeFlow";
 import { matchForceDiagram } from "./forceDiagram";
 import { matchLabelledContainer } from "./labelledContainer";
 import { matchGeometricConstruction } from "./geometricConstruction";
+import { matchLandscapeFlow } from "./landscapeFlow";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -88,6 +89,13 @@ export interface SemanticGeometricConstructionMention {
   degrees: number;
 }
 
+export interface SemanticLandscapeFlowMention {
+  construction: "landscape-flow";
+  watercourseMentionId: string;
+  sourceMentionId: string;
+  destinationMentionId: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -99,7 +107,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -126,6 +134,7 @@ export interface SemanticFrame {
   forceDiagrams: SemanticForceDiagramMention[];
   containments: SemanticContainmentMention[];
   geometricConstructions: SemanticGeometricConstructionMention[];
+  landscapeFlows: SemanticLandscapeFlowMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   meaningCandidates: SemanticMeaningCandidate[];
@@ -215,12 +224,13 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
   const forceDiagram = matchForceDiagram(text);
   const containment = matchLabelledContainer(text);
   const geometry = matchGeometricConstruction(text);
+  const landscape = matchLandscapeFlow(text);
   const stopped = text.match(stopActionPattern);
   const targeted = text.match(targetedActionPattern);
   const directTarget = text.match(directTargetActionPattern);
   const started = text.match(actionPattern);
   const human = stopped ?? targeted ?? directTarget ?? started;
-  if (!composition && !forceDiagram && !containment && !geometry) {
+  if (!composition && !forceDiagram && !containment && !geometry && !landscape) {
     add("human-action", human ? actionForAlias(human[2])?.predicate : undefined);
   }
   const relationship = matchRegisteredRelation(text);
@@ -229,10 +239,11 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
   add("mechanical", forceDiagram ? "force-diagram" : undefined);
   add("containment", containment ? "labelled-container" : undefined);
   add("geometry", geometry ? "geometric-construction" : undefined);
+  add("landscape", landscape ? "landscape-flow" : undefined);
   const visualPrepositional = text.match(visualPrepositionalActionPattern);
   const visualDirect = text.match(visualDirectActionPattern);
   const visual = visualPrepositional ?? visualDirect;
-  if (!composition && !forceDiagram && !containment && !geometry) {
+  if (!composition && !forceDiagram && !containment && !geometry && !landscape) {
     add("visual-action", visual ? visualActionForAlias(visual[2])?.predicate : undefined);
   }
   return candidates;
@@ -286,6 +297,19 @@ function populateMeaning(frame: SemanticFrame): void {
       subjectMentionId: addParticipant(frame, geometry.subjectText),
       measurementMentionId: addParticipant(frame, geometry.measureText),
       degrees: geometry.degrees
+    });
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+
+  const landscape = matchLandscapeFlow(frame.normalizedText);
+  if (landscape) {
+    frame.intent = "describe";
+    frame.landscapeFlows.push({
+      construction: "landscape-flow",
+      watercourseMentionId: addParticipant(frame, landscape.watercourseText),
+      sourceMentionId: addParticipant(frame, landscape.sourceText),
+      destinationMentionId: addParticipant(frame, landscape.destinationText)
     });
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
@@ -404,6 +428,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       forceDiagrams: [],
       containments: [],
       geometricConstructions: [],
+      landscapeFlows: [],
       quantities: [],
       references: [],
       meaningCandidates: [],

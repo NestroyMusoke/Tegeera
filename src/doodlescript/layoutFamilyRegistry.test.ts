@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.3.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.4.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "contact", "event-graph", "force-diagram", "geometric-construction", "group", "labelled-container", "ownership", "part-whole-flow", "queue", "visual-flow"
+      "arrow", "contact", "event-graph", "force-diagram", "geometric-construction", "group", "labelled-container", "landscape-flow", "ownership", "part-whole-flow", "queue", "visual-flow"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });
@@ -25,6 +25,7 @@ describe("versioned layout family registry", () => {
     expect(layoutFamilyFor("part-whole-flow")).toMatchObject({ topology: "part-whole", maximumVisibleNodes: 7 });
     expect(layoutFamilyFor("labelled-container")).toMatchObject({ topology: "nested-container", maximumVisibleNodes: 2 });
     expect(layoutFamilyFor("geometric-construction")).toMatchObject({ topology: "angular-construction", maximumVisibleNodes: 2 });
+    expect(layoutFamilyFor("landscape-flow")).toMatchObject({ topology: "elevation-cross-section", maximumVisibleNodes: 3 });
     expect(layoutFamilySupportsRelation("contact", "performance")).toBe(true);
     expect(layoutFamilySupportsRelation("contact", "event")).toBe(false);
   });

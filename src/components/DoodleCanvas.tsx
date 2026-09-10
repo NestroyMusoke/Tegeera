@@ -16,6 +16,7 @@ import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiagram";
 import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
 import { geometricConstructionGeometry } from "../doodlescript/geometricConstruction";
+import { isLandscapeFlowRelation, landscapeFlowGeometry } from "../doodlescript/landscapeFlow";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -160,7 +161,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
                 data-relation-family={relationForKind(relation.kind).family}
                 data-relation-registry-version={RELATION_REGISTRY_VERSION}>
                 <span>{labels(relation.sourceIds)}</span>
-                <strong>{relation.kind === "handover" ? `gives ${labels(relation.objectIds ?? [])} to →` : `${relationLabel(relation)} →`}</strong>
+                <strong>{relation.kind === "handover" ? `gives ${labels(relation.objectIds ?? [])} to →` : `${relationLabel(relation, labels(relation.sourceIds))} →`}</strong>
                 <span>{labels(relation.targetIds)}</span>
               </div>
             );
@@ -217,6 +218,45 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
         : <path data-visual-cue="angle-arc" d={`M${geometry.vertexX + 48} ${geometry.vertexY} A48 48 0 ${geometry.degrees > 180 ? 1 : 0} 0 ${geometry.vertexX + Math.cos(geometry.degrees * Math.PI / 180) * 48} ${geometry.vertexY - Math.sin(geometry.degrees * Math.PI / 180) * 48}`} fill="none" stroke="#b25b37" strokeWidth="3" />}
       <text data-visual-cue={measureCue} x={measureX} y={measureY} textAnchor="middle" fill="#934424" fontSize="31" fontWeight="800">{numericLabel}</text>
       <text x={geometry.vertexX + 105} y={geometry.vertexY + 48} textAnchor="middle" fill="#315f52" fontSize="22" fontWeight="700">{geometry.subject.label}</text>
+    </g>;
+  }
+  if (isLandscapeFlowRelation(relation)) {
+    if (relation.kind !== "flowsFrom") return null;
+    const geometry = landscapeFlowGeometry(relations.filter(isLandscapeFlowRelation), entities);
+    if (!geometry) return null;
+    const shoreX = geometry.destinationX - 24;
+    const arrowStartX = geometry.riverX - 42;
+    const arrowStartY = geometry.riverY - 18;
+    const arrowEndX = geometry.riverX + 34;
+    const arrowEndY = geometry.riverY + 10;
+    const flowVerb = /(?:rivers|streams|creeks|watercourses)$/.test(geometry.watercourse.label ?? "") ? "flow" : "flows";
+    return <g className="landscape-flow-annotation" aria-label={`${geometry.watercourse.label} ${flowVerb} from ${geometry.source.label} to ${geometry.destination.label}`}>
+      <g data-visual-cue="elevation-cross-section">
+        <path d={`M70 485 Q${geometry.sourceX - 95} ${geometry.sourceY + 105} ${geometry.sourceX} ${geometry.sourceY + 18} Q${geometry.sourceX + 72} ${geometry.sourceY + 72} ${geometry.riverX} ${geometry.riverY + 24} Q${geometry.destinationX - 95} ${geometry.destinationY - 12} ${shoreX} ${geometry.destinationY} L${shoreX} 510 H70 Z`}
+          fill="#d9d6a6" stroke="#4f5946" strokeWidth="4" strokeLinejoin="round" />
+        <path d={`M${geometry.sourceX - 74} ${geometry.sourceY + 88} L${geometry.sourceX} ${geometry.sourceY + 18} L${geometry.sourceX + 51} ${geometry.sourceY + 66}`}
+          fill="none" stroke="#69715a" strokeWidth="3" strokeLinecap="round" />
+        <path d={`M${geometry.sourceX - 7} ${geometry.sourceY + 25} L${geometry.sourceX} ${geometry.sourceY + 18} L${geometry.sourceX + 10} ${geometry.sourceY + 28}`}
+          fill="none" stroke="#fbf7ed" strokeWidth="5" strokeLinecap="round" />
+        <path d={`M110 477 q16 -24 32 0 m22 0 q15 -20 30 0 m315 7 q13 -19 27 0 m24 0 q14 -17 28 0`}
+          fill="none" stroke="#6f8755" strokeWidth="4" strokeLinecap="round" />
+      </g>
+      <g data-visual-cue="sea-shape">
+        <path d={`M${shoreX} ${geometry.destinationY} Q${shoreX + 34} ${geometry.destinationY - 12} ${shoreX + 68} ${geometry.destinationY} T${shoreX + 136} ${geometry.destinationY} T${shoreX + 204} ${geometry.destinationY} V510 H${shoreX} Z`}
+          fill="#a9d8db" stroke="#317584" strokeWidth="4" strokeLinejoin="round" />
+        <path d={`M${shoreX + 21} ${geometry.destinationY + 25} q24 -10 48 0 t48 0 m-76 35 q27 -10 54 0`}
+          fill="none" stroke="#4f9aa8" strokeWidth="3" strokeLinecap="round" />
+      </g>
+      <path data-visual-cue="continuous-river-path" className="visual-action-flow"
+        d={geometry.riverPath} fill="none" stroke="#3b8fa5" strokeWidth="20" strokeLinecap="round" />
+      <path d={geometry.riverPath} fill="none" stroke="#ccebed" strokeWidth="4" strokeLinecap="round" opacity=".9" />
+      <g data-visual-cue="downhill-flow-arrow">
+        <path d={`M${arrowStartX} ${arrowStartY} L${arrowEndX} ${arrowEndY}`} fill="none" stroke="#1f6679" strokeWidth="5" strokeLinecap="round" />
+        <path d={`M${arrowEndX - 16} ${arrowEndY - 14} L${arrowEndX} ${arrowEndY} L${arrowEndX - 20} ${arrowEndY + 5}`} fill="none" stroke="#1f6679" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+      <text x={geometry.sourceX} y={geometry.sourceY - 3} textAnchor="middle" fill="#40503c" fontSize="22" fontWeight="700">{geometry.source.label}</text>
+      <text x={geometry.riverX} y={geometry.riverY + 68} textAnchor="middle" fill="#205d70" fontSize="24" fontWeight="800">{geometry.watercourse.label}</text>
+      <text x={geometry.destinationX + 75} y={geometry.destinationY + 78} textAnchor="middle" fill="#205d70" fontSize="24" fontWeight="800">{geometry.destination.label}</text>
     </g>;
   }
   if (isForceRelation(relation)) {
@@ -397,7 +437,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

@@ -31,7 +31,10 @@ function App() {
       if (!scene.entities.length) return "Nothing drawn yet";
       const labels = (ids: string[]) => ids.map((id) => scene.entities.find((entity) => entity.id === id)?.label ?? id).join(", ");
       return [scene.entities.map((entity) => entity.label ?? entity.kind).join(", "),
-        ...(scene.relations ?? []).map((relation) => `${labels(relation.sourceIds)} ${relationLabel(relation)} ${labels(relation.targetIds)}`)
+        ...(scene.relations ?? []).map((relation) => {
+          const source = labels(relation.sourceIds);
+          return `${source} ${relationLabel(relation, source)} ${labels(relation.targetIds)}`;
+        })
       ].join(". ");
     },
     [scene.entities, scene.relations]

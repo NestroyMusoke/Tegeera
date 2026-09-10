@@ -213,6 +213,18 @@ describe("semantic input frames", () => {
     expect(frame.meaningCandidates).toEqual([{ family: "geometry", predicate: "geometric-construction" }]);
   });
 
+  it("extracts landscape roles before generic flow language", () => {
+    const frame = analyzeTeacherInput("A stream runs downhill from a mountain into a lake").frames[0];
+    expect(frame.landscapeFlows).toEqual([{
+      construction: "landscape-flow",
+      watercourseMentionId: frame.entities[0].mentionId,
+      sourceMentionId: frame.entities[1].mentionId,
+      destinationMentionId: frame.entities[2].mentionId
+    }]);
+    expect(frame.entities.map(({ text }) => text)).toEqual(["stream", "mountain", "lake"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "landscape", predicate: "landscape-flow" }]);
+  });
+
   it("expands coordinated objects and explicitly inherits one unambiguous subject", () => {
     const result = analyzeTeacherInput("A plant absorbs sunlight and water, then produces oxygen");
     expect(result.frames).toHaveLength(2);
