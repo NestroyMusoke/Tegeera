@@ -247,4 +247,14 @@ describe("semantic input frames", () => {
     expect(uncertain.frames[1].visualActions).toEqual([]);
     expect(uncertain.frames[1].discourse.uncertain).toBe(true);
   });
+
+  it("exposes safety intents before attempting drawable semantic resolution", () => {
+    const comparison = analyzeTeacherInput("Imagine two things happening at once, but one is faster").frames[0];
+    const prior = analyzeTeacherInput("It is the opposite of what we did yesterday").frames[0];
+    const hold = analyzeTeacherInput("Let us take a break before we continue").frames[0];
+    expect(comparison).toMatchObject({ intent: "unresolved", safetyIntent: { kind: "ambiguous-comparison" }, resolutionStatus: "needs-clarification" });
+    expect(prior).toMatchObject({ intent: "unresolved", safetyIntent: { kind: "unresolved-prior-context" }, resolutionStatus: "needs-clarification" });
+    expect(hold).toMatchObject({ intent: "hold", safetyIntent: { kind: "non-visual-hold" }, resolutionStatus: "resolved" });
+    expect(hold.entities).toEqual([]);
+  });
 });

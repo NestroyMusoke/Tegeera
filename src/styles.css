@@ -518,6 +518,24 @@ button {
   line-height: 1.35;
 }
 
+.hold-notice {
+  align-items: flex-start;
+  background: #eaf8f4;
+  border: 1px solid #94d8c4;
+  border-radius: 14px;
+  color: #123f35;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 12px;
+  padding: 12px 14px;
+}
+
+.hold-notice span {
+  color: #35685c;
+  font-size: 0.9rem;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

@@ -69,6 +69,12 @@ describe("independent semantic-scene gold annotations", () => {
       passed: false, falseConfident: false, automatedReady: true,
       failures: ["human visual review pending"]
     });
+    expect(result.passed).toBe(3);
+    expect(result.automatedReady).toBe(8);
+    expect(result.falseConfident).toBe(0);
+    expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
+    expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
+    expect(result.results.find(({ id }) => id === 60)).toMatchObject({ passed: true, observedIntent: "hold", automatedReady: true });
     for (const caseResult of result.results) {
       expect(caseResult.passed || caseResult.failures.length > 0).toBe(true);
     }

@@ -23,6 +23,7 @@ function App() {
   const [history, setHistory] = useState<SceneState[]>([initialScene]);
   const [issues, setIssues] = useState<GateIssue[]>([]);
   const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
+  const [holdNotice, setHoldNotice] = useState<string | null>(null);
   const scene = history.at(-1) ?? initialScene;
   const canUndo = history.length > 1;
 
@@ -43,6 +44,7 @@ function App() {
   const submit = (text = input) => {
     const interpretation = interpretTeacherText(text, scene);
     if (!interpretation.ok) {
+      setHoldNotice(null);
       setClarification(interpretation.clarification);
       setIssues([
         {
@@ -54,14 +56,17 @@ function App() {
     }
     const result = validateDoodleScript(interpretation.script, scene);
     if (!result.ok) {
+      setHoldNotice(null);
       setClarification(null);
       setIssues(result.issues);
       return;
     }
-    setHistory((current) => [...current, applyDoodleScript(scene, result.script)]);
+    const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
+    if (!isHold) setHistory((current) => [...current, applyDoodleScript(scene, result.script)]);
     setInput("");
     setIssues([]);
     setClarification(null);
+    setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
   };
 
   const undo = () => {
@@ -69,6 +74,7 @@ function App() {
     setHistory((current) => current.slice(0, -1));
     setIssues([]);
     setClarification(null);
+    setHoldNotice(null);
   };
 
   const speech = useSpeechSession((transcript) => submit(transcript));
@@ -169,6 +175,13 @@ function App() {
             {clarification?.alternatives.length ? (
               <small>{clarification.alternatives.join(" · ")}</small>
             ) : null}
+          </div>
+        ) : null}
+
+        {holdNotice ? (
+          <div className="hold-notice" role="status" data-hold-reason="non-visual-speech">
+            <strong>Scene held</strong>
+            <span>{holdNotice}</span>
           </div>
         ) : null}
 

@@ -77,4 +77,23 @@ describe("teaching workflow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(container.querySelectorAll(".ownership-card")).toHaveLength(3);
   });
+
+  it("holds a live scene without changing revision or consuming Undo", () => {
+    const { container } = render(<App />);
+    explain("Draw a car");
+    const drawing = container.querySelector(".doodle-canvas")!.innerHTML;
+    expect(screen.getByText("Revision 1")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement).disabled).toBe(false);
+
+    explain("Let's take a short break before we continue");
+    expect(screen.getByText("Scene held")).toBeTruthy();
+    expect(container.querySelector('[data-hold-reason="non-visual-speech"]')).not.toBeNull();
+    expect(container.querySelector(".clarification")).toBeNull();
+    expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(drawing);
+    expect(screen.getByText("Revision 1")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(container.querySelectorAll(".doodle-object")).toHaveLength(0);
+    expect(screen.getByText("Revision 0")).toBeTruthy();
+  });
 });

@@ -60,7 +60,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -69,6 +69,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     confidence: 1, sourceText: input, commands
   });
   const append = (command: DoodleCommand) => {
+    if (command.action === "hold") upgradeVersion("2.5.0");
     if ((command.action === "create" && command.entity.performance)
       || (command.action === "update" && command.performance !== undefined)) upgradeVersion("1.5.0");
     if (command.action === "unrelate") {
@@ -165,6 +166,21 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       currentClause = frame.sourceText.toLowerCase();
       currentEvidence = frame.sourceText;
       const text = frame.normalizedText;
+      if (frame.safetyIntent?.kind === "ambiguous-comparison") throw new Clarification(
+        "Name the two things and what 'faster' represents before I compare them.",
+        "ambiguous-meaning", ["Name both things", "Explain what their speeds mean"]
+      );
+      if (frame.safetyIntent?.kind === "unresolved-prior-context") throw new Clarification(
+        "I do not have yesterday's lesson in this scene. Name the earlier idea or reopen that lesson.",
+        "ambiguous-reference", ["Name the earlier idea", "Open the previous lesson"]
+      );
+      if (frame.safetyIntent?.kind === "non-visual-hold") {
+        if (semanticInput.frames.length === 1) {
+          context = undefined;
+          append({ action: "hold", reason: "non-visual-speech" });
+        }
+        continue;
+      }
       if (frame.discourse.negated) throw new Clarification(
         "I heard a negation, so I left the drawing unchanged. Say the positive scene you want shown.",
         "negated-claim", ["Describe the scene positively", "Leave the scene unchanged"]

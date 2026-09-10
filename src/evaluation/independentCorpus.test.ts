@@ -31,11 +31,13 @@ describe("independent teacher corpus", () => {
   it("keeps current coverage observational and every accepted script valid", () => {
     const outcomes = cases.map((item) => ({ item, result: interpretTeacherText(item.statement, initialScene) }));
     const accepted = outcomes.filter((outcome) => outcome.result.ok);
+    const held = accepted.filter((outcome) => outcome.result.ok && outcome.result.script.commands.length === 1 && outcome.result.script.commands[0].action === "hold");
+    const drawn = accepted.filter((outcome) => !held.includes(outcome));
     for (const outcome of accepted) {
       if (!outcome.result.ok) continue;
       expect(validateDoodleScript(outcome.result.script, initialScene), `case ${outcome.item.id}`).toMatchObject({ ok: true });
     }
-    console.info(`Independent corpus baseline: accepted=${accepted.length}/60, clarified=${60 - accepted.length}/60. Semantic correctness requires intended-visual review.`);
+    console.info(`Independent corpus baseline: drawn=${drawn.length}/60, held=${held.length}/60, clarified=${60 - accepted.length}/60. Semantic correctness requires intended-visual review.`);
     expect(outcomes).toHaveLength(60);
   });
 });

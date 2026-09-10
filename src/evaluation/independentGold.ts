@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { ClarificationCode } from "../doodlescript/clarification";
 import { interpretTeacherText } from "../doodlescript/interpret";
 import { applyDoodleScript, initialScene } from "../doodlescript/scene";
-import type { SceneRelation, SceneState } from "../doodlescript/schema";
+import type { DoodleScript, SceneRelation, SceneState } from "../doodlescript/schema";
 import { validateDoodleScript } from "../doodlescript/validator";
 import type { IndependentTeacherCase } from "./independentCorpus";
 
@@ -77,7 +77,7 @@ export interface IndependentGoldCaseResult {
   id: number;
   passed: boolean;
   expectedIntent: IndependentExpectedIntent;
-  observedIntent: "draw" | "clarify";
+  observedIntent: "draw" | "clarify" | "hold";
   falseConfident: boolean;
   automatedReady: boolean;
   failures: string[];
@@ -104,6 +104,10 @@ function relationPredicate(relation: SceneRelation): string {
   return relation.predicate ?? relation.kind;
 }
 
+function isHoldScript(script: DoodleScript): boolean {
+  return script.commands.length === 1 && script.commands[0].action === "hold";
+}
+
 function scoreDraw(
   goldCase: DrawGoldCase,
   statement: string,
@@ -114,6 +118,12 @@ function scoreDraw(
     return {
       id: goldCase.id, passed: false, expectedIntent: "draw", observedIntent: "clarify",
       falseConfident: false, automatedReady: false, failures: [`unexpected clarification: ${interpretation.clarification.code}`]
+    };
+  }
+  if (isHoldScript(interpretation.script)) {
+    return {
+      id: goldCase.id, passed: false, expectedIntent: "draw", observedIntent: "hold",
+      falseConfident: false, automatedReady: false, failures: ["held the scene instead of drawing the expected meaning"]
     };
   }
   const validation = validateDoodleScript(interpretation.script, initialScene);
@@ -176,17 +186,33 @@ export function evaluateIndependentGold(
       observations[goldCase.id] ?? {}
     );
     const interpretation = interpretTeacherText(teacherCase.statement, initialScene);
-    if (goldCase.expected.intent === "hold") return {
-      id: goldCase.id, passed: false, expectedIntent: "hold",
-      observedIntent: interpretation.ok ? "draw" : "clarify",
-      falseConfident: interpretation.ok, automatedReady: false, failures: [interpretation.ok
-        ? "changed the scene when the utterance should be non-visual"
-        : `clarified instead of preserving the scene: ${interpretation.clarification.code}`]
-    };
-    if (interpretation.ok) return {
-      id: goldCase.id, passed: false, expectedIntent: "clarify", observedIntent: "draw",
-      falseConfident: true, automatedReady: false, failures: ["accepted an utterance that requires clarification"]
-    };
+    if (goldCase.expected.intent === "hold") {
+      if (!interpretation.ok) return {
+        id: goldCase.id, passed: false, expectedIntent: "hold", observedIntent: "clarify",
+        falseConfident: false, automatedReady: false,
+        failures: [`clarified instead of preserving the scene: ${interpretation.clarification.code}`]
+      };
+      if (!isHoldScript(interpretation.script)) return {
+        id: goldCase.id, passed: false, expectedIntent: "hold", observedIntent: "draw",
+        falseConfident: true, automatedReady: false, failures: ["changed the scene when the utterance should be non-visual"]
+      };
+      const checked = validateDoodleScript(interpretation.script, initialScene);
+      const unchanged = checked.ok && applyDoodleScript(initialScene, checked.script) === initialScene;
+      const failures = [...(!checked.ok ? [`invalid hold DoodleScript: ${checked.issues[0]?.message ?? "unknown issue"}`] : []),
+        ...(checked.ok && !unchanged ? ["hold changed the scene identity or revision"] : [])];
+      return {
+        id: goldCase.id, passed: failures.length === 0, expectedIntent: "hold", observedIntent: "hold",
+        falseConfident: false, automatedReady: failures.length === 0, failures
+      };
+    }
+    if (interpretation.ok) {
+      const held = isHoldScript(interpretation.script);
+      return {
+        id: goldCase.id, passed: false, expectedIntent: "clarify", observedIntent: held ? "hold" : "draw",
+        falseConfident: !held, automatedReady: false,
+        failures: [held ? "held the scene instead of asking for clarification" : "accepted an utterance that requires clarification"]
+      };
+    }
     const received = interpretation.clarification.code as ClarificationCode;
     const passed = goldCase.expected.clarificationCodes.includes(received);
     return {

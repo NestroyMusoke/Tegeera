@@ -364,8 +364,30 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Landscape flow caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: distinct landscape identities, typed source and destination, continuous downhill path, terrain and sea cues, no duplicate bubbles, accessibility, layout';
     }
+    async function verifySafety() {
+      await pause();
+      await submit('Draw a car');
+      const drawing = document.querySelector('.doodle-canvas').innerHTML;
+      const revision = [...document.querySelectorAll('*')].find(node => node.children.length === 0 && node.textContent === 'Revision 1');
+      check(!!revision, 'Initial revision missing');
+      await submit("Let's take a short break before we continue");
+      check(document.querySelector('.hold-notice')?.dataset.holdReason === 'non-visual-speech', 'Scene-hold status is missing');
+      check(document.querySelector('.hold-notice')?.textContent.includes('current drawing is unchanged'), 'Scene-hold explanation is unclear');
+      check(document.querySelector('.doodle-canvas').innerHTML === drawing, 'Non-visual pause changed the scene');
+      check([...document.querySelectorAll('*')].some(node => node.children.length === 0 && node.textContent === 'Revision 1'), 'Non-visual pause changed revision');
+      await submit("So basically, um, it's kind of like — okay, imagine two things happening at once, but one is way faster.");
+      check(document.querySelector('.clarification')?.dataset.clarificationCode === 'ambiguous-meaning', 'Ambiguous comparison did not request precise clarification');
+      check(document.querySelector('.doodle-canvas').innerHTML === drawing, 'Ambiguous comparison changed the scene');
+      await submit("It's kind of the opposite of what we did yesterday, but with the same idea.");
+      check(document.querySelector('.clarification')?.dataset.clarificationCode === 'ambiguous-reference', 'Missing lesson context did not request precise clarification');
+      check(document.querySelector('.doodle-canvas').innerHTML === drawing, 'Missing lesson context changed the scene');
+      document.querySelector('.undo-button').click(); await pause();
+      check(document.querySelectorAll('.doodle-object').length === 0, 'Scene hold consumed Undo history');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Safety notices caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: scene hold, unchanged revision, unchanged drawing, precise ambiguity codes, rollback, Undo history, mobile layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -386,3 +408,4 @@ await writeFile(resolve(output, "app-force-phone.html"), framedApp(390, "?force"
 await writeFile(resolve(output, "app-containers-phone.html"), framedApp(390, "?containers"));
 await writeFile(resolve(output, "app-geometry-phone.html"), framedApp(390, "?geometry"));
 await writeFile(resolve(output, "app-landscape-phone.html"), framedApp(390, "?landscape"));
+await writeFile(resolve(output, "app-safety-phone.html"), framedApp(390, "?safety"));

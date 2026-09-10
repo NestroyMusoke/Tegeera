@@ -447,6 +447,15 @@ and independent validation. Watercourse, terrain, and destination vocabularies r
 open role slots within bounded semantic categories rather than a stored geography
 sentence.
 
-Next, complete the first strict batch's safety behaviors: ambiguous meaning for case
-53, unresolved reference for case 56, and explicit non-visual scene hold for case 60.
-These must preserve the prior scene atomically and report distinct reason codes.
+The first strict batch's safety behaviors are complete. Case 53 reports
+`ambiguous-meaning`, case 56 reports `ambiguous-reference`, and case 60 emits one
+validated non-visual hold. Each path preserves the prior scene atomically, while a hold
+also preserves revision and Undo depth. The safety classifier recognizes bounded
+structural signals and is tested against paraphrases and near-miss sentences instead of
+matching complete corpus utterances.
+
+Next, freeze the second independent gold batch before implementing it. Select cases
+that add genuinely different semantic and visual families, write distinct concept and
+relation expectations, and identify the smallest reusable grammar kernel for each.
+Do not expand accepted coverage until each new drawing has independent semantic,
+validator, rendered-cue, mobile-layout, and human-review gates.

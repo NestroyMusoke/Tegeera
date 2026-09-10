@@ -17,6 +17,7 @@ function applyCommand(
   command: DoodleCommand
 ): SceneEntity[] {
   switch (command.action) {
+    case "hold":
     case "unrelate":
     case "relate":
       return entities;
@@ -56,6 +57,7 @@ export function applyDoodleScript(
   scene: SceneState,
   script: DoodleScript
 ): SceneState {
+  if (script.commands.length === 1 && script.commands[0].action === "hold") return scene;
   let relations = [...(scene.relations ?? [])];
   for (const command of script.commands) {
     if (command.action === "unrelate") relations = relations.filter((relation) => relation.id !== command.relationId);

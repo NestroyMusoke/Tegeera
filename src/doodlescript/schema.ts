@@ -66,6 +66,7 @@ export const relationSchema = z.object({
 });
 
 export const commandSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("hold"), reason: z.literal("non-visual-speech") }),
   z.object({ action: z.literal("unrelate"), relationId: z.string().min(1) }),
   z.object({ action: z.literal("relate"), relation: relationSchema }),
   z.object({
@@ -102,7 +103,7 @@ export const contextSchema = z.object({
 });
 
 export const doodleScriptSchema = z.object({
-  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"]),
+  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0"]),
   context: contextSchema.optional(),
   sceneId: z.string().min(1),
   revision: z.number().int().nonnegative(),

@@ -9,8 +9,9 @@ import { matchForceDiagram } from "./forceDiagram";
 import { matchLabelledContainer } from "./labelledContainer";
 import { matchGeometricConstruction } from "./geometricConstruction";
 import { matchLandscapeFlow } from "./landscapeFlow";
+import { classifySafetyIntent, type SafetyIntent } from "./safetyIntent";
 
-export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
+export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
 export interface EvidenceSpan {
   kind: "utterance";
@@ -135,6 +136,7 @@ export interface SemanticFrame {
   containments: SemanticContainmentMention[];
   geometricConstructions: SemanticGeometricConstructionMention[];
   landscapeFlows: SemanticLandscapeFlowMention[];
+  safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   meaningCandidates: SemanticMeaningCandidate[];
@@ -256,6 +258,13 @@ export function meaningIsAmbiguous(candidates: readonly SemanticMeaningCandidate
 function populateMeaning(frame: SemanticFrame): void {
   const forceDiagram = matchForceDiagram(frame.normalizedText);
   if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram)) return;
+  const safetyIntent = classifySafetyIntent(frame.normalizedText);
+  if (safetyIntent) {
+    frame.safetyIntent = safetyIntent;
+    frame.intent = safetyIntent.kind === "non-visual-hold" ? "hold" : "unresolved";
+    frame.resolutionStatus = safetyIntent.kind === "non-visual-hold" ? "resolved" : "needs-clarification";
+    return;
+  }
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
   if (meaningIsAmbiguous(frame.meaningCandidates)) {
     frame.resolutionStatus = "needs-clarification";

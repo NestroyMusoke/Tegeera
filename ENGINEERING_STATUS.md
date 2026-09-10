@@ -1067,3 +1067,37 @@ are generated. Production JavaScript is 436.91 kB (131.78 kB gzip); CSS is 11.59
 registry validation, and browser inspection pass. Physical Android rendering, speech
 latency, projector inspection, human visual review, and independent hidden
 generalization remain unverified.
+
+## DoodleScript 2.5 safety intents and scene hold
+
+Cases 53, 56, and 60 now pass through a reusable safety-intent boundary before
+drawable meaning is planned. Anonymous simultaneous comparisons with an undefined
+relative rate produce `ambiguous-meaning`; references dependent on an unavailable
+earlier lesson produce `ambiguous-reference`; collaborative break-and-resume speech
+produces an explicit non-visual scene hold. These are structural patterns with negative
+and paraphrase fixtures, not stored corpus sentences.
+
+DoodleScript 2.5 adds a typed `hold` command whose only permitted reason is
+`non-visual-speech`. Validation requires it to be the sole command and forbids context
+replacement. Applying a valid hold returns the exact prior scene object, preserving
+entities, relations, context, scene ID, and revision. The App displays a calm
+`Scene held` status and deliberately does not add history, so the existing Undo still
+reverts the last actual drawing. Forged mixed commands and pre-2.5 holds are rejected.
+
+The observational corpus now records 5/60 drawn, 1/60 held, and 54/60 clarified. In
+the strict first batch, all three safety cases pass; all eight cases are automated-ready;
+zero are false-confident; and the total is 3/8 because the five drawing cases remain
+pending explicit human visual approval. This is an evaluation improvement, not a
+claim of 60-statement visual coverage.
+
+The complete checkpoint passes 298 tests across 37 files. The final 250-iteration
+meaning-only benchmark measured 2.28 ms median and 7.73 ms p95; speech, DOM, SVG
+painting, and device work are excluded. Twenty-four real-component static fixtures
+plus the full-App safety workflow are generated. Production JavaScript is 439.61 kB
+(132.56 kB gzip); CSS is 11.83 kB (3.56 kB gzip). Lint, TypeScript, production build,
+and Android asset synchronization pass. The App-level test verifies the real form,
+status, unchanged SVG, unchanged revision, and unchanged Undo depth. A separate live
+browser opening of the local fixture was blocked by the browser's `file://` security
+policy, so this milestone does not claim that browser inspection. Physical Android
+rendering, live speech behavior, projector inspection, human visual review, and
+independent hidden generalization remain unverified.

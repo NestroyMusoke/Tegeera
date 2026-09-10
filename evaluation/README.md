@@ -43,3 +43,9 @@ Current automated evidence covers case 1 (`part-whole-flow`), case 11
 pending, so the strict pass count is still zero. This separation is intentional:
 implementation and cue presence can be tested, but visual quality cannot be
 self-certified by the code that produced it.
+
+Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
+case 60 passes strictly with a validated no-op scene hold. Therefore the first batch is
+3/8 strict, 8/8 automated-ready, and zero false-confident. The remaining five failures
+are only the explicit human-review gate on the drawing cases; no visual approval has
+been fabricated.
