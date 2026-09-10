@@ -284,4 +284,18 @@ describe("semantic input frames", () => {
     expect(frame.entities.map(({ text }) => text)).toEqual(["stone", "highest point", "gravity"]);
     expect(frame.meaningCandidates).toEqual([{ family: "kinematics", predicate: "changing-speed-motion" }]);
   });
+
+  it("keeps a function call and return atomic across its then boundary", () => {
+    const result = analyzeTeacherInput("When you call a function, the program jumps to that function, runs it, then comes back to where it left off");
+    expect(result.frames).toHaveLength(1);
+    const frame = result.frames[0];
+    expect(frame.callReturnFlows).toEqual([{
+      construction: "call-return-flow",
+      callerMentionId: frame.entities[0].mentionId,
+      functionMentionId: frame.entities[1].mentionId,
+      callSiteMentionId: frame.entities[2].mentionId
+    }]);
+    expect(frame.entities.map(({ text }) => text)).toEqual(["program", "function", "call site"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "control-flow", predicate: "call-return-flow" }]);
+  });
 });

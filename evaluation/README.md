@@ -38,9 +38,10 @@ Add new frozen, independently collected utterances before publishing generalizat
 figures.
 
 Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
-11 (`force-diagram`), 12 (`changing-speed-motion`), 21 (`labelled-container`), 31
+11 (`force-diagram`), 12 (`changing-speed-motion`), 21 (`labelled-container`), 22
+(`call-return-flow`), 31
 (`geometric-construction`), and 41 (`landscape-flow`). All remain human-review
-pending, so the strict pass count is still zero. This separation is intentional:
+pending, so the strict drawing pass count is still zero. This separation is intentional:
 implementation and cue presence can be tested, but visual quality cannot be
 self-certified by the code that produced it.
 
@@ -50,8 +51,8 @@ case 60 passes strictly with a validated no-op scene hold. Therefore the first b
 are only the explicit human-review gate on the drawing cases; no visual approval has
 been fabricated.
 
-The second frozen development batch adds cases 2, 12, 22, 32, and 42 before their
-production grammars exist. They specify circulation-loop, changing-speed-motion,
+The second development batch froze cases 2, 12, 22, 32, and 42 before their production
+grammars were implemented. They specify circulation-loop, changing-speed-motion,
 call-return-flow, fraction-subtraction, and water-cycle-loop semantics respectively.
 Each declaration names independently scoreable concepts, directed relations, and
 visible cues. Until those capabilities exist, safe clarification is recorded as a
@@ -64,4 +65,7 @@ Case 12 is now automated-ready through the `changing-speed-motion` grammar. Its 
 moving identity, shared apex, gravity relation, continuous flight path, changing velocity
 cues, and accessibility meaning are observed from the real component output. It also
 remains human-review pending. The batch currently measures 3/13 strict, 10/13
-automated-ready, and zero false-confident; cases 22, 32, and 42 remain safely unsupported.
+automated-ready, and zero false-confident. Case 22 is now automated-ready through the
+`call-return-flow` grammar, including the main flow, separate function, both directed
+arrows, and the exact shared return point. The batch is therefore 3/13 strict and 11/13
+automated-ready; cases 32 and 42 remain safely unsupported.

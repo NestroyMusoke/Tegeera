@@ -252,7 +252,7 @@ button {
 @keyframes handover-object { 45% { transform: translateY(-7px) scale(1.08); } }
 @keyframes visual-particle { to { transform: scale(1.55); opacity: .45; } }
 @media (prefers-reduced-motion: reduce) {
-  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
+  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
 }
 
 .doodle-stroke,
@@ -607,7 +607,8 @@ button {
   }
 
   .circulation-flow,
-  .trajectory-flow {
+  .trajectory-flow,
+  .control-flow {
     animation: none !important;
   }
 }
@@ -620,6 +621,13 @@ button {
 .trajectory-flow {
   animation: draw-line 1.1s ease both, trajectory-drift 1.8s linear infinite;
 }
+
+.control-flow {
+  animation: draw-line 0.85s ease both;
+  stroke-dasharray: 14 9;
+}
+
+.control-return { animation-delay: .35s; }
 
 @keyframes trajectory-drift {
   to { stroke-dashoffset: -44; }

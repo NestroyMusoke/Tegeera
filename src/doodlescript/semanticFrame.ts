@@ -12,6 +12,7 @@ import { matchLandscapeFlow } from "./landscapeFlow";
 import { classifySafetyIntent, type SafetyIntent } from "./safetyIntent";
 import { matchCirculationLoop } from "./circulationLoop";
 import { matchChangingSpeedMotion } from "./changingSpeedMotion";
+import { matchCallReturnFlow } from "./callReturnFlow";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -114,6 +115,13 @@ export interface SemanticChangingSpeedMotionMention {
   forceMentionId: string;
 }
 
+export interface SemanticCallReturnMention {
+  construction: "call-return-flow";
+  callerMentionId: string;
+  functionMentionId: string;
+  callSiteMentionId: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -125,7 +133,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -155,6 +163,7 @@ export interface SemanticFrame {
   landscapeFlows: SemanticLandscapeFlowMention[];
   circulationLoops: SemanticCirculationLoopMention[];
   changingSpeedMotions: SemanticChangingSpeedMotionMention[];
+  callReturnFlows: SemanticCallReturnMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -276,7 +285,8 @@ export function meaningIsAmbiguous(candidates: readonly SemanticMeaningCandidate
 
 function populateMeaning(frame: SemanticFrame): void {
   const forceDiagram = matchForceDiagram(frame.normalizedText);
-  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram)) return;
+  const callReturn = matchCallReturnFlow(frame.normalizedText);
+  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
     frame.safetyIntent = safetyIntent;
@@ -308,6 +318,18 @@ function populateMeaning(frame: SemanticFrame): void {
       forceMentionId: addParticipant(frame, changingMotion.forceText)
     });
     frame.meaningCandidates = [{ family: "kinematics", predicate: "changing-speed-motion" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+  if (callReturn) {
+    frame.intent = "describe";
+    frame.callReturnFlows.push({
+      construction: "call-return-flow",
+      callerMentionId: addParticipant(frame, callReturn.callerText),
+      functionMentionId: addParticipant(frame, callReturn.functionText),
+      callSiteMentionId: addParticipant(frame, callReturn.callSiteText)
+    });
+    frame.meaningCandidates = [{ family: "control-flow", predicate: "call-return-flow" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
@@ -486,6 +508,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       landscapeFlows: [],
       circulationLoops: [],
       changingSpeedMotions: [],
+      callReturnFlows: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -499,7 +522,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

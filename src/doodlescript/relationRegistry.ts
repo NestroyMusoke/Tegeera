@@ -4,10 +4,10 @@ import { relationSchema, type DoodleScript, type SceneRelation } from "./schema"
 import { visualActionForPredicate } from "./visualActionRegistry";
 import type { ConceptCapability } from "./conceptRegistry";
 
-export const RELATION_REGISTRY_VERSION = "2.7.0";
+export const RELATION_REGISTRY_VERSION = "2.8.0";
 
 export type RelationKind = SceneRelation["kind"];
-export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment" | "measurement" | "landscape" | "circulation" | "kinematics";
+export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment" | "measurement" | "landscape" | "circulation" | "kinematics" | "control-flow";
 
 interface Cardinality {
   min: number;
@@ -94,7 +94,9 @@ export const relationRegistry: readonly RelationDefinition[] = [
   { kind: "carries", family: "circulation", label: "carries", aliases: [], minimumVersion: "2.6.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "circulation-loop" },
   { kind: "risesTo", family: "kinematics", label: "rises to", aliases: [], minimumVersion: "2.7.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "changing-speed-motion" },
   { kind: "fallsFrom", family: "kinematics", label: "falls from", aliases: [], minimumVersion: "2.7.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "changing-speed-motion" },
-  { kind: "accelerates", family: "kinematics", label: "accelerates", aliases: [], minimumVersion: "2.7.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "changing-speed-motion" }
+  { kind: "accelerates", family: "kinematics", label: "accelerates", aliases: [], minimumVersion: "2.7.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "changing-speed-motion" },
+  { kind: "calls", family: "control-flow", label: "calls", aliases: [], minimumVersion: "2.8.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "call-return-flow" },
+  { kind: "returnsControlTo", family: "control-flow", label: "returns to", aliases: [], minimumVersion: "2.8.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "call-return-flow" }
 ];
 
 const byKind = new Map(relationRegistry.map((definition) => [definition.kind, definition] as const));
@@ -155,7 +157,7 @@ export function matchRegisteredRelation(text: string): RegisteredRelationMatch |
   };
 }
 
-const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0"];
+const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0"];
 
 export function relationSupportsVersion(kind: RelationKind, version: DoodleScript["schemaVersion"]): boolean {
   return versionOrder.indexOf(version) >= versionOrder.indexOf(relationForKind(kind).minimumVersion);

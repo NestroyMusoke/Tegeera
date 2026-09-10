@@ -1182,3 +1182,40 @@ because the browser security policy blocks the local fixture URL. Physical Andro
 rendering, live speech latency, projector inspection, human visual review, and hidden
 generalization remain unverified. The next frozen construction is case 22’s reusable
 call/return flow.
+
+## DoodleScript 2.8 call-and-return capability
+
+Case 22 now resolves through an open control-flow construction with three independent
+roles: caller, function, and call site. The whole call, execution, and return statement
+is parsed as one atomic frame despite its conditional “when” opening and “then” boundary.
+Reusable variants substitute application/service or program/subroutine nouns, while
+mismatched repeated callees and incomplete return descriptions remain unsupported.
+
+DoodleScript 2.8 adds `calls` and `returnsControlTo` relation kinds, with the latter’s
+public semantic predicate remaining `returnsTo` for the gold contract. The relation and
+layout registries move to 2.8.0 with a `control-flow` family and `control-transfer`
+topology. The renderer draws a persistent main execution line, a marked call site, a
+separate function block, a downward call arrow, and a curved return arrow landing on the
+same marked point. It preserves three semantic identities rather than duplicating the
+program or treating the function as a generic speech bubble.
+
+Validation requires exactly one call and one return, a shared function endpoint, three
+distinct correctly typed roles, readable vertical separation, and DoodleScript 2.8 or
+later. Old-version, incomplete, wrong-role, wrong-return-point, and mismatched-language
+fixtures fail without changing the scene. Reduced-motion styling disables both control
+flow animations.
+
+The observational corpus now records 8/60 drawn, 1/60 held, and 51/60 clarified. The
+gold set is 3/13 strict, 11/13 automated-ready, and zero false-confident. Case 22 has
+complete automated semantic and rendered-cue evidence but remains pending real human
+visual approval.
+
+The complete checkpoint passes 316 tests across 40 files. The 250-iteration
+meaning-only benchmark measured 1.61 ms median and 7.13 ms p95, excluding speech, DOM,
+SVG painting, and device work. Twenty-seven real-component static fixtures and a full-App
+call-return workflow are generated. Production JavaScript is 464.62 kB (137.85 kB gzip);
+CSS is 12.30 kB (3.67 kB gzip). Lint, TypeScript, production build, and Android asset
+synchronization pass. Live browser inspection, APK compilation, physical Android
+rendering, speech/device latency, projector inspection, human visual review, and hidden
+generalization remain unverified. The next frozen construction is case 32’s fraction
+subtraction model.

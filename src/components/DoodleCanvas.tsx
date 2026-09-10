@@ -19,6 +19,7 @@ import { geometricConstructionGeometry } from "../doodlescript/geometricConstruc
 import { isLandscapeFlowRelation, landscapeFlowGeometry } from "../doodlescript/landscapeFlow";
 import { circulationLoopGeometry, isCirculationRelation } from "../doodlescript/circulationLoop";
 import { changingSpeedGeometry, isChangingSpeedRelation } from "../doodlescript/changingSpeedMotion";
+import { callReturnGeometry, isCallReturnRelation } from "../doodlescript/callReturnFlow";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -175,6 +176,42 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isCallReturnRelation(relation)) {
+    if (relation.kind !== "calls") return null;
+    const geometry = callReturnGeometry(relations.filter(isCallReturnRelation), entities);
+    if (!geometry) return null;
+    const functionTop = geometry.functionY - 58;
+    const callEndY = functionTop - 8;
+    return <g className="call-return-flow-annotation" aria-label={`${geometry.caller.label} calls ${geometry.fn.label}; control returns to the same ${geometry.callSite.label}`}>
+      <g data-visual-cue="main-flow-line">
+        <path d={`M90 ${geometry.mainY} H900`} fill="none" stroke="#3b4d59" strokeWidth="6" strokeLinecap="round" />
+        <path d={`M882 ${geometry.mainY - 11} L900 ${geometry.mainY} L882 ${geometry.mainY + 11}`} fill="none" stroke="#3b4d59" strokeWidth="5" strokeLinecap="round" />
+        <rect x={geometry.callerX - 92} y={geometry.mainY - 48} width="184" height="72" rx="18" fill="#d7e7e4" stroke="#315f5a" strokeWidth="4" />
+        <text x={geometry.callerX} y={geometry.mainY - 4} textAnchor="middle" fill="#294f4b" fontSize="22" fontWeight="800">{geometry.caller.label}</text>
+      </g>
+      <g data-visual-cue="same-return-point">
+        <circle cx={geometry.callX} cy={geometry.mainY} r="15" fill="#f1c768" stroke="#78571f" strokeWidth="5" />
+        <path d={`M${geometry.callX - 7} ${geometry.mainY} h14 M${geometry.callX} ${geometry.mainY - 7} v14`} stroke="#694914" strokeWidth="3" strokeLinecap="round" />
+        <text x={geometry.callX + 28} y={geometry.mainY - 22} fill="#6b4d18" fontSize="18" fontWeight="700">{geometry.callSite.label}</text>
+      </g>
+      <g data-visual-cue="function-block">
+        <rect x={geometry.callX - 130} y={functionTop} width="260" height="116" rx="22" fill="#e8dcf0" stroke="#644c78" strokeWidth="5" />
+        <path d={`M${geometry.callX - 104} ${functionTop + 31} H${geometry.callX + 104}`} stroke="#8e73a0" strokeWidth="3" strokeLinecap="round" />
+        <text x={geometry.callX} y={functionTop + 72} textAnchor="middle" fill="#523d65" fontSize="26" fontWeight="800">{geometry.fn.label}</text>
+        <text x={geometry.callX} y={functionTop + 98} textAnchor="middle" fill="#755d86" fontSize="16">runs here</text>
+      </g>
+      <g data-visual-cue="call-arrow">
+        <path className="control-flow control-call" d={`M${geometry.callX} ${geometry.mainY + 16} V${callEndY}`} fill="none" stroke="#2d718b" strokeWidth="6" strokeLinecap="round" />
+        <path d={`M${geometry.callX - 11} ${callEndY - 16} L${geometry.callX} ${callEndY} L${geometry.callX + 11} ${callEndY - 16}`} fill="none" stroke="#2d718b" strokeWidth="5" strokeLinecap="round" />
+        <text x={geometry.callX - 23} y={(geometry.mainY + callEndY) / 2} textAnchor="end" fill="#255d73" fontSize="19" fontWeight="700">call</text>
+      </g>
+      <g data-visual-cue="return-arrow">
+        <path className="control-flow control-return" d={`M${geometry.callX + 130} ${geometry.functionY} C${geometry.callX + 245} ${geometry.functionY - 25} ${geometry.callX + 230} ${geometry.mainY + 30} ${geometry.callX + 15} ${geometry.mainY}`} fill="none" stroke="#b05235" strokeWidth="6" strokeLinecap="round" />
+        <path d={`M${geometry.callX + 31} ${geometry.mainY - 10} L${geometry.callX + 15} ${geometry.mainY} L${geometry.callX + 33} ${geometry.mainY + 9}`} fill="none" stroke="#b05235" strokeWidth="5" strokeLinecap="round" />
+        <text x={geometry.callX + 210} y={(geometry.mainY + geometry.functionY) / 2 + 15} textAnchor="middle" fill="#913f29" fontSize="19" fontWeight="700">return</text>
+      </g>
+    </g>;
+  }
   if (isChangingSpeedRelation(relation)) {
     if (relation.kind !== "risesTo") return null;
     const geometry = changingSpeedGeometry(relations.filter(isChangingSpeedRelation), entities);
@@ -518,7 +555,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

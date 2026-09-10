@@ -19,6 +19,7 @@ import { planGeometricConstruction } from "./geometricConstruction";
 import { planLandscapeFlow } from "./landscapeFlow";
 import { planCirculationLoop } from "./circulationLoop";
 import { planChangingSpeedMotion } from "./changingSpeedMotion";
+import { planCallReturnFlow } from "./callReturnFlow";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -62,7 +63,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -91,6 +92,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["flowsFrom", "flowsTo"].includes(command.relation.kind)) upgradeVersion("2.4.0");
     if (command.action === "relate" && ["pumpsTo", "returnsTo", "carries"].includes(command.relation.kind)) upgradeVersion("2.6.0");
     if (command.action === "relate" && ["risesTo", "fallsFrom", "accelerates"].includes(command.relation.kind)) upgradeVersion("2.7.0");
+    if (command.action === "relate" && ["calls", "returnsControlTo"].includes(command.relation.kind)) upgradeVersion("2.8.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -189,7 +191,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         "I heard a negation, so I left the drawing unchanged. Say the positive scene you want shown.",
         "negated-claim", ["Describe the scene positively", "Leave the scene unchanged"]
       );
-      if (frame.discourse.conditional && !frame.forceDiagrams.length) throw new Clarification(
+      if (frame.discourse.conditional && !frame.forceDiagrams.length && !frame.callReturnFlows.length) throw new Clarification(
         "I heard a condition. Tell me whether to draw the condition or its result.",
         "conditional-claim", ["Draw the condition", "Draw the result"]
       );
@@ -244,6 +246,25 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "fallsFrom", sourceIds: [objectId], targetIds: [apexId], predicate: "fallsFrom" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "accelerates", sourceIds: [forceId], targetIds: [objectId], predicate: "accelerates" } });
         focus([objectId], [apexId, forceId]);
+        continue;
+      }
+      const callReturn = frame.callReturnFlows[0];
+      if (callReturn?.construction === "call-return-flow") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const callerId = eventNode(mentionText(callReturn.callerMentionId), "control-caller");
+        const functionId = eventNode(mentionText(callReturn.functionMentionId), "control-function");
+        const callSiteId = eventNode(mentionText(callReturn.callSiteMentionId), "control-call-site");
+        const ids = { callerId, functionId, callSiteId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("A call and return needs distinct caller, function, and return-point identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planCallReturnFlow(working, ids, movableIds);
+        if (!moves) throw new Clarification("That call-and-return flow cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "calls", sourceIds: [callerId], targetIds: [functionId], predicate: "calls" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "returnsControlTo", sourceIds: [functionId], targetIds: [callSiteId], predicate: "returnsTo" } });
+        focus([callerId], [functionId, callSiteId]);
         continue;
       }
       const forceDiagram = frame.forceDiagrams[0];

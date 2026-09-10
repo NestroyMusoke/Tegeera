@@ -1,9 +1,9 @@
 import type { RelationFamily } from "./relationRegistry";
 
-export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.7.0";
+export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.8.0";
 
-export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container" | "geometric-construction" | "landscape-flow" | "circulation-loop" | "changing-speed-motion";
-export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container" | "angular-construction" | "elevation-cross-section" | "closed-loop" | "trajectory-profile";
+export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container" | "geometric-construction" | "landscape-flow" | "circulation-loop" | "changing-speed-motion" | "call-return-flow";
+export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container" | "angular-construction" | "elevation-cross-section" | "closed-loop" | "trajectory-profile" | "control-transfer";
 
 export interface LayoutFamilyDefinition {
   id: LayoutFamilyId;
@@ -31,7 +31,8 @@ export const layoutFamilyRegistry: readonly LayoutFamilyDefinition[] = [
   { id: "geometric-construction", topology: "angular-construction", relationFamilies: ["measurement"], readingDirection: "none", maximumVisibleNodes: 2, maximumNodesPerRank: 1, movementWeight: 0.1, connectorCrossingPenalty: 0 },
   { id: "landscape-flow", topology: "elevation-cross-section", relationFamilies: ["landscape"], readingDirection: "left-to-right", maximumVisibleNodes: 3, maximumNodesPerRank: 1, movementWeight: 0.1, connectorCrossingPenalty: 0 },
   { id: "circulation-loop", topology: "closed-loop", relationFamilies: ["circulation"], readingDirection: "bidirectional", maximumVisibleNodes: 4, maximumNodesPerRank: 2, movementWeight: 0.1, connectorCrossingPenalty: 10_000 },
-  { id: "changing-speed-motion", topology: "trajectory-profile", relationFamilies: ["kinematics"], readingDirection: "bidirectional", maximumVisibleNodes: 3, maximumNodesPerRank: 1, movementWeight: 0.1, connectorCrossingPenalty: 0 }
+  { id: "changing-speed-motion", topology: "trajectory-profile", relationFamilies: ["kinematics"], readingDirection: "bidirectional", maximumVisibleNodes: 3, maximumNodesPerRank: 1, movementWeight: 0.1, connectorCrossingPenalty: 0 },
+  { id: "call-return-flow", topology: "control-transfer", relationFamilies: ["control-flow"], readingDirection: "bidirectional", maximumVisibleNodes: 3, maximumNodesPerRank: 2, movementWeight: 0.1, connectorCrossingPenalty: 10_000 }
 ];
 
 const byId = new Map(layoutFamilyRegistry.map((definition) => [definition.id, definition] as const));

@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.7.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.8.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "changing-speed-motion", "circulation-loop", "contact", "event-graph", "force-diagram", "geometric-construction", "group", "labelled-container", "landscape-flow", "ownership", "part-whole-flow", "queue", "visual-flow"
+      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "contact", "event-graph", "force-diagram", "geometric-construction", "group", "labelled-container", "landscape-flow", "ownership", "part-whole-flow", "queue", "visual-flow"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });
@@ -28,6 +28,7 @@ describe("versioned layout family registry", () => {
     expect(layoutFamilyFor("landscape-flow")).toMatchObject({ topology: "elevation-cross-section", maximumVisibleNodes: 3 });
     expect(layoutFamilyFor("circulation-loop")).toMatchObject({ topology: "closed-loop", readingDirection: "bidirectional", maximumVisibleNodes: 4 });
     expect(layoutFamilyFor("changing-speed-motion")).toMatchObject({ topology: "trajectory-profile", readingDirection: "bidirectional", maximumVisibleNodes: 3 });
+    expect(layoutFamilyFor("call-return-flow")).toMatchObject({ topology: "control-transfer", readingDirection: "bidirectional", maximumVisibleNodes: 3 });
     expect(layoutFamilySupportsRelation("contact", "performance")).toBe(true);
     expect(layoutFamilySupportsRelation("contact", "event")).toBe(false);
   });
