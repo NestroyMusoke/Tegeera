@@ -1,9 +1,9 @@
 import type { RelationFamily } from "./relationRegistry";
 
-export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.2.0";
+export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.3.0";
 
-export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container";
-export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container";
+export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container" | "geometric-construction";
+export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container" | "angular-construction";
 
 export interface LayoutFamilyDefinition {
   id: LayoutFamilyId;
@@ -27,7 +27,8 @@ export const layoutFamilyRegistry: readonly LayoutFamilyDefinition[] = [
   { id: "visual-flow", topology: "directed-graph", relationFamilies: ["visual"], readingDirection: "left-to-right", maximumVisibleNodes: 10, maximumNodesPerRank: 3, movementWeight: 0.18, connectorCrossingPenalty: 10_000 },
   { id: "part-whole-flow", topology: "part-whole", relationFamilies: ["compositional"], readingDirection: "left-to-right", maximumVisibleNodes: 7, maximumNodesPerRank: 3, movementWeight: 0.12, connectorCrossingPenalty: 10_000 },
   { id: "force-diagram", topology: "force-body", relationFamilies: ["mechanical"], readingDirection: "bidirectional", maximumVisibleNodes: 4, maximumNodesPerRank: 3, movementWeight: 0.1, connectorCrossingPenalty: 10_000 },
-  { id: "labelled-container", topology: "nested-container", relationFamilies: ["containment"], readingDirection: "none", maximumVisibleNodes: 2, maximumNodesPerRank: 1, movementWeight: 0.1, connectorCrossingPenalty: 0 }
+  { id: "labelled-container", topology: "nested-container", relationFamilies: ["containment"], readingDirection: "none", maximumVisibleNodes: 2, maximumNodesPerRank: 1, movementWeight: 0.1, connectorCrossingPenalty: 0 },
+  { id: "geometric-construction", topology: "angular-construction", relationFamilies: ["measurement"], readingDirection: "none", maximumVisibleNodes: 2, maximumNodesPerRank: 1, movementWeight: 0.1, connectorCrossingPenalty: 0 }
 ];
 
 const byId = new Map(layoutFamilyRegistry.map((definition) => [definition.id, definition] as const));

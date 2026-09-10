@@ -20,9 +20,9 @@ const relation = (kind: SceneRelation["kind"], overrides: Partial<SceneRelation>
 
 describe("versioned relation registry", () => {
   it("covers every schema relationship with a validated semantic contract", () => {
-    expect(RELATION_REGISTRY_VERSION).toBe("2.2.0");
+    expect(RELATION_REGISTRY_VERSION).toBe("2.3.0");
     expect(relationRegistry.map(({ kind }) => kind).sort()).toEqual([
-      "actsOn", "appliedTo", "away", "before", "causes", "contacts", "contains", "flowsInto", "handover", "illuminates", "opposes", "owns", "partOf", "queuedFor", "shares", "toward", "visualAction"
+      "actsOn", "appliedTo", "away", "before", "causes", "contacts", "contains", "flowsInto", "handover", "illuminates", "measures", "opposes", "owns", "partOf", "queuedFor", "shares", "toward", "visualAction"
     ]);
     expect(validateRelationRegistry()).toEqual([]);
   });
@@ -85,6 +85,7 @@ describe("versioned relation registry", () => {
     expect(relationForKind("causes")).toMatchObject({ family: "event", directed: true, layout: "event-graph" });
     expect(relationForKind("flowsInto")).toMatchObject({ family: "compositional", directed: true, layout: "part-whole-flow" });
     expect(relationForKind("contains")).toMatchObject({ family: "containment", directed: true, layout: "labelled-container" });
+    expect(relationForKind("measures")).toMatchObject({ family: "measurement", directed: true, layout: "geometric-construction" });
   });
 
   it("rejects duplicate aliases, kinds, and invalid cardinalities", () => {

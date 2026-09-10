@@ -1002,3 +1002,34 @@ gzip). Lint, TypeScript, production build, and Android asset synchronization pas
 only build notices are the existing third-party Zod annotation notices. Physical
 Android rendering, speech latency, projector inspection, and independent hidden
 generalization remain unverified.
+
+## DoodleScript 2.3 geometric-construction capability
+
+Case 31 now resolves through an open geometric-construction grammar. It binds an angle
+subject and a numeric or word-form degree measure, while analogy text remains optional
+context rather than a required sentence fragment. Forty-five-degree and
+one-hundred-and-twenty-degree fixtures prove that the construction is not hardcoded to
+a right angle; non-angle measurements remain outside this specialist grammar.
+
+DoodleScript 2.3 adds typed `measures` relations and `geometry`/`measurement` visual
+roles. The relation and layout registries move to 2.3.0 with a measurement family and
+an `angular-construction` topology. The renderer computes the second ray from the
+parsed measure. It emits a square marker only when the measure is exactly 90 degrees
+and an arc for other angles, while preserving the subject and measure as separate
+semantic identities without duplicate concept bubbles. The validator independently
+checks roles, endpoints, version support, and finite in-bounds construction geometry.
+
+The independent baseline now accepts 4/60 and safely clarifies 56/60. Cases 1, 11, 21,
+and 31 are automated-ready, zero are false-confident, and strict passes remain 0/8
+pending explicit human visual approval. The 390-pixel real-app workflow passes true
+perpendicular geometry, right-angle marker, degree identity, typed measurement,
+accessibility, duplication, and overflow checks.
+
+The complete checkpoint passes 285 tests across 35 files. The final concurrent
+250-iteration meaning-only benchmark measured 2.38 ms median and 16.79 ms p95; it
+excludes speech, DOM, SVG painting, and device work. Twenty-three real-component
+fixtures are generated. Production JavaScript is 428.99 kB (129.77 kB gzip); CSS is
+11.59 kB (3.49 kB gzip). Lint, TypeScript, production build, Android asset
+synchronization, and browser inspection pass. Physical Android rendering, speech
+latency, projector inspection, human visual review, and independent hidden
+generalization remain unverified.

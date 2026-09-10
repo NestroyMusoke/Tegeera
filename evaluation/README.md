@@ -38,7 +38,7 @@ Add new frozen, independently collected utterances before publishing generalizat
 figures.
 
 Current automated evidence covers case 1 (`part-whole-flow`), case 11
-(`force-diagram`), and case 21 (`labelled-container`). All remain human-review pending,
-so the strict pass count is still zero. This separation is intentional: implementation
-and cue presence can be tested, but visual quality cannot be self-certified by the code
-that produced it.
+(`force-diagram`), case 21 (`labelled-container`), and case 31
+(`geometric-construction`). All remain human-review pending, so the strict pass count
+is still zero. This separation is intentional: implementation and cue presence can be
+tested, but visual quality cannot be self-certified by the code that produced it.

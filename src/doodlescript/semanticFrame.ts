@@ -7,6 +7,7 @@ import type { ConceptCapability, ConceptCategory } from "./conceptRegistry";
 import { matchPartWholeFlow, type PartWholeChannel } from "./partWholeFlow";
 import { matchForceDiagram } from "./forceDiagram";
 import { matchLabelledContainer } from "./labelledContainer";
+import { matchGeometricConstruction } from "./geometricConstruction";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare";
 
@@ -80,6 +81,13 @@ export interface SemanticContainmentMention {
   shape: "box" | "container" | "cell" | "jar" | "bin";
 }
 
+export interface SemanticGeometricConstructionMention {
+  construction: "geometric-construction";
+  subjectMentionId: string;
+  measurementMentionId: string;
+  degrees: number;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -91,7 +99,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -117,6 +125,7 @@ export interface SemanticFrame {
   compositions: SemanticPartWholeFlowMention[];
   forceDiagrams: SemanticForceDiagramMention[];
   containments: SemanticContainmentMention[];
+  geometricConstructions: SemanticGeometricConstructionMention[];
   quantities: SemanticQuantity[];
   references: SemanticReference[];
   meaningCandidates: SemanticMeaningCandidate[];
@@ -205,12 +214,13 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
   const composition = matchPartWholeFlow(text);
   const forceDiagram = matchForceDiagram(text);
   const containment = matchLabelledContainer(text);
+  const geometry = matchGeometricConstruction(text);
   const stopped = text.match(stopActionPattern);
   const targeted = text.match(targetedActionPattern);
   const directTarget = text.match(directTargetActionPattern);
   const started = text.match(actionPattern);
   const human = stopped ?? targeted ?? directTarget ?? started;
-  if (!composition && !forceDiagram && !containment) {
+  if (!composition && !forceDiagram && !containment && !geometry) {
     add("human-action", human ? actionForAlias(human[2])?.predicate : undefined);
   }
   const relationship = matchRegisteredRelation(text);
@@ -218,10 +228,11 @@ export function detectMeaningCandidates(text: string): SemanticMeaningCandidate[
   add("composition", composition ? "part-whole-flow" : undefined);
   add("mechanical", forceDiagram ? "force-diagram" : undefined);
   add("containment", containment ? "labelled-container" : undefined);
+  add("geometry", geometry ? "geometric-construction" : undefined);
   const visualPrepositional = text.match(visualPrepositionalActionPattern);
   const visualDirect = text.match(visualDirectActionPattern);
   const visual = visualPrepositional ?? visualDirect;
-  if (!composition && !forceDiagram && !containment) {
+  if (!composition && !forceDiagram && !containment && !geometry) {
     add("visual-action", visual ? visualActionForAlias(visual[2])?.predicate : undefined);
   }
   return candidates;
@@ -262,6 +273,19 @@ function populateMeaning(frame: SemanticFrame): void {
       containerMentionId: addParticipant(frame, containment.containerText),
       contentMentionId: addParticipant(frame, containment.contentText),
       shape: containment.shape
+    });
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+
+  const geometry = matchGeometricConstruction(frame.normalizedText);
+  if (geometry) {
+    frame.intent = "describe";
+    frame.geometricConstructions.push({
+      construction: "geometric-construction",
+      subjectMentionId: addParticipant(frame, geometry.subjectText),
+      measurementMentionId: addParticipant(frame, geometry.measureText),
+      degrees: geometry.degrees
     });
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
@@ -379,6 +403,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       compositions: [],
       forceDiagrams: [],
       containments: [],
+      geometricConstructions: [],
       quantities: [],
       references: [],
       meaningCandidates: [],

@@ -434,6 +434,12 @@ value identities, typed containment, genuine nesting geometry, and a non-program
 specimen-container fixture. Its structural outline has a dedicated long-path stroke
 contract so draw-on animation styling cannot truncate the semantic boundary.
 
-Next, implement geometric construction for case 31: two genuinely perpendicular rays,
-a right-angle square, and an explicit 90-degree measure identity. Landscape flow,
-non-visual hold, and correction intent follow as separate verified capabilities.
+The geometric-construction capability now implements case 31 with two mathematically
+perpendicular rays, a vertex-anchored right-angle square, and separate right-angle and
+90-degree identities connected by a typed measurement relation. The same grammar
+computes non-right angles from numeric and word-form measures and uses an arc instead
+of falsely displaying a square marker.
+
+Next, implement landscape flow for case 41 as another open construction rather than a
+stored geography sentence. Non-visual hold and correction intent follow as separate
+verified capabilities.

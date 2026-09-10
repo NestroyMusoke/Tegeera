@@ -73,6 +73,7 @@ const cases = {
   partWholeFlow: ["A plant takes in water through its roots and sunlight through its leaves"],
   forceDiagram: ["If you push a box on a rough floor, friction slows it down"],
   labelledContainer: ["A variable is just a labeled box that holds a value"],
+  geometricConstruction: ["A right angle is exactly ninety degrees, like the corner of a square"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -237,8 +238,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.2.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.2.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.3.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.3.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -333,8 +334,22 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Labelled container caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: distinct identities, typed containment, nested value, variable label, no duplicate bubbles, accessibility, layout';
     }
+    async function verifyGeometry() {
+      await pause();
+      await submit('A right angle is exactly ninety degrees, like the corner of a square');
+      check(document.querySelectorAll('[data-relation-family="measurement"][data-relation-layout="geometric-construction"]').length === 1, 'Measurement relation is missing');
+      check(document.querySelector('[data-layout-topology="angular-construction"]'), 'Angular topology metadata is missing');
+      for (const cue of ['perpendicular-rays', 'right-angle-square', 'ninety-degree-label']) {
+        check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), 'Geometric visual cue is missing: ' + cue);
+      }
+      check(document.querySelector('.geometric-construction-annotation')?.getAttribute('aria-label') === 'right angle measures 90°', 'Angular accessibility meaning is wrong');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 0, 'Geometric identities leaked as duplicate concept bubbles');
+      check([...document.querySelectorAll('[data-entity-id]')].filter(node => node.closest('.doodle-canvas')).length === 2, 'Angle and measurement identities are not preserved');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Geometric construction caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: computed perpendicular rays, right-angle marker, degree identity, typed measurement, no duplicate bubbles, accessibility, layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -353,3 +368,4 @@ await writeFile(resolve(output, "app-motion-phone.html"), framedApp(390, "?motio
 await writeFile(resolve(output, "app-parts-phone.html"), framedApp(390, "?parts"));
 await writeFile(resolve(output, "app-force-phone.html"), framedApp(390, "?force"));
 await writeFile(resolve(output, "app-containers-phone.html"), framedApp(390, "?containers"));
+await writeFile(resolve(output, "app-geometry-phone.html"), framedApp(390, "?geometry"));

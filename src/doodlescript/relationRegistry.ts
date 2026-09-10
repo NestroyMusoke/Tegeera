@@ -4,10 +4,10 @@ import { relationSchema, type DoodleScript, type SceneRelation } from "./schema"
 import { visualActionForPredicate } from "./visualActionRegistry";
 import type { ConceptCapability } from "./conceptRegistry";
 
-export const RELATION_REGISTRY_VERSION = "2.2.0";
+export const RELATION_REGISTRY_VERSION = "2.3.0";
 
 export type RelationKind = SceneRelation["kind"];
-export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment";
+export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment" | "measurement";
 
 interface Cardinality {
   min: number;
@@ -85,7 +85,8 @@ export const relationRegistry: readonly RelationDefinition[] = [
   { kind: "appliedTo", family: "mechanical", label: "applied to", aliases: [], minimumVersion: "2.1.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "force-diagram" },
   { kind: "opposes", family: "mechanical", label: "opposes", aliases: [], minimumVersion: "2.1.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "force-diagram" },
   { kind: "contacts", family: "mechanical", label: "contacts", aliases: [], minimumVersion: "2.1.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: false, layout: "force-diagram" },
-  { kind: "contains", family: "containment", label: "contains", aliases: [], minimumVersion: "2.2.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "labelled-container" }
+  { kind: "contains", family: "containment", label: "contains", aliases: [], minimumVersion: "2.2.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "labelled-container" },
+  { kind: "measures", family: "measurement", label: "measures", aliases: [], minimumVersion: "2.3.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "geometric-construction" }
 ];
 
 const byKind = new Map(relationRegistry.map((definition) => [definition.kind, definition] as const));
@@ -146,7 +147,7 @@ export function matchRegisteredRelation(text: string): RegisteredRelationMatch |
   };
 }
 
-const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0"];
+const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0"];
 
 export function relationSupportsVersion(kind: RelationKind, version: DoodleScript["schemaVersion"]): boolean {
   return versionOrder.indexOf(version) >= versionOrder.indexOf(relationForKind(kind).minimumVersion);

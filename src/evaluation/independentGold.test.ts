@@ -59,7 +59,9 @@ describe("independent semantic-scene gold annotations", () => {
   });
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
-    const result = evaluateIndependentGold(teacherCases, gold, { 1: observeCase(1), 11: observeCase(11), 21: observeCase(21) });
+    const result = evaluateIndependentGold(teacherCases, gold, {
+      1: observeCase(1), 11: observeCase(11), 21: observeCase(21), 31: observeCase(31)
+    });
     expect(result.total).toBe(8);
     expect(result.results).toHaveLength(8);
     expect(result.passed).toBeLessThan(result.total);
@@ -105,6 +107,16 @@ describe("independent semantic-scene gold annotations", () => {
     ]));
     expect(observation.visualGrammarId).toBe("labelled-container");
     expect(evaluateIndependentGold(teacherCases, gold, { 21: observation }).results.find(({ id }) => id === 21))
+      .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
+  });
+
+  it("makes case 31 automated-ready while preserving human visual review", () => {
+    const observation = observeCase(31);
+    expect(new Set(observation.visualCueIds)).toEqual(new Set([
+      "perpendicular-rays", "right-angle-square", "ninety-degree-label"
+    ]));
+    expect(observation.visualGrammarId).toBe("geometric-construction");
+    expect(evaluateIndependentGold(teacherCases, gold, { 31: observation }).results.find(({ id }) => id === 31))
       .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
   });
 });

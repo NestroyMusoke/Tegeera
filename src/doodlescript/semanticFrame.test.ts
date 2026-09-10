@@ -201,6 +201,18 @@ describe("semantic input frames", () => {
     expect(frame.resolutionStatus).toBe("resolved");
   });
 
+  it("extracts numeric angular construction roles without turning the analogy into an entity", () => {
+    const frame = analyzeTeacherInput("A right angle is exactly ninety degrees, like the corner of a square").frames[0];
+    expect(frame.geometricConstructions).toEqual([{
+      construction: "geometric-construction",
+      subjectMentionId: frame.entities[0].mentionId,
+      measurementMentionId: frame.entities[1].mentionId,
+      degrees: 90
+    }]);
+    expect(frame.entities.map(({ text }) => text)).toEqual(["right angle", "ninety degrees"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "geometry", predicate: "geometric-construction" }]);
+  });
+
   it("expands coordinated objects and explicitly inherits one unambiguous subject", () => {
     const result = analyzeTeacherInput("A plant absorbs sunlight and water, then produces oxygen");
     expect(result.frames).toHaveLength(2);

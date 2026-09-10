@@ -15,6 +15,7 @@ import { isPartWholeFlowRelation, partWholeFlowGeometry } from "../doodlescript/
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiagram";
 import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
+import { geometricConstructionGeometry } from "../doodlescript/geometricConstruction";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -196,6 +197,28 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
       </g>
     </g>;
   }
+  if (relation.kind === "measures") {
+    const geometry = geometricConstructionGeometry(relation, entities);
+    if (!geometry) return null;
+    const measureRadians = geometry.degrees * Math.PI / 360;
+    const measureX = geometry.vertexX + Math.cos(measureRadians) * 76;
+    const measureY = geometry.vertexY - Math.sin(measureRadians) * 76;
+    const rayCue = geometry.isRightAngle ? "perpendicular-rays" : "angle-rays";
+    const measureCue = geometry.isRightAngle ? "ninety-degree-label" : "angle-measure-label";
+    const numericLabel = `${Number(geometry.degrees.toFixed(2))}°`;
+    return <g className="geometric-construction-annotation" aria-label={`${geometry.subject.label} measures ${numericLabel}`}>
+      <g data-visual-cue={rayCue}>
+        <path d={`M${geometry.vertexX} ${geometry.vertexY} H${geometry.vertexX + geometry.rayLength}`} fill="none" stroke="#2f302d" strokeWidth="5" strokeLinecap="round" />
+        <path d={`M${geometry.vertexX} ${geometry.vertexY} L${geometry.secondX} ${geometry.secondY}`} fill="none" stroke="#2f302d" strokeWidth="5" strokeLinecap="round" />
+        <circle cx={geometry.vertexX} cy={geometry.vertexY} r="6" fill="#2f302d" />
+      </g>
+      {geometry.isRightAngle
+        ? <path data-visual-cue="right-angle-square" d={`M${geometry.vertexX + 38} ${geometry.vertexY} V${geometry.vertexY - 38} H${geometry.vertexX}`} fill="none" stroke="#b25b37" strokeWidth="4" />
+        : <path data-visual-cue="angle-arc" d={`M${geometry.vertexX + 48} ${geometry.vertexY} A48 48 0 ${geometry.degrees > 180 ? 1 : 0} 0 ${geometry.vertexX + Math.cos(geometry.degrees * Math.PI / 180) * 48} ${geometry.vertexY - Math.sin(geometry.degrees * Math.PI / 180) * 48}`} fill="none" stroke="#b25b37" strokeWidth="3" />}
+      <text data-visual-cue={measureCue} x={measureX} y={measureY} textAnchor="middle" fill="#934424" fontSize="31" fontWeight="800">{numericLabel}</text>
+      <text x={geometry.vertexX + 105} y={geometry.vertexY + 48} textAnchor="middle" fill="#315f52" fontSize="22" fontWeight="700">{geometry.subject.label}</text>
+    </g>;
+  }
   if (isForceRelation(relation)) {
     if (relation.kind !== "appliedTo") return null;
     const geometry = forceDiagramGeometry(relations.filter(isForceRelation), entities);
@@ -374,7 +397,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 
