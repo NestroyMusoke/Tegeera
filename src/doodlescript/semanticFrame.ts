@@ -13,6 +13,7 @@ import { classifySafetyIntent, type SafetyIntent } from "./safetyIntent";
 import { matchCirculationLoop } from "./circulationLoop";
 import { matchChangingSpeedMotion } from "./changingSpeedMotion";
 import { matchCallReturnFlow } from "./callReturnFlow";
+import { matchFractionSubtraction, type FractionValue } from "./fractionSubtraction";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -122,6 +123,17 @@ export interface SemanticCallReturnMention {
   callSiteMentionId: string;
 }
 
+export interface SemanticFractionSubtractionMention {
+  construction: "fraction-subtraction";
+  wholeMentionId: string;
+  initialMentionId: string;
+  removedMentionId: string;
+  remainderMentionId: string;
+  initial: FractionValue;
+  removed: FractionValue;
+  remainder: FractionValue;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -133,7 +145,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -164,6 +176,7 @@ export interface SemanticFrame {
   circulationLoops: SemanticCirculationLoopMention[];
   changingSpeedMotions: SemanticChangingSpeedMotionMention[];
   callReturnFlows: SemanticCallReturnMention[];
+  fractionSubtractions: SemanticFractionSubtractionMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -286,7 +299,8 @@ export function meaningIsAmbiguous(candidates: readonly SemanticMeaningCandidate
 function populateMeaning(frame: SemanticFrame): void {
   const forceDiagram = matchForceDiagram(frame.normalizedText);
   const callReturn = matchCallReturnFlow(frame.normalizedText);
-  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn)) return;
+  const fractionSubtraction = matchFractionSubtraction(frame.normalizedText);
+  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
     frame.safetyIntent = safetyIntent;
@@ -330,6 +344,22 @@ function populateMeaning(frame: SemanticFrame): void {
       callSiteMentionId: addParticipant(frame, callReturn.callSiteText)
     });
     frame.meaningCandidates = [{ family: "control-flow", predicate: "call-return-flow" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+  if (fractionSubtraction) {
+    frame.intent = "describe";
+    frame.fractionSubtractions.push({
+      construction: "fraction-subtraction",
+      wholeMentionId: addParticipant(frame, fractionSubtraction.wholeText),
+      initialMentionId: addParticipant(frame, fractionSubtraction.initialText),
+      removedMentionId: addParticipant(frame, fractionSubtraction.removedText),
+      remainderMentionId: addParticipant(frame, fractionSubtraction.remainderText),
+      initial: fractionSubtraction.initial,
+      removed: fractionSubtraction.removed,
+      remainder: fractionSubtraction.remainder
+    });
+    frame.meaningCandidates = [{ family: "arithmetic", predicate: "fraction-subtraction" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
@@ -509,6 +539,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       circulationLoops: [],
       changingSpeedMotions: [],
       callReturnFlows: [],
+      fractionSubtractions: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -522,7 +553,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

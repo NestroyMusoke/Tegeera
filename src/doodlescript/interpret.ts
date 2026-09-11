@@ -20,6 +20,7 @@ import { planLandscapeFlow } from "./landscapeFlow";
 import { planCirculationLoop } from "./circulationLoop";
 import { planChangingSpeedMotion } from "./changingSpeedMotion";
 import { planCallReturnFlow } from "./callReturnFlow";
+import { planFractionSubtraction } from "./fractionSubtraction";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -63,7 +64,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -93,6 +94,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["pumpsTo", "returnsTo", "carries"].includes(command.relation.kind)) upgradeVersion("2.6.0");
     if (command.action === "relate" && ["risesTo", "fallsFrom", "accelerates"].includes(command.relation.kind)) upgradeVersion("2.7.0");
     if (command.action === "relate" && ["calls", "returnsControlTo"].includes(command.relation.kind)) upgradeVersion("2.8.0");
+    if (command.action === "relate" && ["subtracts", "resultsIn"].includes(command.relation.kind)) upgradeVersion("2.9.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -191,7 +193,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         "I heard a negation, so I left the drawing unchanged. Say the positive scene you want shown.",
         "negated-claim", ["Describe the scene positively", "Leave the scene unchanged"]
       );
-      if (frame.discourse.conditional && !frame.forceDiagrams.length && !frame.callReturnFlows.length) throw new Clarification(
+      if (frame.discourse.conditional && !frame.forceDiagrams.length && !frame.callReturnFlows.length && !frame.fractionSubtractions.length) throw new Clarification(
         "I heard a condition. Tell me whether to draw the condition or its result.",
         "conditional-claim", ["Draw the condition", "Draw the result"]
       );
@@ -265,6 +267,33 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "calls", sourceIds: [callerId], targetIds: [functionId], predicate: "calls" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "returnsControlTo", sourceIds: [functionId], targetIds: [callSiteId], predicate: "returnsTo" } });
         focus([callerId], [functionId, callSiteId]);
+        continue;
+      }
+      const fraction = frame.fractionSubtractions[0];
+      if (fraction?.construction === "fraction-subtraction") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const fractionNode = (mentionId: string, visualRole: SceneEntity["visualRole"], value?: { numerator: number; denominator: number }) => {
+          const id = eventNode(mentionText(mentionId), visualRole);
+          const created = [...commands].reverse().find((command) => command.action === "create" && command.entity.id === id);
+          if (created?.action === "create" && value) created.entity.fraction = value;
+          return id;
+        };
+        const wholeId = fractionNode(fraction.wholeMentionId, "fraction-whole");
+        const initialId = fractionNode(fraction.initialMentionId, "fraction-initial", fraction.initial);
+        const removedId = fractionNode(fraction.removedMentionId, "fraction-removed", fraction.removed);
+        const remainderId = fractionNode(fraction.remainderMentionId, "fraction-remainder", fraction.remainder);
+        const ids = { wholeId, initialId, removedId, remainderId };
+        if (new Set(Object.values(ids)).size !== 4) throw new Clarification("Fraction subtraction needs distinct whole, starting amount, removed amount, and remainder identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planFractionSubtraction(working, ids, movableIds);
+        if (!moves) throw new Clarification("That fraction subtraction cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "subtracts", sourceIds: [removedId], targetIds: [initialId], predicate: "subtracts" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "partOf", sourceIds: [initialId], targetIds: [wholeId], predicate: "partOf" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "resultsIn", sourceIds: [initialId], targetIds: [remainderId], predicate: "resultsIn" } });
+        focus([wholeId, initialId], [removedId, remainderId]);
         continue;
       }
       const forceDiagram = frame.forceDiagrams[0];

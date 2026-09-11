@@ -78,6 +78,7 @@ const cases = {
   circulationLoop: ["The heart pumps blood to the lungs, and the lungs send it back full of oxygen"],
   changingSpeedMotion: ["A ball thrown up in the air slows down, stops for a moment, then falls back faster and faster"],
   callReturnFlow: ["When you call a function, the program jumps to that function, runs it, then comes back to where it left off"],
+  fractionSubtraction: ["If you have three-quarters of a pizza and eat one slice, how much is left?"],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -242,8 +243,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.8.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.8.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.9.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.9.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -434,8 +435,23 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Call-return flow caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: caller, function, exact return point, two directions, atomic control transfer, accessibility, mobile layout';
     }
+    async function verifyFraction() {
+      await pause();
+      await submit('If you have three-quarters of a pizza and eat one slice, how much is left?');
+      check(document.querySelectorAll('[data-relation-family="arithmetic"][data-relation-layout="fraction-subtraction"]').length === 2, 'Arithmetic relation pair is incomplete');
+      check(document.querySelectorAll('[data-layout-topology="part-removal"]').length === 2, 'Part-removal topology metadata is incomplete');
+      for (const cue of ['quartered-circle', 'three-initially-shaded', 'one-slice-removed', 'two-quarters-remain', 'remainder-label']) {
+        check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), 'Fraction cue is missing: ' + cue);
+      }
+      check(document.querySelectorAll('.fraction-subtraction-annotation').length === 1, 'Fraction operation rendered more than once');
+      check(document.querySelector('.fraction-subtraction-annotation')?.getAttribute('aria-label') === 'three quarters of pizza minus one quarter leaves one half', 'Fraction accessibility meaning is wrong');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 0, 'Fraction identities leaked as generic bubbles');
+      check([...document.querySelectorAll('[data-entity-id]')].filter(node => node.closest('.doodle-canvas')).length === 4, 'Four fraction identities were not preserved');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Fraction scene caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: structured fractions, visible starting amount, removed slice, simplified remainder, accessibility, mobile layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -460,3 +476,4 @@ await writeFile(resolve(output, "app-safety-phone.html"), framedApp(390, "?safet
 await writeFile(resolve(output, "app-circulation-phone.html"), framedApp(390, "?circulation"));
 await writeFile(resolve(output, "app-trajectory-phone.html"), framedApp(390, "?trajectory"));
 await writeFile(resolve(output, "app-call-return-phone.html"), framedApp(390, "?call-return"));
+await writeFile(resolve(output, "app-fraction-phone.html"), framedApp(390, "?fraction"));

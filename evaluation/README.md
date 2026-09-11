@@ -39,8 +39,8 @@ figures.
 
 Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
 11 (`force-diagram`), 12 (`changing-speed-motion`), 21 (`labelled-container`), 22
-(`call-return-flow`), 31
-(`geometric-construction`), and 41 (`landscape-flow`). All remain human-review
+(`call-return-flow`), 31 (`geometric-construction`), 32 (`fraction-subtraction`), and 41
+(`landscape-flow`). All remain human-review
 pending, so the strict drawing pass count is still zero. This separation is intentional:
 implementation and cue presence can be tested, but visual quality cannot be
 self-certified by the code that produced it.
@@ -68,4 +68,7 @@ remains human-review pending. The batch currently measures 3/13 strict, 10/13
 automated-ready, and zero false-confident. Case 22 is now automated-ready through the
 `call-return-flow` grammar, including the main flow, separate function, both directed
 arrows, and the exact shared return point. The batch is therefore 3/13 strict and 11/13
-automated-ready; cases 32 and 42 remain safely unsupported.
+automated-ready. Case 32 is now automated-ready through typed numerator/denominator
+values, visible initial and removed portions, and a mathematically validated simplified
+remainder. The batch is now 3/13 strict and 12/13 automated-ready; only case 42 remains
+safely unsupported.

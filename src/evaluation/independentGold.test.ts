@@ -60,7 +60,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
-      1: observeCase(1), 2: observeCase(2), 11: observeCase(11), 12: observeCase(12), 21: observeCase(21), 22: observeCase(22), 31: observeCase(31), 41: observeCase(41)
+      1: observeCase(1), 2: observeCase(2), 11: observeCase(11), 12: observeCase(12), 21: observeCase(21), 22: observeCase(22), 31: observeCase(31), 32: observeCase(32), 41: observeCase(41)
     });
     expect(result.total).toBe(13);
     expect(result.results).toHaveLength(13);
@@ -70,12 +70,12 @@ describe("independent semantic-scene gold annotations", () => {
       failures: ["human visual review pending"]
     });
     expect(result.passed).toBe(3);
-    expect(result.automatedReady).toBe(11);
+    expect(result.automatedReady).toBe(12);
     expect(result.falseConfident).toBe(0);
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 60)).toMatchObject({ passed: true, observedIntent: "hold", automatedReady: true });
-    for (const id of [32, 42]) {
+    for (const id of [42]) {
       expect(result.results.find((caseResult) => caseResult.id === id)).toMatchObject({
         passed: false, observedIntent: "clarify", falseConfident: false, automatedReady: false
       });
@@ -113,6 +113,16 @@ describe("independent semantic-scene gold annotations", () => {
     ]));
     expect(observation.visualGrammarId).toBe("call-return-flow");
     expect(evaluateIndependentGold(teacherCases, gold, { 22: observation }).results.find(({ id }) => id === 22))
+      .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
+  });
+
+  it("makes case 32 automated-ready while preserving human visual review", () => {
+    const observation = observeCase(32);
+    expect(new Set(observation.visualCueIds)).toEqual(new Set([
+      "quartered-circle", "three-initially-shaded", "one-slice-removed", "two-quarters-remain", "remainder-label"
+    ]));
+    expect(observation.visualGrammarId).toBe("fraction-subtraction");
+    expect(evaluateIndependentGold(teacherCases, gold, { 32: observation }).results.find(({ id }) => id === 32))
       .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
   });
 

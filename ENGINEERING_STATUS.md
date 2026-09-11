@@ -1219,3 +1219,40 @@ synchronization pass. Live browser inspection, APK compilation, physical Android
 rendering, speech/device latency, projector inspection, human visual review, and hidden
 generalization remain unverified. The next frozen construction is case 32’s fraction
 subtraction model.
+
+## DoodleScript 2.9 fraction-subtraction capability
+
+Case 32 now resolves through an open fraction-subtraction construction with four
+independent roles: whole, starting fraction, removed fraction, and remainder. Fractions
+are stored as typed numerator/denominator data rather than inferred again from display
+labels. Word forms, hyphenated forms, numeric forms, different wholes, and “slice” as a
+same-denominator unit use the same parser. Invalid fractions, over-removal, zero
+remainders, and denominator mismatches remain safely unsupported.
+
+DoodleScript 2.9 adds `subtracts` and `resultsIn` relations, fraction metadata, and four
+fraction visual roles. The registries move to 2.9.0 with an `arithmetic` family and
+`part-removal` topology. The renderer shows the starting divided circle, the removed
+portion, and the remaining divided circle as a left-to-right operation. For the corpus
+case, three quarters are visibly shaded, one quarter is crossed out, and two quarter
+sectors remain while the result label is simplified to one half.
+
+Validation requires a whole relationship, one subtraction, one result, distinct typed
+identities, matching denominators, a positive removable amount, and a mathematically
+equivalent remainder. Old-version, incomplete, wrong-role, forged-result, mismatched-
+denominator, and over-removal fixtures fail atomically.
+
+The observational corpus now records 9/60 drawn, 1/60 held, and 50/60 clarified. The
+gold set is 3/13 strict, 12/13 automated-ready, and zero false-confident. Case 32 has
+complete automated semantic and rendered-cue evidence but remains pending real human
+visual approval. Only case 42 remains without its expected production grammar in this
+frozen gold batch.
+
+The complete checkpoint passes 322 tests across 41 files. The 250-iteration
+meaning-only benchmark measured 1.70 ms median and 5.08 ms p95, excluding speech, DOM,
+SVG painting, and device work. Twenty-eight real-component static fixtures and a full-App
+fraction workflow are generated. Production JavaScript is 474.12 kB (140.34 kB gzip);
+CSS is 12.30 kB (3.67 kB gzip). Lint, TypeScript, production build, and Android asset
+synchronization pass. Live browser inspection, APK compilation, physical Android
+rendering, speech/device latency, projector inspection, human visual review, and hidden
+generalization remain unverified. The next frozen construction is case 42’s water-cycle
+loop.

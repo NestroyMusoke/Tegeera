@@ -298,4 +298,16 @@ describe("semantic input frames", () => {
     expect(frame.entities.map(({ text }) => text)).toEqual(["program", "function", "call site"]);
     expect(frame.meaningCandidates).toEqual([{ family: "control-flow", predicate: "call-return-flow" }]);
   });
+
+  it("extracts fraction subtraction as structured quantities", () => {
+    const result = analyzeTeacherInput("If you have three-quarters of a pizza and eat one slice, how much is left?");
+    expect(result.frames).toHaveLength(1);
+    const frame = result.frames[0];
+    expect(frame.fractionSubtractions[0]).toMatchObject({
+      construction: "fraction-subtraction", initial: { numerator: 3, denominator: 4 },
+      removed: { numerator: 1, denominator: 4 }, remainder: { numerator: 1, denominator: 2 }
+    });
+    expect(frame.entities.map(({ text }) => text)).toEqual(["pizza", "three quarters", "one quarter", "one half"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "arithmetic", predicate: "fraction-subtraction" }]);
+  });
 });

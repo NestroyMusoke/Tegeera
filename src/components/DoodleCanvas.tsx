@@ -20,6 +20,7 @@ import { isLandscapeFlowRelation, landscapeFlowGeometry } from "../doodlescript/
 import { circulationLoopGeometry, isCirculationRelation } from "../doodlescript/circulationLoop";
 import { changingSpeedGeometry, isChangingSpeedRelation } from "../doodlescript/changingSpeedMotion";
 import { callReturnGeometry, isCallReturnRelation } from "../doodlescript/callReturnFlow";
+import { fractionSubtractionGeometry, isFractionSubtractionRelation } from "../doodlescript/fractionSubtraction";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -176,6 +177,44 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isFractionSubtractionRelation(relation, entities)) {
+    if (relation.kind !== "subtracts") return null;
+    const geometry = fractionSubtractionGeometry(relations, entities);
+    if (!geometry) return null;
+    const initial = geometry.initial.fraction!;
+    const removed = geometry.removed.fraction!;
+    const remainder = geometry.remainder.fraction!;
+    const centers = [215, 505, 795];
+    const cy = 315;
+    const radius = 105;
+    const sector = (cx: number, index: number, denominator: number, fill: string, opacity = 1) => {
+      const start = -Math.PI / 2 + index * Math.PI * 2 / denominator;
+      const end = start + Math.PI * 2 / denominator;
+      const x1 = cx + Math.cos(start) * radius;
+      const y1 = cy + Math.sin(start) * radius;
+      const x2 = cx + Math.cos(end) * radius;
+      const y2 = cy + Math.sin(end) * radius;
+      return <path key={`${cx}-${index}`} d={`M${cx} ${cy} L${x1} ${y1} A${radius} ${radius} 0 ${denominator === 2 ? 1 : 0} 1 ${x2} ${y2} Z`} fill={fill} opacity={opacity} stroke="#614a2a" strokeWidth="3" />;
+    };
+    return <g className="fraction-subtraction-annotation" aria-label={`${geometry.initial.label} of ${geometry.whole.label} minus ${geometry.removed.label} leaves ${geometry.remainder.label}`}>
+      <g data-visual-cue="quartered-circle three-initially-shaded">
+        {Array.from({ length: initial.denominator }, (_, index) => sector(centers[0], index, initial.denominator, index < initial.numerator ? "#e8ad4f" : "#f8f1df"))}
+        <text x={centers[0]} y={cy + 145} textAnchor="middle" fill="#63481f" fontSize="24" fontWeight="800">start: {geometry.initial.label}</text>
+      </g>
+      <g data-visual-cue="one-slice-removed">
+        {Array.from({ length: removed.denominator }, (_, index) => sector(centers[1], index, removed.denominator, index < removed.numerator ? "#d8785e" : "#f8f1df", index < removed.numerator ? .95 : .35))}
+        <path d={`M${centers[1] - 27} ${cy - 27} l54 54 M${centers[1] + 27} ${cy - 27} l-54 54`} stroke="#812f28" strokeWidth="8" strokeLinecap="round" />
+        <text x={centers[1]} y={cy + 145} textAnchor="middle" fill="#853a2c" fontSize="24" fontWeight="800">remove: {geometry.removed.label}</text>
+      </g>
+      <g data-visual-cue="two-quarters-remain remainder-label">
+        {Array.from({ length: initial.denominator }, (_, index) => sector(centers[2], index, initial.denominator, index < initial.numerator - removed.numerator ? "#71b79d" : "#f8f1df"))}
+        <text x={centers[2]} y={cy + 145} textAnchor="middle" fill="#285f50" fontSize="26" fontWeight="900">left: {geometry.remainder.label}</text>
+        <text x={centers[2]} y={cy + 177} textAnchor="middle" fill="#477568" fontSize="18">{remainder.numerator}/{remainder.denominator} of {geometry.whole.label}</text>
+      </g>
+      <text x="360" y={cy + 8} textAnchor="middle" fill="#6f4e28" fontSize="44" fontWeight="800">−</text>
+      <text x="650" y={cy + 8} textAnchor="middle" fill="#366b5c" fontSize="44" fontWeight="800">=</text>
+    </g>;
+  }
   if (isCallReturnRelation(relation)) {
     if (relation.kind !== "calls") return null;
     const geometry = callReturnGeometry(relations.filter(isCallReturnRelation), entities);
@@ -555,7 +594,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 
