@@ -2,6 +2,7 @@ import { build } from "esbuild";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 
 // Render the real component and styles, never a hand-written stand-in.
 const output = resolve(process.argv[2] ?? ".visual-check");
@@ -48,11 +49,13 @@ const result = await build({
 const bundlePath = resolve(output, "renderer.cjs");
 await writeFile(bundlePath, result.outputFiles[0].text);
 const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.meta.url)(bundlePath);
+const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
   .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
+const fixtureRevision = `sha256:${createHash("sha256").update(result.outputFiles[0].text).update(css).update(JSON.stringify(gold)).digest("hex").slice(0, 16)}`;
 const cases = {
   individual: ["Three students each have two books"],
   transfer: ["Three students each have a book", "The first student gives book 1 to the second student"],
@@ -88,6 +91,28 @@ for (const [name, commands] of Object.entries(cases)) {
 await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Composable performance protocol</h1>${renderPerformance()}</main></body></html>`);
 await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
+const reviewFixtureById = {
+  1: "partWholeFlow.html", 2: "circulationLoop.html", 11: "forceDiagram.html",
+  12: "changingSpeedMotion.html", 21: "labelledContainer.html", 22: "callReturnFlow.html",
+  31: "geometricConstruction.html", 32: "fractionSubtraction.html", 41: "landscapeFlow.html",
+  42: "waterCycleLoop.html"
+};
+const reviewCases = gold.cases.filter(({ id, expected }) => reviewFixtureById[id] && expected.intent === "draw");
+const reviewCards = reviewCases.map(({ id, expected }) => `<article data-review-case="${id}">
+  <h2>Case ${id}: ${expected.visualGrammar}</h2>
+  <p><strong>Required cues:</strong> ${expected.visualCues.join(" · ")}</p>
+  <iframe title="Review case ${id}" src="${reviewFixtureById[id]}" width="390" height="760"></iframe>
+  <fieldset><legend>Decision</legend><button type="button" data-decision="approved">Approve</button><button type="button" data-decision="rejected">Reject</button><strong data-current>Pending</strong></fieldset>
+  <label>Review note <textarea rows="3" placeholder="Required for rejection; describe the visible problem"></textarea></label>
+</article>`).join("");
+await writeFile(resolve(output, "human-visual-review.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+body{font-family:system-ui,sans-serif;margin:24px;background:#f5f2e9;color:#302e29}header,article{max-width:900px;margin:0 auto 24px;background:white;padding:20px;border-radius:18px;box-shadow:0 8px 24px #24352d18}iframe{display:block;border:2px solid #c7d2cc;border-radius:14px;max-width:100%;background:white}fieldset{border:0;padding:14px 0;display:flex;gap:10px;align-items:center}button{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid #66877d;background:#edf5f1;font-weight:800}textarea,input{display:block;width:min(100%,600px);box-sizing:border-box;margin-top:6px;padding:9px}header label{display:block;margin:9px 0}.approved{outline:4px solid #62a37e}.rejected{outline:4px solid #c96969}
+</style></head><body><header><h1>Tegeera human visual review</h1><p>Automated readiness is not visual approval. Apply every criterion in <code>evaluation/visual-review-protocol.md</code>.</p><label>Reviewer <input id="reviewer" required></label><label>Device/display <input id="device" required></label><label><input id="reduced" type="checkbox" style="display:inline;width:auto"> Reduced-motion rendering also inspected</label><button id="export" type="button">Export review JSON</button><output id="status">0/${reviewCases.length} decided</output></header>${reviewCards}<script>
+const decisions={}; const cards=[...document.querySelectorAll('[data-review-case]')];
+function refresh(){document.getElementById('status').textContent=Object.keys(decisions).length+'/'+cards.length+' decided';}
+for(const card of cards){for(const button of card.querySelectorAll('[data-decision]'))button.addEventListener('click',()=>{const id=Number(card.dataset.reviewCase);const decision=button.dataset.decision;decisions[id]={decision,note:card.querySelector('textarea').value};card.classList.remove('approved','rejected');card.classList.add(decision);card.querySelector('[data-current]').textContent=decision;refresh();});}
+document.getElementById('export').addEventListener('click',()=>{for(const card of cards){const id=Number(card.dataset.reviewCase);if(decisions[id])decisions[id].note=card.querySelector('textarea').value;}const rejectedWithoutNote=Object.entries(decisions).find(([,value])=>value.decision==='rejected'&&!value.note.trim());if(rejectedWithoutNote){alert('Case '+rejectedWithoutNote[0]+' needs a rejection note.');return;}const evidence={schemaVersion:'1.0.0',fixtureRevision:${JSON.stringify(fixtureRevision)},reviewedAt:new Date().toISOString(),reviewer:document.getElementById('reviewer').value,device:document.getElementById('device').value,viewportPx:390,reducedMotionChecked:document.getElementById('reduced').checked,cases:decisions};if(!evidence.reviewer||!evidence.device||Object.keys(decisions).length!==cards.length){alert('Enter reviewer and device, and decide every case.');return;}const blob=new Blob([JSON.stringify(evidence,null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='tegeera-human-visual-review.json';link.click();URL.revokeObjectURL(link.href);});
+</script></body></html>`);
 console.log(`Rendered ${Object.keys(cases).length + 2} real-component fixtures in ${output}`);
 
 // Exercise the real App in a browser, without adding test-only props to production.

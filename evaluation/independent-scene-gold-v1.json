@@ -193,6 +193,113 @@
       }
     },
     {
+      "id": 3,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "lifecycle-sequence",
+        "concepts": [
+          { "key": "caterpillar", "labels": ["caterpillar"] },
+          { "key": "cocoon", "labels": ["cocoon", "chrysalis"] },
+          { "key": "butterfly", "labels": ["butterfly"] }
+        ],
+        "relations": [
+          { "predicate": "transformsTo", "source": "caterpillar", "target": "cocoon" },
+          { "predicate": "transformsTo", "source": "cocoon", "target": "butterfly" }
+        ],
+        "visualCues": ["caterpillar-stage", "wrapped-cocoon", "emerging-butterfly", "left-to-right-stages"]
+      }
+    },
+    {
+      "id": 13,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "reflection-ray",
+        "concepts": [
+          { "key": "light", "labels": ["light", "light ray"] },
+          { "key": "surface", "labels": ["surface", "mirror", "object"] },
+          { "key": "reflected-light", "labels": ["reflected light", "reflected ray"] }
+        ],
+        "relations": [
+          { "predicate": "travelsTo", "source": "light", "target": "surface" },
+          { "predicate": "reflectsFrom", "source": "reflected-light", "target": "surface" }
+        ],
+        "visualCues": ["straight-incident-ray", "impact-point", "angled-reflected-ray"]
+      }
+    },
+    {
+      "id": 23,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "lifo-stack",
+        "concepts": [
+          { "key": "stack", "labels": ["stack"] },
+          { "key": "items", "labels": ["items", "blocks"] },
+          { "key": "top", "labels": ["top", "stack top"] }
+        ],
+        "relations": [
+          { "predicate": "accessedAt", "source": "items", "target": "top" }
+        ],
+        "visualCues": ["vertical-stack", "top-marker", "push-at-top", "pop-at-top"]
+      }
+    },
+    {
+      "id": 33,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "triangle-angle-sum",
+        "concepts": [
+          { "key": "triangle", "labels": ["triangle"] },
+          { "key": "angles", "labels": ["angles", "three angles"] },
+          { "key": "sum", "labels": ["180 degrees", "180°"] }
+        ],
+        "relations": [
+          { "predicate": "partOf", "source": "angles", "target": "triangle" },
+          { "predicate": "sumsTo", "source": "angles", "target": "sum" }
+        ],
+        "visualCues": ["three-sided-triangle", "three-angle-marks", "angle-sum-180"]
+      }
+    },
+    {
+      "id": 44,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "convergent-plates",
+        "concepts": [
+          { "key": "left-landmass", "labels": ["left landmass", "landmass"] },
+          { "key": "right-landmass", "labels": ["right landmass", "landmass"] },
+          { "key": "mountain", "labels": ["mountain", "mountains"] }
+        ],
+        "relations": [
+          { "predicate": "pushesToward", "source": "left-landmass", "target": "mountain" },
+          { "predicate": "pushesToward", "source": "right-landmass", "target": "mountain" }
+        ],
+        "visualCues": ["opposing-landmasses", "inward-force-arrows", "central-mountain-uplift"]
+      }
+    },
+    {
+      "id": 51,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "ordered-routine",
+        "concepts": [
+          { "key": "wake-up", "labels": ["wake up", "waking up"] },
+          { "key": "get-ready", "labels": ["get ready", "getting ready"] },
+          { "key": "go-to-school", "labels": ["go to school", "school"] }
+        ],
+        "relations": [
+          { "predicate": "before", "source": "wake-up", "target": "get-ready" },
+          { "predicate": "before", "source": "get-ready", "target": "go-to-school" }
+        ],
+        "visualCues": ["wake-up-stage", "ready-stage", "school-stage", "ordered-arrows"]
+      }
+    },
+    {
       "id": 53,
       "expected": {
         "intent": "clarify",

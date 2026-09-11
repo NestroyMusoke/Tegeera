@@ -80,8 +80,21 @@ describe("SpeechSession", () => {
     });
 
     expect(accept).toHaveBeenCalledOnce();
-    expect(accept).toHaveBeenCalledWith("Draw a car");
+    expect(accept).toHaveBeenCalledWith("Draw a car", expect.objectContaining({ finalReceivedAt: expect.any(Number) }));
     expect(session.getSnapshot().status).toBe("idle");
+  });
+
+  it("measures stop-to-final recognition time separately", async () => {
+    const engine = new TestSpeechEngine();
+    const accept = vi.fn();
+    let now = 100;
+    const session = new SpeechSession(engine, accept, { now: () => now });
+    await session.initialize();
+    await session.start();
+    await session.stop();
+    now = 137.5;
+    engine.emit({ type: "final", transcript: "Draw a car", confidence: 0.9 });
+    expect(accept).toHaveBeenCalledWith("Draw a car", { finalReceivedAt: 137.5, finalizationMs: 37.5 });
   });
 
   it("stops listening without applying an unfinished partial result", async () => {

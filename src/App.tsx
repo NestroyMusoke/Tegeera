@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DoodleCanvas } from "./components/DoodleCanvas";
 import { interpretTeacherText } from "./doodlescript/interpret";
 import { applyDoodleScript, initialScene } from "./doodlescript/scene";
@@ -10,6 +10,24 @@ import {
 import { useSpeechSession } from "./speech/useSpeechSession";
 import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
+import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
+import {
+  makeLatencySample,
+  retainLatencyWindow,
+  summarizeLatency,
+  type InputSource,
+  type LatencySample,
+  type PipelineOutcome
+} from "./telemetry/latency";
+
+interface PendingLatency {
+  id: number;
+  source: InputSource;
+  outcome: PipelineOutcome;
+  receivedAt: number;
+  decisionAt: number;
+  speechFinalizationMs?: number;
+}
 
 const suggestions = [
   "Three students share two books",
@@ -24,6 +42,9 @@ function App() {
   const [issues, setIssues] = useState<GateIssue[]>([]);
   const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
   const [holdNotice, setHoldNotice] = useState<string | null>(null);
+  const [latencySamples, setLatencySamples] = useState<LatencySample[]>([]);
+  const pendingLatency = useRef<PendingLatency | null>(null);
+  const latencySequence = useRef(0);
   const scene = history.at(-1) ?? initialScene;
   const canUndo = history.length > 1;
 
@@ -41,9 +62,18 @@ function App() {
     [scene.entities, scene.relations]
   );
 
-  const submit = (text = input) => {
+  const submit = (text = input, speechTiming?: AcceptedSpeechTranscript) => {
+    const receivedAt = speechTiming?.finalReceivedAt ?? performance.now();
+    const source: InputSource = speechTiming ? "speech" : "typed";
+    const markDecision = (outcome: PipelineOutcome) => {
+      pendingLatency.current = {
+        id: ++latencySequence.current, source, outcome, receivedAt,
+        decisionAt: performance.now(), speechFinalizationMs: speechTiming?.finalizationMs
+      };
+    };
     const interpretation = interpretTeacherText(text, scene);
     if (!interpretation.ok) {
+      markDecision("clarify");
       setHoldNotice(null);
       setClarification(interpretation.clarification);
       setIssues([
@@ -56,18 +86,51 @@ function App() {
     }
     const result = validateDoodleScript(interpretation.script, scene);
     if (!result.ok) {
+      markDecision("reject");
       setHoldNotice(null);
       setClarification(null);
       setIssues(result.issues);
       return;
     }
     const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
-    if (!isHold) setHistory((current) => [...current, applyDoodleScript(scene, result.script)]);
+    const nextScene = isHold ? scene : applyDoodleScript(scene, result.script);
+    markDecision(isHold ? "hold" : "draw");
+    if (!isHold) setHistory((current) => [...current, nextScene]);
     setInput("");
     setIssues([]);
     setClarification(null);
     setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
   };
+
+  useLayoutEffect(() => {
+    const pending = pendingLatency.current;
+    if (!pending) return;
+    pendingLatency.current = null;
+    const commitAt = performance.now();
+    let cancelled = false;
+    let frameOne = 0;
+    let frameTwo = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = () => {
+      if (cancelled) return;
+      const sample = makeLatencySample(
+        pending.id, pending.source, pending.outcome, pending.receivedAt,
+        pending.decisionAt, commitAt, performance.now(), pending.speechFinalizationMs
+      );
+      setLatencySamples((current) => retainLatencyWindow(current, sample));
+    };
+    if (typeof requestAnimationFrame === "function") {
+      frameOne = requestAnimationFrame(() => { frameTwo = requestAnimationFrame(finish); });
+    } else {
+      timer = setTimeout(finish, 0);
+    }
+    return () => {
+      cancelled = true;
+      if (frameOne) cancelAnimationFrame(frameOne);
+      if (frameTwo) cancelAnimationFrame(frameTwo);
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  }, [scene.revision, issues, clarification, holdNotice]);
 
   const undo = () => {
     if (!canUndo) return;
@@ -77,12 +140,14 @@ function App() {
     setHoldNotice(null);
   };
 
-  const speech = useSpeechSession((transcript) => submit(transcript));
+  const speech = useSpeechSession((transcript, timing) => submit(transcript, timing));
   const isListening = speech.status === "listening";
   const speechBusy =
     speech.status === "checking" ||
     speech.status === "requesting-permission" ||
     speech.status === "processing";
+  const latestLatency = latencySamples.at(-1);
+  const latencySummary = useMemo(() => summarizeLatency(latencySamples), [latencySamples]);
 
   return (
     <main className="app">
@@ -167,6 +232,25 @@ function App() {
             </button>
           )}
         </div>
+
+        <details className="latency-panel">
+          <summary>Device performance evidence</summary>
+          {latestLatency ? (
+            <output
+              data-input-source={latestLatency.source}
+              data-outcome={latestLatency.outcome}
+              data-decision-ms={latestLatency.decisionMs}
+              data-commit-ms={latestLatency.commitMs}
+              data-paint-ms={latestLatency.paintMs}
+            >
+              Last {latestLatency.source} update: decision {latestLatency.decisionMs.toFixed(2)} ms · painted {latestLatency.paintMs.toFixed(2)} ms
+              {latestLatency.speechFinalizationMs === undefined ? null : ` · speech finalization ${latestLatency.speechFinalizationMs.toFixed(2)} ms`}
+            </output>
+          ) : <span>Submit an explanation to record this device.</span>}
+          <small>
+            Rolling {latencySummary.count}/50: decision p50 {latencySummary.decisionP50Ms.toFixed(2)} ms · paint p50 {latencySummary.paintP50Ms.toFixed(2)} ms · paint p95 {latencySummary.paintP95Ms.toFixed(2)} ms. Speech finalization is reported separately.
+          </small>
+        </details>
 
         {issues.length ? (
           <div className="clarification" role="status" data-clarification-code={clarification?.code}>

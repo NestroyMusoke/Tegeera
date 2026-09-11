@@ -19,6 +19,11 @@ export interface SpeechSnapshot {
   message?: string;
 }
 
+export interface AcceptedSpeechTranscript {
+  finalReceivedAt: number;
+  finalizationMs?: number;
+}
+
 export const initialSpeechSnapshot: SpeechSnapshot = {
   status: "checking",
   partialTranscript: "",
@@ -31,6 +36,7 @@ interface SpeechSessionOptions {
   stabilityDelayMs?: number;
   setTimer?: typeof setTimeout;
   clearTimer?: typeof clearTimeout;
+  now?: () => number;
 }
 
 export class SpeechSession {
@@ -42,16 +48,19 @@ export class SpeechSession {
   private readonly stabilityDelayMs: number;
   private readonly setTimer: typeof setTimeout;
   private readonly clearTimer: typeof clearTimeout;
+  private readonly now: () => number;
+  private stopRequestedAt?: number;
 
   constructor(
     private readonly engine: SpeechEngine,
-    private readonly acceptTranscript: (transcript: string) => void,
+    private readonly acceptTranscript: (transcript: string, timing: AcceptedSpeechTranscript) => void,
     options: SpeechSessionOptions = {}
   ) {
     this.minimumConfidence = options.minimumConfidence ?? 0.58;
     this.stabilityDelayMs = options.stabilityDelayMs ?? 800;
     this.setTimer = options.setTimer ?? setTimeout;
     this.clearTimer = options.clearTimer ?? clearTimeout;
+    this.now = options.now ?? (() => performance.now());
   }
 
   readonly getSnapshot = (): SpeechSnapshot => this.snapshot;
@@ -84,6 +93,7 @@ export class SpeechSession {
       message: undefined
     });
     try {
+      this.stopRequestedAt = undefined;
       const permission = await this.engine.requestPermission();
       if (permission !== "granted") {
         this.update({
@@ -110,6 +120,7 @@ export class SpeechSession {
   async stop(): Promise<void> {
     if (this.snapshot.status !== "listening") return;
     this.clearStabilityTimer();
+    this.stopRequestedAt = this.now();
     this.update({ ...this.snapshot, status: "processing", message: "Finishing…" });
     try {
       await this.engine.stop();
@@ -210,7 +221,12 @@ export class SpeechSession {
       confidence: event.confidence,
       message: "Updating the drawing…"
     });
-    this.acceptTranscript(transcript);
+    const finalReceivedAt = this.now();
+    this.acceptTranscript(transcript, {
+      finalReceivedAt,
+      ...(this.stopRequestedAt === undefined ? {} : { finalizationMs: finalReceivedAt - this.stopRequestedAt })
+    });
+    this.stopRequestedAt = undefined;
     this.update({
       ...this.snapshot,
       status: "idle",

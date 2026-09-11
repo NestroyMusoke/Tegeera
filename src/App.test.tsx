@@ -96,4 +96,16 @@ describe("teaching workflow", () => {
     expect(container.querySelectorAll(".doodle-object")).toHaveLength(0);
     expect(screen.getByText("Revision 0")).toBeTruthy();
   });
+
+  it("records decision-to-painted-frame evidence through the real form", async () => {
+    const { container } = render(<App />);
+    explain("Draw a car");
+    await waitFor(() => expect(container.querySelector('.latency-panel output')).not.toBeNull());
+    const evidence = container.querySelector('.latency-panel output')!;
+    expect(evidence.getAttribute("data-input-source")).toBe("typed");
+    expect(evidence.getAttribute("data-outcome")).toBe("draw");
+    expect(Number(evidence.getAttribute("data-decision-ms"))).toBeGreaterThanOrEqual(0);
+    expect(Number(evidence.getAttribute("data-paint-ms"))).toBeGreaterThanOrEqual(Number(evidence.getAttribute("data-commit-ms")));
+    expect(evidence.textContent).toContain("painted");
+  });
 });

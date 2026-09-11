@@ -1,10 +1,10 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { getDefaultSpeechEngine } from "./androidEngine";
-import { SpeechSession } from "./SpeechSession";
+import { SpeechSession, type AcceptedSpeechTranscript } from "./SpeechSession";
 import type { SpeechEngine } from "./types";
 
 export function useSpeechSession(
-  acceptTranscript: (transcript: string) => void,
+  acceptTranscript: (transcript: string, timing: AcceptedSpeechTranscript) => void,
   engine: SpeechEngine = getDefaultSpeechEngine()
 ) {
   const acceptTranscriptRef = useRef(acceptTranscript);
@@ -14,8 +14,8 @@ export function useSpeechSession(
   const engineRef = useRef<SpeechEngine | null>(null);
   if (!sessionRef.current || engineRef.current !== engine) {
     engineRef.current = engine;
-    sessionRef.current = new SpeechSession(engine, (transcript) =>
-      acceptTranscriptRef.current(transcript)
+    sessionRef.current = new SpeechSession(engine, (transcript, timing) =>
+      acceptTranscriptRef.current(transcript, timing)
     );
   }
   const session = sessionRef.current;

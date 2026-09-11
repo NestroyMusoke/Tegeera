@@ -208,8 +208,10 @@ intent routing, observed visual cues, and explicit human visual approval. Doodle
 now makes the plant example automated-ready through a reusable `part-whole-flow`
 construction. The expanded gold batch also has automated evidence for circulation-loop,
 force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
-geometric-construction, landscape-flow, and water-cycle-loop. All 13 frozen cases now
-have complete automated evidence, while drawing cases remain pending until a reviewer accepts the actual doodles.
+geometric-construction, landscape-flow, and water-cycle-loop. The gold set now contains
+19 frozen cases: the original 13 are automated-ready, while six newly frozen cross-domain
+draw cases safely clarify until their reusable grammars exist. Drawing cases remain
+pending until a reviewer accepts the actual doodles.
 Validation can prove script safety; it cannot substitute for semantic or visual completeness.
 
 The construction is not plant-specific. A registered intake action binds an open whole,

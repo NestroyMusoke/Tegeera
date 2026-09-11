@@ -47,9 +47,10 @@ self-certified by the code that produced it.
 
 Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
 case 60 passes strictly with a validated no-op scene hold. Therefore the complete frozen
-batch is 3/13 strict, 13/13 automated-ready, and zero false-confident. The remaining ten
-failures are only the explicit human-review gate on drawing cases; no visual approval
-has been fabricated.
+batch is 3/19 strict, 13/19 automated-ready, and zero false-confident. Ten implemented
+drawings remain behind the explicit human-review gate, while six newly frozen draw cases
+remain safe clarifications until their reusable grammars exist. No visual approval has
+been fabricated.
 
 The second development batch froze cases 2, 12, 22, 32, and 42 before their production
 grammars were implemented. They specify circulation-loop, changing-speed-motion,
@@ -73,5 +74,17 @@ values, visible initial and removed portions, and a mathematically validated sim
 remainder. Case 42 is now automated-ready through five distinct hydrology identities,
 three typed relations, precipitation and infiltration cues, visible underground water,
 and an evaporation return that visibly closes the loop. The frozen batch is therefore
-3/13 strict, 13/13 automated-ready, and zero false-confident; all ten drawing cases still
-require real human visual approval.
+3/19 strict, 13/19 automated-ready, and zero false-confident; all ten implemented drawing
+cases still require real human visual approval.
+
+The third development batch freezes cases 3, 13, 23, 33, 44, and 51 across lifecycle,
+reflection, stack, geometry, plate-motion, and routine-sequence meanings. They currently
+clarify safely and are not automated-ready. Freezing their concepts, relations, grammar
+IDs, and cues before implementation prevents production code from redefining success.
+
+`visual-review-protocol.md` defines the human-only approval criteria. Running
+`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a ten-scene,
+390-pixel review station with explicit approve/reject decisions, required rejection
+notes, device metadata, reduced-motion confirmation, and downloadable JSON evidence.
+Every export carries a content-derived fixture revision; it never changes gold results
+automatically.

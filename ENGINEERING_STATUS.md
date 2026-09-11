@@ -1293,3 +1293,35 @@ rendering, speech/device latency, projector inspection, human visual review, and
 generalization remain unverified. The next phase is to expand the independently frozen
 gold set and reusable semantic families while beginning real visual-review and device-
 latency evidence.
+
+## Expanded gold and device-latency evidence checkpoint
+
+The independently written development gold now contains 19 cases. The third frozen
+batch adds cases 3, 13, 23, 33, 44, and 51 across all six subject groups before any of
+their production grammars exist. Each has independently declared concepts, directed
+relations, visual grammar, and visible cues. All six currently produce safe clarification,
+so the measured result is 3/19 strict, 13/19 automated-ready, and zero false-confident.
+The 60-case observational coverage remains 10 drawn, one held, and 49 clarified.
+
+The real application now records a bounded rolling window of 50 device samples. Typed
+and speech input are distinguished; semantic decision, React commit, and the second
+animation-frame paint are measured separately. When the teacher explicitly stops speech,
+stop-to-final recognition time is also recorded separately instead of being hidden inside
+render latency. The in-app evidence panel reports the latest sample plus decision p50,
+paint p50, and paint p95. This instrumentation is synchronized into Android, but no
+physical-device numbers are claimed until the app actually runs on one.
+
+A written human-review protocol now gates meaning fidelity, identity completeness,
+relationship clarity, phone legibility, motion discipline, and teaching usefulness.
+The visual-check generator creates a ten-scene 390-pixel review station whose exports
+require reviewer/device metadata, all decisions, rejection notes, and reduced-motion
+status. A content-derived fixture hash binds an export to the rendered implementation.
+Exports remain external evidence and never self-approve the gold corpus.
+
+The checkpoint passes 333 tests across 43 files. The 250-iteration desktop meaning-only
+benchmark measured 1.31 ms median and 10.06 ms p95. Production JavaScript is 485.11 kB
+(143.19 kB gzip), and CSS is 12.80 kB (3.80 kB gzip). Lint, TypeScript, production build,
+29 real-component fixtures, review-station generation, and Android asset synchronization
+pass. Physical Android performance, live microphone behavior, projector inspection, and
+human review decisions remain unverified. The next frozen implementation target is case
+3's reusable lifecycle-sequence grammar.

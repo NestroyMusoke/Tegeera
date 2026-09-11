@@ -431,6 +431,20 @@ button {
   font-size: 12px;
 }
 
+.latency-panel {
+  margin-top: 10px;
+  border: 1px solid rgba(47, 75, 68, 0.18);
+  border-radius: 12px;
+  padding: 9px 12px;
+  color: #435852;
+  background: rgba(247, 250, 246, 0.74);
+  font-size: 0.78rem;
+}
+
+.latency-panel summary { cursor: pointer; font-weight: 800; }
+.latency-panel output, .latency-panel small { display: block; margin-top: 7px; }
+.latency-panel small { line-height: 1.45; color: #65746f; }
+
 .speech-status > div {
   display: grid;
   gap: 2px;

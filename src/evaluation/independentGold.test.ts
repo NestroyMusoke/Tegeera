@@ -27,7 +27,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("validates a unique, cross-domain first annotation batch", () => {
     const parsed = independentGoldCorpusSchema.parse(gold);
-    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 2, 11, 12, 21, 22, 31, 32, 41, 42, 53, 56, 60]);
+    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 2, 11, 12, 21, 22, 31, 32, 41, 42, 3, 13, 23, 33, 44, 51, 53, 56, 60]);
     expect(new Set(parsed.cases.map(({ id }) => teacherCases.find((item) => item.id === id)?.subject))).toEqual(new Set([
       "Biology", "Physics", "Computer Science", "Mathematics", "Geography",
       "Everyday / cross-cutting / deliberately ambiguous"
@@ -62,8 +62,8 @@ describe("independent semantic-scene gold annotations", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
       1: observeCase(1), 2: observeCase(2), 11: observeCase(11), 12: observeCase(12), 21: observeCase(21), 22: observeCase(22), 31: observeCase(31), 32: observeCase(32), 41: observeCase(41), 42: observeCase(42)
     });
-    expect(result.total).toBe(13);
-    expect(result.results).toHaveLength(13);
+    expect(result.total).toBe(19);
+    expect(result.results).toHaveLength(19);
     expect(result.passed).toBeLessThan(result.total);
     expect(result.results.find(({ id }) => id === 1)).toMatchObject({
       passed: false, falseConfident: false, automatedReady: true,
@@ -75,6 +75,11 @@ describe("independent semantic-scene gold annotations", () => {
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 60)).toMatchObject({ passed: true, observedIntent: "hold", automatedReady: true });
+    for (const id of [3, 13, 23, 33, 44, 51]) {
+      expect(result.results.find((caseResult) => caseResult.id === id)).toMatchObject({
+        passed: false, observedIntent: "clarify", falseConfident: false, automatedReady: false
+      });
+    }
     for (const caseResult of result.results) {
       expect(caseResult.passed || caseResult.failures.length > 0).toBe(true);
     }
