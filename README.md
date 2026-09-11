@@ -196,8 +196,8 @@ motion understanding.
 An independent 60-statement teacher corpus lives at
 [`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
 It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present observational baseline draws 9/60, holds the scene for 1/60
-non-visual utterance, and asks for clarification on 50/60. Those numbers measure
+grammar. The present observational baseline draws 10/60, holds the scene for 1/60
+non-visual utterance, and asks for clarification on 49/60. Those numbers measure
 coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
@@ -208,7 +208,8 @@ intent routing, observed visual cues, and explicit human visual approval. Doodle
 now makes the plant example automated-ready through a reusable `part-whole-flow`
 construction. The expanded gold batch also has automated evidence for circulation-loop,
 force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
-geometric-construction, and landscape-flow. Drawing cases remain pending until a reviewer accepts the actual doodles.
+geometric-construction, landscape-flow, and water-cycle-loop. All 13 frozen cases now
+have complete automated evidence, while drawing cases remain pending until a reviewer accepts the actual doodles.
 Validation can prove script safety; it cannot substitute for semantic or visual completeness.
 
 The construction is not plant-specific. A registered intake action binds an open whole,

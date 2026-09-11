@@ -21,6 +21,7 @@ import { planCirculationLoop } from "./circulationLoop";
 import { planChangingSpeedMotion } from "./changingSpeedMotion";
 import { planCallReturnFlow } from "./callReturnFlow";
 import { planFractionSubtraction } from "./fractionSubtraction";
+import { planWaterCycleLoop } from "./waterCycleLoop";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -64,7 +65,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -95,6 +96,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["risesTo", "fallsFrom", "accelerates"].includes(command.relation.kind)) upgradeVersion("2.7.0");
     if (command.action === "relate" && ["calls", "returnsControlTo"].includes(command.relation.kind)) upgradeVersion("2.8.0");
     if (command.action === "relate" && ["subtracts", "resultsIn"].includes(command.relation.kind)) upgradeVersion("2.9.0");
+    if (command.action === "relate" && ["fallsTo", "infiltrates", "evaporatesTo"].includes(command.relation.kind)) upgradeVersion("2.10.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -294,6 +296,28 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "partOf", sourceIds: [initialId], targetIds: [wholeId], predicate: "partOf" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "resultsIn", sourceIds: [initialId], targetIds: [remainderId], predicate: "resultsIn" } });
         focus([wholeId, initialId], [removedId, remainderId]);
+        continue;
+      }
+      const waterCycle = frame.waterCycleLoops[0];
+      if (waterCycle?.construction === "water-cycle-loop") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const cloudId = eventNode(mentionText(waterCycle.cloudMentionId), "cycle-cloud");
+        const rainId = eventNode(mentionText(waterCycle.rainMentionId), "cycle-rain");
+        const soilId = eventNode(mentionText(waterCycle.soilMentionId), "cycle-soil");
+        const waterId = eventNode(mentionText(waterCycle.waterMentionId), "cycle-water");
+        const evaporationId = eventNode(mentionText(waterCycle.evaporationMentionId), "cycle-evaporation");
+        const ids = { cloudId, rainId, soilId, waterId, evaporationId };
+        if (new Set(Object.values(ids)).size !== 5) throw new Clarification("A water cycle needs distinct cloud, rain, soil, water, and evaporation identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planWaterCycleLoop(working, ids, movableIds);
+        if (!moves) throw new Clarification("That water cycle cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "fallsTo", sourceIds: [rainId], targetIds: [soilId], predicate: "fallsTo" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "infiltrates", sourceIds: [waterId], targetIds: [soilId], predicate: "infiltrates" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "evaporatesTo", sourceIds: [evaporationId], targetIds: [cloudId], predicate: "evaporatesTo" } });
+        focus([cloudId, rainId], [soilId, waterId, evaporationId]);
         continue;
       }
       const forceDiagram = frame.forceDiagrams[0];

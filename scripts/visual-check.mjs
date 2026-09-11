@@ -50,7 +50,7 @@ await writeFile(bundlePath, result.outputFiles[0].text);
 const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.meta.url)(bundlePath);
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const cases = {
@@ -79,6 +79,7 @@ const cases = {
   changingSpeedMotion: ["A ball thrown up in the air slows down, stops for a moment, then falls back faster and faster"],
   callReturnFlow: ["When you call a function, the program jumps to that function, runs it, then comes back to where it left off"],
   fractionSubtraction: ["If you have three-quarters of a pizza and eat one slice, how much is left?"],
+  waterCycleLoop: ["Rain falls, soaks into the soil, and some of it later comes back up as evaporation."],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -243,8 +244,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.9.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.9.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.10.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.10.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -450,8 +451,23 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Fraction scene caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: structured fractions, visible starting amount, removed slice, simplified remainder, accessibility, mobile layout';
     }
+    async function verifyWaterCycle() {
+      await pause();
+      await submit('Rain falls, soaks into the soil, and some of it later comes back up as evaporation.');
+      check(document.querySelectorAll('[data-relation-family="hydrology"][data-relation-layout="water-cycle-loop"]').length === 3, 'Hydrology relation triple is incomplete');
+      check(document.querySelectorAll('[data-layout-topology="environmental-cycle"]').length === 3, 'Environmental-cycle topology metadata is incomplete');
+      for (const cue of ['cloud-symbol', 'rain-arrow-down', 'soil-infiltration', 'evaporation-arrow-up', 'closed-water-loop']) {
+        check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), 'Water-cycle cue is missing: ' + cue);
+      }
+      check(document.querySelectorAll('.water-cycle-loop-annotation').length === 1, 'Water cycle rendered more than once');
+      check(document.querySelector('.water-cycle-loop-annotation')?.getAttribute('aria-label') === 'rain falls to soil; water infiltrates soil; evaporation rises to cloud', 'Water-cycle accessibility meaning is wrong');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 0, 'Water-cycle identities leaked as generic bubbles');
+      check([...document.querySelectorAll('[data-entity-id]')].filter(node => node.closest('.doodle-canvas')).length === 5, 'Five water-cycle identities were not preserved');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Water-cycle scene caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: five hydrology identities, precipitation, infiltration, underground water, animated evaporation return, closed loop, accessibility, mobile layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('water-cycle') ? verifyWaterCycle() : params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -477,3 +493,4 @@ await writeFile(resolve(output, "app-circulation-phone.html"), framedApp(390, "?
 await writeFile(resolve(output, "app-trajectory-phone.html"), framedApp(390, "?trajectory"));
 await writeFile(resolve(output, "app-call-return-phone.html"), framedApp(390, "?call-return"));
 await writeFile(resolve(output, "app-fraction-phone.html"), framedApp(390, "?fraction"));
+await writeFile(resolve(output, "app-water-cycle-phone.html"), framedApp(390, "?water-cycle"));

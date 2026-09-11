@@ -39,17 +39,17 @@ figures.
 
 Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
 11 (`force-diagram`), 12 (`changing-speed-motion`), 21 (`labelled-container`), 22
-(`call-return-flow`), 31 (`geometric-construction`), 32 (`fraction-subtraction`), and 41
-(`landscape-flow`). All remain human-review
+(`call-return-flow`), 31 (`geometric-construction`), 32 (`fraction-subtraction`), 41
+(`landscape-flow`), and 42 (`water-cycle-loop`). All remain human-review
 pending, so the strict drawing pass count is still zero. This separation is intentional:
 implementation and cue presence can be tested, but visual quality cannot be
 self-certified by the code that produced it.
 
 Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
-case 60 passes strictly with a validated no-op scene hold. Therefore the first batch is
-3/8 strict, 8/8 automated-ready, and zero false-confident. The remaining five failures
-are only the explicit human-review gate on the drawing cases; no visual approval has
-been fabricated.
+case 60 passes strictly with a validated no-op scene hold. Therefore the complete frozen
+batch is 3/13 strict, 13/13 automated-ready, and zero false-confident. The remaining ten
+failures are only the explicit human-review gate on drawing cases; no visual approval
+has been fabricated.
 
 The second development batch froze cases 2, 12, 22, 32, and 42 before their production
 grammars were implemented. They specify circulation-loop, changing-speed-motion,
@@ -70,5 +70,8 @@ automated-ready, and zero false-confident. Case 22 is now automated-ready throug
 arrows, and the exact shared return point. The batch is therefore 3/13 strict and 11/13
 automated-ready. Case 32 is now automated-ready through typed numerator/denominator
 values, visible initial and removed portions, and a mathematically validated simplified
-remainder. The batch is now 3/13 strict and 12/13 automated-ready; only case 42 remains
-safely unsupported.
+remainder. Case 42 is now automated-ready through five distinct hydrology identities,
+three typed relations, precipitation and infiltration cues, visible underground water,
+and an evaporation return that visibly closes the loop. The frozen batch is therefore
+3/13 strict, 13/13 automated-ready, and zero false-confident; all ten drawing cases still
+require real human visual approval.

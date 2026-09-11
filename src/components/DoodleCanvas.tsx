@@ -21,6 +21,7 @@ import { circulationLoopGeometry, isCirculationRelation } from "../doodlescript/
 import { changingSpeedGeometry, isChangingSpeedRelation } from "../doodlescript/changingSpeedMotion";
 import { callReturnGeometry, isCallReturnRelation } from "../doodlescript/callReturnFlow";
 import { fractionSubtractionGeometry, isFractionSubtractionRelation } from "../doodlescript/fractionSubtraction";
+import { isWaterCycleRelation, waterCycleGeometry } from "../doodlescript/waterCycleLoop";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -177,6 +178,47 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isWaterCycleRelation(relation)) {
+    if (relation.kind !== "fallsTo") return null;
+    const geometry = waterCycleGeometry(relations.filter(isWaterCycleRelation), entities);
+    if (!geometry) return null;
+    const cloudX = geometry.cloud.x * 10;
+    const cloudY = geometry.cloud.y * 6.2;
+    const soilY = geometry.soil.y * 6.2;
+    const waterX = geometry.water.x * 10;
+    const waterY = geometry.water.y * 6.2;
+    const evaporationX = geometry.evaporation.x * 10;
+    const evaporationY = geometry.evaporation.y * 6.2;
+    return <g className="water-cycle-loop-annotation" aria-label={`${geometry.rain.label} falls to ${geometry.soil.label}; ${geometry.water.label} infiltrates ${geometry.soil.label}; ${geometry.evaporation.label} rises to ${geometry.cloud.label}`}>
+      <g data-visual-cue="cloud-symbol">
+        <path d={`M${cloudX - 112} ${cloudY + 26} C${cloudX - 132} ${cloudY - 20} ${cloudX - 72} ${cloudY - 48} ${cloudX - 42} ${cloudY - 16} C${cloudX - 20} ${cloudY - 78} ${cloudX + 70} ${cloudY - 65} ${cloudX + 78} ${cloudY - 10} C${cloudX + 132} ${cloudY - 16} ${cloudX + 148} ${cloudY + 43} ${cloudX + 102} ${cloudY + 53} H${cloudX - 76} C${cloudX - 103} ${cloudY + 53} ${cloudX - 118} ${cloudY + 43} ${cloudX - 112} ${cloudY + 26} Z`} fill="#dce9ec" stroke="#466b73" strokeWidth="5" />
+        <text x={cloudX + 8} y={cloudY + 20} textAnchor="middle" fill="#385c64" fontSize="23" fontWeight="800">{geometry.cloud.label}</text>
+      </g>
+      <g data-visual-cue="rain-arrow-down">
+        <path className="water-cycle-flow" d={`M${cloudX} ${cloudY + 58} V${soilY - 42}`} fill="none" stroke="#397d9d" strokeWidth="8" strokeLinecap="round" strokeDasharray="13 12" />
+        <path d={`M${cloudX - 14} ${soilY - 62} L${cloudX} ${soilY - 42} L${cloudX + 14} ${soilY - 62}`} fill="none" stroke="#397d9d" strokeWidth="7" strokeLinecap="round" />
+        <path d={`M${cloudX - 48} ${cloudY + 78} q-12 18 0 29 q12 -11 0 -29 M${cloudX + 48} ${cloudY + 94} q-12 18 0 29 q12 -11 0 -29`} fill="#79b7ca" stroke="#397d9d" strokeWidth="2" />
+        <text x={cloudX + 24} y={(cloudY + soilY) / 2} fill="#2f6b88" fontSize="21" fontWeight="800">{geometry.rain.label}</text>
+      </g>
+      <g data-visual-cue="soil-infiltration">
+        <path d={`M90 ${soilY} Q300 ${soilY - 18} 510 ${soilY} T930 ${soilY} V570 H90 Z`} fill="#d7bd83" stroke="#685335" strokeWidth="5" />
+        <path d={`M110 ${soilY + 45} q75 -32 150 0 t150 0 t150 0 t150 0 t150 0`} fill="none" stroke="#9b7748" strokeWidth="4" strokeDasharray="18 12" />
+        <path className="water-cycle-flow" d={`M${cloudX} ${soilY + 8} C${cloudX + 20} ${soilY + 55} ${waterX - 38} ${waterY - 35} ${waterX} ${waterY - 12}`} fill="none" stroke="#438ca8" strokeWidth="7" strokeDasharray="10 11" />
+        <text x={cloudX - 92} y={soilY + 31} fill="#604b30" fontSize="22" fontWeight="800">{geometry.soil.label}</text>
+        <text x={cloudX + 55} y={soilY + 65} fill="#326f87" fontSize="18" fontWeight="700">soaks in</text>
+      </g>
+      <g data-visual-cue="underground-water">
+        <path d={`M${waterX - 92} ${waterY} q23 -22 46 0 t46 0 t46 0 t46 0 v34 h-184 Z`} fill="#8bc7d6" stroke="#397d9d" strokeWidth="4" />
+        <text x={waterX} y={waterY + 27} textAnchor="middle" fill="#285f78" fontSize="21" fontWeight="800">{geometry.water.label}</text>
+      </g>
+      <g data-visual-cue="evaporation-arrow-up closed-water-loop">
+        <path className="water-cycle-flow water-cycle-return" d={`M${waterX - 88} ${waterY + 5} C${evaporationX - 15} ${waterY + 40} ${evaporationX - 70} ${cloudY + 110} ${cloudX - 98} ${cloudY + 38}`} fill="none" stroke="#a05b88" strokeWidth="8" strokeLinecap="round" strokeDasharray="15 11" />
+        <path d={`M${cloudX - 112} ${cloudY + 61} L${cloudX - 98} ${cloudY + 38} L${cloudX - 75} ${cloudY + 51}`} fill="none" stroke="#a05b88" strokeWidth="7" strokeLinecap="round" />
+        <path d={`M${evaporationX - 18} ${evaporationY + 22} q18 -25 0 -50 M${evaporationX + 15} ${evaporationY + 12} q18 -25 0 -50`} fill="none" stroke="#bd79a3" strokeWidth="5" strokeLinecap="round" />
+        <text x={evaporationX} y={evaporationY + 55} textAnchor="middle" fill="#84476f" fontSize="21" fontWeight="800">{geometry.evaporation.label}</text>
+      </g>
+    </g>;
+  }
   if (isFractionSubtractionRelation(relation, entities)) {
     if (relation.kind !== "subtracts") return null;
     const geometry = fractionSubtractionGeometry(relations, entities);
@@ -594,7 +636,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

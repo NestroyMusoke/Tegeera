@@ -1256,3 +1256,40 @@ synchronization pass. Live browser inspection, APK compilation, physical Android
 rendering, speech/device latency, projector inspection, human visual review, and hidden
 generalization remain unverified. The next frozen construction is case 42’s water-cycle
 loop.
+
+## DoodleScript 2.10 water-cycle capability
+
+Case 42 now resolves through an open water-cycle construction with five independent
+roles: cloud, rain, soil, infiltrated water, and evaporation. Controlled precipitation,
+infiltration, ground/soil, and water-vapor wording uses the same semantic slots; an
+incomplete description without the return phase remains safely unsupported. No corpus
+sentence or finished case-specific SVG is stored as a lookup.
+
+DoodleScript 2.10 adds `fallsTo`, `infiltrates`, and `evaporatesTo` relations plus five
+hydrology visual roles. The registries move to 2.10.0 with a `hydrology` family and an
+`environmental-cycle` topology. One composed renderer draws an original cloud, downward
+rain path, soil cross-section, infiltration path, underground-water reservoir, and a
+curved evaporation arrow returning to the cloud. Motion styling animates the flows while
+respecting reduced-motion preferences.
+
+Validation independently requires exactly one of each hydrology relation, a shared soil
+endpoint for rain and infiltrated water, the correct evaporation-to-cloud direction,
+five distinct correctly typed identities, readable vertical ordering, and DoodleScript
+2.10 or later. Old-version, incomplete, wrong-role, disconnected-target, and incomplete-
+language fixtures fail atomically.
+
+The observational corpus now records 10/60 drawn, 1/60 held, and 49/60 clarified. The
+entire frozen gold set is 3/13 strict, 13/13 automated-ready, and zero false-confident.
+All ten drawing cases have complete machine-checkable concepts, relations, grammars, and
+rendered cues, but remain honestly pending real human visual approval.
+
+The complete checkpoint passes 328 tests across 42 files. The 250-iteration meaning-only
+benchmark measured 1.82 ms median and 10.01 ms p95, excluding speech, DOM, SVG painting,
+and device work. Twenty-nine real-component static fixtures and a full-App water-cycle
+workflow are generated. Production JavaScript is 482.59 kB (142.24 kB gzip); CSS is
+12.47 kB (3.70 kB gzip). Lint, TypeScript, production build, and Android asset
+synchronization pass. Live browser inspection, APK compilation, physical Android
+rendering, speech/device latency, projector inspection, human visual review, and hidden
+generalization remain unverified. The next phase is to expand the independently frozen
+gold set and reusable semantic families while beginning real visual-review and device-
+latency evidence.

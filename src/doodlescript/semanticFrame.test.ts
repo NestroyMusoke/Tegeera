@@ -310,4 +310,20 @@ describe("semantic input frames", () => {
     expect(frame.entities.map(({ text }) => text)).toEqual(["pizza", "three quarters", "one quarter", "one half"]);
     expect(frame.meaningCandidates).toEqual([{ family: "arithmetic", predicate: "fraction-subtraction" }]);
   });
+
+  it("keeps a water cycle atomic and assigns five semantic roles", () => {
+    const result = analyzeTeacherInput("Rain falls, soaks into the soil, and some of it later comes back up as evaporation.");
+    expect(result.frames).toHaveLength(1);
+    const frame = result.frames[0];
+    expect(frame.waterCycleLoops).toEqual([{
+      construction: "water-cycle-loop",
+      cloudMentionId: frame.entities[0].mentionId,
+      rainMentionId: frame.entities[1].mentionId,
+      soilMentionId: frame.entities[2].mentionId,
+      waterMentionId: frame.entities[3].mentionId,
+      evaporationMentionId: frame.entities[4].mentionId
+    }]);
+    expect(frame.entities.map(({ text }) => text)).toEqual(["cloud", "rain", "soil", "water", "evaporation"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "hydrology", predicate: "water-cycle-loop" }]);
+  });
 });

@@ -14,6 +14,7 @@ import { matchCirculationLoop } from "./circulationLoop";
 import { matchChangingSpeedMotion } from "./changingSpeedMotion";
 import { matchCallReturnFlow } from "./callReturnFlow";
 import { matchFractionSubtraction, type FractionValue } from "./fractionSubtraction";
+import { matchWaterCycleLoop } from "./waterCycleLoop";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -134,6 +135,15 @@ export interface SemanticFractionSubtractionMention {
   remainder: FractionValue;
 }
 
+export interface SemanticWaterCycleMention {
+  construction: "water-cycle-loop";
+  cloudMentionId: string;
+  rainMentionId: string;
+  soilMentionId: string;
+  waterMentionId: string;
+  evaporationMentionId: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -145,7 +155,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -177,6 +187,7 @@ export interface SemanticFrame {
   changingSpeedMotions: SemanticChangingSpeedMotionMention[];
   callReturnFlows: SemanticCallReturnMention[];
   fractionSubtractions: SemanticFractionSubtractionMention[];
+  waterCycleLoops: SemanticWaterCycleMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -363,6 +374,21 @@ function populateMeaning(frame: SemanticFrame): void {
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
+  const waterCycle = matchWaterCycleLoop(frame.normalizedText);
+  if (waterCycle) {
+    frame.intent = "describe";
+    frame.waterCycleLoops.push({
+      construction: "water-cycle-loop",
+      cloudMentionId: addParticipant(frame, waterCycle.cloudText),
+      rainMentionId: addParticipant(frame, waterCycle.rainText),
+      soilMentionId: addParticipant(frame, waterCycle.soilText),
+      waterMentionId: addParticipant(frame, waterCycle.waterText),
+      evaporationMentionId: addParticipant(frame, waterCycle.evaporationText)
+    });
+    frame.meaningCandidates = [{ family: "hydrology", predicate: "water-cycle-loop" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
   if (meaningIsAmbiguous(frame.meaningCandidates)) {
     frame.resolutionStatus = "needs-clarification";
@@ -540,6 +566,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       changingSpeedMotions: [],
       callReturnFlows: [],
       fractionSubtractions: [],
+      waterCycleLoops: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
