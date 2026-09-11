@@ -27,6 +27,7 @@ import { callReturnGeometry, isCallReturnRelation } from "./callReturnFlow";
 import { fractionSubtractionGeometry } from "./fractionSubtraction";
 import { isWaterCycleRelation, waterCycleGeometry } from "./waterCycleLoop";
 import { isLifecycleRelation, lifecycleSequenceGeometry } from "./lifecycleSequence";
+import { isReflectionRelation, reflectionRayGeometry } from "./reflectionRay";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -84,7 +85,7 @@ export function validateDoodleScript(
   for (const command of script.commands) {
     const changesPerformance = command.action === "create" ? Boolean(command.entity.performance)
       : command.action === "update" ? command.performance !== undefined : false;
-    if (changesPerformance && !["1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0"].includes(script.schemaVersion)) {
+    if (changesPerformance && !["1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"].includes(script.schemaVersion)) {
       issues.push({ gate: "schema", message: "Character performances require DoodleScript 1.5.0." });
     }
     if (command.action === "unrelate") {
@@ -93,7 +94,7 @@ export function validateDoodleScript(
         const definition = relationForKind(existingKind);
         issues.push({ gate: "schema", message: `${definition.label} edits require DoodleScript ${definition.minimumVersion} or later.` });
       }
-      if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0 or later." });
+      if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Relationship edits require DoodleScript 1.2.0 or later." });
       if (!relationIds.delete(command.relationId)) issues.push({ gate: "semantic", message: "That relationship no longer exists." });
       relationKinds.delete(command.relationId);
     }
@@ -107,7 +108,7 @@ export function validateDoodleScript(
       }
       for (const message of relationCardinalityIssues(relation)) issues.push({ gate: "semantic", message });
       if (isMotion(relation)) {
-        if (!["1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Directed motion requires DoodleScript 1.3.0 or later." });
+        if (!["1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Directed motion requires DoodleScript 1.3.0 or later." });
         if (relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) issues.push({ gate: "semantic", message: "Motion needs one actor and one reference object." });
       }
       if (isQueue(relation)) {
@@ -186,7 +187,7 @@ export function validateDoodleScript(
 
   const projected = applyDoodleScript(scene, script);
   if (script.context) {
-    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
+    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
     for (const references of [script.context.subjectIds, script.context.objectIds]) {
       if (new Set(references).size !== references.length || references.some((id) => !ids.has(id))) {
         issues.push({ gate: "semantic", message: "Conversation context refers to missing or duplicate objects." });
@@ -230,6 +231,10 @@ export function validateDoodleScript(
   const lifecycleRelations = (projected.relations ?? []).filter(isLifecycleRelation);
   if (lifecycleRelations.length && (lifecycleRelations.length !== 2 || !lifecycleSequenceGeometry(lifecycleRelations, projected.entities))) {
     issues.push({ gate: "semantic", message: "A lifecycle sequence needs three distinct stages joined by exactly two ordered transformations." });
+  }
+  const reflectionRelations = (projected.relations ?? []).filter(isReflectionRelation);
+  if (reflectionRelations.length && (reflectionRelations.length !== 2 || !reflectionRayGeometry(reflectionRelations, projected.entities))) {
+    issues.push({ gate: "semantic", message: "Reflection needs one incident ray and one reflected ray meeting the same reflective surface at a valid impact point." });
   }
   for (const entity of projected.entities) {
     if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {

@@ -1359,4 +1359,32 @@ lifecycle mobile workflow are generated. Production JavaScript is 494.27 kB (145
 gzip), and CSS is 13.37 kB (3.89 kB gzip). Lint, TypeScript, production build, review-
 station generation, and Android asset synchronization pass. Physical Android performance,
 live microphone behavior, projector inspection, and human visual review remain unverified.
+
+## DoodleScript 2.12 computed reflection-ray capability
+
+Case 13 now enters through a reusable optics matcher with controlled light-source and
+reflective-surface slots; no corpus statement table is available to production code.
+DoodleScript 2.12 adds `travelsTo` and `reflectsFrom`, three optics roles, the `optics`
+relation family, and a `reflection-ray` / `ray-reflection` layout contract. The planner
+keeps incident light, shared surface, and reflected light as distinct identities.
+
+The geometry layer computes the outgoing vector from the incoming vector and unit surface
+normal using `r = v - 2(v·n)n`. Validation rejects missing edges, mismatched surfaces,
+wrong roles, duplicate identities, and unreadable ray geometry. The original procedural
+SVG renders a straight incident ray, common impact point, dashed normal, equal-angle cues,
+reflective surface, and angled outgoing ray. Motion is restrained to ray travel and is
+disabled without losing meaning under reduced-motion preferences.
+
+The observational corpus is now 12/60 drawn, 1/60 held, and 47/60 clarified. The frozen
+gold set is 3/19 strict, 15/19 automated-ready, and zero false-confident; case 13 remains
+human-review pending rather than self-approved. The review station now contains twelve
+implemented drawings.
+
+All 345 tests across 45 files pass. The final 250-iteration meaning-pipeline run measured
+1.48 ms median and 13.86 ms p95, excluding speech, React commit, DOM/SVG painting, and
+device work. Thirty-one real-component fixtures were generated. Production JavaScript is
+502.30 kB (147.38 kB gzip), and CSS is 13.51 kB (3.92 kB gzip). Lint, TypeScript,
+production build, review-fixture generation, and Android asset synchronization pass.
+Live microphone/device latency, projector inspection, and real human visual approval
+remain unverified. The next frozen target is case 23's reusable LIFO stack grammar.
 The next frozen target is case 13's reusable light-reflection construction.

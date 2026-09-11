@@ -1,9 +1,9 @@
 import type { RelationFamily } from "./relationRegistry";
 
-export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.11.0";
+export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.12.0";
 
-export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container" | "geometric-construction" | "landscape-flow" | "circulation-loop" | "changing-speed-motion" | "call-return-flow" | "fraction-subtraction" | "water-cycle-loop" | "lifecycle-sequence";
-export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container" | "angular-construction" | "elevation-cross-section" | "closed-loop" | "trajectory-profile" | "control-transfer" | "part-removal" | "environmental-cycle" | "stage-sequence";
+export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container" | "geometric-construction" | "landscape-flow" | "circulation-loop" | "changing-speed-motion" | "call-return-flow" | "fraction-subtraction" | "water-cycle-loop" | "lifecycle-sequence" | "reflection-ray";
+export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container" | "angular-construction" | "elevation-cross-section" | "closed-loop" | "trajectory-profile" | "control-transfer" | "part-removal" | "environmental-cycle" | "stage-sequence" | "ray-reflection";
 
 export interface LayoutFamilyDefinition {
   id: LayoutFamilyId;
@@ -35,7 +35,8 @@ export const layoutFamilyRegistry: readonly LayoutFamilyDefinition[] = [
   { id: "call-return-flow", topology: "control-transfer", relationFamilies: ["control-flow"], readingDirection: "bidirectional", maximumVisibleNodes: 3, maximumNodesPerRank: 2, movementWeight: 0.1, connectorCrossingPenalty: 10_000 },
   { id: "fraction-subtraction", topology: "part-removal", relationFamilies: ["arithmetic"], readingDirection: "left-to-right", maximumVisibleNodes: 4, maximumNodesPerRank: 3, movementWeight: 0.1, connectorCrossingPenalty: 0 },
   { id: "water-cycle-loop", topology: "environmental-cycle", relationFamilies: ["hydrology"], readingDirection: "bidirectional", maximumVisibleNodes: 5, maximumNodesPerRank: 2, movementWeight: 0.1, connectorCrossingPenalty: 10_000 },
-  { id: "lifecycle-sequence", topology: "stage-sequence", relationFamilies: ["lifecycle"], readingDirection: "left-to-right", maximumVisibleNodes: 3, maximumNodesPerRank: 3, movementWeight: 0.1, connectorCrossingPenalty: 10_000 }
+  { id: "lifecycle-sequence", topology: "stage-sequence", relationFamilies: ["lifecycle"], readingDirection: "left-to-right", maximumVisibleNodes: 3, maximumNodesPerRank: 3, movementWeight: 0.1, connectorCrossingPenalty: 10_000 },
+  { id: "reflection-ray", topology: "ray-reflection", relationFamilies: ["optics"], readingDirection: "left-to-right", maximumVisibleNodes: 3, maximumNodesPerRank: 3, movementWeight: 0.1, connectorCrossingPenalty: 10_000 }
 ];
 
 const byId = new Map(layoutFamilyRegistry.map((definition) => [definition.id, definition] as const));

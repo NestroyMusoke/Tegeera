@@ -16,6 +16,7 @@ import { matchCallReturnFlow } from "./callReturnFlow";
 import { matchFractionSubtraction, type FractionValue } from "./fractionSubtraction";
 import { matchWaterCycleLoop } from "./waterCycleLoop";
 import { matchLifecycleSequence } from "./lifecycleSequence";
+import { matchReflectionRay } from "./reflectionRay";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -152,6 +153,13 @@ export interface SemanticLifecycleSequenceMention {
   finalMentionId: string;
 }
 
+export interface SemanticReflectionRayMention {
+  construction: "reflection-ray";
+  incidentMentionId: string;
+  surfaceMentionId: string;
+  reflectedMentionId: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -163,7 +171,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -197,6 +205,7 @@ export interface SemanticFrame {
   fractionSubtractions: SemanticFractionSubtractionMention[];
   waterCycleLoops: SemanticWaterCycleMention[];
   lifecycleSequences: SemanticLifecycleSequenceMention[];
+  reflectionRays: SemanticReflectionRayMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -321,7 +330,8 @@ function populateMeaning(frame: SemanticFrame): void {
   const callReturn = matchCallReturnFlow(frame.normalizedText);
   const fractionSubtraction = matchFractionSubtraction(frame.normalizedText);
   const lifecycleSequence = matchLifecycleSequence(frame.normalizedText);
-  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence)) return;
+  const reflectionRay = matchReflectionRay(frame.normalizedText);
+  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
     frame.safetyIntent = safetyIntent;
@@ -408,6 +418,18 @@ function populateMeaning(frame: SemanticFrame): void {
       finalMentionId: addParticipant(frame, lifecycleSequence.finalText)
     });
     frame.meaningCandidates = [{ family: "lifecycle", predicate: "lifecycle-sequence" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+  if (reflectionRay) {
+    frame.intent = "describe";
+    frame.reflectionRays.push({
+      construction: "reflection-ray",
+      incidentMentionId: addParticipant(frame, reflectionRay.incidentText),
+      surfaceMentionId: addParticipant(frame, reflectionRay.surfaceText),
+      reflectedMentionId: addParticipant(frame, reflectionRay.reflectedText)
+    });
+    frame.meaningCandidates = [{ family: "optics", predicate: "reflection-ray" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
@@ -590,6 +612,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       fractionSubtractions: [],
       waterCycleLoops: [],
       lifecycleSequences: [],
+      reflectionRays: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -603,7 +626,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

@@ -196,8 +196,8 @@ motion understanding.
 An independent 60-statement teacher corpus lives at
 [`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
 It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present observational baseline draws 11/60, holds the scene for 1/60
-non-visual utterance, and asks for clarification on 48/60. Those numbers measure
+grammar. The present observational baseline draws 12/60, holds the scene for 1/60
+non-visual utterance, and asks for clarification on 47/60. Those numbers measure
 coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
@@ -208,11 +208,20 @@ intent routing, observed visual cues, and explicit human visual approval. Doodle
 now makes the plant example automated-ready through a reusable `part-whole-flow`
 construction. The expanded gold batch also has automated evidence for circulation-loop,
 force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
-geometric-construction, landscape-flow, and water-cycle-loop. The gold set now contains
-19 frozen cases: 14 are automated-ready, while five newly frozen cross-domain draw cases
+geometric-construction, landscape-flow, water-cycle-loop, lifecycle-sequence, and
+reflection-ray. The gold set now contains
+19 frozen cases: 15 are automated-ready, while four newly frozen cross-domain draw cases
 safely clarify until their reusable grammars exist. Drawing cases remain
 pending until a reviewer accepts the actual doodles.
 Validation can prove script safety; it cannot substitute for semantic or visual completeness.
+
+Reflection is a geometric construction, not a decorative arrow template. Controlled
+light-source and reflective-surface slots produce distinct incident-light, surface, and
+reflected-light identities. The outgoing vector is computed from the incoming vector and
+surface normal with `r = v - 2(v·n)n`; validation requires both typed rays to meet the same
+surface in a readable configuration. The renderer exposes the impact point, normal, equal
+angle cues, incident direction, and reflected direction while reduced-motion mode preserves
+the complete static explanation.
 
 The construction is not plant-specific. A registered intake action binds an open whole,
 one to three inputs, and the named parts they travel through. Symbol capabilities choose

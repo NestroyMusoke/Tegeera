@@ -23,6 +23,7 @@ import { callReturnGeometry, isCallReturnRelation } from "../doodlescript/callRe
 import { fractionSubtractionGeometry, isFractionSubtractionRelation } from "../doodlescript/fractionSubtraction";
 import { isWaterCycleRelation, waterCycleGeometry } from "../doodlescript/waterCycleLoop";
 import { isLifecycleRelation, lifecycleSequenceGeometry } from "../doodlescript/lifecycleSequence";
+import { isReflectionRelation, reflectionRayGeometry } from "../doodlescript/reflectionRay";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -179,6 +180,48 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isReflectionRelation(relation)) {
+    const optics = relations.filter(isReflectionRelation);
+    if (relation.id !== optics.find(({ kind }) => kind === "travelsTo")?.id) return null;
+    const geometry = reflectionRayGeometry(optics, entities);
+    if (!geometry) return null;
+    const { incidentStart: start, impact, reflectedEnd: end, normalEnd } = geometry;
+    const arrow = (tip: { x: number; y: number }, from: { x: number; y: number }, color: string) => {
+      const angle = Math.atan2(tip.y - from.y, tip.x - from.x);
+      const wing = (offset: number) => ({ x: tip.x - 25 * Math.cos(angle + offset), y: tip.y - 25 * Math.sin(angle + offset) });
+      const a = wing(0.55); const b = wing(-0.55);
+      return <path d={`M${a.x} ${a.y} L${tip.x} ${tip.y} L${b.x} ${b.y}`} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />;
+    };
+    const surfaceY = impact.y + 8;
+    return <g className="reflection-ray-annotation" aria-label={`${geometry.incident.label} travels to ${geometry.surface.label}; ${geometry.reflected.label} reflects from ${geometry.surface.label}`}>
+      <g data-visual-cue="straight-incident-ray">
+        <path className="reflection-flow" d={`M${start.x} ${start.y} L${impact.x} ${impact.y}`} fill="none" stroke="#e4a72d" strokeWidth="11" strokeLinecap="round" />
+        {arrow(impact, start, "#a96f0b")}
+        <circle cx={start.x} cy={start.y} r="18" fill="#ffe796" stroke="#a96f0b" strokeWidth="5" />
+        <text x={start.x} y={start.y - 34} textAnchor="middle" fill="#71500f" fontSize="23" fontWeight="850">{geometry.incident.label}</text>
+      </g>
+      <g data-visual-cue="angled-reflected-ray">
+        <path className="reflection-flow reflection-flow-out" d={`M${impact.x} ${impact.y} L${end.x} ${end.y}`} fill="none" stroke="#42a4b5" strokeWidth="11" strokeLinecap="round" />
+        {arrow(end, impact, "#216f81")}
+        <text x={end.x} y={end.y - 34} textAnchor="middle" fill="#245e6b" fontSize="23" fontWeight="850">{geometry.reflected.label}</text>
+      </g>
+      <g data-visual-cue="surface-normal equal-angle-cues">
+        <path d={`M${impact.x} ${surfaceY} V${normalEnd.y}`} stroke="#66706d" strokeWidth="4" strokeDasharray="10 10" />
+        <path d={`M${impact.x - 55} ${impact.y - 33} Q${impact.x - 31} ${impact.y - 65} ${impact.x} ${impact.y - 72} M${impact.x} ${impact.y - 72} Q${impact.x + 31} ${impact.y - 65} ${impact.x + 55} ${impact.y - 33}`} fill="none" stroke="#8b6d47" strokeWidth="4" />
+        <text x={impact.x - 52} y={impact.y - 70} textAnchor="middle" fill="#725b3c" fontSize="18" fontWeight="800">θᵢ</text>
+        <text x={impact.x + 52} y={impact.y - 70} textAnchor="middle" fill="#725b3c" fontSize="18" fontWeight="800">θᵣ</text>
+      </g>
+      <g data-visual-cue="impact-point">
+        <circle cx={impact.x} cy={impact.y} r="15" fill="#fff6ba" stroke="#8a6416" strokeWidth="5" />
+        <path d={`M${impact.x - 24} ${impact.y} H${impact.x + 24} M${impact.x} ${impact.y - 24} V${impact.y + 24}`} stroke="#c78814" strokeWidth="4" />
+      </g>
+      <g data-visual-cue="reflective-surface">
+        <path d={`M${impact.x - 170} ${surfaceY} Q${impact.x} ${surfaceY - 8} ${impact.x + 170} ${surfaceY}`} fill="none" stroke="#354b50" strokeWidth="10" strokeLinecap="round" />
+        {[-140, -100, -60, -20, 20, 60, 100, 140].map((offset) => <path key={offset} d={`M${impact.x + offset} ${surfaceY + 5} l-18 25`} stroke="#83999d" strokeWidth="4" />)}
+        <text x={impact.x} y={surfaceY + 64} textAnchor="middle" fill="#354b50" fontSize="24" fontWeight="850">{geometry.surface.label}</text>
+      </g>
+    </g>;
+  }
   if (isLifecycleRelation(relation)) {
     const lifecycleRelations = relations.filter(isLifecycleRelation);
     if (relation.id !== lifecycleRelations[0]?.id) return null;
@@ -679,7 +722,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

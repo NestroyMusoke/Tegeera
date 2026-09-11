@@ -23,6 +23,7 @@ import { planCallReturnFlow } from "./callReturnFlow";
 import { planFractionSubtraction } from "./fractionSubtraction";
 import { planWaterCycleLoop } from "./waterCycleLoop";
 import { planLifecycleSequence } from "./lifecycleSequence";
+import { planReflectionRay } from "./reflectionRay";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -66,7 +67,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -99,6 +100,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["subtracts", "resultsIn"].includes(command.relation.kind)) upgradeVersion("2.9.0");
     if (command.action === "relate" && ["fallsTo", "infiltrates", "evaporatesTo"].includes(command.relation.kind)) upgradeVersion("2.10.0");
     if (command.action === "relate" && command.relation.kind === "transformsTo") upgradeVersion("2.11.0");
+    if (command.action === "relate" && ["travelsTo", "reflectsFrom"].includes(command.relation.kind)) upgradeVersion("2.12.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -339,6 +341,25 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "transformsTo", sourceIds: [startId], targetIds: [intermediateId], predicate: "transformsTo" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "transformsTo", sourceIds: [intermediateId], targetIds: [finalId], predicate: "transformsTo" } });
         focus([startId], [intermediateId, finalId]);
+        continue;
+      }
+      const reflection = frame.reflectionRays[0];
+      if (reflection?.construction === "reflection-ray") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const incidentId = eventNode(mentionText(reflection.incidentMentionId), "optics-incident");
+        const surfaceId = eventNode(mentionText(reflection.surfaceMentionId), "optics-surface");
+        const reflectedId = eventNode(mentionText(reflection.reflectedMentionId), "optics-reflected");
+        const ids = { incidentId, surfaceId, reflectedId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("Reflection needs distinct incident light, surface, and reflected light identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planReflectionRay(working, ids, movableIds);
+        if (!moves) throw new Clarification("That reflection construction cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "travelsTo", sourceIds: [incidentId], targetIds: [surfaceId], predicate: "travelsTo" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "reflectsFrom", sourceIds: [reflectedId], targetIds: [surfaceId], predicate: "reflectsFrom" } });
+        focus([incidentId], [surfaceId, reflectedId]);
         continue;
       }
       const forceDiagram = frame.forceDiagrams[0];

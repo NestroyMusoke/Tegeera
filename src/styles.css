@@ -252,7 +252,7 @@ button {
 @keyframes handover-object { 45% { transform: translateY(-7px) scale(1.08); } }
 @keyframes visual-particle { to { transform: scale(1.55); opacity: .45; } }
 @media (prefers-reduced-motion: reduce) {
-  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
+  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
 }
 
 .doodle-stroke,
@@ -653,6 +653,8 @@ button {
 
 .lifecycle-flow { animation: draw-line .9s ease both, trajectory-drift 2s linear infinite; }
 .lifecycle-flow-late { animation-delay: .35s; }
+.reflection-flow { stroke-dasharray: 18 8; animation: trajectory-drift 1.35s linear infinite; }
+.reflection-flow-out { animation-delay: -.45s; }
 .lifecycle-creature { animation: lifecycle-arrive 1.5s ease-in-out infinite alternate; transform-origin: center; }
 .lifecycle-cocoon { animation: lifecycle-sway 2.1s ease-in-out infinite alternate; transform-origin: top center; }
 

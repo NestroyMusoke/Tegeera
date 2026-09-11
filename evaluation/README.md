@@ -38,7 +38,7 @@ Add new frozen, independently collected utterances before publishing generalizat
 figures.
 
 Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
-11 (`force-diagram`), 12 (`changing-speed-motion`), 21 (`labelled-container`), 22
+11 (`force-diagram`), 12 (`changing-speed-motion`), 13 (`reflection-ray`), 21 (`labelled-container`), 22
 (`call-return-flow`), 31 (`geometric-construction`), 32 (`fraction-subtraction`), 41
 (`landscape-flow`), and 42 (`water-cycle-loop`). All remain human-review
 pending, so the strict drawing pass count is still zero. This separation is intentional:
@@ -47,8 +47,8 @@ self-certified by the code that produced it.
 
 Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
 case 60 passes strictly with a validated no-op scene hold. Therefore the complete frozen
-batch is 3/19 strict, 14/19 automated-ready, and zero false-confident. Eleven implemented
-drawings remain behind the explicit human-review gate, while five newly frozen draw cases
+batch is 3/19 strict, 15/19 automated-ready, and zero false-confident. Twelve implemented
+drawings remain behind the explicit human-review gate, while four newly frozen draw cases
 remain safe clarifications until their reusable grammars exist. No visual approval has
 been fabricated.
 
@@ -74,18 +74,18 @@ values, visible initial and removed portions, and a mathematically validated sim
 remainder. Case 42 is now automated-ready through five distinct hydrology identities,
 three typed relations, precipitation and infiltration cues, visible underground water,
 and an evaporation return that visibly closes the loop. The frozen batch is therefore
-3/19 strict, 14/19 automated-ready, and zero false-confident; all eleven implemented
+3/19 strict, 15/19 automated-ready, and zero false-confident; all twelve implemented
 drawing cases still require real human visual approval.
 
 The third development batch freezes cases 3, 13, 23, 33, 44, and 51 across lifecycle,
-reflection, stack, geometry, plate-motion, and routine-sequence meanings. They currently
-clarify safely and are not automated-ready. Freezing their concepts, relations, grammar
+reflection, stack, geometry, plate-motion, and routine-sequence meanings. Freezing their concepts, relations, grammar
 IDs, and cues before implementation prevents production code from redefining success.
-Case 3 is now automated-ready through the `lifecycle-sequence` grammar; cases 13, 23, 33,
-44, and 51 continue to clarify safely.
+Case 3 is automated-ready through the `lifecycle-sequence` grammar. Case 13 is now
+automated-ready through computed `reflection-ray` geometry with incident, impact, normal,
+surface, and outgoing-ray evidence; cases 23, 33, 44, and 51 continue to clarify safely.
 
 `visual-review-protocol.md` defines the human-only approval criteria. Running
-`node scripts/visual-check.mjs` now generates `human-visual-review.html`, an eleven-scene,
+`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a twelve-scene,
 390-pixel review station with explicit approve/reject decisions, required rejection
 notes, device metadata, reduced-motion confirmation, and downloadable JSON evidence.
 Every export carries a content-derived fixture revision; it never changes gold results
