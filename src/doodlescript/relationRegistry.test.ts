@@ -20,9 +20,9 @@ const relation = (kind: SceneRelation["kind"], overrides: Partial<SceneRelation>
 
 describe("versioned relation registry", () => {
   it("covers every schema relationship with a validated semantic contract", () => {
-    expect(RELATION_REGISTRY_VERSION).toBe("2.10.0");
+    expect(RELATION_REGISTRY_VERSION).toBe("2.11.0");
     expect(relationRegistry.map(({ kind }) => kind).sort()).toEqual([
-      "accelerates", "actsOn", "appliedTo", "away", "before", "calls", "carries", "causes", "contacts", "contains", "evaporatesTo", "fallsFrom", "fallsTo", "flowsFrom", "flowsInto", "flowsTo", "handover", "illuminates", "infiltrates", "measures", "opposes", "owns", "partOf", "pumpsTo", "queuedFor", "resultsIn", "returnsControlTo", "returnsTo", "risesTo", "shares", "subtracts", "toward", "visualAction"
+      "accelerates", "actsOn", "appliedTo", "away", "before", "calls", "carries", "causes", "contacts", "contains", "evaporatesTo", "fallsFrom", "fallsTo", "flowsFrom", "flowsInto", "flowsTo", "handover", "illuminates", "infiltrates", "measures", "opposes", "owns", "partOf", "pumpsTo", "queuedFor", "resultsIn", "returnsControlTo", "returnsTo", "risesTo", "shares", "subtracts", "toward", "transformsTo", "visualAction"
     ]);
     expect(validateRelationRegistry()).toEqual([]);
   });
@@ -94,6 +94,7 @@ describe("versioned relation registry", () => {
     expect(relationForKind("calls")).toMatchObject({ family: "control-flow", directed: true, layout: "call-return-flow" });
     expect(relationForKind("subtracts")).toMatchObject({ family: "arithmetic", directed: true, layout: "fraction-subtraction" });
     expect(relationForKind("evaporatesTo")).toMatchObject({ family: "hydrology", directed: true, layout: "water-cycle-loop" });
+    expect(relationForKind("transformsTo")).toMatchObject({ family: "lifecycle", directed: true, layout: "lifecycle-sequence" });
   });
 
   it("rejects duplicate aliases, kinds, and invalid cardinalities", () => {

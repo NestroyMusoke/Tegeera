@@ -52,7 +52,7 @@ const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.me
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const fixtureRevision = `sha256:${createHash("sha256").update(result.outputFiles[0].text).update(css).update(JSON.stringify(gold)).digest("hex").slice(0, 16)}`;
@@ -83,6 +83,7 @@ const cases = {
   callReturnFlow: ["When you call a function, the program jumps to that function, runs it, then comes back to where it left off"],
   fractionSubtraction: ["If you have three-quarters of a pizza and eat one slice, how much is left?"],
   waterCycleLoop: ["Rain falls, soaks into the soil, and some of it later comes back up as evaporation."],
+  lifecycleSequence: ["When a caterpillar is ready, it wraps itself up and comes out later as a butterfly."],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -92,7 +93,7 @@ await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head
 await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
 const reviewFixtureById = {
-  1: "partWholeFlow.html", 2: "circulationLoop.html", 11: "forceDiagram.html",
+  1: "partWholeFlow.html", 2: "circulationLoop.html", 3: "lifecycleSequence.html", 11: "forceDiagram.html",
   12: "changingSpeedMotion.html", 21: "labelledContainer.html", 22: "callReturnFlow.html",
   31: "geometricConstruction.html", 32: "fractionSubtraction.html", 41: "landscapeFlow.html",
   42: "waterCycleLoop.html"
@@ -269,8 +270,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.10.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.10.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.11.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.11.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -491,8 +492,23 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Water-cycle scene caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: five hydrology identities, precipitation, infiltration, underground water, animated evaporation return, closed loop, accessibility, mobile layout';
     }
+    async function verifyLifecycle() {
+      await pause();
+      await submit('When a caterpillar is ready, it wraps itself up and comes out later as a butterfly.');
+      check(document.querySelectorAll('[data-relation-family="lifecycle"][data-relation-layout="lifecycle-sequence"]').length === 2, 'Lifecycle relation pair is incomplete');
+      check(document.querySelectorAll('[data-layout-topology="stage-sequence"]').length === 2, 'Stage-sequence topology metadata is incomplete');
+      for (const cue of ['caterpillar-stage', 'wrapped-cocoon', 'emerging-butterfly', 'left-to-right-stages']) {
+        check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), 'Lifecycle cue is missing: ' + cue);
+      }
+      check(document.querySelectorAll('.lifecycle-sequence-annotation').length === 1, 'Lifecycle rendered more than once');
+      check(document.querySelector('.lifecycle-sequence-annotation')?.getAttribute('aria-label') === 'caterpillar transforms to cocoon, then cocoon transforms to butterfly', 'Lifecycle accessibility meaning is wrong');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 0, 'Lifecycle identities leaked as generic bubbles');
+      check([...document.querySelectorAll('[data-entity-id]')].filter(node => node.closest('.doodle-canvas')).length === 3, 'Three lifecycle identities were not preserved');
+      check(document.documentElement.scrollWidth <= innerWidth, 'Lifecycle scene caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: three distinct stages, two typed transformations, original caterpillar/cocoon/butterfly art, restrained motion, accessibility, mobile layout';
+    }
     const params = new URLSearchParams(location.search);
-    (params.has('water-cycle') ? verifyWaterCycle() : params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('lifecycle') ? verifyLifecycle() : params.has('water-cycle') ? verifyWaterCycle() : params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -519,3 +535,4 @@ await writeFile(resolve(output, "app-trajectory-phone.html"), framedApp(390, "?t
 await writeFile(resolve(output, "app-call-return-phone.html"), framedApp(390, "?call-return"));
 await writeFile(resolve(output, "app-fraction-phone.html"), framedApp(390, "?fraction"));
 await writeFile(resolve(output, "app-water-cycle-phone.html"), framedApp(390, "?water-cycle"));
+await writeFile(resolve(output, "app-lifecycle-phone.html"), framedApp(390, "?lifecycle"));

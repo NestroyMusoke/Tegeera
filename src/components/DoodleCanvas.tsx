@@ -22,6 +22,7 @@ import { changingSpeedGeometry, isChangingSpeedRelation } from "../doodlescript/
 import { callReturnGeometry, isCallReturnRelation } from "../doodlescript/callReturnFlow";
 import { fractionSubtractionGeometry, isFractionSubtractionRelation } from "../doodlescript/fractionSubtraction";
 import { isWaterCycleRelation, waterCycleGeometry } from "../doodlescript/waterCycleLoop";
+import { isLifecycleRelation, lifecycleSequenceGeometry } from "../doodlescript/lifecycleSequence";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -178,6 +179,48 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isLifecycleRelation(relation)) {
+    const lifecycleRelations = relations.filter(isLifecycleRelation);
+    if (relation.id !== lifecycleRelations[0]?.id) return null;
+    const geometry = lifecycleSequenceGeometry(lifecycleRelations, entities);
+    if (!geometry) return null;
+    const stage = (entity: SceneEntity, index: number) => {
+      const x = entity.x * 10;
+      const y = entity.y * 6.2;
+      const label = (entity.label ?? entity.kind).toLowerCase();
+      if (index === 0 && /caterpillar|larva/.test(label)) return <g data-visual-cue="caterpillar-stage" className="lifecycle-creature">
+        <path d={`M${x - 88} ${y + 50} Q${x - 40} ${y + 82} ${x + 52} ${y + 48}`} fill="none" stroke="#76934d" strokeWidth="9" strokeLinecap="round" />
+        {[-58, -30, -2, 26, 52].map((offset, part) => <circle key={offset} cx={x + offset} cy={y + (part % 2 ? 7 : 0)} r={25 - part * 1.5} fill={part % 2 ? "#8fc765" : "#a7d977"} stroke="#476b3e" strokeWidth="4" />)}
+        <circle cx={x + 60} cy={y - 5} r="4" fill="#26392a" /><path d={`M${x + 48} ${y - 26} q-4 -24 -18 -30 M${x + 66} ${y - 27} q7 -24 22 -28`} fill="none" stroke="#476b3e" strokeWidth="4" strokeLinecap="round" />
+      </g>;
+      if (index === 1 && /cocoon|chrysalis/.test(label)) return <g data-visual-cue="wrapped-cocoon" className="lifecycle-cocoon">
+        <path d={`M${x - 78} ${y - 92} Q${x} ${y - 112} ${x + 80} ${y - 92}`} fill="none" stroke="#72583b" strokeWidth="10" strokeLinecap="round" />
+        <path d={`M${x} ${y - 94} v28`} stroke="#72583b" strokeWidth="5" />
+        <path d={`M${x} ${y - 68} C${x - 53} ${y - 54} ${x - 48} ${y + 58} ${x} ${y + 83} C${x + 48} ${y + 58} ${x + 53} ${y - 54} ${x} ${y - 68} Z`} fill="#d8b773" stroke="#705631" strokeWidth="5" />
+        <path d={`M${x - 31} ${y - 20} Q${x} ${y - 2} ${x + 31} ${y - 20} M${x - 30} ${y + 20} Q${x} ${y + 38} ${x + 30} ${y + 20}`} fill="none" stroke="#a77f42" strokeWidth="4" />
+      </g>;
+      if (index === 2 && /butterfly|moth/.test(label)) return <g data-visual-cue="emerging-butterfly" className="lifecycle-creature lifecycle-butterfly">
+        <path d={`M${x - 8} ${y - 5} C${x - 45} ${y - 100} ${x - 132} ${y - 80} ${x - 91} ${y + 4} C${x - 138} ${y + 72} ${x - 47} ${y + 86} ${x - 8} ${y + 22} Z`} fill="#e8a8bd" stroke="#844c6a" strokeWidth="5" />
+        <path d={`M${x + 8} ${y - 5} C${x + 45} ${y - 100} ${x + 132} ${y - 80} ${x + 91} ${y + 4} C${x + 138} ${y + 72} ${x + 47} ${y + 86} ${x + 8} ${y + 22} Z`} fill="#efc56f" stroke="#844c6a" strokeWidth="5" />
+        <ellipse cx={x} cy={y + 7} rx="12" ry="61" fill="#57435a" /><path d={`M${x - 4} ${y - 50} q-24 -35 -44 -22 M${x + 4} ${y - 50} q24 -35 44 -22`} fill="none" stroke="#57435a" strokeWidth="4" strokeLinecap="round" />
+        <circle cx={x - 69} cy={y - 23} r="12" fill="#fff4c7" opacity=".8" /><circle cx={x + 69} cy={y - 23} r="12" fill="#fff4c7" opacity=".8" />
+      </g>;
+      return <g data-visual-cue={`lifecycle-stage-${index + 1}`}>
+        <rect x={x - 104} y={y - 72} width="208" height="144" rx="42" fill={index === 0 ? "#dcebb7" : index === 1 ? "#f0dca6" : "#efd0df"} stroke="#5a6555" strokeWidth="5" />
+        <path d={`M${x - 52} ${y + 5} q52 -62 104 0 q-52 62 -104 0`} fill="none" stroke="#718060" strokeWidth="5" />
+      </g>;
+    };
+    const positions = [geometry.start, geometry.intermediate, geometry.final];
+    const [startX, middleX, finalX] = positions.map(({ x }) => x * 10);
+    const y = geometry.intermediate.y * 6.2;
+    return <g className="lifecycle-sequence-annotation" data-visual-cue="left-to-right-stages" aria-label={`${geometry.start.label} transforms to ${geometry.intermediate.label}, then ${geometry.intermediate.label} transforms to ${geometry.final.label}`}>
+      <path className="lifecycle-flow" d={`M${startX + 112} ${y} C${startX + 150} ${y - 42} ${middleX - 150} ${y - 42} ${middleX - 112} ${y}`} fill="none" stroke="#4d7f78" strokeWidth="8" strokeLinecap="round" strokeDasharray="14 10" />
+      <path d={`M${middleX - 139} ${y - 12} L${middleX - 112} ${y} L${middleX - 137} ${y + 17}`} fill="none" stroke="#4d7f78" strokeWidth="7" strokeLinecap="round" />
+      <path className="lifecycle-flow lifecycle-flow-late" d={`M${middleX + 112} ${y} C${middleX + 150} ${y - 42} ${finalX - 150} ${y - 42} ${finalX - 112} ${y}`} fill="none" stroke="#9a657f" strokeWidth="8" strokeLinecap="round" strokeDasharray="14 10" />
+      <path d={`M${finalX - 139} ${y - 12} L${finalX - 112} ${y} L${finalX - 137} ${y + 17}`} fill="none" stroke="#9a657f" strokeWidth="7" strokeLinecap="round" />
+      {positions.map((entity, index) => <g key={entity.id}>{stage(entity, index)}<circle cx={entity.x * 10 - 90} cy={y - 105} r="20" fill="#3e5e56" /><text x={entity.x * 10 - 90} y={y - 98} textAnchor="middle" fill="white" fontSize="20" fontWeight="900">{index + 1}</text><text x={entity.x * 10} y={y + 122} textAnchor="middle" fill="#343b36" fontSize="24" fontWeight="850">{entity.label}</text></g>)}
+    </g>;
+  }
   if (isWaterCycleRelation(relation)) {
     if (relation.kind !== "fallsTo") return null;
     const geometry = waterCycleGeometry(relations.filter(isWaterCycleRelation), entities);
@@ -636,7 +679,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

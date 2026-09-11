@@ -326,4 +326,18 @@ describe("semantic input frames", () => {
     expect(frame.entities.map(({ text }) => text)).toEqual(["cloud", "rain", "soil", "water", "evaporation"]);
     expect(frame.meaningCandidates).toEqual([{ family: "hydrology", predicate: "water-cycle-loop" }]);
   });
+
+  it("keeps an implicit lifecycle atomic while exposing every stage", () => {
+    const result = analyzeTeacherInput("When a caterpillar is ready, it wraps itself up and comes out later as a butterfly.");
+    expect(result.frames).toHaveLength(1);
+    const frame = result.frames[0];
+    expect(frame.lifecycleSequences).toEqual([{
+      construction: "lifecycle-sequence",
+      startMentionId: frame.entities[0].mentionId,
+      intermediateMentionId: frame.entities[1].mentionId,
+      finalMentionId: frame.entities[2].mentionId
+    }]);
+    expect(frame.entities.map(({ text }) => text)).toEqual(["caterpillar", "cocoon", "butterfly"]);
+    expect(frame.meaningCandidates).toEqual([{ family: "lifecycle", predicate: "lifecycle-sequence" }]);
+  });
 });

@@ -4,10 +4,10 @@ import { relationSchema, type DoodleScript, type SceneRelation } from "./schema"
 import { visualActionForPredicate } from "./visualActionRegistry";
 import type { ConceptCapability } from "./conceptRegistry";
 
-export const RELATION_REGISTRY_VERSION = "2.10.0";
+export const RELATION_REGISTRY_VERSION = "2.11.0";
 
 export type RelationKind = SceneRelation["kind"];
-export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment" | "measurement" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology";
+export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment" | "measurement" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle";
 
 interface Cardinality {
   min: number;
@@ -101,7 +101,8 @@ export const relationRegistry: readonly RelationDefinition[] = [
   { kind: "resultsIn", family: "arithmetic", label: "results in", aliases: [], minimumVersion: "2.9.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "fraction-subtraction" },
   { kind: "fallsTo", family: "hydrology", label: "falls to", aliases: [], minimumVersion: "2.10.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "water-cycle-loop" },
   { kind: "infiltrates", family: "hydrology", label: "infiltrates", aliases: [], minimumVersion: "2.10.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "water-cycle-loop" },
-  { kind: "evaporatesTo", family: "hydrology", label: "evaporates to", aliases: [], minimumVersion: "2.10.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "water-cycle-loop" }
+  { kind: "evaporatesTo", family: "hydrology", label: "evaporates to", aliases: [], minimumVersion: "2.10.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "water-cycle-loop" },
+  { kind: "transformsTo", family: "lifecycle", label: "transforms to", aliases: [], minimumVersion: "2.11.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "lifecycle-sequence" }
 ];
 
 const byKind = new Map(relationRegistry.map((definition) => [definition.kind, definition] as const));
@@ -162,7 +163,7 @@ export function matchRegisteredRelation(text: string): RegisteredRelationMatch |
   };
 }
 
-const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0"];
+const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0"];
 
 export function relationSupportsVersion(kind: RelationKind, version: DoodleScript["schemaVersion"]): boolean {
   return versionOrder.indexOf(version) >= versionOrder.indexOf(relationForKind(kind).minimumVersion);

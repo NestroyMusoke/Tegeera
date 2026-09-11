@@ -1325,3 +1325,38 @@ benchmark measured 1.31 ms median and 10.06 ms p95. Production JavaScript is 485
 pass. Physical Android performance, live microphone behavior, projector inspection, and
 human review decisions remain unverified. The next frozen implementation target is case
 3's reusable lifecycle-sequence grammar.
+
+## DoodleScript 2.11 lifecycle-sequence capability
+
+Case 3 now resolves through a reusable three-stage transformation construction. Explicit
+speech may supply any three short distinct stages, including forms such as “egg develops
+into larva, then develops into beetle” and “seed becomes seedling, and later seedling
+becomes plant.” When speech omits the middle stage, inference is permitted only through
+an inspectable lifecycle registry; the current caterpillar/larva enclosure entry yields a
+cocoon and accepts butterfly or moth as the final form. Unknown omitted stages clarify
+instead of being invented.
+
+DoodleScript 2.11 adds `transformsTo`, three lifecycle visual roles, the `lifecycle`
+relation family, and a left-to-right `stage-sequence` topology. The renderer preserves
+three semantic identities while drawing original caterpillar, suspended cocoon, and
+butterfly forms, numbered stages, and two animated transformation paths. Explicit
+unregistered stages receive the same semantic layout with a neutral procedural stage
+glyph. Creature motion and cocoon sway are disabled under reduced-motion preferences.
+
+Validation requires exactly two transformations sharing one intermediate stage, three
+distinct correctly typed identities, strict left-to-right ordering, and bounded vertical
+alignment. Old-version, incomplete, wrong-role, disconnected-chain, unknown implicit-
+stage, and incomplete-language cases fail atomically.
+
+The observational corpus now records 11/60 drawn, 1/60 held, and 48/60 clarified. The
+19-case gold set is 3/19 strict, 14/19 automated-ready, and zero false-confident. Case 3
+has complete semantic and rendered-cue evidence but remains pending real human visual
+approval. The review station now contains eleven implemented drawings.
+
+The checkpoint passes 339 tests across 44 files. The 250-iteration meaning-only benchmark
+measured 1.67 ms median and 6.79 ms p95. Thirty real-component fixtures and a full-App
+lifecycle mobile workflow are generated. Production JavaScript is 494.27 kB (145.48 kB
+gzip), and CSS is 13.37 kB (3.89 kB gzip). Lint, TypeScript, production build, review-
+station generation, and Android asset synchronization pass. Physical Android performance,
+live microphone behavior, projector inspection, and human visual review remain unverified.
+The next frozen target is case 13's reusable light-reflection construction.

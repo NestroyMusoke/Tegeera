@@ -15,6 +15,7 @@ import { matchChangingSpeedMotion } from "./changingSpeedMotion";
 import { matchCallReturnFlow } from "./callReturnFlow";
 import { matchFractionSubtraction, type FractionValue } from "./fractionSubtraction";
 import { matchWaterCycleLoop } from "./waterCycleLoop";
+import { matchLifecycleSequence } from "./lifecycleSequence";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -144,6 +145,13 @@ export interface SemanticWaterCycleMention {
   evaporationMentionId: string;
 }
 
+export interface SemanticLifecycleSequenceMention {
+  construction: "lifecycle-sequence";
+  startMentionId: string;
+  intermediateMentionId: string;
+  finalMentionId: string;
+}
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -155,7 +163,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -188,6 +196,7 @@ export interface SemanticFrame {
   callReturnFlows: SemanticCallReturnMention[];
   fractionSubtractions: SemanticFractionSubtractionMention[];
   waterCycleLoops: SemanticWaterCycleMention[];
+  lifecycleSequences: SemanticLifecycleSequenceMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -311,7 +320,8 @@ function populateMeaning(frame: SemanticFrame): void {
   const forceDiagram = matchForceDiagram(frame.normalizedText);
   const callReturn = matchCallReturnFlow(frame.normalizedText);
   const fractionSubtraction = matchFractionSubtraction(frame.normalizedText);
-  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction)) return;
+  const lifecycleSequence = matchLifecycleSequence(frame.normalizedText);
+  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
     frame.safetyIntent = safetyIntent;
@@ -386,6 +396,18 @@ function populateMeaning(frame: SemanticFrame): void {
       evaporationMentionId: addParticipant(frame, waterCycle.evaporationText)
     });
     frame.meaningCandidates = [{ family: "hydrology", predicate: "water-cycle-loop" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+  if (lifecycleSequence) {
+    frame.intent = "describe";
+    frame.lifecycleSequences.push({
+      construction: "lifecycle-sequence",
+      startMentionId: addParticipant(frame, lifecycleSequence.startText),
+      intermediateMentionId: addParticipant(frame, lifecycleSequence.intermediateText),
+      finalMentionId: addParticipant(frame, lifecycleSequence.finalText)
+    });
+    frame.meaningCandidates = [{ family: "lifecycle", predicate: "lifecycle-sequence" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
@@ -567,6 +589,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       callReturnFlows: [],
       fractionSubtractions: [],
       waterCycleLoops: [],
+      lifecycleSequences: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -580,7 +603,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

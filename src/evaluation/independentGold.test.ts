@@ -60,7 +60,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
-      1: observeCase(1), 2: observeCase(2), 11: observeCase(11), 12: observeCase(12), 21: observeCase(21), 22: observeCase(22), 31: observeCase(31), 32: observeCase(32), 41: observeCase(41), 42: observeCase(42)
+      1: observeCase(1), 2: observeCase(2), 3: observeCase(3), 11: observeCase(11), 12: observeCase(12), 21: observeCase(21), 22: observeCase(22), 31: observeCase(31), 32: observeCase(32), 41: observeCase(41), 42: observeCase(42)
     });
     expect(result.total).toBe(19);
     expect(result.results).toHaveLength(19);
@@ -70,12 +70,12 @@ describe("independent semantic-scene gold annotations", () => {
       failures: ["human visual review pending"]
     });
     expect(result.passed).toBe(3);
-    expect(result.automatedReady).toBe(13);
+    expect(result.automatedReady).toBe(14);
     expect(result.falseConfident).toBe(0);
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 60)).toMatchObject({ passed: true, observedIntent: "hold", automatedReady: true });
-    for (const id of [3, 13, 23, 33, 44, 51]) {
+    for (const id of [13, 23, 33, 44, 51]) {
       expect(result.results.find((caseResult) => caseResult.id === id)).toMatchObject({
         passed: false, observedIntent: "clarify", falseConfident: false, automatedReady: false
       });
@@ -188,6 +188,16 @@ describe("independent semantic-scene gold annotations", () => {
     ]));
     expect(observation.visualGrammarId).toBe("water-cycle-loop");
     expect(evaluateIndependentGold(teacherCases, gold, { 42: observation }).results.find(({ id }) => id === 42))
+      .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
+  });
+
+  it("makes case 3 automated-ready while preserving human visual review", () => {
+    const observation = observeCase(3);
+    expect(new Set(observation.visualCueIds)).toEqual(new Set([
+      "left-to-right-stages", "caterpillar-stage", "wrapped-cocoon", "emerging-butterfly"
+    ]));
+    expect(observation.visualGrammarId).toBe("lifecycle-sequence");
+    expect(evaluateIndependentGold(teacherCases, gold, { 3: observation }).results.find(({ id }) => id === 3))
       .toMatchObject({ passed: false, falseConfident: false, automatedReady: true, failures: ["human visual review pending"] });
   });
 });

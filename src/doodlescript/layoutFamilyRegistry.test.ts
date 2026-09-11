@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.10.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.11.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "contact", "event-graph", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "labelled-container", "landscape-flow", "ownership", "part-whole-flow", "queue", "visual-flow", "water-cycle-loop"
+      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "contact", "event-graph", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "labelled-container", "landscape-flow", "lifecycle-sequence", "ownership", "part-whole-flow", "queue", "visual-flow", "water-cycle-loop"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });
@@ -31,6 +31,7 @@ describe("versioned layout family registry", () => {
     expect(layoutFamilyFor("call-return-flow")).toMatchObject({ topology: "control-transfer", readingDirection: "bidirectional", maximumVisibleNodes: 3 });
     expect(layoutFamilyFor("fraction-subtraction")).toMatchObject({ topology: "part-removal", readingDirection: "left-to-right", maximumVisibleNodes: 4 });
     expect(layoutFamilyFor("water-cycle-loop")).toMatchObject({ topology: "environmental-cycle", readingDirection: "bidirectional", maximumVisibleNodes: 5 });
+    expect(layoutFamilyFor("lifecycle-sequence")).toMatchObject({ topology: "stage-sequence", readingDirection: "left-to-right", maximumVisibleNodes: 3 });
     expect(layoutFamilySupportsRelation("contact", "performance")).toBe(true);
     expect(layoutFamilySupportsRelation("contact", "event")).toBe(false);
   });

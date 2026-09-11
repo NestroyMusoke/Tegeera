@@ -22,6 +22,7 @@ import { planChangingSpeedMotion } from "./changingSpeedMotion";
 import { planCallReturnFlow } from "./callReturnFlow";
 import { planFractionSubtraction } from "./fractionSubtraction";
 import { planWaterCycleLoop } from "./waterCycleLoop";
+import { planLifecycleSequence } from "./lifecycleSequence";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -65,7 +66,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -97,6 +98,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["calls", "returnsControlTo"].includes(command.relation.kind)) upgradeVersion("2.8.0");
     if (command.action === "relate" && ["subtracts", "resultsIn"].includes(command.relation.kind)) upgradeVersion("2.9.0");
     if (command.action === "relate" && ["fallsTo", "infiltrates", "evaporatesTo"].includes(command.relation.kind)) upgradeVersion("2.10.0");
+    if (command.action === "relate" && command.relation.kind === "transformsTo") upgradeVersion("2.11.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -195,7 +197,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         "I heard a negation, so I left the drawing unchanged. Say the positive scene you want shown.",
         "negated-claim", ["Describe the scene positively", "Leave the scene unchanged"]
       );
-      if (frame.discourse.conditional && !frame.forceDiagrams.length && !frame.callReturnFlows.length && !frame.fractionSubtractions.length) throw new Clarification(
+      if (frame.discourse.conditional && !frame.forceDiagrams.length && !frame.callReturnFlows.length && !frame.fractionSubtractions.length && !frame.lifecycleSequences.length) throw new Clarification(
         "I heard a condition. Tell me whether to draw the condition or its result.",
         "conditional-claim", ["Draw the condition", "Draw the result"]
       );
@@ -318,6 +320,25 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "infiltrates", sourceIds: [waterId], targetIds: [soilId], predicate: "infiltrates" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "evaporatesTo", sourceIds: [evaporationId], targetIds: [cloudId], predicate: "evaporatesTo" } });
         focus([cloudId, rainId], [soilId, waterId, evaporationId]);
+        continue;
+      }
+      const lifecycle = frame.lifecycleSequences[0];
+      if (lifecycle?.construction === "lifecycle-sequence") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references]
+          .find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const startId = eventNode(mentionText(lifecycle.startMentionId), "lifecycle-start");
+        const intermediateId = eventNode(mentionText(lifecycle.intermediateMentionId), "lifecycle-intermediate");
+        const finalId = eventNode(mentionText(lifecycle.finalMentionId), "lifecycle-final");
+        const ids = { startId, intermediateId, finalId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("A lifecycle needs three distinct ordered stages.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planLifecycleSequence(working, ids, movableIds);
+        if (!moves) throw new Clarification("That lifecycle sequence cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "transformsTo", sourceIds: [startId], targetIds: [intermediateId], predicate: "transformsTo" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "transformsTo", sourceIds: [intermediateId], targetIds: [finalId], predicate: "transformsTo" } });
+        focus([startId], [intermediateId, finalId]);
         continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
