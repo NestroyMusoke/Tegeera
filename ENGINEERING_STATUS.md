@@ -1387,4 +1387,40 @@ device work. Thirty-one real-component fixtures were generated. Production JavaS
 production build, review-fixture generation, and Android asset synchronization pass.
 Live microphone/device latency, projector inspection, and real human visual approval
 remain unverified. The next frozen target is case 23's reusable LIFO stack grammar.
-The next frozen target is case 13's reusable light-reflection construction.
+
+## DoodleScript 2.13–2.16 advanced construction tranche
+
+The four remaining frozen draw cases are implemented as separate reusable visual
+grammars rather than sentence-specific branches. DoodleScript 2.13 adds `lifo-stack`,
+an `accessedAt` relation, distinct stack/items/top roles, vertical stack art, a top marker,
+and animated push/pop paths that can only enter and leave at the top. DoodleScript 2.14
+adds `triangle-angle-sum`, distinct triangle/angles/total roles, three visible vertex arcs,
+and a typed `partOf` plus `sumsTo` proof ending at 180 degrees.
+
+DoodleScript 2.15 adds `convergent-plates`, two separately identified landmasses, two
+inward `pushesToward` relations, central mountain uplift, and restrained convergence
+motion. DoodleScript 2.16 adds `ordered-routine`, accepting any three short readable and
+distinct steps through open slots; two typed `before` transitions drive a numbered,
+left-to-right procedural sequence. Its numbered procedural cards are intentionally
+content-neutral, so arbitrary routines do not inherit wake-up or school imagery.
+
+Every construction has a dedicated topology contract, candidate planner, semantic-frame
+record, relation registry entry, geometry validator, accessible SVG description, and
+reduced-motion fallback. Adversarial tests reject ordinary piles mistaken for stacks,
+non-triangle angle statements, arbitrary collisions mistaken for tectonics, missing
+routine stages, wrong roles, incomplete edges, duplicate identities, and invalid layouts.
+
+The independent corpus now records 16/60 drawn, 1/60 held, and 43/60 clarified. All 19
+frozen gold cases are automated-ready with zero false-confident results. Strict scoring
+remains 3/19 because all sixteen drawings still await real human visual approval. The
+review station now contains all sixteen implemented drawings and generates content-hashed
+review evidence; no approval is fabricated.
+
+The checkpoint passes 358 tests across 46 files. The final 250-iteration meaning-only benchmark
+measured 1.59 ms median and 10.41 ms p95, excluding speech recognition, React commit,
+DOM/SVG painting, and device work. Thirty-five real-component fixtures are generated.
+Production JavaScript is 523.61 kB (152.07 kB gzip), and CSS is 14.17 kB (4.07 kB gzip).
+Lint, TypeScript, production build, visual-fixture generation, and Android asset sync
+pass. The existing bundle-size advisory is non-fatal but now deserves a dedicated
+code-splitting/performance tranche. Physical Android latency, live microphone behavior,
+projector inspection, hidden generalization, and human visual approval remain unverified.

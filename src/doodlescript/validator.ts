@@ -28,6 +28,7 @@ import { fractionSubtractionGeometry } from "./fractionSubtraction";
 import { isWaterCycleRelation, waterCycleGeometry } from "./waterCycleLoop";
 import { isLifecycleRelation, lifecycleSequenceGeometry } from "./lifecycleSequence";
 import { isReflectionRelation, reflectionRayGeometry } from "./reflectionRay";
+import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRoutineRelation, isTriangleRelation, lifoStackGeometry, orderedRoutineGeometry, triangleAngleSumGeometry } from "./advancedConstructions";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -187,7 +188,7 @@ export function validateDoodleScript(
 
   const projected = applyDoodleScript(scene, script);
   if (script.context) {
-    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
+    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
     for (const references of [script.context.subjectIds, script.context.objectIds]) {
       if (new Set(references).size !== references.length || references.some((id) => !ids.has(id))) {
         issues.push({ gate: "semantic", message: "Conversation context refers to missing or duplicate objects." });
@@ -236,6 +237,14 @@ export function validateDoodleScript(
   if (reflectionRelations.length && (reflectionRelations.length !== 2 || !reflectionRayGeometry(reflectionRelations, projected.entities))) {
     issues.push({ gate: "semantic", message: "Reflection needs one incident ray and one reflected ray meeting the same reflective surface at a valid impact point." });
   }
+  const lifoRelations = (projected.relations ?? []).filter(isLifoRelation);
+  if (lifoRelations.length && !lifoStackGeometry(lifoRelations, projected.entities)) issues.push({ gate: "semantic", message: "A LIFO stack needs one top-only access relation across distinct stack, items, and top identities." });
+  const triangleRelations = (projected.relations ?? []).filter(isTriangleRelation);
+  if (triangleRelations.length && !triangleAngleSumGeometry(triangleRelations, projected.entities)) issues.push({ gate: "semantic", message: "A triangle angle sum needs exactly three marked angles belonging to one triangle and summing to 180 degrees." });
+  const convergentRelations = (projected.relations ?? []).filter(isConvergentRelation);
+  if (convergentRelations.length && !convergentPlatesGeometry(convergentRelations, projected.entities)) issues.push({ gate: "semantic", message: "Convergent plates need two distinct opposing landmasses pushing toward one central uplift." });
+  const routineRelations = (projected.relations ?? []).filter(isRoutineRelation);
+  if (routineRelations.length && !orderedRoutineGeometry(routineRelations, projected.entities)) issues.push({ gate: "semantic", message: "An ordered routine needs three distinct stages and exactly two connected transitions." });
   for (const entity of projected.entities) {
     if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });

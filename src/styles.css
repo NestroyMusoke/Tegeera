@@ -252,7 +252,7 @@ button {
 @keyframes handover-object { 45% { transform: translateY(-7px) scale(1.08); } }
 @keyframes visual-particle { to { transform: scale(1.55); opacity: .45; } }
 @media (prefers-reduced-motion: reduce) {
-  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
+  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
 }
 
 .doodle-stroke,
@@ -655,6 +655,14 @@ button {
 .lifecycle-flow-late { animation-delay: .35s; }
 .reflection-flow { stroke-dasharray: 18 8; animation: trajectory-drift 1.35s linear infinite; }
 .reflection-flow-out { animation-delay: -.45s; }
+.stack-flow, .routine-flow, .plate-force { animation: trajectory-drift 1.5s linear infinite; }
+.stack-flow-pop { animation-delay: -.6s; }
+.plate-shift-left { animation: plate-left-pulse 2.4s ease-in-out infinite; transform-origin: center; }
+.plate-shift-right { animation: plate-right-pulse 2.4s ease-in-out infinite; transform-origin: center; }
+.mountain-uplift { animation: mountain-breathe 2.4s ease-in-out infinite; transform-origin: center bottom; }
+@keyframes plate-left-pulse { 50% { transform: translateX(7px); } }
+@keyframes plate-right-pulse { 50% { transform: translateX(-7px); } }
+@keyframes mountain-breathe { 50% { transform: scaleY(1.025); } }
 .lifecycle-creature { animation: lifecycle-arrive 1.5s ease-in-out infinite alternate; transform-origin: center; }
 .lifecycle-cocoon { animation: lifecycle-sway 2.1s ease-in-out infinite alternate; transform-origin: top center; }
 

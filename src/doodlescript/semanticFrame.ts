@@ -17,6 +17,7 @@ import { matchFractionSubtraction, type FractionValue } from "./fractionSubtract
 import { matchWaterCycleLoop } from "./waterCycleLoop";
 import { matchLifecycleSequence } from "./lifecycleSequence";
 import { matchReflectionRay } from "./reflectionRay";
+import { matchConvergentPlates, matchLifoStack, matchOrderedRoutine, matchTriangleAngleSum } from "./advancedConstructions";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -160,6 +161,11 @@ export interface SemanticReflectionRayMention {
   reflectedMentionId: string;
 }
 
+export interface SemanticLifoStackMention { construction: "lifo-stack"; stackMentionId: string; itemsMentionId: string; topMentionId: string }
+export interface SemanticTriangleAngleSumMention { construction: "triangle-angle-sum"; triangleMentionId: string; anglesMentionId: string; sumMentionId: string }
+export interface SemanticConvergentPlatesMention { construction: "convergent-plates"; leftMentionId: string; rightMentionId: string; mountainMentionId: string }
+export interface SemanticOrderedRoutineMention { construction: "ordered-routine"; firstMentionId: string; middleMentionId: string; finalMentionId: string }
+
 export interface SemanticQuantity {
   mentionId: string;
   value: number;
@@ -171,7 +177,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -206,6 +212,10 @@ export interface SemanticFrame {
   waterCycleLoops: SemanticWaterCycleMention[];
   lifecycleSequences: SemanticLifecycleSequenceMention[];
   reflectionRays: SemanticReflectionRayMention[];
+  lifoStacks: SemanticLifoStackMention[];
+  triangleAngleSums: SemanticTriangleAngleSumMention[];
+  convergentPlates: SemanticConvergentPlatesMention[];
+  orderedRoutines: SemanticOrderedRoutineMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -331,6 +341,10 @@ function populateMeaning(frame: SemanticFrame): void {
   const fractionSubtraction = matchFractionSubtraction(frame.normalizedText);
   const lifecycleSequence = matchLifecycleSequence(frame.normalizedText);
   const reflectionRay = matchReflectionRay(frame.normalizedText);
+  const lifoStack = matchLifoStack(frame.normalizedText);
+  const triangleAngleSum = matchTriangleAngleSum(frame.normalizedText);
+  const convergentPlates = matchConvergentPlates(frame.normalizedText);
+  const orderedRoutine = matchOrderedRoutine(frame.normalizedText);
   if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
@@ -432,6 +446,26 @@ function populateMeaning(frame: SemanticFrame): void {
     frame.meaningCandidates = [{ family: "optics", predicate: "reflection-ray" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
+  }
+  if (lifoStack) {
+    frame.intent = "describe";
+    frame.lifoStacks.push({ construction: "lifo-stack", stackMentionId: addParticipant(frame, lifoStack.stackText), itemsMentionId: addParticipant(frame, lifoStack.itemsText), topMentionId: addParticipant(frame, lifoStack.topText) });
+    frame.meaningCandidates = [{ family: "data-structure", predicate: "lifo-stack" }]; frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
+  }
+  if (triangleAngleSum) {
+    frame.intent = "describe";
+    frame.triangleAngleSums.push({ construction: "triangle-angle-sum", triangleMentionId: addParticipant(frame, triangleAngleSum.triangleText), anglesMentionId: addParticipant(frame, triangleAngleSum.anglesText), sumMentionId: addParticipant(frame, triangleAngleSum.sumText) });
+    frame.meaningCandidates = [{ family: "angle-sum", predicate: "triangle-angle-sum" }]; frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
+  }
+  if (convergentPlates) {
+    frame.intent = "describe";
+    frame.convergentPlates.push({ construction: "convergent-plates", leftMentionId: addParticipant(frame, convergentPlates.leftText), rightMentionId: addParticipant(frame, convergentPlates.rightText), mountainMentionId: addParticipant(frame, convergentPlates.mountainText) });
+    frame.meaningCandidates = [{ family: "tectonics", predicate: "convergent-plates" }]; frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
+  }
+  if (orderedRoutine) {
+    frame.intent = "describe";
+    frame.orderedRoutines.push({ construction: "ordered-routine", firstMentionId: addParticipant(frame, orderedRoutine.firstText), middleMentionId: addParticipant(frame, orderedRoutine.middleText), finalMentionId: addParticipant(frame, orderedRoutine.finalText) });
+    frame.meaningCandidates = [{ family: "routine", predicate: "ordered-routine" }]; frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
   }
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
   if (meaningIsAmbiguous(frame.meaningCandidates)) {
@@ -613,6 +647,10 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       waterCycleLoops: [],
       lifecycleSequences: [],
       reflectionRays: [],
+      lifoStacks: [],
+      triangleAngleSums: [],
+      convergentPlates: [],
+      orderedRoutines: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -626,7 +664,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

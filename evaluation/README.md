@@ -39,17 +39,17 @@ figures.
 
 Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
 11 (`force-diagram`), 12 (`changing-speed-motion`), 13 (`reflection-ray`), 21 (`labelled-container`), 22
-(`call-return-flow`), 31 (`geometric-construction`), 32 (`fraction-subtraction`), 41
-(`landscape-flow`), and 42 (`water-cycle-loop`). All remain human-review
+(`call-return-flow`), 23 (`lifo-stack`), 31 (`geometric-construction`), 32
+(`fraction-subtraction`), 33 (`triangle-angle-sum`), 41 (`landscape-flow`), 42
+(`water-cycle-loop`), 44 (`convergent-plates`), and 51 (`ordered-routine`). All remain human-review
 pending, so the strict drawing pass count is still zero. This separation is intentional:
 implementation and cue presence can be tested, but visual quality cannot be
 self-certified by the code that produced it.
 
 Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
 case 60 passes strictly with a validated no-op scene hold. Therefore the complete frozen
-batch is 3/19 strict, 15/19 automated-ready, and zero false-confident. Twelve implemented
-drawings remain behind the explicit human-review gate, while four newly frozen draw cases
-remain safe clarifications until their reusable grammars exist. No visual approval has
+batch is 3/19 strict, 19/19 automated-ready, and zero false-confident. All sixteen implemented
+drawings remain behind the explicit human-review gate. No visual approval has
 been fabricated.
 
 The second development batch froze cases 2, 12, 22, 32, and 42 before their production
@@ -74,18 +74,21 @@ values, visible initial and removed portions, and a mathematically validated sim
 remainder. Case 42 is now automated-ready through five distinct hydrology identities,
 three typed relations, precipitation and infiltration cues, visible underground water,
 and an evaporation return that visibly closes the loop. The frozen batch is therefore
-3/19 strict, 15/19 automated-ready, and zero false-confident; all twelve implemented
+3/19 strict, 19/19 automated-ready, and zero false-confident; all sixteen implemented
 drawing cases still require real human visual approval.
 
 The third development batch freezes cases 3, 13, 23, 33, 44, and 51 across lifecycle,
 reflection, stack, geometry, plate-motion, and routine-sequence meanings. Freezing their concepts, relations, grammar
 IDs, and cues before implementation prevents production code from redefining success.
-Case 3 is automated-ready through the `lifecycle-sequence` grammar. Case 13 is now
+Case 3 is automated-ready through the `lifecycle-sequence` grammar. Case 13 is
 automated-ready through computed `reflection-ray` geometry with incident, impact, normal,
-surface, and outgoing-ray evidence; cases 23, 33, 44, and 51 continue to clarify safely.
+surface, and outgoing-ray evidence. Cases 23, 33, 44, and 51 are now automated-ready
+through `lifo-stack`, `triangle-angle-sum`, `convergent-plates`, and `ordered-routine`
+respectively. Together they preserve all required identities, typed semantic endpoints,
+topology metadata, and independently frozen visual cues.
 
 `visual-review-protocol.md` defines the human-only approval criteria. Running
-`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a twelve-scene,
+`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a sixteen-scene,
 390-pixel review station with explicit approve/reject decisions, required rejection
 notes, device metadata, reduced-motion confirmation, and downloadable JSON evidence.
 Every export carries a content-derived fixture revision; it never changes gold results

@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.12.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.16.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "contact", "event-graph", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "labelled-container", "landscape-flow", "lifecycle-sequence", "ownership", "part-whole-flow", "queue", "reflection-ray", "visual-flow", "water-cycle-loop"
+      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "contact", "convergent-plates", "event-graph", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "labelled-container", "landscape-flow", "lifecycle-sequence", "lifo-stack", "ordered-routine", "ownership", "part-whole-flow", "queue", "reflection-ray", "triangle-angle-sum", "visual-flow", "water-cycle-loop"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });
@@ -33,6 +33,10 @@ describe("versioned layout family registry", () => {
     expect(layoutFamilyFor("water-cycle-loop")).toMatchObject({ topology: "environmental-cycle", readingDirection: "bidirectional", maximumVisibleNodes: 5 });
     expect(layoutFamilyFor("lifecycle-sequence")).toMatchObject({ topology: "stage-sequence", readingDirection: "left-to-right", maximumVisibleNodes: 3 });
     expect(layoutFamilyFor("reflection-ray")).toMatchObject({ topology: "ray-reflection", readingDirection: "left-to-right", maximumVisibleNodes: 3 });
+    expect(layoutFamilyFor("lifo-stack")).toMatchObject({ topology: "top-access-stack", maximumVisibleNodes: 3 });
+    expect(layoutFamilyFor("triangle-angle-sum")).toMatchObject({ topology: "triangle-proof", maximumVisibleNodes: 3 });
+    expect(layoutFamilyFor("convergent-plates")).toMatchObject({ topology: "plate-convergence", readingDirection: "bidirectional" });
+    expect(layoutFamilyFor("ordered-routine")).toMatchObject({ topology: "routine-sequence", readingDirection: "left-to-right" });
     expect(layoutFamilySupportsRelation("contact", "performance")).toBe(true);
     expect(layoutFamilySupportsRelation("contact", "event")).toBe(false);
   });

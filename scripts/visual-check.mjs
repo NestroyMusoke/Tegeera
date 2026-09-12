@@ -52,7 +52,7 @@ const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.me
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const fixtureRevision = `sha256:${createHash("sha256").update(result.outputFiles[0].text).update(css).update(JSON.stringify(gold)).digest("hex").slice(0, 16)}`;
@@ -85,6 +85,10 @@ const cases = {
   waterCycleLoop: ["Rain falls, soaks into the soil, and some of it later comes back up as evaporation."],
   lifecycleSequence: ["When a caterpillar is ready, it wraps itself up and comes out later as a butterfly."],
   reflectionRay: ["Light travels in a straight line until it hits something and bounces off."],
+  lifoStack: ["Think of a stack like a pile of plates — you can only add or remove from the top."],
+  triangleAngleSum: ["A triangle has three sides and three angles that always add up to 180 degrees."],
+  convergentPlates: ["Mountains form where two large landmasses slowly push into each other."],
+  orderedRoutine: ["First you wake up, then you get ready, then you go to school."],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -97,7 +101,8 @@ const reviewFixtureById = {
   1: "partWholeFlow.html", 2: "circulationLoop.html", 3: "lifecycleSequence.html", 11: "forceDiagram.html",
   12: "changingSpeedMotion.html", 21: "labelledContainer.html", 22: "callReturnFlow.html",
   31: "geometricConstruction.html", 32: "fractionSubtraction.html", 41: "landscapeFlow.html",
-  42: "waterCycleLoop.html", 13: "reflectionRay.html"
+  42: "waterCycleLoop.html", 13: "reflectionRay.html", 23: "lifoStack.html",
+  33: "triangleAngleSum.html", 44: "convergentPlates.html", 51: "orderedRoutine.html"
 };
 const reviewCases = gold.cases.filter(({ id, expected }) => reviewFixtureById[id] && expected.intent === "draw");
 const reviewCards = reviewCases.map(({ id, expected }) => `<article data-review-case="${id}">
@@ -271,8 +276,8 @@ const appBundle = await build({
       check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 4, 'Explanation graph did not create four identities');
       check(document.querySelectorAll('.visual-action-annotation').length === 3, 'Coordinated action connectors are missing');
       check(document.querySelectorAll('[data-relation-kind="visualAction"][data-relation-family="visual"][data-relation-layout="visual-flow"]').length === 3, 'Visual relation registry metadata is missing');
-      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.12.0'), 'Relation registry version is missing');
-      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.12.0'), 'Layout registry version is missing');
+      check([...document.querySelectorAll('[data-relation-registry-version]')].every(node => node.dataset.relationRegistryVersion === '2.16.0'), 'Relation registry version is missing');
+      check([...document.querySelectorAll('[data-layout-registry-version]')].every(node => node.dataset.layoutRegistryVersion === '2.16.0'), 'Layout registry version is missing');
       check(document.querySelectorAll('[data-layout-topology="directed-graph"]').length === 3, 'Visual layout-family topology metadata is missing');
       check(document.querySelector('[data-symbol-id="plant"]'), 'Plant symbol is missing');
       check(document.querySelector('[data-symbol-id="sunlight"]'), 'Sunlight symbol is missing');
@@ -521,8 +526,24 @@ const appBundle = await build({
       check(document.documentElement.scrollWidth <= innerWidth, 'Reflection scene caused horizontal overflow');
       document.getElementById('qa-result').textContent = 'PASS: computed incident/reflected vectors, shared impact surface, normal and equal-angle cues, accessibility, mobile layout';
     }
+    async function verifyAdvanced(statement, family, layout, topology, cues, annotation, aria, identities) {
+      await pause(); await submit(statement);
+      check(document.querySelectorAll('[data-relation-family="' + family + '"][data-relation-layout="' + layout + '"]').length > 0, 'Typed relation metadata is missing for ' + layout);
+      check(document.querySelectorAll('[data-layout-topology="' + topology + '"]').length > 0, 'Topology metadata is missing for ' + layout);
+      for (const cue of cues) check(!!document.querySelector('[data-visual-cue~="' + cue + '"]'), layout + ' cue is missing: ' + cue);
+      check(document.querySelectorAll('.' + annotation).length === 1, layout + ' rendered more than once');
+      check(document.querySelector('.' + annotation)?.getAttribute('aria-label') === aria, layout + ' accessibility meaning is wrong');
+      check(document.querySelectorAll('.doodle-canvas .doodle-object').length === 0, layout + ' identities leaked as generic bubbles');
+      check([...document.querySelectorAll('[data-entity-id]')].filter(node => node.closest('.doodle-canvas')).length === identities, layout + ' identities were not preserved');
+      check(document.documentElement.scrollWidth <= innerWidth, layout + ' caused horizontal overflow');
+      document.getElementById('qa-result').textContent = 'PASS: ' + layout + ' semantics, original procedural art, accessibility, mobile layout';
+    }
+    const verifyStack = () => verifyAdvanced('Think of a stack like a pile of plates — you can only add or remove from the top.', 'data-structure', 'lifo-stack', 'top-access-stack', ['vertical-stack','top-marker','push-at-top','pop-at-top'], 'lifo-stack-annotation', 'items are accessed only at the top of the stack', 3);
+    const verifyTriangleSum = () => verifyAdvanced('A triangle has three sides and three angles that always add up to 180 degrees.', 'angle-sum', 'triangle-angle-sum', 'triangle-proof', ['three-sided-triangle','three-angle-marks','angle-sum-180'], 'triangle-angle-sum-annotation', 'the three angles of the triangle sum to 180 degrees', 3);
+    const verifyPlates = () => verifyAdvanced('Mountains form where two large landmasses slowly push into each other.', 'tectonics', 'convergent-plates', 'plate-convergence', ['opposing-landmasses','inward-force-arrows','central-mountain-uplift'], 'convergent-plates-annotation', 'left landmass and right landmass push toward each other, forming a mountain', 3);
+    const verifyRoutine = () => verifyAdvanced('First you wake up, then you get ready, then you go to school.', 'routine', 'ordered-routine', 'routine-sequence', ['wake-up-stage','ready-stage','school-stage','ordered-arrows'], 'ordered-routine-annotation', 'wake up, then get ready, then go to school', 3);
     const params = new URLSearchParams(location.search);
-    (params.has('reflection') ? verifyReflection() : params.has('lifecycle') ? verifyLifecycle() : params.has('water-cycle') ? verifyWaterCycle() : params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
+    (params.has('routine') ? verifyRoutine() : params.has('plates') ? verifyPlates() : params.has('triangle-sum') ? verifyTriangleSum() : params.has('stack') ? verifyStack() : params.has('reflection') ? verifyReflection() : params.has('lifecycle') ? verifyLifecycle() : params.has('water-cycle') ? verifyWaterCycle() : params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
   define: { "process.env.NODE_ENV": '"production"' },
@@ -551,3 +572,7 @@ await writeFile(resolve(output, "app-fraction-phone.html"), framedApp(390, "?fra
 await writeFile(resolve(output, "app-water-cycle-phone.html"), framedApp(390, "?water-cycle"));
 await writeFile(resolve(output, "app-lifecycle-phone.html"), framedApp(390, "?lifecycle"));
 await writeFile(resolve(output, "app-reflection-phone.html"), framedApp(390, "?reflection"));
+await writeFile(resolve(output, "app-stack-phone.html"), framedApp(390, "?stack"));
+await writeFile(resolve(output, "app-triangle-sum-phone.html"), framedApp(390, "?triangle-sum"));
+await writeFile(resolve(output, "app-plates-phone.html"), framedApp(390, "?plates"));
+await writeFile(resolve(output, "app-routine-phone.html"), framedApp(390, "?routine"));

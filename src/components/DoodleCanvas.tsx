@@ -24,6 +24,7 @@ import { fractionSubtractionGeometry, isFractionSubtractionRelation } from "../d
 import { isWaterCycleRelation, waterCycleGeometry } from "../doodlescript/waterCycleLoop";
 import { isLifecycleRelation, lifecycleSequenceGeometry } from "../doodlescript/lifecycleSequence";
 import { isReflectionRelation, reflectionRayGeometry } from "../doodlescript/reflectionRay";
+import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRoutineRelation, isTriangleRelation, lifoStackGeometry, orderedRoutineGeometry, triangleAngleSumGeometry } from "../doodlescript/advancedConstructions";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -180,6 +181,64 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isLifoRelation(relation)) {
+    const geometry = lifoStackGeometry(relations.filter(isLifoRelation), entities);
+    if (!geometry) return null;
+    const x = geometry.centerX; const base = geometry.baseY;
+    return <g className="lifo-stack-annotation" aria-label={`${geometry.items.label} are accessed only at the ${geometry.top.label} of the ${geometry.stack.label}`}>
+      <g data-visual-cue="vertical-stack">
+        <path d={`M${x - 118} ${base - 245} V${base} H${x + 118} V${base - 245}`} fill="none" stroke="#3d5554" strokeWidth="8" strokeLinecap="round" />
+        {[0, 1, 2, 3].map((level) => <g key={level}><rect x={x - 96} y={base - 58 - level * 58} width="192" height="48" rx="11" fill={["#d6e8a8", "#f1c783", "#9fd6d2", "#e9b5c7"][level]} stroke="#405b59" strokeWidth="4" /><text x={x} y={base - 27 - level * 58} textAnchor="middle" fontSize="19" fontWeight="850" fill="#324644">item {level + 1}</text></g>)}
+        <text x={x} y={base + 42} textAnchor="middle" fontSize="24" fontWeight="900" fill="#334d4b">{geometry.stack.label}</text>
+      </g>
+      <g data-visual-cue="top-marker"><path d={`M${x + 125} ${base - 229} h65`} stroke="#8e4c67" strokeWidth="6" /><path d={`M${x + 176} ${base - 241} l14 12 -14 12`} fill="none" stroke="#8e4c67" strokeWidth="6" /><text x={x + 158} y={base - 251} textAnchor="middle" fontSize="21" fontWeight="900" fill="#7a4058">TOP</text></g>
+      <g data-visual-cue="push-at-top"><path className="stack-flow" d={`M${x - 190} ${base - 330} Q${x - 80} ${base - 345} ${x - 35} ${base - 282}`} fill="none" stroke="#4c8b68" strokeWidth="8" strokeDasharray="13 9" /><path d={`M${x - 52} ${base - 291} l17 9 -4 -19`} fill="none" stroke="#4c8b68" strokeWidth="7" /><text x={x - 145} y={base - 350} fontSize="23" fontWeight="900" fill="#3b7153">PUSH</text></g>
+      <g data-visual-cue="pop-at-top"><path className="stack-flow stack-flow-pop" d={`M${x + 35} ${base - 282} Q${x + 95} ${base - 350} ${x + 198} ${base - 326}`} fill="none" stroke="#b35d55" strokeWidth="8" strokeDasharray="13 9" /><path d={`M${x + 179} ${base - 338} l19 12 -21 5`} fill="none" stroke="#b35d55" strokeWidth="7" /><text x={x + 122} y={base - 350} fontSize="23" fontWeight="900" fill="#934a45">POP</text></g>
+    </g>;
+  }
+  if (isTriangleRelation(relation)) {
+    const triangleRelations = relations.filter(isTriangleRelation);
+    if (relation.id !== triangleRelations[0]?.id) return null;
+    const geometry = triangleAngleSumGeometry(triangleRelations, entities);
+    if (!geometry) return null;
+    const x = geometry.centerX; const y = geometry.centerY;
+    const left = { x: x - 205, y: y + 125 }; const right = { x: x + 205, y: y + 125 }; const apex = { x, y: y - 150 };
+    return <g className="triangle-angle-sum-annotation" aria-label={`the three angles of the triangle sum to ${geometry.total.label}`}>
+      <g data-visual-cue="three-sided-triangle"><path d={`M${left.x} ${left.y} L${apex.x} ${apex.y} L${right.x} ${right.y} Z`} fill="#fff2bd" stroke="#3f5e62" strokeWidth="9" strokeLinejoin="round" /></g>
+      <g data-visual-cue="three-angle-marks">
+        <path d={`M${left.x + 48} ${left.y} A48 48 0 0 0 ${left.x + 29} ${left.y - 38} M${right.x - 48} ${right.y} A48 48 0 0 1 ${right.x - 29} ${right.y - 38} M${apex.x - 26} ${apex.y + 35} A43 43 0 0 0 ${apex.x + 26} ${apex.y + 35}`} fill="none" stroke="#b25d70" strokeWidth="7" strokeLinecap="round" />
+        <text x={left.x + 55} y={left.y - 21} fontSize="24" fontWeight="900" fill="#8f4359">A</text><text x={right.x - 67} y={right.y - 21} fontSize="24" fontWeight="900" fill="#8f4359">B</text><text x={apex.x} y={apex.y + 67} textAnchor="middle" fontSize="24" fontWeight="900" fill="#8f4359">C</text>
+      </g>
+      <g data-visual-cue="angle-sum-180"><rect x={x - 190} y={y + 165} width="380" height="62" rx="25" fill="#dceee8" stroke="#426d65" strokeWidth="5" /><text x={x} y={y + 206} textAnchor="middle" fontSize="27" fontWeight="950" fill="#315c55">A + B + C = {geometry.total.label}</text></g>
+    </g>;
+  }
+  if (isConvergentRelation(relation)) {
+    const plateRelations = relations.filter(isConvergentRelation);
+    if (relation.id !== plateRelations[0]?.id) return null;
+    const geometry = convergentPlatesGeometry(plateRelations, entities);
+    if (!geometry) return null;
+    const x = geometry.mountainX; const ground = geometry.groundY;
+    return <g className="convergent-plates-annotation" aria-label={`${geometry.left.label} and ${geometry.right.label} push toward each other, forming a ${geometry.mountain.label}`}>
+      <g data-visual-cue="opposing-landmasses">
+        <path className="plate-shift plate-shift-left" d={`M65 ${ground - 48} Q180 ${ground - 72} ${x - 25} ${ground - 35} L${x - 5} ${ground + 80} H65 Z`} fill="#cfb178" stroke="#5d5039" strokeWidth="7" /><path className="plate-shift plate-shift-right" d={`M935 ${ground - 48} Q820 ${ground - 72} ${x + 25} ${ground - 35} L${x + 5} ${ground + 80} H935 Z`} fill="#d5b982" stroke="#5d5039" strokeWidth="7" />
+        <text x="195" y={ground + 28} textAnchor="middle" fontSize="22" fontWeight="850" fill="#51452f">{geometry.left.label}</text><text x="805" y={ground + 28} textAnchor="middle" fontSize="22" fontWeight="850" fill="#51452f">{geometry.right.label}</text>
+      </g>
+      <g data-visual-cue="inward-force-arrows"><path className="plate-force" d={`M160 ${ground - 105} H${x - 105} M${x + 105} ${ground - 105} H840`} fill="none" stroke="#b95445" strokeWidth="11" strokeLinecap="round" /><path d={`M${x - 132} ${ground - 123} l27 18 -27 18 M${x + 132} ${ground - 123} l-27 18 27 18`} fill="none" stroke="#b95445" strokeWidth="9" /></g>
+      <g data-visual-cue="central-mountain-uplift"><path className="mountain-uplift" d={`M${x - 190} ${ground - 35} L${x - 82} ${ground - 188} L${x - 30} ${ground - 130} L${x + 35} ${ground - 255} L${x + 190} ${ground - 35} Z`} fill="#8ea27d" stroke="#465a45" strokeWidth="8" strokeLinejoin="round" /><path d={`M${x - 8} ${ground - 175} l43 -80 48 70 -36 -17 -19 24 -19 -22 Z`} fill="#f4f0df" /><path d={`M${x} ${ground - 15} V${ground - 105}`} stroke="#d18b3e" strokeWidth="7" strokeDasharray="10 8" /><path d={`M${x - 14} ${ground - 89} L${x} ${ground - 112} L${x + 14} ${ground - 89}`} fill="none" stroke="#d18b3e" strokeWidth="7" /><text x={x} y={ground - 275} textAnchor="middle" fontSize="25" fontWeight="950" fill="#38503d">{geometry.mountain.label} uplift</text></g>
+    </g>;
+  }
+  if (isRoutineRelation(relation)) {
+    const routineRelations = relations.filter(isRoutineRelation);
+    if (relation.id !== routineRelations[0]?.id) return null;
+    const geometry = orderedRoutineGeometry(routineRelations, entities);
+    if (!geometry) return null;
+    const stages = [geometry.first, geometry.middle, geometry.final]; const y = geometry.middle.y * 6.2;
+    const cues = ["wake-up-stage", "ready-stage", "school-stage"];
+    return <g className="ordered-routine-annotation" aria-label={`${geometry.first.label}, then ${geometry.middle.label}, then ${geometry.final.label}`}>
+      <g data-visual-cue="ordered-arrows">{[0, 1].map((index) => { const from = stages[index].x * 10 + 108; const to = stages[index + 1].x * 10 - 108; return <g key={index}><path className="routine-flow" d={`M${from} ${y} H${to}`} stroke="#4e7e75" strokeWidth="8" strokeDasharray="12 9" /><path d={`M${to - 20} ${y - 13} L${to} ${y} L${to - 20} ${y + 13}`} fill="none" stroke="#4e7e75" strokeWidth="7" /></g>; })}</g>
+      {stages.map((stage, index) => { const sx = stage.x * 10; return <g key={stage.id} data-visual-cue={cues[index]}><rect x={sx - 105} y={y - 88} width="210" height="176" rx="40" fill={["#e7c8a0", "#b9ded2", "#c7d7ef"][index]} stroke="#425b58" strokeWidth="6" /><circle cx={sx - 76} cy={y - 60} r="22" fill="#3f645d" /><text x={sx - 76} y={y - 52} textAnchor="middle" fill="white" fontSize="20" fontWeight="900">{index + 1}</text><path d={`M${sx - 45} ${y - 20} H${sx + 45} M${sx - 45} ${y + 8} H${sx + 28} M${sx - 45} ${y + 36} H${sx + 10}`} stroke="#52736d" strokeWidth="7" strokeLinecap="round" opacity=".72" /><circle cx={sx + 59} cy={y + 36} r="15" fill="none" stroke="#52736d" strokeWidth="5" /><path d={`M${sx + 59} ${y + 36} v-9 M${sx + 59} ${y + 36} l7 5`} stroke="#52736d" strokeWidth="4" strokeLinecap="round" /><text x={sx} y={y + 127} textAnchor="middle" fontSize="22" fontWeight="900" fill="#344a47">{stage.label}</text></g>; })}
+    </g>;
+  }
   if (isReflectionRelation(relation)) {
     const optics = relations.filter(isReflectionRelation);
     if (relation.id !== optics.find(({ kind }) => kind === "travelsTo")?.id) return null;
@@ -722,7 +781,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

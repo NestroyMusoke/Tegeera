@@ -196,8 +196,8 @@ motion understanding.
 An independent 60-statement teacher corpus lives at
 [`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
 It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present observational baseline draws 12/60, holds the scene for 1/60
-non-visual utterance, and asks for clarification on 47/60. Those numbers measure
+grammar. The present observational baseline draws 16/60, holds the scene for 1/60
+non-visual utterance, and asks for clarification on 43/60. Those numbers measure
 coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
@@ -208,10 +208,9 @@ intent routing, observed visual cues, and explicit human visual approval. Doodle
 now makes the plant example automated-ready through a reusable `part-whole-flow`
 construction. The expanded gold batch also has automated evidence for circulation-loop,
 force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
-geometric-construction, landscape-flow, water-cycle-loop, lifecycle-sequence, and
-reflection-ray. The gold set now contains
-19 frozen cases: 15 are automated-ready, while four newly frozen cross-domain draw cases
-safely clarify until their reusable grammars exist. Drawing cases remain
+geometric-construction, landscape-flow, water-cycle-loop, lifecycle-sequence,
+reflection-ray, lifo-stack, triangle-angle-sum, convergent-plates, and ordered-routine.
+All 19 frozen cases are automated-ready. Drawing cases remain
 pending until a reviewer accepts the actual doodles.
 Validation can prove script safety; it cannot substitute for semantic or visual completeness.
 
@@ -222,6 +221,14 @@ surface normal with `r = v - 2(v·n)n`; validation requires both typed rays to m
 surface in a readable configuration. The renderer exposes the impact point, normal, equal
 angle cues, incident direction, and reflected direction while reduced-motion mode preserves
 the complete static explanation.
+
+The advanced construction layer adds four more reusable grammars without storing corpus
+sentences. LIFO stacks constrain push and pop operations to an explicit top identity;
+triangle diagrams preserve the triangle, its three angles, and the 180-degree total as
+separate semantic roles; convergent boundaries require two opposing landmasses and one
+central uplift; ordered routines accept three short arbitrary stages and retain their
+exact order. Each grammar has its own topology, relation family, validator, procedural
+SVG composition, accessibility description, reduced-motion behavior, and mobile fixture.
 
 The construction is not plant-specific. A registered intake action binds an open whole,
 one to three inputs, and the named parts they travel through. Symbol capabilities choose

@@ -24,6 +24,8 @@ import { planFractionSubtraction } from "./fractionSubtraction";
 import { planWaterCycleLoop } from "./waterCycleLoop";
 import { planLifecycleSequence } from "./lifecycleSequence";
 import { planReflectionRay } from "./reflectionRay";
+import { planConvergentPlates, planLifoStack, planOrderedRoutine, planTriangleAngleSum } from "./advancedConstructions";
+import { relationForKind } from "./relationRegistry";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -67,7 +69,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -81,10 +83,12 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       || (command.action === "update" && command.performance !== undefined)) upgradeVersion("1.5.0");
     if (command.action === "unrelate") {
       const removedKind = working.relations?.find((relation) => relation.id === command.relationId)?.kind;
+      if (removedKind) upgradeVersion(relationForKind(removedKind).minimumVersion);
       if (removedKind === "actsOn") upgradeVersion("1.6.0");
       if (removedKind === "handover") upgradeVersion("1.7.0");
       if (removedKind === "visualAction") upgradeVersion("1.9.0");
     }
+    if (command.action === "relate") upgradeVersion(relationForKind(command.relation.kind).minimumVersion);
     if (command.action === "relate" && command.relation.kind === "actsOn") upgradeVersion("1.6.0");
     if (command.action === "relate" && command.relation.kind === "handover") upgradeVersion("1.7.0");
     if (command.action === "relate" && ["before", "causes"].includes(command.relation.kind)) upgradeVersion("1.8.0");
@@ -101,6 +105,10 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
     if (command.action === "relate" && ["fallsTo", "infiltrates", "evaporatesTo"].includes(command.relation.kind)) upgradeVersion("2.10.0");
     if (command.action === "relate" && command.relation.kind === "transformsTo") upgradeVersion("2.11.0");
     if (command.action === "relate" && ["travelsTo", "reflectsFrom"].includes(command.relation.kind)) upgradeVersion("2.12.0");
+    if (command.action === "relate" && command.relation.kind === "accessedAt") upgradeVersion("2.13.0");
+    if (command.action === "relate" && ["trianglePartOf", "sumsTo"].includes(command.relation.kind)) upgradeVersion("2.14.0");
+    if (command.action === "relate" && command.relation.kind === "pushesToward") upgradeVersion("2.15.0");
+    if (command.action === "relate" && command.relation.kind === "routineBefore") upgradeVersion("2.16.0");
     commands.push(command);
     working = applyDoodleScript(scene, makeScript());
   };
@@ -361,6 +369,73 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "reflectsFrom", sourceIds: [reflectedId], targetIds: [surfaceId], predicate: "reflectsFrom" } });
         focus([incidentId], [surfaceId, reflectedId]);
         continue;
+      }
+      const lifo = frame.lifoStacks[0];
+      if (lifo?.construction === "lifo-stack") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const stackId = eventNode(mentionText(lifo.stackMentionId), "stack-container");
+        const itemsId = eventNode(mentionText(lifo.itemsMentionId), "stack-items");
+        const topId = eventNode(mentionText(lifo.topMentionId), "stack-top");
+        const ids = { stackId, itemsId, topId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("A stack needs distinct container, items, and top identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planLifoStack(working, ids, movableIds);
+        if (!moves) throw new Clarification("That stack cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "accessedAt", sourceIds: [itemsId], targetIds: [topId], predicate: "accessedAt" } });
+        focus([stackId, itemsId], [topId]); continue;
+      }
+      const triangleSum = frame.triangleAngleSums[0];
+      if (triangleSum?.construction === "triangle-angle-sum") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const triangleId = eventNode(mentionText(triangleSum.triangleMentionId), "triangle-shape");
+        const anglesId = eventNode(mentionText(triangleSum.anglesMentionId), "triangle-angles");
+        const sumId = eventNode(mentionText(triangleSum.sumMentionId), "triangle-sum");
+        const ids = { triangleId, anglesId, sumId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("An angle-sum diagram needs distinct triangle, angles, and total identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planTriangleAngleSum(working, ids, movableIds);
+        if (!moves) throw new Clarification("That angle-sum construction cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "trianglePartOf", sourceIds: [anglesId], targetIds: [triangleId], predicate: "partOf" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "sumsTo", sourceIds: [anglesId], targetIds: [sumId], predicate: "sumsTo" } });
+        focus([triangleId, anglesId], [sumId]); continue;
+      }
+      const plates = frame.convergentPlates[0];
+      if (plates?.construction === "convergent-plates") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const leftId = eventNode(mentionText(plates.leftMentionId), "plate-left");
+        const rightId = eventNode(mentionText(plates.rightMentionId), "plate-right");
+        const mountainId = eventNode(mentionText(plates.mountainMentionId), "plate-mountain");
+        const ids = { leftId, rightId, mountainId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("Convergence needs distinct left plate, right plate, and mountain identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planConvergentPlates(working, ids, movableIds);
+        if (!moves) throw new Clarification("That convergent boundary cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "pushesToward", sourceIds: [leftId], targetIds: [mountainId], predicate: "pushesToward" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "pushesToward", sourceIds: [rightId], targetIds: [mountainId], predicate: "pushesToward" } });
+        focus([leftId, rightId], [mountainId]); continue;
+      }
+      const routine = frame.orderedRoutines[0];
+      if (routine?.construction === "ordered-routine") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const firstId = eventNode(mentionText(routine.firstMentionId), "routine-first");
+        const middleId = eventNode(mentionText(routine.middleMentionId), "routine-middle");
+        const finalId = eventNode(mentionText(routine.finalMentionId), "routine-final");
+        const ids = { firstId, middleId, finalId };
+        if (new Set(Object.values(ids)).size !== 3) throw new Clarification("A routine needs three distinct ordered steps.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planOrderedRoutine(working, ids, movableIds);
+        if (!moves) throw new Clarification("That routine cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "routineBefore", sourceIds: [firstId], targetIds: [middleId], predicate: "before" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "routineBefore", sourceIds: [middleId], targetIds: [finalId], predicate: "before" } });
+        focus([firstId], [middleId, finalId]); continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
       if (forceDiagram?.construction === "force-diagram") {
