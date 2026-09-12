@@ -97,7 +97,9 @@ function normalize(value: string): string {
 
 function entityLabel(scene: SceneState, entityId: string): string {
   const entity = scene.entities.find(({ id }) => id === entityId);
-  return normalize(entity?.label ?? entity?.kind ?? "").replace(/ \d+$/, "");
+  const label = normalize(entity?.label ?? entity?.kind ?? "");
+  const kind = normalize(entity?.kind ?? "");
+  return new RegExp(`^${kind} \\d+$`).test(label) ? label.replace(/ \\d+$/, "") : label;
 }
 
 function relationPredicate(relation: SceneRelation): string {

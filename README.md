@@ -196,8 +196,8 @@ motion understanding.
 An independent 60-statement teacher corpus lives at
 [`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
 It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present observational baseline draws 16/60, holds the scene for 1/60
-non-visual utterance, and asks for clarification on 43/60. Those numbers measure
+grammar. The present observational baseline draws 17/60, holds the scene for 1/60
+non-visual utterance, and asks for clarification on 42/60. Those numbers measure
 coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
@@ -209,8 +209,8 @@ now makes the plant example automated-ready through a reusable `part-whole-flow`
 construction. The expanded gold batch also has automated evidence for circulation-loop,
 force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
 geometric-construction, landscape-flow, water-cycle-loop, lifecycle-sequence,
-reflection-ray, lifo-stack, triangle-angle-sum, convergent-plates, and ordered-routine.
-All 19 frozen cases are automated-ready. Drawing cases remain
+reflection-ray, lifo-stack, triangle-angle-sum, convergent-plates, ordered-routine, and
+indexed-row. All 20 gold cases are automated-ready. Drawing cases remain
 pending until a reviewer accepts the actual doodles.
 Validation can prove script safety; it cannot substitute for semantic or visual completeness.
 
@@ -229,10 +229,13 @@ separate semantic roles; convergent boundaries require two opposing landmasses a
 central uplift; ordered routines accept three short arbitrary stages and retain their
 exact order. Each grammar has its own topology, relation family, validator, procedural
 SVG composition, accessibility description, reduced-motion behavior, and mobile fixture.
+The indexed-collection grammar adds a four-role contract for a named collection, its cells,
+stored values, and a zero- or one-based starting index; its procedural row is vocabulary-
+independent rather than an array-specific lesson template.
 
-A generated construction-generalization probe now exercises 66 deterministic paraphrase
-combinations across stack, triangle, plate-convergence, ordered-routine, reflection, and
-lifecycle grammars. It also checks 12 incomplete, negated, uncertain, or structurally wrong
+A generated construction-generalization probe now exercises 78 deterministic paraphrase
+combinations across stack, triangle, plate-convergence, ordered-routine, reflection, lifecycle,
+and indexed-row grammars. It also checks 16 incomplete, negated, uncertain, or structurally wrong
 near-misses. Every accepted probe must produce valid typed relations, the expected specialist
 layout, deterministic output, and real component markup without generic-object leakage; every
 near-miss must clarify. This is development conformance evidence, not a hidden classroom
@@ -241,9 +244,9 @@ and `npm run build` enforces a 500 KiB maximum for every JavaScript chunk.
 
 The six newer families are complemented by 136 generated variations across the ten
 foundational specialist families, with 19 incomplete, unsafe, or wrong-domain near-misses.
-Together, all sixteen families contribute 202 supported variations and 31 near-misses.
+Together, all seventeen families contribute 214 supported variations and 35 near-misses.
 
-The combined 202-input workload drives a warmed local SVG-ready performance envelope.
+The combined 214-input workload drives a warmed local SVG-ready performance envelope.
 It times interpretation, validation, immutable scene application, and full SVG markup
 serialization separately, with coarse anti-regression budgets that fail the test suite.
 The in-app performance panel continues through real browser commit and paint, retains a

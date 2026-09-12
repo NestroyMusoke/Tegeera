@@ -18,6 +18,7 @@ import { matchWaterCycleLoop } from "./waterCycleLoop";
 import { matchLifecycleSequence } from "./lifecycleSequence";
 import { matchReflectionRay } from "./reflectionRay";
 import { matchConvergentPlates, matchLifoStack, matchOrderedRoutine, matchTriangleAngleSum } from "./advancedConstructions";
+import { matchIndexedCollection } from "./indexedCollection";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -165,6 +166,7 @@ export interface SemanticLifoStackMention { construction: "lifo-stack"; stackMen
 export interface SemanticTriangleAngleSumMention { construction: "triangle-angle-sum"; triangleMentionId: string; anglesMentionId: string; sumMentionId: string }
 export interface SemanticConvergentPlatesMention { construction: "convergent-plates"; leftMentionId: string; rightMentionId: string; mountainMentionId: string }
 export interface SemanticOrderedRoutineMention { construction: "ordered-routine"; firstMentionId: string; middleMentionId: string; finalMentionId: string }
+export interface SemanticIndexedCollectionMention { construction: "indexed-collection"; collectionMentionId: string; cellsMentionId: string; valuesMentionId: string; indexMentionId: string; startIndex: 0 | 1 }
 
 export interface SemanticQuantity {
   mentionId: string;
@@ -177,7 +179,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -216,6 +218,7 @@ export interface SemanticFrame {
   triangleAngleSums: SemanticTriangleAngleSumMention[];
   convergentPlates: SemanticConvergentPlatesMention[];
   orderedRoutines: SemanticOrderedRoutineMention[];
+  indexedCollections: SemanticIndexedCollectionMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -345,6 +348,7 @@ function populateMeaning(frame: SemanticFrame): void {
   const triangleAngleSum = matchTriangleAngleSum(frame.normalizedText);
   const convergentPlates = matchConvergentPlates(frame.normalizedText);
   const orderedRoutine = matchOrderedRoutine(frame.normalizedText);
+  const indexedCollection = matchIndexedCollection(frame.normalizedText);
   if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
@@ -466,6 +470,20 @@ function populateMeaning(frame: SemanticFrame): void {
     frame.intent = "describe";
     frame.orderedRoutines.push({ construction: "ordered-routine", firstMentionId: addParticipant(frame, orderedRoutine.firstText), middleMentionId: addParticipant(frame, orderedRoutine.middleText), finalMentionId: addParticipant(frame, orderedRoutine.finalText) });
     frame.meaningCandidates = [{ family: "routine", predicate: "ordered-routine" }]; frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
+  }
+  if (indexedCollection) {
+    frame.intent = "describe";
+    frame.indexedCollections.push({
+      construction: "indexed-collection",
+      collectionMentionId: addParticipant(frame, indexedCollection.collectionText),
+      cellsMentionId: addParticipant(frame, indexedCollection.cellsText),
+      valuesMentionId: addParticipant(frame, indexedCollection.valuesText),
+      indexMentionId: addParticipant(frame, indexedCollection.indexText),
+      startIndex: indexedCollection.startIndex
+    });
+    frame.meaningCandidates = [{ family: "indexed-collection", predicate: "indexed-collection" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
   }
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
   if (meaningIsAmbiguous(frame.meaningCandidates)) {
@@ -651,6 +669,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       triangleAngleSums: [],
       convergentPlates: [],
       orderedRoutines: [],
+      indexedCollections: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -664,7 +683,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized) || matchIndexedCollection(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

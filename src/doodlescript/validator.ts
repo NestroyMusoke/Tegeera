@@ -29,6 +29,7 @@ import { isWaterCycleRelation, waterCycleGeometry } from "./waterCycleLoop";
 import { isLifecycleRelation, lifecycleSequenceGeometry } from "./lifecycleSequence";
 import { isReflectionRelation, reflectionRayGeometry } from "./reflectionRay";
 import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRoutineRelation, isTriangleRelation, lifoStackGeometry, orderedRoutineGeometry, triangleAngleSumGeometry } from "./advancedConstructions";
+import { indexedCollectionGeometry, isIndexedCollectionRelation } from "./indexedCollection";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -188,7 +189,7 @@ export function validateDoodleScript(
 
   const projected = applyDoodleScript(scene, script);
   if (script.context) {
-    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
+    if (!["1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0"].includes(script.schemaVersion)) issues.push({ gate: "schema", message: "Conversation context requires DoodleScript 1.2.0 or later." });
     for (const references of [script.context.subjectIds, script.context.objectIds]) {
       if (new Set(references).size !== references.length || references.some((id) => !ids.has(id))) {
         issues.push({ gate: "semantic", message: "Conversation context refers to missing or duplicate objects." });
@@ -245,6 +246,8 @@ export function validateDoodleScript(
   if (convergentRelations.length && !convergentPlatesGeometry(convergentRelations, projected.entities)) issues.push({ gate: "semantic", message: "Convergent plates need two distinct opposing landmasses pushing toward one central uplift." });
   const routineRelations = (projected.relations ?? []).filter(isRoutineRelation);
   if (routineRelations.length && !orderedRoutineGeometry(routineRelations, projected.entities)) issues.push({ gate: "semantic", message: "An ordered routine needs three distinct stages and exactly two connected transitions." });
+  const indexedRelations = (projected.relations ?? []).filter(isIndexedCollectionRelation);
+  if (indexedRelations.length && !indexedCollectionGeometry(indexedRelations, projected.entities)) issues.push({ gate: "semantic", message: "An indexed collection needs one collection, one cell row, stored values, and a zero-or-one starting index across exactly three connected relationships." });
   for (const entity of projected.entities) {
     if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });

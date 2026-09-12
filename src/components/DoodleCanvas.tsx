@@ -25,6 +25,7 @@ import { isWaterCycleRelation, waterCycleGeometry } from "../doodlescript/waterC
 import { isLifecycleRelation, lifecycleSequenceGeometry } from "../doodlescript/lifecycleSequence";
 import { isReflectionRelation, reflectionRayGeometry } from "../doodlescript/reflectionRay";
 import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRoutineRelation, isTriangleRelation, lifoStackGeometry, orderedRoutineGeometry, triangleAngleSumGeometry } from "../doodlescript/advancedConstructions";
+import { indexedCollectionGeometry, isIndexedCollectionRelation } from "../doodlescript/indexedCollection";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -181,6 +182,24 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isIndexedCollectionRelation(relation)) {
+    const indexedRelations = relations.filter(isIndexedCollectionRelation);
+    if (relation.id !== indexedRelations.find(({ kind }) => kind === "containsCells")?.id) return null;
+    const geometry = indexedCollectionGeometry(indexedRelations, entities);
+    if (!geometry) return null;
+    const startX = 140; const rowY = 235; const cellWidth = 180; const gap = 8;
+    return <g className="indexed-collection-annotation" aria-label={`${geometry.collection.label} contains ${geometry.cells.label} holding ${geometry.values.label}, indexed starting at ${geometry.startIndex}`}>
+      <text x="500" y="128" textAnchor="middle" fontSize="30" fontWeight="950" fill="#334f4c">{geometry.collection.label}</text>
+      <g data-visual-cue="indexed-box-row">
+        {[0, 1, 2, 3].map((offset) => { const x = startX + offset * (cellWidth + gap); return <g key={offset}><rect x={x} y={rowY} width={cellWidth} height="120" rx="18" fill={["#b9ded2", "#f2cf91", "#c8d8ef", "#e8b8c8"][offset]} stroke="#405c59" strokeWidth="6" /><text x={x + cellWidth / 2} y={rowY + 72} textAnchor="middle" fontSize="24" fontWeight="900" fill="#314744">{geometry.values.label} {offset + 1}</text></g>; })}
+      </g>
+      <g data-visual-cue="cell-values"><path d={`M${startX} ${rowY + 142} H${startX + 4 * cellWidth + 3 * gap}`} stroke="#67807b" strokeWidth="4" strokeLinecap="round" /></g>
+      <g data-visual-cue={geometry.startIndex === 0 ? "zero-based-indices" : "one-based-indices"}>
+        {[0, 1, 2, 3].map((offset) => { const x = startX + offset * (cellWidth + gap) + cellWidth / 2; return <g key={offset}><path d={`M${x} ${rowY + 128} v28`} stroke="#8e4d67" strokeWidth="5" /><text x={x} y={rowY + 190} textAnchor="middle" fontSize="25" fontWeight="950" fill="#7d405b">{geometry.startIndex + offset}</text></g>; })}
+      </g>
+      <g data-visual-cue="left-to-right-indexing"><path d={`M${startX + 20} ${rowY + 225} H${startX + 4 * cellWidth + 3 * gap - 20}`} stroke="#4f8277" strokeWidth="8" strokeDasharray="14 10" /><path d={`M${startX + 4 * cellWidth + 3 * gap - 45} ${rowY + 209} l25 16 -25 16`} fill="none" stroke="#4f8277" strokeWidth="7" /><text x="500" y={rowY + 270} textAnchor="middle" fontSize="22" fontWeight="850" fill="#3f6d65">indices increase left to right</text></g>
+    </g>;
+  }
   if (isLifoRelation(relation)) {
     const geometry = lifoStackGeometry(relations.filter(isLifoRelation), entities);
     if (!geometry) return null;
@@ -781,7 +800,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

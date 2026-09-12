@@ -89,6 +89,7 @@ const cases = {
   triangleAngleSum: ["A triangle has three sides and three angles that always add up to 180 degrees."],
   convergentPlates: ["Mountains form where two large landmasses slowly push into each other."],
   orderedRoutine: ["First you wake up, then you get ready, then you go to school."],
+  indexedCollection: ["An array is a row of boxes, each one holding a value, numbered starting from zero."],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -102,7 +103,7 @@ const reviewFixtureById = {
   12: "changingSpeedMotion.html", 21: "labelledContainer.html", 22: "callReturnFlow.html",
   31: "geometricConstruction.html", 32: "fractionSubtraction.html", 41: "landscapeFlow.html",
   42: "waterCycleLoop.html", 13: "reflectionRay.html", 23: "lifoStack.html",
-  33: "triangleAngleSum.html", 44: "convergentPlates.html", 51: "orderedRoutine.html"
+  25: "indexedCollection.html", 33: "triangleAngleSum.html", 44: "convergentPlates.html", 51: "orderedRoutine.html"
 };
 const reviewCases = gold.cases.filter(({ id, expected }) => reviewFixtureById[id] && expected.intent === "draw");
 const reviewCards = reviewCases.map(({ id, expected }) => `<article data-review-case="${id}">

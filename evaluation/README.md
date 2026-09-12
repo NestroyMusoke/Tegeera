@@ -39,7 +39,7 @@ figures.
 
 Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
 11 (`force-diagram`), 12 (`changing-speed-motion`), 13 (`reflection-ray`), 21 (`labelled-container`), 22
-(`call-return-flow`), 23 (`lifo-stack`), 31 (`geometric-construction`), 32
+(`call-return-flow`), 23 (`lifo-stack`), 25 (`indexed-row`), 31 (`geometric-construction`), 32
 (`fraction-subtraction`), 33 (`triangle-angle-sum`), 41 (`landscape-flow`), 42
 (`water-cycle-loop`), 44 (`convergent-plates`), and 51 (`ordered-routine`). All remain human-review
 pending, so the strict drawing pass count is still zero. This separation is intentional:
@@ -48,7 +48,7 @@ self-certified by the code that produced it.
 
 Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
 case 60 passes strictly with a validated no-op scene hold. Therefore the complete frozen
-batch is 3/19 strict, 19/19 automated-ready, and zero false-confident. All sixteen implemented
+batch is 3/20 strict, 20/20 automated-ready, and zero false-confident. All seventeen implemented
 drawings remain behind the explicit human-review gate. No visual approval has
 been fabricated.
 
@@ -74,7 +74,7 @@ values, visible initial and removed portions, and a mathematically validated sim
 remainder. Case 42 is now automated-ready through five distinct hydrology identities,
 three typed relations, precipitation and infiltration cues, visible underground water,
 and an evaporation return that visibly closes the loop. The frozen batch is therefore
-3/19 strict, 19/19 automated-ready, and zero false-confident; all sixteen implemented
+3/20 strict, 20/20 automated-ready, and zero false-confident; all seventeen implemented
 drawing cases still require real human visual approval.
 
 The third development batch freezes cases 3, 13, 23, 33, 44, and 51 across lifecycle,
@@ -88,7 +88,7 @@ respectively. Together they preserve all required identities, typed semantic end
 topology metadata, and independently frozen visual cues.
 
 `visual-review-protocol.md` defines the human-only approval criteria. Running
-`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a sixteen-scene,
+`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a seventeen-scene,
 390-pixel review station with explicit approve/reject decisions, required rejection
 notes, device metadata, reduced-motion confirmation, and downloadable JSON evidence.
 Every export carries a content-derived fixture revision; it never changes gold results
@@ -96,20 +96,20 @@ automatically.
 
 ## Generated construction-generalization probe
 
-`src/evaluation/constructionGeneralization.test.tsx` generates 66 accepted paraphrase
+`src/evaluation/constructionGeneralization.test.tsx` generates 78 accepted paraphrase
 combinations from independent structural slots rather than copying the frozen corpus
-sentences. It spans six reusable construction families: LIFO stack, triangle angle sum,
-convergent plates, ordered routine, reflected light, and lifecycle sequence. For every
+sentences. It spans seven reusable construction families: LIFO stack, triangle angle sum,
+convergent plates, ordered routine, reflected light, lifecycle sequence, and indexed rows. For every
 probe it requires deterministic interpretation, valid DoodleScript, typed relations whose
 registry selects the expected specialist layout, and real rendered markup with no generic
 object fallback.
 
-Twelve paired near-misses cover missing semantic roles, wrong domains, negation,
+Sixteen paired near-misses cover missing semantic roles, wrong domains, negation,
 uncertainty, duplicate routine stages, and incomplete sequences. They must all clarify.
-The resulting 66/66 accepted and 12/12 safely clarified checkpoint is a broad development
+The resulting 78/78 accepted and 16/16 safely clarified checkpoint is a broad development
 regression test. It is not a hidden, independent, or real-teacher accuracy measurement and
-does not change the frozen gold result of 3/19 strict, 19/19 automated-ready, and zero
-false-confident. Human visual approval remains outstanding for all sixteen drawings.
+does not replace the gold result of 3/20 strict, 20/20 automated-ready, and zero
+false-confident. Human visual approval remains outstanding for all seventeen drawings.
 
 ## Foundational construction-generalization probe
 
@@ -122,14 +122,14 @@ fixed two real defects: self-referential container content and collapsed identit
 removed fraction and remainder have the same numeric value.
 
 This remains generated development conformance, not a hidden classroom split. Combined
-with the newer-family matrix, the checkpoint covers 202 supported variations and 31 safe
-near-misses across all sixteen specialist layouts.
+with the newer-family matrix, the checkpoint covers 214 supported variations and 35 safe
+near-misses across all seventeen specialist layouts.
 
 ## Local render-time evidence
 
-The combined generated 202-input workload drives `runtimeEnvelope.test.tsx`, so performance
+The combined generated 214-input workload drives `runtimeEnvelope.test.tsx`, so performance
 cannot be measured against easier phrases than semantic conformance. After warming all
-paths, it records 606 samples and separates interpretation, validation, immutable scene
+paths, it records 642 samples and separates interpretation, validation, immutable scene
 application, SVG serialization, and total local-ready time. The suite fails at coarse
 anti-regression limits: 75 ms decision p95, 100 ms SVG-serialization p95, 150 ms local-
 ready p95, or 500 ms for any single local-ready sample.

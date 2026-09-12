@@ -45,8 +45,24 @@ const lifecycleProbes: ConstructionProbe[] = [
   "A bud turns into a flower, then turns into fruit."
 ].map((text, index) => ({ id: `lifecycle-${index}`, text, layout: "lifecycle-sequence" }));
 
+const indexedCollections = [
+  ["array", "boxes", "value"],
+  ["register", "cells", "bit"],
+  ["memory bank", "slots", "reading"],
+  ["seat map", "boxes", "student name"]
+] as const;
+const indexedTemplates = [
+  (collection: string, cells: string, value: string) => `A ${collection} is a row of ${cells}, each holding a ${value}, numbered starting from zero.`,
+  (collection: string, cells: string, value: string) => `The ${collection} is a horizontal row of ${cells}, each containing a ${value}, indexed starting at one.`,
+  (collection: string, cells: string, value: string) => `A ${collection} is a row of ${cells}, each storing the ${value}, numbered starting at 0.`
+];
+const indexedProbes: ConstructionProbe[] = indexedCollections.flatMap(([collection, cells, value], setIndex) =>
+  indexedTemplates.map((template, templateIndex) => ({
+    id: `indexed-${setIndex}-${templateIndex}`, text: template(collection, cells, value), layout: "indexed-row"
+  })));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -61,5 +77,9 @@ export const unsafeConstructionNearMisses = [
   "Mountains do not form when plates converge.",
   "First wash the cup, then dry it.",
   "First read, next read, finally write.",
-  "Maybe first mix flour, then add water, then bake bread."
+  "Maybe first mix flour, then add water, then bake bread.",
+  "An array is a row of boxes holding values.",
+  "An array is a row of boxes, each holding a value, numbered starting from two.",
+  "An array might be a row of boxes, each holding a value, numbered starting from zero.",
+  "An array is not a row of boxes, each holding a value, numbered starting from zero."
 ] as const;

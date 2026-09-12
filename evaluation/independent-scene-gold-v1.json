@@ -246,6 +246,26 @@
       }
     },
     {
+      "id": 25,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "indexed-row",
+        "concepts": [
+          { "key": "array", "labels": ["array"] },
+          { "key": "cells", "labels": ["array boxes", "array cells"] },
+          { "key": "values", "labels": ["value", "values"] },
+          { "key": "start-index", "labels": ["index 0", "zero"] }
+        ],
+        "relations": [
+          { "predicate": "containsCells", "source": "array", "target": "cells" },
+          { "predicate": "storesValues", "source": "cells", "target": "values" },
+          { "predicate": "startsIndexAt", "source": "cells", "target": "start-index" }
+        ],
+        "visualCues": ["indexed-box-row", "cell-values", "zero-based-indices", "left-to-right-indexing"]
+      }
+    },
+    {
       "id": 33,
       "expected": {
         "intent": "draw",
