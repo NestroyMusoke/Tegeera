@@ -230,6 +230,15 @@ central uplift; ordered routines accept three short arbitrary stages and retain 
 exact order. Each grammar has its own topology, relation family, validator, procedural
 SVG composition, accessibility description, reduced-motion behavior, and mobile fixture.
 
+A generated construction-generalization probe now exercises 66 deterministic paraphrase
+combinations across stack, triangle, plate-convergence, ordered-routine, reflection, and
+lifecycle grammars. It also checks 12 incomplete, negated, uncertain, or structurally wrong
+near-misses. Every accepted probe must produce valid typed relations, the expected specialist
+layout, deterministic output, and real component markup without generic-object leakage; every
+near-miss must clarify. This is development conformance evidence, not a hidden classroom
+accuracy score. The production build is split into local React, schema, and application chunks,
+and `npm run build` enforces a 500 KiB maximum for every JavaScript chunk.
+
 The construction is not plant-specific. A registered intake action binds an open whole,
 one to three inputs, and the named parts they travel through. Symbol capabilities choose
 flow versus illumination, while the shared layout planner preserves distinct identities

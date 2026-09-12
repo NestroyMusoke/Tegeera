@@ -1424,3 +1424,35 @@ Lint, TypeScript, production build, visual-fixture generation, and Android asset
 pass. The existing bundle-size advisory is non-fatal but now deserves a dedicated
 code-splitting/performance tranche. Physical Android latency, live microphone behavior,
 projector inspection, hidden generalization, and human visual approval remain unverified.
+
+## Construction generalization and bundle-budget checkpoint
+
+The six most recent specialist construction families now have a generated, structural
+paraphrase matrix in addition to their authored examples. Sixty-six accepted probes vary
+verbs, ordering forms, subject phrasing, units, domains, and open stage labels. Every case
+must interpret identically on repeat, validate, retain typed topology, select its registered
+specialist layout, and render through the real component without generic-object leakage.
+Twelve incomplete, negated, uncertain, duplicated, or wrong-domain near-misses all clarify.
+
+The probe exposed and fixed two genuine boundary defects: `180°` was recognized but not
+canonicalized into the scene label contract, and lifecycle sequences with repeated explicit
+verbs such as “seed becomes seedling, then becomes plant” were split before construction
+matching. Both repairs are structural and content-open. Stack, triangle, convergent-plate,
+and ordered-routine matching now recognizes bounded morphological and syntactic variants
+while still requiring every defining semantic role.
+
+All 361 tests across 47 files pass. The final 250-iteration meaning-only benchmark measured
+2.13 ms median and 13.80 ms p95, excluding speech recognition, React commit, DOM/SVG paint,
+and device work. The frozen evaluation remains 3/19 strict, 19/19 automated-ready, and zero
+false-confident; none of the sixteen drawings has been self-approved.
+
+Production output is now partitioned into application (243.99 kB, 67.31 kB gzip), React
+(192.35 kB, 60.29 kB gzip), and schema (85.51 kB, 23.85 kB gzip) JavaScript chunks. A
+build-time gate fails if any JavaScript chunk exceeds 500 KiB or a required offline-local
+partition disappears. CSS remains 14.17 kB (4.07 kB gzip). Lint, TypeScript, production
+build, the bundle gate, all 35 real-component visual fixtures, and Android asset sync pass.
+Native Android lint/APK assembly was not reverified in this session because Gradle could
+not establish its required loopback daemon connection before compilation; this is an
+environment failure, not a passing native-build claim. Physical-device latency, microphone
+behavior, projector inspection, hidden real-teacher generalization, and human visual review
+remain outstanding.

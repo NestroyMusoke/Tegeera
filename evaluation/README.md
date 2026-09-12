@@ -93,3 +93,20 @@ topology metadata, and independently frozen visual cues.
 notes, device metadata, reduced-motion confirmation, and downloadable JSON evidence.
 Every export carries a content-derived fixture revision; it never changes gold results
 automatically.
+
+## Generated construction-generalization probe
+
+`src/evaluation/constructionGeneralization.test.tsx` generates 66 accepted paraphrase
+combinations from independent structural slots rather than copying the frozen corpus
+sentences. It spans six reusable construction families: LIFO stack, triangle angle sum,
+convergent plates, ordered routine, reflected light, and lifecycle sequence. For every
+probe it requires deterministic interpretation, valid DoodleScript, typed relations whose
+registry selects the expected specialist layout, and real rendered markup with no generic
+object fallback.
+
+Twelve paired near-misses cover missing semantic roles, wrong domains, negation,
+uncertainty, duplicate routine stages, and incomplete sequences. They must all clarify.
+The resulting 66/66 accepted and 12/12 safely clarified checkpoint is a broad development
+regression test. It is not a hidden, independent, or real-teacher accuracy measurement and
+does not change the frozen gold result of 3/19 strict, 19/19 automated-ready, and zero
+false-confident. Human visual approval remains outstanding for all sixteen drawings.
