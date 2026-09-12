@@ -96,8 +96,19 @@ const conditionLoops: ConstructionProbe[] = [
   id: `condition-loop-${index}`, text: `A ${loop} ${verb} repeating the ${step} until a ${condition} becomes false.`, layout: "condition-flow"
 }));
 
+const narrowingProbes: ConstructionProbe[] = [
+  ["binary search", "list", "target item", "cutting", "in"],
+  ["candidate search", "options", "best option", "reducing", "by"],
+  ["diagnostic search", "possible causes", "actual cause", "halving", "in"],
+  ["record search", "records", "matching record", "reducing", "by"],
+  ["location search", "search area", "location", "cutting", "in"],
+  ["answer search", "answers", "correct answer", "halving", "in"],
+  ["fault search", "suspects", "fault", "reducing", "by"],
+  ["range search", "number range", "chosen number", "cutting", "in"]
+].map(([process, collection, target, verb, preposition], index) => ({ id: `narrowing-${index}`, text: `In a ${process}, you keep ${verb} the ${collection} ${preposition} half until you find the ${target}.`, layout: "progressive-narrowing" }));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -126,5 +137,9 @@ export const unsafeConstructionNearMisses = [
   "If-else might mean the program checks a condition and takes one of two paths.",
   "If-else does not mean the program checks a condition and takes one of two paths.",
   "A loop keeps repeating steps.",
-  "A loop stops when something changes."
+  "A loop stops when something changes.",
+  "A binary search uses a list.",
+  "In a binary search, you keep cutting the list until you find the target.",
+  "In a binary search, you might keep cutting the list in half until you find the target.",
+  "In a binary search, you do not keep cutting the list in half until you find the target."
 ] as const;

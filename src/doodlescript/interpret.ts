@@ -29,6 +29,7 @@ import { relationForKind } from "./relationRegistry";
 import { planIndexedCollection } from "./indexedCollection";
 import { planLinkedChain } from "./linkedChain";
 import { planConditionFlow } from "./conditionFlow";
+import { planProgressiveNarrowing } from "./progressiveNarrowing";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -72,7 +73,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -498,6 +499,24 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "takesTruePath", sourceIds: [conditionId], targetIds: [trueId] } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "takesFalsePath", sourceIds: [conditionId], targetIds: [falseId] } });
         focus([entryId, conditionId], [trueId, falseId]); continue;
+      }
+      const narrowing = frame.progressiveNarrowings[0];
+      if (narrowing?.construction === "progressive-narrowing") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const before = new Set(working.entities.map(({ id }) => id));
+        const processId = eventNode(mentionText(narrowing.processMentionId), "narrowing-process");
+        const initialId = eventNode(mentionText(narrowing.initialMentionId), "narrowing-initial");
+        const reducedId = eventNode(mentionText(narrowing.reducedMentionId), "narrowing-reduced");
+        const foundId = eventNode(mentionText(narrowing.foundMentionId), "narrowing-found");
+        const ids = { processId, initialId, reducedId, foundId };
+        if (new Set(Object.values(ids)).size !== 4) throw new Clarification("Progressive narrowing needs distinct initial, reduced, and found stages.", "conflicting-scene");
+        const moves = planProgressiveNarrowing(working, ids, new Set(working.entities.filter(({ id }) => !before.has(id)).map(({ id }) => id)));
+        if (!moves) throw new Clarification("That narrowing sequence cannot fit readably.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "startsSearchWith", sourceIds: [processId], targetIds: [initialId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "narrowsTo", sourceIds: [initialId], targetIds: [reducedId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "findsTarget", sourceIds: [reducedId], targetIds: [foundId] } });
+        focus([processId, initialId], [reducedId, foundId]); continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
       if (forceDiagram?.construction === "force-diagram") {

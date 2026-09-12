@@ -28,6 +28,7 @@ import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRouti
 import { indexedCollectionGeometry, isIndexedCollectionRelation } from "../doodlescript/indexedCollection";
 import { isLinkedChainRelation, linkedChainGeometry } from "../doodlescript/linkedChain";
 import { conditionFlowGeometry, isConditionFlowRelation } from "../doodlescript/conditionFlow";
+import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "../doodlescript/progressiveNarrowing";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -184,6 +185,20 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isProgressiveNarrowingRelation(relation)) {
+    const narrowing = relations.filter(isProgressiveNarrowingRelation);
+    if (relation.id !== narrowing.find(({ kind }) => kind === "startsSearchWith")?.id) return null;
+    const geometry = progressiveNarrowingGeometry(narrowing, entities); if (!geometry) return null;
+    const cells = (x: number, y: number, count: number, activeStart: number, activeEnd: number, width: number) => <g>{Array.from({ length: count }, (_, i) => <rect key={i} x={x + i * width} y={y} width={width - 5} height="80" rx="9" fill={i >= activeStart && i <= activeEnd ? "#b9ded2" : "#e7e2d6"} stroke={i >= activeStart && i <= activeEnd ? "#3f766b" : "#9b978e"} strokeWidth="4" opacity={i >= activeStart && i <= activeEnd ? 1 : .45} />)}</g>;
+    return <g className="progressive-narrowing-annotation" aria-label={`${geometry.process.label} narrows ${geometry.initial.label} to ${geometry.reduced.label} and finds ${geometry.found.label}`}>
+      <text x="500" y="105" textAnchor="middle" fontSize="29" fontWeight="950" fill="#334f4c">{geometry.process.label}</text>
+      <g data-visual-cue="full-candidate-row">{cells(70, 195, 8, 0, 7, 75)}<text x="370" y="305" textAnchor="middle" fontSize="21" fontWeight="900" fill="#425b58">{geometry.initial.label}</text></g>
+      <g data-visual-cue="discarded-halves"><path d="M175 175 l-24 -35 M565 175 l24 -35" stroke="#a75463" strokeWidth="7" /><text x="370" y="155" textAnchor="middle" fontSize="22" fontWeight="950" fill="#914557">discard half</text></g>
+      <g data-visual-cue="shrinking-candidate-row">{cells(455, 365, 4, 0, 3, 75)}<text x="605" y="474" textAnchor="middle" fontSize="21" fontWeight="900" fill="#425b58">{geometry.reduced.label}</text></g>
+      <g data-visual-cue="narrowing-arrows"><path className="narrowing-flow" d="M370 290 Q395 350 455 395 M755 405 H825" fill="none" stroke="#4a8176" strokeWidth="8" strokeDasharray="13 10" /><path d="M435 377 l20 18 -25 5 M805 389 l20 16 -20 16" fill="none" stroke="#4a8176" strokeWidth="7" /></g>
+      <g data-visual-cue="highlighted-found-item"><rect x="825" y="365" width="110" height="80" rx="20" fill="#f3cb70" stroke="#705522" strokeWidth="7" /><path d="M855 405 l18 18 34 -40" fill="none" stroke="#39725d" strokeWidth="8" strokeLinecap="round" /><text x="880" y="480" textAnchor="middle" fontSize="21" fontWeight="950" fill="#654d22">{geometry.found.label}</text></g>
+    </g>;
+  }
   if (isConditionFlowRelation(relation)) {
     const controlRelations = relations.filter(isConditionFlowRelation);
     if (relation.id !== controlRelations.find(({ kind }) => kind === "checksCondition")?.id) return null;
@@ -842,7 +857,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

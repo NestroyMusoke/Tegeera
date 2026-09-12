@@ -27,7 +27,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("validates a unique, cross-domain first annotation batch", () => {
     const parsed = independentGoldCorpusSchema.parse(gold);
-    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 2, 11, 12, 21, 22, 24, 28, 31, 32, 41, 42, 3, 13, 23, 25, 29, 33, 44, 51, 53, 56, 60]);
+    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 2, 11, 12, 21, 22, 24, 28, 31, 32, 41, 42, 3, 13, 23, 25, 29, 26, 33, 44, 51, 53, 56, 60]);
     expect(new Set(parsed.cases.map(({ id }) => teacherCases.find((item) => item.id === id)?.subject))).toEqual(new Set([
       "Biology", "Physics", "Computer Science", "Mathematics", "Geography",
       "Everyday / cross-cutting / deliberately ambiguous"
@@ -60,17 +60,17 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
-      1: observeCase(1), 2: observeCase(2), 3: observeCase(3), 11: observeCase(11), 12: observeCase(12), 13: observeCase(13), 21: observeCase(21), 22: observeCase(22), 23: observeCase(23), 24: observeCase(24), 25: observeCase(25), 28: observeCase(28), 29: observeCase(29), 31: observeCase(31), 32: observeCase(32), 33: observeCase(33), 41: observeCase(41), 42: observeCase(42), 44: observeCase(44), 51: observeCase(51)
+      1: observeCase(1), 2: observeCase(2), 3: observeCase(3), 11: observeCase(11), 12: observeCase(12), 13: observeCase(13), 21: observeCase(21), 22: observeCase(22), 23: observeCase(23), 24: observeCase(24), 25: observeCase(25), 26: observeCase(26), 28: observeCase(28), 29: observeCase(29), 31: observeCase(31), 32: observeCase(32), 33: observeCase(33), 41: observeCase(41), 42: observeCase(42), 44: observeCase(44), 51: observeCase(51)
     });
-    expect(result.total).toBe(23);
-    expect(result.results).toHaveLength(23);
+    expect(result.total).toBe(24);
+    expect(result.results).toHaveLength(24);
     expect(result.passed).toBeLessThan(result.total);
     expect(result.results.find(({ id }) => id === 1)).toMatchObject({
       passed: false, falseConfident: false, automatedReady: true,
       failures: ["human visual review pending"]
     });
     expect(result.passed).toBe(3);
-    expect(result.automatedReady).toBe(23);
+    expect(result.automatedReady).toBe(24);
     expect(result.falseConfident).toBe(0);
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
@@ -115,6 +115,7 @@ describe("independent semantic-scene gold annotations", () => {
     [23, "lifo-stack", ["vertical-stack", "top-marker", "push-at-top", "pop-at-top"]],
     [24, "condition-flow", ["repeated-step", "condition-diamond", "loop-back-arrow", "false-exit-path"]],
     [25, "indexed-row", ["indexed-box-row", "cell-values", "zero-based-indices", "left-to-right-indexing"]],
+    [26, "progressive-narrowing", ["full-candidate-row", "discarded-halves", "shrinking-candidate-row", "narrowing-arrows", "highlighted-found-item"]],
     [28, "condition-flow", ["control-entry", "condition-diamond", "true-branch", "false-branch"]],
     [29, "linked-chain", ["head-marker", "separate-node-boxes", "next-pointer-arrows", "null-tail-marker", "left-to-right-pointer-order"]],
     [33, "triangle-angle-sum", ["three-sided-triangle", "three-angle-marks", "angle-sum-180"]],

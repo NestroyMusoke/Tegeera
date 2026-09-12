@@ -17,13 +17,13 @@ describe("generalized local render-time envelope", () => {
       + "Excludes speech, browser commit/paint and device scheduling."
     );
 
-    expect(result.probeCount).toBe(238);
-    expect(result.sampleCount).toBe(714);
+    expect(result.probeCount).toBe(246);
+    expect(result.sampleCount).toBe(738);
     expect(result.decision.p95Ms).toBeLessThan(75);
     expect(result.svgSerialization.p95Ms).toBeLessThan(100);
     expect(result.localReady.p95Ms).toBeLessThan(150);
     expect(result.localReady.maximumMs).toBeLessThan(500);
-  }, 30_000);
+  }, 45_000);
 
   it("rejects an empty or invalid benchmark configuration", () => {
     expect(() => measureLocalRenderEnvelope([], 3)).toThrow(/needs probes/);

@@ -325,6 +325,26 @@
       }
     },
     {
+      "id": 26,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "progressive-narrowing",
+        "concepts": [
+          { "key": "process", "labels": ["binary search"] },
+          { "key": "initial", "labels": ["full list"] },
+          { "key": "reduced", "labels": ["smaller list"] },
+          { "key": "target", "labels": ["target item"] }
+        ],
+        "relations": [
+          { "predicate": "startsSearchWith", "source": "process", "target": "initial" },
+          { "predicate": "narrowsTo", "source": "initial", "target": "reduced" },
+          { "predicate": "findsTarget", "source": "reduced", "target": "target" }
+        ],
+        "visualCues": ["full-candidate-row", "discarded-halves", "shrinking-candidate-row", "narrowing-arrows", "highlighted-found-item"]
+      }
+    },
+    {
       "id": 33,
       "expected": {
         "intent": "draw",

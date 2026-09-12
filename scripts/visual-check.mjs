@@ -52,7 +52,7 @@ const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.me
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const fixtureRevision = `sha256:${createHash("sha256").update(result.outputFiles[0].text).update(css).update(JSON.stringify(gold)).digest("hex").slice(0, 16)}`;
@@ -93,6 +93,7 @@ const cases = {
   linkedChain: ["A linked list is like a chain — each item points to the next one."],
   conditionLoop: ["A loop just keeps repeating the same steps until a condition becomes false."],
   conditionBranch: ["If-else means the program checks a condition and takes one of two paths."],
+  progressiveNarrowing: ["In a binary search, you keep cutting the list in half until you find what you're looking for."],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -106,7 +107,7 @@ const reviewFixtureById = {
   12: "changingSpeedMotion.html", 21: "labelledContainer.html", 22: "callReturnFlow.html",
   31: "geometricConstruction.html", 32: "fractionSubtraction.html", 41: "landscapeFlow.html",
   42: "waterCycleLoop.html", 13: "reflectionRay.html", 23: "lifoStack.html",
-  24: "conditionLoop.html", 25: "indexedCollection.html", 28: "conditionBranch.html", 29: "linkedChain.html", 33: "triangleAngleSum.html", 44: "convergentPlates.html", 51: "orderedRoutine.html"
+  24: "conditionLoop.html", 25: "indexedCollection.html", 26: "progressiveNarrowing.html", 28: "conditionBranch.html", 29: "linkedChain.html", 33: "triangleAngleSum.html", 44: "convergentPlates.html", 51: "orderedRoutine.html"
 };
 const reviewCases = gold.cases.filter(({ id, expected }) => reviewFixtureById[id] && expected.intent === "draw");
 const reviewCards = reviewCases.map(({ id, expected }) => `<article data-review-case="${id}">

@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.19.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.20.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "condition-flow", "contact", "convergent-plates", "event-graph", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "indexed-row", "labelled-container", "landscape-flow", "lifecycle-sequence", "lifo-stack", "linked-chain", "ordered-routine", "ownership", "part-whole-flow", "queue", "reflection-ray", "triangle-angle-sum", "visual-flow", "water-cycle-loop"
+      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "condition-flow", "contact", "convergent-plates", "event-graph", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "indexed-row", "labelled-container", "landscape-flow", "lifecycle-sequence", "lifo-stack", "linked-chain", "ordered-routine", "ownership", "part-whole-flow", "progressive-narrowing", "queue", "reflection-ray", "triangle-angle-sum", "visual-flow", "water-cycle-loop"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });
@@ -40,6 +40,7 @@ describe("versioned layout family registry", () => {
     expect(layoutFamilyFor("indexed-row")).toMatchObject({ topology: "indexed-cells", readingDirection: "left-to-right", maximumVisibleNodes: 4 });
     expect(layoutFamilyFor("linked-chain")).toMatchObject({ topology: "pointer-chain", readingDirection: "left-to-right", maximumVisibleNodes: 4 });
     expect(layoutFamilyFor("condition-flow")).toMatchObject({ topology: "conditional-graph", readingDirection: "left-to-right", maximumVisibleNodes: 4 });
+    expect(layoutFamilyFor("progressive-narrowing")).toMatchObject({ topology: "shrinking-sequence", readingDirection: "left-to-right", maximumVisibleNodes: 4 });
     expect(layoutFamilySupportsRelation("contact", "performance")).toBe(true);
     expect(layoutFamilySupportsRelation("contact", "event")).toBe(false);
   });
