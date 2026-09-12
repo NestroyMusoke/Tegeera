@@ -1,7 +1,7 @@
 import { selectLayoutCandidate } from "./layoutPlanner";
 import type { SceneEntity, SceneRelation, SceneState } from "./schema";
 
-export const LIFECYCLE_SEQUENCE_VERSION = "1.0.0";
+export const LIFECYCLE_SEQUENCE_VERSION = "1.1.0";
 
 interface InferredLifecycle {
   starts: readonly string[];
@@ -19,7 +19,8 @@ const stripArticle = (text: string) => text.trim().replace(/^(?:a|an|the) /, "")
 const readableStage = (text: string) => Boolean(text && text.length <= 40 && text.split(/\s+/).length <= 5
   && /^[a-z0-9][a-z0-9 '-]*$/.test(text) && !/^(?:it|that|something|thing)$/.test(text));
 const implicitEnclosure = /^when (?:a|an|the) (.+?) is ready, it (?:wraps itself up|forms (?:a|an) protective case) and (?:comes|emerges) out later as (?:a|an|the) (.+)$/;
-const explicitImplicitSubject = /^(.+?) (?:becomes|changes|turns|develops) into (.+?),? then (?:becomes|changes|turns|develops) into (.+)$/;
+const transitionVerb = "(?:becomes|(?:changes|turns|develops) into)";
+const explicitImplicitSubject = new RegExp(`^(.+?) ${transitionVerb} (.+?),? then ${transitionVerb} (.+)$`);
 const explicitRepeatedSubject = /^(.+?) becomes (.+?),? and (?:then |later )?(?:that |the )?(.+?) becomes (.+)$/;
 
 export interface LifecycleSequenceMatch {

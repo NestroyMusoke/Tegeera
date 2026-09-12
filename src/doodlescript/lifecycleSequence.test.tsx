@@ -20,6 +20,9 @@ describe("open lifecycle-sequence construction", () => {
     expect(matchLifecycleSequence("egg develops into larva, then develops into beetle")).toEqual({
       startText: "egg", intermediateText: "larva", finalText: "beetle"
     });
+    expect(matchLifecycleSequence("a seed becomes a seedling, then becomes a plant")).toEqual({
+      startText: "seed", intermediateText: "seedling", finalText: "plant"
+    });
     expect(matchLifecycleSequence("seed becomes seedling, and later seedling becomes plant")).toEqual({
       startText: "seed", intermediateText: "seedling", finalText: "plant"
     });

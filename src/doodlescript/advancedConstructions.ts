@@ -6,8 +6,11 @@ const stripArticle = (text: string) => text.trim().replace(/^(?:a|an|the) /, "")
 export interface LifoStackMatch { stackText: string; itemsText: string; topText: string }
 export function matchLifoStack(text: string): LifoStackMatch | null {
   const mentionsStack = /\bstack\b/.test(text);
-  const topOnly = /(?:only |just )(?:add|push)(?: to)? (?:or|and) (?:remove|pop) from the top|(?:add|push) (?:or|and) (?:remove|pop) (?:items? )?(?:only )?at the top/.test(text);
-  if (!mentionsStack || !topOnly) return null;
+  const adds = /\b(?:add|adds|adding|push|pushes|pushed|pushing)\b/.test(text);
+  const removes = /\b(?:remove|removes|removing|pop|pops|popped|popping)\b/.test(text);
+  const topAccess = /\btop\b/.test(text);
+  const bounded = /\b(?:only|just|always)\b/.test(text) || /\b(?:at|from|onto) (?:only )?the top\b/.test(text);
+  if (!mentionsStack || !adds || !removes || !topAccess || !bounded) return null;
   return { stackText: "stack", itemsText: "items", topText: "top" };
 }
 
@@ -26,8 +29,13 @@ export function lifoStackGeometry(relations: readonly SceneRelation[], entities:
 
 export interface TriangleAngleSumMatch { triangleText: string; anglesText: string; sumText: string }
 export function matchTriangleAngleSum(text: string): TriangleAngleSumMatch | null {
-  const match = text.match(/^(?:a|the) triangle (?:has|contains) (?:three sides and )?three angles (?:that )?(?:always )?(?:add|sum) up to (180 degrees|180°)$/);
-  return match ? { triangleText: "triangle", anglesText: "three angles", sumText: match[1].replace("degrees", "degrees") } : null;
+  const triangle = /\btriangle(?:'s)?\b/.test(text);
+  const angles = /\bthree angles\b/.test(text);
+  const total = text.match(/\b(180 degrees\b|180°(?:\s|[.,;:!?]|$))/);
+  const aggregation = /\b(?:add up to|sum to|sum up to|total)\b/.test(text);
+  return triangle && angles && total && aggregation
+    ? { triangleText: "triangle", anglesText: "three angles", sumText: "180 degrees" }
+    : null;
 }
 
 export const isTriangleRelation = (relation: SceneRelation) => relation.kind === "trianglePartOf" || relation.kind === "sumsTo";
@@ -48,8 +56,11 @@ export function triangleAngleSumGeometry(relations: readonly SceneRelation[], en
 
 export interface ConvergentPlatesMatch { leftText: string; rightText: string; mountainText: string }
 export function matchConvergentPlates(text: string): ConvergentPlatesMatch | null {
-  const match = text.match(/^(?:mountains?|a mountain) (?:form|forms|rise|rises) where two (?:large )?(landmasses|plates) (?:slowly )?(?:push|move) into each other$/);
-  if (!match) return null;
+  const mountains = /\bmountains?\b/.test(text);
+  const pair = /\btwo (?:large )?(?:tectonic )?(?:landmasses|plates)\b/.test(text);
+  const convergence = /\b(?:converge|converges|push(?:es)? into each other|move(?:s)? (?:toward|towards|into) each other)\b/.test(text);
+  const formation = /\b(?:form|forms|create|creates|produce|produces|raise|raises|rise|rises)\b/.test(text);
+  if (!mountains || !pair || !convergence || !formation) return null;
   return { leftText: "left landmass", rightText: "right landmass", mountainText: "mountain" };
 }
 
@@ -70,7 +81,12 @@ export function convergentPlatesGeometry(relations: readonly SceneRelation[], en
 export interface OrderedRoutineMatch { firstText: string; middleText: string; finalText: string }
 const readableStep = (value: string) => value.length > 0 && value.length <= 36 && value.split(/\s+/).length <= 5 && /^[a-z][a-z '-]*$/.test(value);
 export function matchOrderedRoutine(text: string): OrderedRoutineMatch | null {
-  const match = text.match(/^first (?:you )?(.+?), then (?:you )?(.+?), then (?:you )?(.+)$/);
+  const patterns = [
+    /^first (?:you )?(.+?), then (?:you )?(.+?), then (?:you )?(.+)$/,
+    /^first (?:you )?(.+?), next (?:you )?(.+?), finally (?:you )?(.+)$/,
+    /^begin by (.+?), then (.+?), (?:and )?finally (.+)$/
+  ];
+  const match = patterns.map((pattern) => text.match(pattern)).find(Boolean);
   if (!match) return null;
   const steps = match.slice(1, 4).map(stripArticle);
   if (!steps.every(readableStep) || new Set(steps).size !== 3) return null;
