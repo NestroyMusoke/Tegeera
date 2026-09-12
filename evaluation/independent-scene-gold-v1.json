@@ -266,6 +266,26 @@
       }
     },
     {
+      "id": 29,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "linked-chain",
+        "concepts": [
+          { "key": "list", "labels": ["linked list"] },
+          { "key": "first", "labels": ["item 1"] },
+          { "key": "middle", "labels": ["item 2"] },
+          { "key": "final", "labels": ["item 3"] }
+        ],
+        "relations": [
+          { "predicate": "hasFirstNode", "source": "list", "target": "first" },
+          { "predicate": "pointsNext", "source": "first", "target": "middle" },
+          { "predicate": "pointsNext", "source": "middle", "target": "final" }
+        ],
+        "visualCues": ["head-marker", "separate-node-boxes", "next-pointer-arrows", "null-tail-marker", "left-to-right-pointer-order"]
+      }
+    },
+    {
       "id": 33,
       "expected": {
         "intent": "draw",

@@ -20,9 +20,9 @@ const relation = (kind: SceneRelation["kind"], overrides: Partial<SceneRelation>
 
 describe("versioned relation registry", () => {
   it("covers every schema relationship with a validated semantic contract", () => {
-    expect(RELATION_REGISTRY_VERSION).toBe("2.17.0");
+    expect(RELATION_REGISTRY_VERSION).toBe("2.18.0");
     expect(relationRegistry.map(({ kind }) => kind).sort()).toEqual([
-      "accelerates", "accessedAt", "actsOn", "appliedTo", "away", "before", "calls", "carries", "causes", "contacts", "contains", "containsCells", "evaporatesTo", "fallsFrom", "fallsTo", "flowsFrom", "flowsInto", "flowsTo", "handover", "illuminates", "infiltrates", "measures", "opposes", "owns", "partOf", "pumpsTo", "pushesToward", "queuedFor", "reflectsFrom", "resultsIn", "returnsControlTo", "returnsTo", "risesTo", "routineBefore", "shares", "startsIndexAt", "storesValues", "subtracts", "sumsTo", "toward", "transformsTo", "travelsTo", "trianglePartOf", "visualAction"
+      "accelerates", "accessedAt", "actsOn", "appliedTo", "away", "before", "calls", "carries", "causes", "contacts", "contains", "containsCells", "evaporatesTo", "fallsFrom", "fallsTo", "flowsFrom", "flowsInto", "flowsTo", "handover", "hasFirstNode", "illuminates", "infiltrates", "measures", "opposes", "owns", "partOf", "pointsNext", "pumpsTo", "pushesToward", "queuedFor", "reflectsFrom", "resultsIn", "returnsControlTo", "returnsTo", "risesTo", "routineBefore", "shares", "startsIndexAt", "storesValues", "subtracts", "sumsTo", "toward", "transformsTo", "travelsTo", "trianglePartOf", "visualAction"
     ]);
     expect(validateRelationRegistry()).toEqual([]);
   });

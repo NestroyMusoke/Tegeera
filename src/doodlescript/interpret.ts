@@ -27,6 +27,7 @@ import { planReflectionRay } from "./reflectionRay";
 import { planConvergentPlates, planLifoStack, planOrderedRoutine, planTriangleAngleSum } from "./advancedConstructions";
 import { relationForKind } from "./relationRegistry";
 import { planIndexedCollection } from "./indexedCollection";
+import { planLinkedChain } from "./linkedChain";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -70,7 +71,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -456,6 +457,25 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "storesValues", sourceIds: [cellsId], targetIds: [valuesId], predicate: "storesValues" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "startsIndexAt", sourceIds: [cellsId], targetIds: [indexId], predicate: "startsIndexAt" } });
         focus([collectionId, cellsId], [valuesId, indexId]); continue;
+      }
+      const linked = frame.linkedChains[0];
+      if (linked?.construction === "linked-chain") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const collectionId = eventNode(mentionText(linked.collectionMentionId), "linked-collection");
+        const firstId = eventNode(mentionText(linked.firstMentionId), "linked-first");
+        const middleId = eventNode(mentionText(linked.middleMentionId), "linked-middle");
+        const finalId = eventNode(mentionText(linked.finalMentionId), "linked-final");
+        const ids = { collectionId, firstId, middleId, finalId };
+        if (new Set(Object.values(ids)).size !== 4) throw new Clarification("A linked chain needs one collection and three distinct ordered node identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planLinkedChain(working, ids, movableIds);
+        if (!moves) throw new Clarification("That linked chain cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "hasFirstNode", sourceIds: [collectionId], targetIds: [firstId], predicate: "hasFirstNode" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "pointsNext", sourceIds: [firstId], targetIds: [middleId], predicate: "pointsNext" } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "pointsNext", sourceIds: [middleId], targetIds: [finalId], predicate: "pointsNext" } });
+        focus([collectionId, firstId], [middleId, finalId]); continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
       if (forceDiagram?.construction === "force-diagram") {

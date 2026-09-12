@@ -61,8 +61,21 @@ const indexedProbes: ConstructionProbe[] = indexedCollections.flatMap(([collecti
     id: `indexed-${setIndex}-${templateIndex}`, text: template(collection, cells, value), layout: "indexed-row"
   })));
 
+const linkedCollections = [
+  ["linked list", "item"], ["playlist", "track"], ["route", "stop"], ["dependency list", "task"]
+] as const;
+const linkedTemplates = [
+  (collection: string, item: string) => `A ${collection} is a linked chain where each ${item} points to the next one.`,
+  (collection: string, item: string) => `The ${collection} is a sequence where each ${item} references the next node.`,
+  (collection: string, item: string) => `A ${collection} forms a linked chain, each ${item} linking to the next entry.`
+];
+const linkedProbes: ConstructionProbe[] = linkedCollections.flatMap(([collection, item], setIndex) =>
+  linkedTemplates.map((template, templateIndex) => ({
+    id: `linked-${setIndex}-${templateIndex}`, text: template(collection, item), layout: "linked-chain"
+  })));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -81,5 +94,9 @@ export const unsafeConstructionNearMisses = [
   "An array is a row of boxes holding values.",
   "An array is a row of boxes, each holding a value, numbered starting from two.",
   "An array might be a row of boxes, each holding a value, numbered starting from zero.",
-  "An array is not a row of boxes, each holding a value, numbered starting from zero."
+  "An array is not a row of boxes, each holding a value, numbered starting from zero.",
+  "A linked list contains three items.",
+  "A linked list is a chain where each item points somewhere.",
+  "A linked list might be a chain where each item points to the next one.",
+  "A linked list is not a chain where each item points to the next one."
 ] as const;

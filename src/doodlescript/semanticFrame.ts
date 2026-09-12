@@ -19,6 +19,7 @@ import { matchLifecycleSequence } from "./lifecycleSequence";
 import { matchReflectionRay } from "./reflectionRay";
 import { matchConvergentPlates, matchLifoStack, matchOrderedRoutine, matchTriangleAngleSum } from "./advancedConstructions";
 import { matchIndexedCollection } from "./indexedCollection";
+import { matchLinkedChain } from "./linkedChain";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -167,6 +168,7 @@ export interface SemanticTriangleAngleSumMention { construction: "triangle-angle
 export interface SemanticConvergentPlatesMention { construction: "convergent-plates"; leftMentionId: string; rightMentionId: string; mountainMentionId: string }
 export interface SemanticOrderedRoutineMention { construction: "ordered-routine"; firstMentionId: string; middleMentionId: string; finalMentionId: string }
 export interface SemanticIndexedCollectionMention { construction: "indexed-collection"; collectionMentionId: string; cellsMentionId: string; valuesMentionId: string; indexMentionId: string; startIndex: 0 | 1 }
+export interface SemanticLinkedChainMention { construction: "linked-chain"; collectionMentionId: string; firstMentionId: string; middleMentionId: string; finalMentionId: string }
 
 export interface SemanticQuantity {
   mentionId: string;
@@ -179,7 +181,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -219,6 +221,7 @@ export interface SemanticFrame {
   convergentPlates: SemanticConvergentPlatesMention[];
   orderedRoutines: SemanticOrderedRoutineMention[];
   indexedCollections: SemanticIndexedCollectionMention[];
+  linkedChains: SemanticLinkedChainMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -349,6 +352,7 @@ function populateMeaning(frame: SemanticFrame): void {
   const convergentPlates = matchConvergentPlates(frame.normalizedText);
   const orderedRoutine = matchOrderedRoutine(frame.normalizedText);
   const indexedCollection = matchIndexedCollection(frame.normalizedText);
+  const linkedChain = matchLinkedChain(frame.normalizedText);
   if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
@@ -482,6 +486,19 @@ function populateMeaning(frame: SemanticFrame): void {
       startIndex: indexedCollection.startIndex
     });
     frame.meaningCandidates = [{ family: "indexed-collection", predicate: "indexed-collection" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+  if (linkedChain) {
+    frame.intent = "describe";
+    frame.linkedChains.push({
+      construction: "linked-chain",
+      collectionMentionId: addParticipant(frame, linkedChain.collectionText),
+      firstMentionId: addParticipant(frame, linkedChain.firstText),
+      middleMentionId: addParticipant(frame, linkedChain.middleText),
+      finalMentionId: addParticipant(frame, linkedChain.finalText)
+    });
+    frame.meaningCandidates = [{ family: "linked-structure", predicate: "linked-chain" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
@@ -670,6 +687,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       convergentPlates: [],
       orderedRoutines: [],
       indexedCollections: [],
+      linkedChains: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -683,7 +701,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized) || matchIndexedCollection(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized) || matchIndexedCollection(wholeNormalized) || matchLinkedChain(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

@@ -26,6 +26,7 @@ import { isLifecycleRelation, lifecycleSequenceGeometry } from "../doodlescript/
 import { isReflectionRelation, reflectionRayGeometry } from "../doodlescript/reflectionRay";
 import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRoutineRelation, isTriangleRelation, lifoStackGeometry, orderedRoutineGeometry, triangleAngleSumGeometry } from "../doodlescript/advancedConstructions";
 import { indexedCollectionGeometry, isIndexedCollectionRelation } from "../doodlescript/indexedCollection";
+import { isLinkedChainRelation, linkedChainGeometry } from "../doodlescript/linkedChain";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -182,6 +183,25 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isLinkedChainRelation(relation)) {
+    const linkedRelations = relations.filter(isLinkedChainRelation);
+    if (relation.id !== linkedRelations.find(({ kind }) => kind === "hasFirstNode")?.id) return null;
+    const geometry = linkedChainGeometry(linkedRelations, entities);
+    if (!geometry) return null;
+    const starts = [120, 405, 690]; const rowY = 235; const nodeWidth = 190; const dataWidth = 130;
+    return <g className="linked-chain-annotation" aria-label={`${geometry.collection.label} starts with ${geometry.first.label}; ${geometry.first.label} points to ${geometry.middle.label}; ${geometry.middle.label} points to ${geometry.final.label}`}>
+      <text x="500" y="118" textAnchor="middle" fontSize="31" fontWeight="950" fill="#334f4c">{geometry.collection.label}</text>
+      <g data-visual-cue="head-marker"><path d={`M500 138 Q350 165 ${starts[0] + 65} ${rowY - 18}`} fill="none" stroke="#91607a" strokeWidth="5" strokeDasharray="10 8" /><path d={`M${starts[0] + 51} ${rowY - 29} l14 11 2 -18`} fill="none" stroke="#91607a" strokeWidth="5" /><text x={starts[0] + 65} y={rowY - 33} textAnchor="middle" fontSize="19" fontWeight="900" fill="#7f4b68">HEAD</text></g>
+      <g data-visual-cue="separate-node-boxes">
+        {geometry.nodes.map((node, index) => { const x = starts[index]; return <g key={node.id}><rect x={x} y={rowY} width={nodeWidth} height="125" rx="16" fill={["#b9ded2", "#f2cf91", "#c8d8ef"][index]} stroke="#405c59" strokeWidth="6" /><path d={`M${x + dataWidth} ${rowY} V${rowY + 125}`} stroke="#405c59" strokeWidth="5" /><text x={x + dataWidth / 2} y={rowY + 72} textAnchor="middle" fontSize="24" fontWeight="900" fill="#314744">{node.label}</text><circle cx={x + dataWidth + 30} cy={rowY + 62} r="10" fill={index === 2 ? "#9a5470" : "#427b70"} /></g>; })}
+      </g>
+      <g data-visual-cue="next-pointer-arrows">
+        {[0, 1].map((index) => { const from = starts[index] + nodeWidth; const to = starts[index + 1]; const y = rowY + 62; return <g key={index}><path className="linked-flow" d={`M${from + 3} ${y} H${to - 8}`} stroke="#427b70" strokeWidth="8" strokeDasharray="14 10" strokeLinecap="round" /><path d={`M${to - 27} ${y - 14} L${to - 8} ${y} L${to - 27} ${y + 14}`} fill="none" stroke="#427b70" strokeWidth="7" strokeLinejoin="round" /></g>; })}
+      </g>
+      <g data-visual-cue="null-tail-marker"><path d={`M${starts[2] + nodeWidth - 38} ${rowY + 43} l27 38 M${starts[2] + nodeWidth - 11} ${rowY + 43} l-27 38`} stroke="#7f4b68" strokeWidth="6" strokeLinecap="round" /></g>
+      <g data-visual-cue="left-to-right-pointer-order"><text x="500" y={rowY + 190} textAnchor="middle" fontSize="22" fontWeight="850" fill="#3f6d65">each pointer leads to the next node</text></g>
+    </g>;
+  }
   if (isIndexedCollectionRelation(relation)) {
     const indexedRelations = relations.filter(isIndexedCollectionRelation);
     if (relation.id !== indexedRelations.find(({ kind }) => kind === "containsCells")?.id) return null;
@@ -800,7 +820,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 
