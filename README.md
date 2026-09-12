@@ -239,6 +239,13 @@ near-miss must clarify. This is development conformance evidence, not a hidden c
 accuracy score. The production build is split into local React, schema, and application chunks,
 and `npm run build` enforces a 500 KiB maximum for every JavaScript chunk.
 
+The same 66-input workload now drives a warmed local SVG-ready performance envelope.
+It times interpretation, validation, immutable scene application, and full SVG markup
+serialization separately, with coarse anti-regression budgets that fail the test suite.
+The in-app performance panel continues through real browser commit and paint, retains a
+rolling 50-sample window, and can export privacy-safe evidence for physical-device review.
+The JSON contains timings and device capability, never lesson text or transcripts.
+
 The construction is not plant-specific. A registered intake action binds an open whole,
 one to three inputs, and the named parts they travel through. Symbol capabilities choose
 flow versus illumination, while the shared layout planner preserves distinct identities

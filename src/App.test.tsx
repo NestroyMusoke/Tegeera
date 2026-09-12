@@ -108,4 +108,12 @@ describe("teaching workflow", () => {
     expect(Number(evidence.getAttribute("data-paint-ms"))).toBeGreaterThanOrEqual(Number(evidence.getAttribute("data-commit-ms")));
     expect(evidence.textContent).toContain("painted");
   });
+  it("enables a privacy-labelled performance export only after evidence exists", async () => {
+    render(<App />);
+    const download = screen.getByRole("button", { name: "Download performance evidence" }) as HTMLButtonElement;
+    expect(download.disabled).toBe(true);
+    expect(screen.getByText(/never lesson text or transcripts/i)).toBeTruthy();
+    explain("A light ray travels toward a mirror and reflects off it");
+    await waitFor(() => expect(download.disabled).toBe(false));
+  });
 });

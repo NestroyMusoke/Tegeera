@@ -110,3 +110,17 @@ The resulting 66/66 accepted and 12/12 safely clarified checkpoint is a broad de
 regression test. It is not a hidden, independent, or real-teacher accuracy measurement and
 does not change the frozen gold result of 3/19 strict, 19/19 automated-ready, and zero
 false-confident. Human visual approval remains outstanding for all sixteen drawings.
+
+## Local render-time evidence
+
+The same generated 66-input workload drives `runtimeEnvelope.test.tsx`, so performance
+cannot be measured against easier phrases than semantic conformance. After warming all
+paths, it records 198 samples and separates interpretation, validation, immutable scene
+application, SVG serialization, and total local-ready time. The suite fails at coarse
+anti-regression limits: 75 ms decision p95, 100 ms SVG-serialization p95, 150 ms local-
+ready p95, or 500 ms for any single local-ready sample.
+
+This is serialized-SVG evidence, not browser paint or physical Android proof. The app's
+device panel measures commit and paint separately and exports a versioned 50-sample report
+containing timing, input source, outcome, and device capability only. Teacher statements,
+scene content, partial speech, and final transcripts are not exported.

@@ -13,6 +13,7 @@ import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
 import {
   makeLatencySample,
+  createLatencyEvidence,
   retainLatencyWindow,
   summarizeLatency,
   type InputSource,
@@ -148,6 +149,20 @@ function App() {
     speech.status === "processing";
   const latestLatency = latencySamples.at(-1);
   const latencySummary = useMemo(() => summarizeLatency(latencySamples), [latencySamples]);
+  const downloadLatencyEvidence = () => {
+    if (!latencySamples.length) return;
+    const capturedAt = new Date().toISOString();
+    const evidence = createLatencyEvidence(latencySamples, capturedAt, {
+      userAgent: navigator.userAgent,
+      ...(navigator.hardwareConcurrency ? { hardwareConcurrency: navigator.hardwareConcurrency } : {})
+    });
+    const url = URL.createObjectURL(new Blob([JSON.stringify(evidence, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `tegeera-performance-${capturedAt.replace(/[:.]/g, "-")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <main className="app">
@@ -250,6 +265,10 @@ function App() {
           <small>
             Rolling {latencySummary.count}/50: decision p50 {latencySummary.decisionP50Ms.toFixed(2)} ms · paint p50 {latencySummary.paintP50Ms.toFixed(2)} ms · paint p95 {latencySummary.paintP95Ms.toFixed(2)} ms. Speech finalization is reported separately.
           </small>
+          <button disabled={!latencySamples.length} onClick={downloadLatencyEvidence} type="button">
+            Download performance evidence
+          </button>
+          <small>The evidence contains timings and device capability only—never lesson text or transcripts.</small>
         </details>
 
         {issues.length ? (

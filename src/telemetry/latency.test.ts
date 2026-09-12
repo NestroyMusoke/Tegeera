@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeLatencySample, retainLatencyWindow, summarizeLatency } from "./latency";
+import { createLatencyEvidence, makeLatencySample, retainLatencyWindow, summarizeLatency } from "./latency";
 
 describe("runtime latency evidence", () => {
   it("keeps decision, commit, paint, and speech-finalization clocks separate", () => {
@@ -18,5 +18,24 @@ describe("runtime latency evidence", () => {
     const samples = Array.from({ length: 55 }, (_, id) => makeLatencySample(id, "typed", "draw", 0, 1, 2, 3));
     expect(retainLatencyWindow(samples.slice(0, 54), samples[54])).toHaveLength(50);
     expect(retainLatencyWindow(samples.slice(0, 54), samples[54])[0].id).toBe(5);
+  });
+
+  it("exports privacy-safe versioned evidence grouped by input source", () => {
+    const samples = [
+      makeLatencySample(1, "typed", "draw", 0, 2, 4, 8),
+      makeLatencySample(2, "speech", "clarify", 0, 3, 5, 12, 30)
+    ];
+    const evidence = createLatencyEvidence(samples, "2026-09-12T06:00:00.000Z", {
+      userAgent: "Tegeera test device", hardwareConcurrency: 4
+    });
+    expect(evidence).toMatchObject({
+      schemaVersion: "1.0.0",
+      capturedAt: "2026-09-12T06:00:00.000Z",
+      environment: { userAgent: "Tegeera test device", hardwareConcurrency: 4 },
+      summary: { count: 2, paintP95Ms: 12 },
+      bySource: { typed: { count: 1 }, speech: { count: 1 } }
+    });
+    expect(JSON.stringify(evidence)).not.toMatch(/teacher|explanation|transcript/i);
+    expect(() => createLatencyEvidence([], "2026-09-12T06:00:00.000Z", { userAgent: "test" })).toThrow(/one sample/);
   });
 });

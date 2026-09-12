@@ -1456,3 +1456,26 @@ not establish its required loopback daemon connection before compilation; this i
 environment failure, not a passing native-build claim. Physical-device latency, microphone
 behavior, projector inspection, hidden real-teacher generalization, and human visual review
 remain outstanding.
+
+## Generalized local render-time envelope
+
+The 66 accepted structural probes now live in one evaluation-only workload shared by
+semantic and speed tests. A warmed harness records 198 samples across interpretation,
+validation, immutable scene application, complete SVG serialization, and total local-ready
+time. The isolated run measured 4.50 ms p50, 7.95 ms p95, and 10.69 ms maximum. Alongside a
+production build it measured 13.40 ms p50, 19.13 ms p95, and 38.27 ms maximum; under full-
+suite contention it measured 16.76 ms p50, 37.65 ms p95, and 69.34 ms maximum. Coarse test
+ceilings are 75 ms decision p95, 100 ms serialization p95, 150 ms local-ready p95, and
+500 ms maximum.
+
+These figures stop at serialized SVG. Speech finalization, React/browser commit, paint,
+and physical-device scheduling remain separate. Tegeera's existing 50-sample device panel
+now downloads versioned JSON so Android measurements can be reviewed off-device. The export
+contains timings, source, outcome, user agent, and hardware concurrency but deliberately
+omits lesson text, scene content, and transcripts.
+
+The production application chunk is 245.15 kB (67.73 kB gzip); React and schema partitions
+remain 192.35 kB and 85.51 kB respectively. TypeScript, production build, bundle budgets,
+lint, all 35 real-component fixtures, and Android asset sync pass. Native Android assembly
+was not rerun because this host's previously documented Gradle loopback failure occurs before
+compilation. Physical Android paint/latency evidence and human visual approval remain open.
