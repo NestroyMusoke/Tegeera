@@ -239,7 +239,11 @@ near-miss must clarify. This is development conformance evidence, not a hidden c
 accuracy score. The production build is split into local React, schema, and application chunks,
 and `npm run build` enforces a 500 KiB maximum for every JavaScript chunk.
 
-The same 66-input workload now drives a warmed local SVG-ready performance envelope.
+The six newer families are complemented by 136 generated variations across the ten
+foundational specialist families, with 19 incomplete, unsafe, or wrong-domain near-misses.
+Together, all sixteen families contribute 202 supported variations and 31 near-misses.
+
+The combined 202-input workload drives a warmed local SVG-ready performance envelope.
 It times interpretation, validation, immutable scene application, and full SVG markup
 serialization separately, with coarse anti-regression budgets that fail the test suite.
 The in-app performance panel continues through real browser commit and paint, retains a

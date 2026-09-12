@@ -111,11 +111,25 @@ regression test. It is not a hidden, independent, or real-teacher accuracy measu
 does not change the frozen gold result of 3/19 strict, 19/19 automated-ready, and zero
 false-confident. Human visual approval remains outstanding for all sixteen drawings.
 
+## Foundational construction-generalization probe
+
+`foundationalGeneralization.test.tsx` adds 136 unique variations across part/whole intake,
+circulation, force diagrams, changing-speed trajectories, labelled containers, call/return,
+angle measurement, fraction subtraction, landscape flow, and the water cycle. Its 19 near-
+misses require clarification for missing roles, uncertainty, negation, wrong domains,
+invalid arithmetic, unresolved self-reference, or incomplete loops. The matrix found and
+fixed two real defects: self-referential container content and collapsed identities when a
+removed fraction and remainder have the same numeric value.
+
+This remains generated development conformance, not a hidden classroom split. Combined
+with the newer-family matrix, the checkpoint covers 202 supported variations and 31 safe
+near-misses across all sixteen specialist layouts.
+
 ## Local render-time evidence
 
-The same generated 66-input workload drives `runtimeEnvelope.test.tsx`, so performance
+The combined generated 202-input workload drives `runtimeEnvelope.test.tsx`, so performance
 cannot be measured against easier phrases than semantic conformance. After warming all
-paths, it records 198 samples and separates interpretation, validation, immutable scene
+paths, it records 606 samples and separates interpretation, validation, immutable scene
 application, SVG serialization, and total local-ready time. The suite fails at coarse
 anti-regression limits: 75 ms decision p95, 100 ms SVG-serialization p95, 150 ms local-
 ready p95, or 500 ms for any single local-ready sample.

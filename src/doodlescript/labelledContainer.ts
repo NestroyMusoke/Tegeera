@@ -26,7 +26,8 @@ export function matchLabelledContainer(text: string): LabelledContainerMatch | n
   const shape = match[2] as typeof shapeWords[number];
   const containerText = stripArticle(match[1]);
   const contentText = stripArticle(match[3]);
-  if (!containerText || !contentText || containerText === contentText) return null;
+  if (!containerText || !contentText || containerText === contentText
+    || /^(?:itself|himself|herself|themselves|it|that|something|thing)$/.test(contentText)) return null;
   return { containerText, contentText, shape };
 }
 

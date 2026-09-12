@@ -1479,3 +1479,36 @@ remain 192.35 kB and 85.51 kB respectively. TypeScript, production build, bundle
 lint, all 35 real-component fixtures, and Android asset sync pass. Native Android assembly
 was not rerun because this host's previously documented Gradle loopback failure occurs before
 compilation. Physical Android paint/latency evidence and human visual approval remain open.
+
+## Foundational generalization tranche
+
+The ten foundational specialist families now add 136 unique generated variations and 19
+paired near-misses. Part/whole routing, circulation, force, changing-speed motion, labelled
+containment, call/return, angle measurement, fraction subtraction, landscape flow, and the
+water cycle are each exercised through open semantic slots rather than frozen statement
+lookups. Every accepted probe is deterministic, validates, contains a registered specialist
+layout, and serializes accessible SVG through the real renderer. Near-misses cover incomplete
+roles, uncertainty, negation, wrong domains, invalid arithmetic, unresolved self-reference,
+and broken loops.
+
+The matrix exposed two production defects. Labelled containers accepted unresolved reflexive
+content such as “stores itself”; reflexive and unresolved pronoun content now clarifies.
+Fraction subtraction reused an entity when the removed amount and remainder had the same
+label, making valid arithmetic such as `2/3 - 1/3 = 1/3` impossible. Fraction roles can now
+retain separate identities while displaying the same numeric value, and geometry validation
+still proves the arithmetic.
+
+Combined with the six newer construction families, the shared workload contains 202 accepted
+variations and 31 near-misses across all sixteen specialist layouts. The unified SVG-ready
+envelope measures 606 warmed samples. Its dedicated run measured 14.88 ms p50 and 34.65 ms
+p95; the complete 49-file test run measured 19.96 ms p50, 50.51 ms p95, and a 172.95 ms
+maximum under suite contention. These remain local serialization measurements, not physical-
+device paint claims.
+
+All 369 tests across 49 files pass. Lint, all 35 visual fixtures, TypeScript, production
+build, bundle-budget enforcement, and Android asset sync pass. Production JavaScript remains
+offline-local and partitioned: application 245.26 kB (67.80 kB gzip), React 192.35 kB
+(60.29 kB gzip), and schema 85.51 kB (23.85 kB gzip). The frozen result remains 3/19 strict,
+19/19 automated-ready, and zero false-confident; sixteen drawings still require real human
+visual approval. Native Android assembly, physical-device paint timing, microphone trials,
+projector inspection, and independent real-teacher generalization remain outstanding.

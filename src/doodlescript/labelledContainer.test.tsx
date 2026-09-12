@@ -23,6 +23,7 @@ describe("open labelled-container grammar", () => {
     expect(matchLabelledContainer("a specimen jar is a labelled container that contains a sample")).toEqual({
       containerText: "specimen jar", contentText: "sample", shape: "container"
     });
+    expect(matchLabelledContainer("a cache is a labeled box that stores itself")).toBeNull();
     expect(matchLabelledContainer("a box holds a value")).toBeNull();
   });
 

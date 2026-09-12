@@ -146,14 +146,14 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       append({ action: "unrelate", relationId: relation.id });
     }
   };
-  const eventNode = (phrase: string, visualRole?: SceneEntity["visualRole"]): string => {
+  const eventNode = (phrase: string, visualRole?: SceneEntity["visualRole"], forceNew = false): string => {
     const normalized = phrase.trim().replace(/^(?:a|an|the) /, "");
     if (!normalized || normalized.length > 40 || normalized.split(/\s+/).length > 7
       || !/^[a-z0-9][a-z0-9 '-]*$/.test(normalized)) {
       throw new Clarification("Keep each event or concept to seven words so its timeline label stays readable.", "layout-limit");
     }
     const exact = working.entities.filter((entity) => entity.label?.toLowerCase() === normalized);
-    if (exact.length === 1) return exact[0].id;
+    if (!forceNew && exact.length === 1) return exact[0].id;
     if (/^(?:it|that)$/.test(phrase)) return resolve(phrase, working).id;
     const parsed = parseEntityPhrase(normalized);
     if (parsed) {
@@ -289,7 +289,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
           .find((mention) => mention.mentionId === mentionId)?.text ?? "";
         const idsBefore = new Set(working.entities.map(({ id }) => id));
         const fractionNode = (mentionId: string, visualRole: SceneEntity["visualRole"], value?: { numerator: number; denominator: number }) => {
-          const id = eventNode(mentionText(mentionId), visualRole);
+          const id = eventNode(mentionText(mentionId), visualRole, visualRole !== "fraction-whole");
           const created = [...commands].reverse().find((command) => command.action === "create" && command.entity.id === id);
           if (created?.action === "create" && value) created.entity.fraction = value;
           return id;

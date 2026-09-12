@@ -44,6 +44,15 @@ describe("open fraction-subtraction construction", () => {
     expect(fractionSubtractionGeometry(scene.relations!, scene.entities)).not.toBeNull();
   });
 
+  it("keeps equal removed and remaining values as distinct semantic roles", () => {
+    const { scene } = build("Take one third away from two thirds of a ribbon.");
+    const matching = scene.entities.filter(({ label }) => label === "one third");
+    expect(matching).toHaveLength(2);
+    expect(new Set(matching.map(({ id }) => id)).size).toBe(2);
+    expect(matching.map(({ visualRole }) => visualRole)).toEqual(["fraction-removed", "fraction-remainder"]);
+    expect(fractionSubtractionGeometry(scene.relations!, scene.entities)).not.toBeNull();
+  });
+
   it("renders the operation and remainder instead of only printing an answer", () => {
     const { scene } = build("If you have three-quarters of a pizza and eat one slice, how much is left?");
     const html = renderToStaticMarkup(createElement(DoodleCanvas, { scene }));
