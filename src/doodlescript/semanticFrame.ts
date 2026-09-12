@@ -20,6 +20,7 @@ import { matchReflectionRay } from "./reflectionRay";
 import { matchConvergentPlates, matchLifoStack, matchOrderedRoutine, matchTriangleAngleSum } from "./advancedConstructions";
 import { matchIndexedCollection } from "./indexedCollection";
 import { matchLinkedChain } from "./linkedChain";
+import { matchConditionFlow } from "./conditionFlow";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -169,6 +170,7 @@ export interface SemanticConvergentPlatesMention { construction: "convergent-pla
 export interface SemanticOrderedRoutineMention { construction: "ordered-routine"; firstMentionId: string; middleMentionId: string; finalMentionId: string }
 export interface SemanticIndexedCollectionMention { construction: "indexed-collection"; collectionMentionId: string; cellsMentionId: string; valuesMentionId: string; indexMentionId: string; startIndex: 0 | 1 }
 export interface SemanticLinkedChainMention { construction: "linked-chain"; collectionMentionId: string; firstMentionId: string; middleMentionId: string; finalMentionId: string }
+export interface SemanticConditionFlowMention { construction: "condition-flow"; mode: "branch" | "loop"; entryMentionId: string; conditionMentionId: string; trueMentionId: string; falseMentionId: string }
 
 export interface SemanticQuantity {
   mentionId: string;
@@ -181,7 +183,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure" | "conditional-control";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -222,6 +224,7 @@ export interface SemanticFrame {
   orderedRoutines: SemanticOrderedRoutineMention[];
   indexedCollections: SemanticIndexedCollectionMention[];
   linkedChains: SemanticLinkedChainMention[];
+  conditionFlows: SemanticConditionFlowMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -353,7 +356,8 @@ function populateMeaning(frame: SemanticFrame): void {
   const orderedRoutine = matchOrderedRoutine(frame.normalizedText);
   const indexedCollection = matchIndexedCollection(frame.normalizedText);
   const linkedChain = matchLinkedChain(frame.normalizedText);
-  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay)) return;
+  const conditionFlow = matchConditionFlow(frame.normalizedText);
+  if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay && !conditionFlow)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
     frame.safetyIntent = safetyIntent;
@@ -499,6 +503,21 @@ function populateMeaning(frame: SemanticFrame): void {
       finalMentionId: addParticipant(frame, linkedChain.finalText)
     });
     frame.meaningCandidates = [{ family: "linked-structure", predicate: "linked-chain" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
+    return;
+  }
+  if (conditionFlow) {
+    frame.intent = "describe";
+    const entryText = conditionFlow.mode === "branch" ? conditionFlow.entryText : conditionFlow.stepText;
+    const trueText = conditionFlow.mode === "branch" ? conditionFlow.trueText : conditionFlow.stepText;
+    frame.conditionFlows.push({
+      construction: "condition-flow", mode: conditionFlow.mode,
+      entryMentionId: addParticipant(frame, entryText),
+      conditionMentionId: addParticipant(frame, conditionFlow.conditionText),
+      trueMentionId: conditionFlow.mode === "loop" ? "" : addParticipant(frame, trueText),
+      falseMentionId: addParticipant(frame, conditionFlow.mode === "branch" ? conditionFlow.falseText : conditionFlow.exitText)
+    });
+    frame.meaningCandidates = [{ family: "conditional-control", predicate: conditionFlow.mode }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification";
     return;
   }
@@ -688,6 +707,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       orderedRoutines: [],
       indexedCollections: [],
       linkedChains: [],
+      conditionFlows: [],
       quantities: [],
       references: [],
       meaningCandidates: [],

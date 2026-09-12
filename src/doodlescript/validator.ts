@@ -31,6 +31,7 @@ import { isReflectionRelation, reflectionRayGeometry } from "./reflectionRay";
 import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRoutineRelation, isTriangleRelation, lifoStackGeometry, orderedRoutineGeometry, triangleAngleSumGeometry } from "./advancedConstructions";
 import { indexedCollectionGeometry, isIndexedCollectionRelation } from "./indexedCollection";
 import { isLinkedChainRelation, linkedChainGeometry } from "./linkedChain";
+import { conditionFlowGeometry, isConditionFlowRelation } from "./conditionFlow";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -251,6 +252,8 @@ export function validateDoodleScript(
   if (indexedRelations.length && !indexedCollectionGeometry(indexedRelations, projected.entities)) issues.push({ gate: "semantic", message: "An indexed collection needs one collection, one cell row, stored values, and a zero-or-one starting index across exactly three connected relationships." });
   const linkedRelations = (projected.relations ?? []).filter(isLinkedChainRelation);
   if (linkedRelations.length && !linkedChainGeometry(linkedRelations, projected.entities)) issues.push({ gate: "semantic", message: "A linked chain needs one collection, three distinct ordered nodes, and exactly two forward next pointers." });
+  const conditionRelations = (projected.relations ?? []).filter(isConditionFlowRelation);
+  if (conditionRelations.length && !conditionFlowGeometry(conditionRelations, projected.entities)) issues.push({ gate: "semantic", message: "A condition flow needs one decision with exactly one true route and one false route; a loop must return only on true." });
   for (const entity of projected.entities) {
     if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });

@@ -28,6 +28,7 @@ import { planConvergentPlates, planLifoStack, planOrderedRoutine, planTriangleAn
 import { relationForKind } from "./relationRegistry";
 import { planIndexedCollection } from "./indexedCollection";
 import { planLinkedChain } from "./linkedChain";
+import { planConditionFlow } from "./conditionFlow";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -71,7 +72,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -209,7 +210,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         "I heard a negation, so I left the drawing unchanged. Say the positive scene you want shown.",
         "negated-claim", ["Describe the scene positively", "Leave the scene unchanged"]
       );
-      if (frame.discourse.conditional && !frame.forceDiagrams.length && !frame.callReturnFlows.length && !frame.fractionSubtractions.length && !frame.lifecycleSequences.length) throw new Clarification(
+      if (frame.discourse.conditional && !frame.forceDiagrams.length && !frame.callReturnFlows.length && !frame.fractionSubtractions.length && !frame.lifecycleSequences.length && !frame.conditionFlows.length) throw new Clarification(
         "I heard a condition. Tell me whether to draw the condition or its result.",
         "conditional-claim", ["Draw the condition", "Draw the result"]
       );
@@ -476,6 +477,27 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "pointsNext", sourceIds: [firstId], targetIds: [middleId], predicate: "pointsNext" } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "pointsNext", sourceIds: [middleId], targetIds: [finalId], predicate: "pointsNext" } });
         focus([collectionId, firstId], [middleId, finalId]); continue;
+      }
+      const conditionFlow = frame.conditionFlows[0];
+      if (conditionFlow?.construction === "condition-flow") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const idsBefore = new Set(working.entities.map(({ id }) => id));
+        const entryRole = conditionFlow.mode === "loop" ? "control-step" : "control-entry";
+        const entryId = eventNode(mentionText(conditionFlow.entryMentionId), entryRole);
+        const conditionId = eventNode(mentionText(conditionFlow.conditionMentionId), "control-condition");
+        const trueId = conditionFlow.mode === "loop" ? entryId : eventNode(mentionText(conditionFlow.trueMentionId), "control-true");
+        const falseId = eventNode(mentionText(conditionFlow.falseMentionId), conditionFlow.mode === "loop" ? "control-exit" : "control-false");
+        const ids = { entryId, conditionId, trueId, falseId };
+        const expected = conditionFlow.mode === "loop" ? 3 : 4;
+        if (new Set(Object.values(ids)).size !== expected) throw new Clarification("A condition flow needs distinct decision and outcome identities.", "conflicting-scene");
+        const movableIds = new Set(working.entities.filter(({ id }) => !idsBefore.has(id)).map(({ id }) => id));
+        const moves = planConditionFlow(working, ids, movableIds, conditionFlow.mode);
+        if (!moves) throw new Clarification("That condition flow cannot fit readably in the current scene.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "checksCondition", sourceIds: [entryId], targetIds: [conditionId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "takesTruePath", sourceIds: [conditionId], targetIds: [trueId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "takesFalsePath", sourceIds: [conditionId], targetIds: [falseId] } });
+        focus([entryId, conditionId], [trueId, falseId]); continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
       if (forceDiagram?.construction === "force-diagram") {

@@ -118,6 +118,45 @@
       }
     },
     {
+      "id": 24,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "condition-flow",
+        "concepts": [
+          { "key": "step", "labels": ["same steps", "repeated steps"] },
+          { "key": "condition", "labels": ["condition"] },
+          { "key": "exit", "labels": ["exit"] }
+        ],
+        "relations": [
+          { "predicate": "checksCondition", "source": "step", "target": "condition" },
+          { "predicate": "takesTruePath", "source": "condition", "target": "step" },
+          { "predicate": "takesFalsePath", "source": "condition", "target": "exit" }
+        ],
+        "visualCues": ["repeated-step", "condition-diamond", "loop-back-arrow", "false-exit-path"]
+      }
+    },
+    {
+      "id": 28,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "condition-flow",
+        "concepts": [
+          { "key": "program", "labels": ["program"] },
+          { "key": "condition", "labels": ["condition"] },
+          { "key": "true", "labels": ["true path"] },
+          { "key": "false", "labels": ["false path"] }
+        ],
+        "relations": [
+          { "predicate": "checksCondition", "source": "program", "target": "condition" },
+          { "predicate": "takesTruePath", "source": "condition", "target": "true" },
+          { "predicate": "takesFalsePath", "source": "condition", "target": "false" }
+        ],
+        "visualCues": ["control-entry", "condition-diamond", "true-branch", "false-branch"]
+      }
+    },
+    {
       "id": 31,
       "expected": {
         "intent": "draw",

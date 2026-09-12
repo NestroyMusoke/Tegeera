@@ -196,8 +196,8 @@ motion understanding.
 An independent 60-statement teacher corpus lives at
 [`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
 It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present observational baseline draws 18/60, holds the scene for 1/60
-non-visual utterance, and asks for clarification on 41/60. Those numbers measure
+grammar. The present observational baseline draws 20/60, holds the scene for 1/60
+non-visual utterance, and asks for clarification on 39/60. Those numbers measure
 coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
@@ -210,7 +210,7 @@ construction. The expanded gold batch also has automated evidence for circulatio
 force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
 geometric-construction, landscape-flow, water-cycle-loop, lifecycle-sequence,
 reflection-ray, lifo-stack, triangle-angle-sum, convergent-plates, ordered-routine, and
-indexed-row, and linked-chain. All 21 gold cases are automated-ready. Drawing cases remain
+indexed-row, linked-chain, and shared condition-flow. All 23 gold cases are automated-ready. Drawing cases remain
 pending until a reviewer accepts the actual doodles.
 Validation can prove script safety; it cannot substitute for semantic or visual completeness.
 
@@ -235,21 +235,24 @@ independent rather than an array-specific lesson template.
 The linked-chain grammar likewise separates a verbal chain analogy from its real pointer
 topology: three distinct node boxes, dedicated pointer compartments, forward next arrows,
 a head marker, and an explicit terminal marker are generated from open item vocabulary.
+The condition-flow grammar models branches and condition-controlled loops with the same
+typed graph. A decision diamond owns one true and one false route; loop mode returns the
+true route to the repeated step and keeps the false exit separate.
 
-A generated construction-generalization probe now exercises 90 deterministic paraphrase
+A generated construction-generalization probe now exercises 102 deterministic paraphrase
 combinations across stack, triangle, plate-convergence, ordered-routine, reflection, lifecycle,
-indexed-row, and linked-chain grammars. It also checks 20 incomplete, negated, uncertain, or structurally wrong
+indexed-row, linked-chain, and condition-flow grammars. It also checks 26 incomplete, negated, uncertain, or structurally wrong
 near-misses. Every accepted probe must produce valid typed relations, the expected specialist
 layout, deterministic output, and real component markup without generic-object leakage; every
 near-miss must clarify. This is development conformance evidence, not a hidden classroom
 accuracy score. The production build is split into local React, schema, and application chunks,
 and `npm run build` enforces a 500 KiB maximum for every JavaScript chunk.
 
-The eight newer families are complemented by 136 generated variations across the ten
+The nine newer families are complemented by 136 generated variations across the ten
 foundational specialist families, with 19 incomplete, unsafe, or wrong-domain near-misses.
-Together, all eighteen families contribute 226 supported variations and 39 near-misses.
+Together, all nineteen families contribute 238 supported variations and 45 near-misses.
 
-The combined 226-input workload drives a warmed local SVG-ready performance envelope.
+The combined 238-input workload drives a warmed local SVG-ready performance envelope.
 It times interpretation, validation, immutable scene application, and full SVG markup
 serialization separately, with coarse anti-regression budgets that fail the test suite.
 The in-app performance panel continues through real browser commit and paint, retains a

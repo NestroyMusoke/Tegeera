@@ -27,6 +27,7 @@ import { isReflectionRelation, reflectionRayGeometry } from "../doodlescript/ref
 import { convergentPlatesGeometry, isConvergentRelation, isLifoRelation, isRoutineRelation, isTriangleRelation, lifoStackGeometry, orderedRoutineGeometry, triangleAngleSumGeometry } from "../doodlescript/advancedConstructions";
 import { indexedCollectionGeometry, isIndexedCollectionRelation } from "../doodlescript/indexedCollection";
 import { isLinkedChainRelation, linkedChainGeometry } from "../doodlescript/linkedChain";
+import { conditionFlowGeometry, isConditionFlowRelation } from "../doodlescript/conditionFlow";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -183,6 +184,27 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isConditionFlowRelation(relation)) {
+    const controlRelations = relations.filter(isConditionFlowRelation);
+    if (relation.id !== controlRelations.find(({ kind }) => kind === "checksCondition")?.id) return null;
+    const geometry = conditionFlowGeometry(controlRelations, entities);
+    if (!geometry) return null;
+    const diamond = "M500 185 L625 300 L500 415 L375 300 Z";
+    const arrow = (d: string, tip: string, color: string, className = "condition-flow") => <g><path className={className} d={d} fill="none" stroke={color} strokeWidth="8" strokeDasharray="14 10" strokeLinecap="round" /><path d={tip} fill="none" stroke={color} strokeWidth="7" strokeLinejoin="round" /></g>;
+    if (geometry.mode === "loop") return <g className="condition-flow-annotation" aria-label={`${geometry.entry.label} repeat while ${geometry.condition.label} is true; exit when false`}>
+      <g data-visual-cue="repeated-step"><rect x="90" y="230" width="230" height="140" rx="34" fill="#b9ded2" stroke="#405c59" strokeWidth="7" /><path d="M132 278 h145 M132 310 h110 M132 342 h75" stroke="#517a73" strokeWidth="8" strokeLinecap="round" /><text x="205" y="415" textAnchor="middle" fontSize="24" fontWeight="900" fill="#334f4c">{geometry.entry.label}</text></g>
+      <g data-visual-cue="condition-diamond"><path d={diamond} fill="#f5d591" stroke="#5c5544" strokeWidth="8" strokeLinejoin="round" /><text x="500" y="294" textAnchor="middle" fontSize="23" fontWeight="950" fill="#554b36">{geometry.condition.label}</text><text x="500" y="326" textAnchor="middle" fontSize="18" fontWeight="850" fill="#79683e">condition?</text></g>
+      <g data-visual-cue="loop-back-arrow">{arrow("M375 300 H322 M205 230 V145 Q205 105 250 105 H500 Q690 105 690 265 Q690 300 625 300", "M647 282 L625 300 L647 318", "#43806f", "condition-flow condition-loop")}</g>
+      <text x="658" y="268" fontSize="22" fontWeight="950" fill="#347261">TRUE</text>
+      <g data-visual-cue="false-exit-path">{arrow("M500 415 V505 H790", "M765 487 L790 505 L765 523", "#a35263")}<rect x="790" y="458" width="145" height="94" rx="28" fill="#e9b8c8" stroke="#664652" strokeWidth="7" /><text x="862" y="515" textAnchor="middle" fontSize="25" fontWeight="950" fill="#65404d">{geometry.falseTarget.label}</text><text x="525" y="488" fontSize="22" fontWeight="950" fill="#96465a">FALSE</text></g>
+    </g>;
+    return <g className="condition-flow-annotation" aria-label={`${geometry.entry.label} checks ${geometry.condition.label}; true goes to ${geometry.trueTarget.label}; false goes to ${geometry.falseTarget.label}`}>
+      <g data-visual-cue="control-entry"><rect x="70" y="245" width="220" height="110" rx="34" fill="#c5dcef" stroke="#405c59" strokeWidth="7" /><text x="180" y="311" textAnchor="middle" fontSize="25" fontWeight="950" fill="#334f4c">{geometry.entry.label}</text></g>
+      <g data-visual-cue="condition-diamond"><path d={diamond} fill="#f5d591" stroke="#5c5544" strokeWidth="8" strokeLinejoin="round" /><text x="500" y="294" textAnchor="middle" fontSize="23" fontWeight="950" fill="#554b36">{geometry.condition.label}</text><text x="500" y="326" textAnchor="middle" fontSize="18" fontWeight="850" fill="#79683e">condition?</text></g>
+      <g data-visual-cue="true-branch">{arrow("M290 300 H375 M625 260 Q690 260 715 205", "M693 220 L715 205 L710 231", "#43806f")}<rect x="715" y="120" width="220" height="110" rx="34" fill="#b9ded2" stroke="#405c59" strokeWidth="7" /><text x="825" y="185" textAnchor="middle" fontSize="24" fontWeight="950" fill="#334f4c">{geometry.trueTarget.label}</text><text x="650" y="235" fontSize="21" fontWeight="950" fill="#347261">TRUE</text></g>
+      <g data-visual-cue="false-branch">{arrow("M625 340 Q690 340 715 395", "M710 369 L715 395 L693 380", "#a35263")}<rect x="715" y="370" width="220" height="110" rx="34" fill="#e9b8c8" stroke="#664652" strokeWidth="7" /><text x="825" y="435" textAnchor="middle" fontSize="24" fontWeight="950" fill="#65404d">{geometry.falseTarget.label}</text><text x="650" y="380" fontSize="21" fontWeight="950" fill="#96465a">FALSE</text></g>
+    </g>;
+  }
   if (isLinkedChainRelation(relation)) {
     const linkedRelations = relations.filter(isLinkedChainRelation);
     if (relation.id !== linkedRelations.find(({ kind }) => kind === "hasFirstNode")?.id) return null;
@@ -820,7 +842,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

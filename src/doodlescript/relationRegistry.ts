@@ -4,10 +4,10 @@ import { relationSchema, type DoodleScript, type SceneRelation } from "./schema"
 import { visualActionForPredicate } from "./visualActionRegistry";
 import type { ConceptCapability } from "./conceptRegistry";
 
-export const RELATION_REGISTRY_VERSION = "2.18.0";
+export const RELATION_REGISTRY_VERSION = "2.19.0";
 
 export type RelationKind = SceneRelation["kind"];
-export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment" | "measurement" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure";
+export type RelationFamily = "structural" | "directional" | "ordered" | "performance" | "event" | "visual" | "compositional" | "mechanical" | "containment" | "measurement" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure" | "conditional-control";
 
 interface Cardinality {
   min: number;
@@ -114,7 +114,10 @@ export const relationRegistry: readonly RelationDefinition[] = [
   { kind: "storesValues", family: "indexed-collection", label: "stores values", aliases: [], minimumVersion: "2.17.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "indexed-row" },
   { kind: "startsIndexAt", family: "indexed-collection", label: "starts index at", aliases: [], minimumVersion: "2.17.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "indexed-row" },
   { kind: "hasFirstNode", family: "linked-structure", label: "starts with", aliases: [], minimumVersion: "2.18.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "linked-chain" },
-  { kind: "pointsNext", family: "linked-structure", label: "points to next", aliases: [], minimumVersion: "2.18.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "linked-chain" }
+  { kind: "pointsNext", family: "linked-structure", label: "points to next", aliases: [], minimumVersion: "2.18.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "linked-chain" },
+  { kind: "checksCondition", family: "conditional-control", label: "checks", aliases: [], minimumVersion: "2.19.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "condition-flow" },
+  { kind: "takesTruePath", family: "conditional-control", label: "when true", aliases: [], minimumVersion: "2.19.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "condition-flow" },
+  { kind: "takesFalsePath", family: "conditional-control", label: "when false", aliases: [], minimumVersion: "2.19.0", source: { min: 1, max: 1 }, target: { min: 1, max: 1 }, object: { min: 0, max: 0 }, directed: true, layout: "condition-flow" }
 ];
 
 const byKind = new Map(relationRegistry.map((definition) => [definition.kind, definition] as const));
@@ -175,7 +178,7 @@ export function matchRegisteredRelation(text: string): RegisteredRelationMatch |
   };
 }
 
-const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0"];
+const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0"];
 
 export function relationSupportsVersion(kind: RelationKind, version: DoodleScript["schemaVersion"]): boolean {
   return versionOrder.indexOf(version) >= versionOrder.indexOf(relationForKind(kind).minimumVersion);

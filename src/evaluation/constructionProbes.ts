@@ -74,8 +74,30 @@ const linkedProbes: ConstructionProbe[] = linkedCollections.flatMap(([collection
     id: `linked-${setIndex}-${templateIndex}`, text: template(collection, item), layout: "linked-chain"
   })));
 
+const conditionBranches: ConstructionProbe[] = [
+  ["if-else", "program", "condition", "takes", "paths"],
+  ["a conditional", "controller", "rule", "follows", "branches"],
+  ["a decision", "router", "signal", "chooses", "paths"],
+  ["if else", "validator", "test", "takes", "branches"],
+  ["a decision", "workflow", "approval", "follows", "paths"],
+  ["a conditional", "game", "collision", "chooses", "branches"]
+].map(([opening, actor, condition, verb, routes], index) => ({
+  id: `condition-branch-${index}`, text: `${opening} means the ${actor} checks a ${condition} and ${verb} one of two ${routes}.`, layout: "condition-flow"
+}));
+
+const conditionLoops: ConstructionProbe[] = [
+  ["loop", "same steps", "condition", "keeps"],
+  ["practice cycle", "exercise", "difficulty condition", "continues"],
+  ["animation loop", "frame update", "running condition", "continues"],
+  ["retry loop", "request", "retry condition", "keeps"],
+  ["search cycle", "next comparison", "search condition", "continues"],
+  ["training loop", "learning step", "training condition", "keeps"]
+].map(([loop, step, condition, verb], index) => ({
+  id: `condition-loop-${index}`, text: `A ${loop} ${verb} repeating the ${step} until a ${condition} becomes false.`, layout: "condition-flow"
+}));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -98,5 +120,11 @@ export const unsafeConstructionNearMisses = [
   "A linked list contains three items.",
   "A linked list is a chain where each item points somewhere.",
   "A linked list might be a chain where each item points to the next one.",
-  "A linked list is not a chain where each item points to the next one."
+  "A linked list is not a chain where each item points to the next one.",
+  "If-else has two paths.",
+  "The program checks a condition.",
+  "If-else might mean the program checks a condition and takes one of two paths.",
+  "If-else does not mean the program checks a condition and takes one of two paths.",
+  "A loop keeps repeating steps.",
+  "A loop stops when something changes."
 ] as const;

@@ -17,8 +17,8 @@ describe("generalized local render-time envelope", () => {
       + "Excludes speech, browser commit/paint and device scheduling."
     );
 
-    expect(result.probeCount).toBe(226);
-    expect(result.sampleCount).toBe(678);
+    expect(result.probeCount).toBe(238);
+    expect(result.sampleCount).toBe(714);
     expect(result.decision.p95Ms).toBeLessThan(75);
     expect(result.svgSerialization.p95Ms).toBeLessThan(100);
     expect(result.localReady.p95Ms).toBeLessThan(150);

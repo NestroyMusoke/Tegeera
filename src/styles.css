@@ -238,6 +238,9 @@ button {
 .attached-object.motion-talk { animation: rig-breathe 1200ms ease-in-out infinite alternate; }
 .handover-object > g:first-child { animation: handover-object 900ms cubic-bezier(.2,.8,.3,1) 1; transform-origin: center; }
 .handover-flow { stroke-dasharray: 8 7; animation: motion-flow 900ms linear 1; }
+.condition-flow { animation: condition-flow 1100ms linear infinite; }
+.condition-loop { animation-duration: 850ms; }
+@keyframes condition-flow { to { stroke-dashoffset: -48; } }
 .event-before .event-flow { stroke-dasharray: 8 7; }
 .event-flow { animation: motion-flow 1100ms linear infinite; }
 .visual-action-flow { stroke-dasharray: 9 7; animation: motion-flow 1050ms linear infinite; }
@@ -252,7 +255,7 @@ button {
 @keyframes handover-object { 45% { transform: translateY(-7px) scale(1.08); } }
 @keyframes visual-particle { to { transform: scale(1.55); opacity: .45; } }
 @media (prefers-reduced-motion: reduce) {
-  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
+  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines { animation: none; }
 }
 
 .doodle-stroke,
@@ -626,7 +629,7 @@ button {
   .water-cycle-flow {
     animation: none !important;
   }
-  .lifecycle-flow, .lifecycle-creature, .lifecycle-cocoon, .reflection-flow, .stack-flow, .routine-flow, .plate-force, .linked-flow { animation: none !important; }
+  .lifecycle-flow, .lifecycle-creature, .lifecycle-cocoon, .reflection-flow, .stack-flow, .routine-flow, .plate-force, .linked-flow, .condition-flow { animation: none !important; }
 }
 
 .circulation-flow {
