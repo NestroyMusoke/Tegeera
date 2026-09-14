@@ -250,6 +250,28 @@
       }
     },
     {
+      "id": 4,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "doubling-growth",
+        "concepts": [
+          { "key": "subject", "labels": ["bacteria"] },
+          { "key": "one", "labels": ["1"] },
+          { "key": "two", "labels": ["2"] },
+          { "key": "four", "labels": ["4"] },
+          { "key": "eight", "labels": ["8"] }
+        ],
+        "relations": [
+          { "predicate": "growthStartsAt", "source": "subject", "target": "one" },
+          { "predicate": "doublesTo", "source": "one", "target": "two" },
+          { "predicate": "doublesTo", "source": "two", "target": "four" },
+          { "predicate": "doublesTo", "source": "four", "target": "eight" }
+        ],
+        "visualCues": ["single-origin", "two-offspring", "four-offspring", "eight-offspring", "doubling-branches", "exponential-counts"]
+      }
+    },
+    {
       "id": 13,
       "expected": {
         "intent": "draw",

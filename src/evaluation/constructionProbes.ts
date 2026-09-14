@@ -133,8 +133,21 @@ const processorMemoryProbes: ConstructionProbe[] = [
   id: `processor-memory-${index}`, text: `A ${processor} ${verb} nearby ${memory} to ${outcome} ${speed}.`, layout: "processor-memory-link"
 }));
 
+const doublingGrowthProbes: ConstructionProbe[] = [
+  ["cell division", "population"],
+  ["viral spread", "amount"],
+  ["user growth", "number"],
+  ["message replication", "group"],
+  ["task expansion", "number"],
+  ["colony growth", "population"],
+  ["sample replication", "amount"],
+  ["branching process", "group"]
+].map(([subject, quantity], index) => ({
+  id: `doubling-${index}`, text: `In ${subject}, the ${quantity} doubles from one to two to four to eight.`, layout: "doubling-growth"
+}));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes, ...fifoProbes, ...processorMemoryProbes
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes, ...fifoProbes, ...processorMemoryProbes, ...doublingGrowthProbes
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -175,5 +188,9 @@ export const unsafeConstructionNearMisses = [
   "A processor has memory.",
   "A processor communicates with cache.",
   "A processor might communicate with nearby cache to respond quickly.",
-  "A processor does not communicate with nearby cache to respond quickly."
+  "A processor does not communicate with nearby cache to respond quickly.",
+  "A population grows quickly.",
+  "A population doubles from one to two.",
+  "A population might double from one to two to four to eight.",
+  "A population does not double from one to two to four to eight."
 ] as const;

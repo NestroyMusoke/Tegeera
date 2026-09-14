@@ -52,7 +52,7 @@ const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.me
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .fifo-flow, .data-pulse, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const fixtureRevision = `sha256:${createHash("sha256").update(result.outputFiles[0].text).update(css).update(JSON.stringify(gold)).digest("hex").slice(0, 16)}`;
@@ -96,6 +96,7 @@ const cases = {
   progressiveNarrowing: ["In a binary search, you keep cutting the list in half until you find what you're looking for."],
   fifoQueue: ["A queue works like a line at the bank — first come, first served."],
   processorMemory: ["The CPU is the brain of the computer, but it needs memory nearby to work fast."],
+  doublingGrowth: ["Bacteria multiply so fast that one becomes two, two becomes four, and it just keeps doubling."],
   cpuQueue: ["Imagine three processes waiting in a CPU queue", "Make that four processes", "Move the CPU to the right", "What if the second process goes first"],
 };
 for (const [name, commands] of Object.entries(cases)) {
@@ -105,7 +106,7 @@ await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head
 await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
 const reviewFixtureById = {
-  1: "partWholeFlow.html", 2: "circulationLoop.html", 3: "lifecycleSequence.html", 11: "forceDiagram.html",
+  1: "partWholeFlow.html", 2: "circulationLoop.html", 3: "lifecycleSequence.html", 4: "doublingGrowth.html", 11: "forceDiagram.html",
   12: "changingSpeedMotion.html", 21: "labelledContainer.html", 22: "callReturnFlow.html",
   31: "geometricConstruction.html", 32: "fractionSubtraction.html", 41: "landscapeFlow.html",
   42: "waterCycleLoop.html", 13: "reflectionRay.html", 23: "lifoStack.html",

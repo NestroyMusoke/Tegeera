@@ -1,9 +1,9 @@
 import type { RelationFamily } from "./relationRegistry";
 
-export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.22.0";
+export const LAYOUT_FAMILY_REGISTRY_VERSION = "2.23.0";
 
-export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container" | "geometric-construction" | "landscape-flow" | "circulation-loop" | "changing-speed-motion" | "call-return-flow" | "fraction-subtraction" | "water-cycle-loop" | "lifecycle-sequence" | "reflection-ray" | "lifo-stack" | "triangle-angle-sum" | "convergent-plates" | "ordered-routine" | "indexed-row" | "linked-chain" | "condition-flow" | "progressive-narrowing" | "fifo-queue" | "processor-memory-link";
-export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container" | "angular-construction" | "elevation-cross-section" | "closed-loop" | "trajectory-profile" | "control-transfer" | "part-removal" | "environmental-cycle" | "stage-sequence" | "ray-reflection" | "top-access-stack" | "triangle-proof" | "plate-convergence" | "routine-sequence" | "indexed-cells" | "pointer-chain" | "conditional-graph" | "shrinking-sequence" | "fifo-lane" | "nearby-bus";
+export type LayoutFamilyId = "group" | "ownership" | "arrow" | "queue" | "contact" | "event-graph" | "visual-flow" | "part-whole-flow" | "force-diagram" | "labelled-container" | "geometric-construction" | "landscape-flow" | "circulation-loop" | "changing-speed-motion" | "call-return-flow" | "fraction-subtraction" | "water-cycle-loop" | "lifecycle-sequence" | "reflection-ray" | "lifo-stack" | "triangle-angle-sum" | "convergent-plates" | "ordered-routine" | "indexed-row" | "linked-chain" | "condition-flow" | "progressive-narrowing" | "fifo-queue" | "processor-memory-link" | "doubling-growth";
+export type LayoutTopology = "cluster" | "grouped-list" | "directed-pair" | "ordered-row" | "ranked-dag" | "directed-graph" | "part-whole" | "force-body" | "nested-container" | "angular-construction" | "elevation-cross-section" | "closed-loop" | "trajectory-profile" | "control-transfer" | "part-removal" | "environmental-cycle" | "stage-sequence" | "ray-reflection" | "top-access-stack" | "triangle-proof" | "plate-convergence" | "routine-sequence" | "indexed-cells" | "pointer-chain" | "conditional-graph" | "shrinking-sequence" | "fifo-lane" | "nearby-bus" | "branching-growth";
 
 export interface LayoutFamilyDefinition {
   id: LayoutFamilyId;
@@ -46,7 +46,8 @@ export const layoutFamilyRegistry: readonly LayoutFamilyDefinition[] = [
   { id: "condition-flow", topology: "conditional-graph", relationFamilies: ["conditional-control"], readingDirection: "left-to-right", maximumVisibleNodes: 4, maximumNodesPerRank: 2, movementWeight: 0.1, connectorCrossingPenalty: 10_000 },
   { id: "progressive-narrowing", topology: "shrinking-sequence", relationFamilies: ["progressive-reduction"], readingDirection: "left-to-right", maximumVisibleNodes: 4, maximumNodesPerRank: 4, movementWeight: 0.1, connectorCrossingPenalty: 0 },
   { id: "fifo-queue", topology: "fifo-lane", relationFamilies: ["fifo-order"], readingDirection: "left-to-right", maximumVisibleNodes: 4, maximumNodesPerRank: 4, movementWeight: 0.1, connectorCrossingPenalty: 0 },
-  { id: "processor-memory-link", topology: "nearby-bus", relationFamilies: ["data-access"], readingDirection: "bidirectional", maximumVisibleNodes: 2, maximumNodesPerRank: 2, movementWeight: 0.1, connectorCrossingPenalty: 10_000 }
+  { id: "processor-memory-link", topology: "nearby-bus", relationFamilies: ["data-access"], readingDirection: "bidirectional", maximumVisibleNodes: 2, maximumNodesPerRank: 2, movementWeight: 0.1, connectorCrossingPenalty: 10_000 },
+  { id: "doubling-growth", topology: "branching-growth", relationFamilies: ["exponential-growth"], readingDirection: "left-to-right", maximumVisibleNodes: 5, maximumNodesPerRank: 4, movementWeight: 0.1, connectorCrossingPenalty: 0 }
 ];
 
 const byId = new Map(layoutFamilyRegistry.map((definition) => [definition.id, definition] as const));

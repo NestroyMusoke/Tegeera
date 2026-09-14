@@ -31,6 +31,7 @@ import { conditionFlowGeometry, isConditionFlowRelation } from "../doodlescript/
 import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "../doodlescript/progressiveNarrowing";
 import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
+import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -187,6 +188,28 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isDoublingGrowthRelation(relation)) {
+    const growthRelations = relations.filter(isDoublingGrowthRelation);
+    if (relation.id !== growthRelations.find(({ kind }) => kind === "growthStartsAt")?.id) return null;
+    const geometry = doublingGrowthGeometry(growthRelations, entities); if (!geometry) return null;
+    const centers = [130, 360, 600, 850];
+    const counts = [1, 2, 4, 8];
+    const cueIds = ["single-origin", "two-offspring", "four-offspring", "eight-offspring"];
+    const dots = (count: number, cx: number) => Array.from({ length: count }, (_, index) => {
+      const columns = count <= 2 ? count : Math.min(4, count);
+      const row = Math.floor(index / columns); const column = index % columns;
+      const spacing = count === 8 ? 43 : 54;
+      const x = cx + (column - (columns - 1) / 2) * spacing;
+      const y = 300 + (row - (count > 4 ? .5 : 0)) * 62;
+      return <circle key={index} className="doubling-pop" style={{ animationDelay: `${index * 70}ms` }} cx={x} cy={y} r={count === 8 ? 18 : 23} fill={index % 2 ? "#f2cf91" : "#b9ded2"} stroke="#405c59" strokeWidth="5" />;
+    });
+    return <g className="doubling-growth-annotation" aria-label={`${geometry.subject.label} doubles from one to two to four to eight`}>
+      <text x="500" y="85" textAnchor="middle" fontSize="31" fontWeight="950" fill="#334f4c">{geometry.subject.label}: DOUBLING GROWTH</text>
+      <g data-visual-cue="doubling-branches">{centers.slice(0, -1).map((cx, index) => { const next = centers[index + 1]; return <g key={cx}><path className="doubling-flow" d={`M${cx + 58} 275 C${cx + 95} 245 ${next - 90} 245 ${next - 48} 280 M${cx + 58} 325 C${cx + 95} 355 ${next - 90} 355 ${next - 48} 320`} fill="none" stroke="#4a8176" strokeWidth="7" strokeDasharray="12 9" strokeLinecap="round" /><path d={`M${next - 66} 266 L${next - 48} 280 L${next - 68} 290 M${next - 68} 310 L${next - 48} 320 L${next - 66} 334`} fill="none" stroke="#4a8176" strokeWidth="6" /></g>; })}</g>
+      {counts.map((count, index) => <g key={count} data-visual-cue={cueIds[index]}>{dots(count, centers[index])}<rect x={centers[index] - 52} y="410" width="104" height="64" rx="22" fill="#f8f3e7" stroke="#6c6658" strokeWidth="5" /><text x={centers[index]} y="451" textAnchor="middle" fontSize="30" fontWeight="950" fill="#3f514e">{geometry.stages[index].label}</text></g>)}
+      <g data-visual-cue="exponential-counts"><text x="500" y="535" textAnchor="middle" fontSize="23" fontWeight="900" fill="#79516a">each stage is ×2</text></g>
+    </g>;
+  }
   if (isProcessorMemoryRelation(relation)) {
     const dataRelations = relations.filter(isProcessorMemoryRelation);
     if (relation.id !== dataRelations.find(({ kind }) => kind === "exchangesWith")?.id) return null;
@@ -890,7 +913,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service", "compute-unit", "memory-unit"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service", "compute-unit", "memory-unit", "doubling-subject", "doubling-one", "doubling-two", "doubling-four", "doubling-eight"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

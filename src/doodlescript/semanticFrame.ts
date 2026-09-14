@@ -24,6 +24,7 @@ import { matchConditionFlow } from "./conditionFlow";
 import { matchProgressiveNarrowing } from "./progressiveNarrowing";
 import { matchFifoQueue } from "./fifoQueue";
 import { matchProcessorMemoryLink } from "./processorMemoryLink";
+import { matchDoublingGrowth } from "./doublingGrowth";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -177,6 +178,7 @@ export interface SemanticConditionFlowMention { construction: "condition-flow"; 
 export interface SemanticProgressiveNarrowingMention { construction: "progressive-narrowing"; processMentionId: string; initialMentionId: string; reducedMentionId: string; foundMentionId: string }
 export interface SemanticFifoQueueMention { construction: "fifo-queue"; queueMentionId: string; serviceMentionId: string; firstMentionId: string; secondMentionId: string; thirdMentionId: string }
 export interface SemanticProcessorMemoryMention { construction: "processor-memory-link"; processorMentionId: string; memoryMentionId: string }
+export interface SemanticDoublingGrowthMention { construction: "doubling-growth"; subjectMentionId: string; oneMentionId: string; twoMentionId: string; fourMentionId: string; eightMentionId: string }
 
 export interface SemanticQuantity {
   mentionId: string;
@@ -189,7 +191,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure" | "conditional-control" | "progressive-reduction" | "fifo-order" | "data-access";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure" | "conditional-control" | "progressive-reduction" | "fifo-order" | "data-access" | "exponential-growth";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -234,6 +236,7 @@ export interface SemanticFrame {
   progressiveNarrowings: SemanticProgressiveNarrowingMention[];
   fifoQueues: SemanticFifoQueueMention[];
   processorMemoryLinks: SemanticProcessorMemoryMention[];
+  doublingGrowths: SemanticDoublingGrowthMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -369,6 +372,7 @@ function populateMeaning(frame: SemanticFrame): void {
   const progressiveNarrowing = matchProgressiveNarrowing(frame.normalizedText);
   const fifoQueue = matchFifoQueue(frame.normalizedText);
   const processorMemoryLink = matchProcessorMemoryLink(frame.normalizedText);
+  const doublingGrowth = matchDoublingGrowth(frame.normalizedText);
   if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay && !conditionFlow)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
@@ -549,6 +553,12 @@ function populateMeaning(frame: SemanticFrame): void {
     frame.intent = "describe";
     frame.processorMemoryLinks.push({ construction: "processor-memory-link", processorMentionId: addParticipant(frame, processorMemoryLink.processorText), memoryMentionId: addParticipant(frame, processorMemoryLink.memoryText) });
     frame.meaningCandidates = [{ family: "data-access", predicate: "processor-memory-link" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
+  }
+  if (doublingGrowth) {
+    frame.intent = "describe";
+    frame.doublingGrowths.push({ construction: "doubling-growth", subjectMentionId: addParticipant(frame, doublingGrowth.subjectText), oneMentionId: addParticipant(frame, doublingGrowth.oneText), twoMentionId: addParticipant(frame, doublingGrowth.twoText), fourMentionId: addParticipant(frame, doublingGrowth.fourText), eightMentionId: addParticipant(frame, doublingGrowth.eightText) });
+    frame.meaningCandidates = [{ family: "exponential-growth", predicate: "doubling-growth" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
   }
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
@@ -741,6 +751,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       progressiveNarrowings: [],
       fifoQueues: [],
       processorMemoryLinks: [],
+      doublingGrowths: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -754,7 +765,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized) || matchIndexedCollection(wholeNormalized) || matchLinkedChain(wholeNormalized) || matchFifoQueue(wholeNormalized) || matchProcessorMemoryLink(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized) || matchIndexedCollection(wholeNormalized) || matchLinkedChain(wholeNormalized) || matchFifoQueue(wholeNormalized) || matchProcessorMemoryLink(wholeNormalized) || matchDoublingGrowth(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {
