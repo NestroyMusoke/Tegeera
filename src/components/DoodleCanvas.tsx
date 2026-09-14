@@ -32,6 +32,7 @@ import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "..
 import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
+import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -188,6 +189,24 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isConsumptionChainRelation(relation)) {
+    const chainRelations = relations.filter(isConsumptionChainRelation);
+    if (relation.id !== chainRelations.find(({ kind }) => kind === "chainStartsWith")?.id) return null;
+    const geometry = consumptionChainGeometry(chainRelations, entities); if (!geometry) return null;
+    const centers = [125, 375, 625, 875];
+    const fills = ["#b9ded2", "#f2cf91", "#c8d8ef", "#e9b8c8"];
+    const cueIds = ["resource-source", "primary-consumer", "secondary-consumer", "top-consumer"];
+    return <g className="consumption-chain-annotation" aria-label={`${geometry.chain.label} starts with ${geometry.members[0].label}, which is eaten by ${geometry.members[1].label}, which is eaten by ${geometry.members[2].label}, which is eaten by ${geometry.members[3].label}`}>
+      <text x="500" y="78" textAnchor="middle" fontSize="31" fontWeight="950" fill="#334f4c">{(geometry.chain.label ?? geometry.chain.kind).toUpperCase()}</text>
+      <g data-visual-cue="eaten-to-eater-arrows">{centers.slice(0, -1).map((cx, index) => <g key={cx}><path className="chain-energy-flow" d={`M${cx + 86} 300 C${cx + 116} 270 ${centers[index + 1] - 116} 270 ${centers[index + 1] - 86} 300`} fill="none" stroke="#4a8176" strokeWidth="9" strokeDasharray="15 11" strokeLinecap="round" /><path d={`M${centers[index + 1] - 111} 278 L${centers[index + 1] - 84} 300 L${centers[index + 1] - 111} 322`} fill="none" stroke="#4a8176" strokeWidth="8" strokeLinejoin="round" /></g>)}</g>
+      {geometry.members.map((member, index) => <g key={member.id} data-visual-cue={cueIds[index]}>
+        <path d={`M${centers[index] - 82} 225 Q${centers[index]} 178 ${centers[index] + 82} 225 L${centers[index] + 72} 386 Q${centers[index]} 430 ${centers[index] - 72} 386 Z`} fill={fills[index]} stroke="#405c59" strokeWidth="7" strokeLinejoin="round" />
+        {index === 0 ? <g><path d={`M${centers[index]} 340 Q${centers[index] - 8} 288 ${centers[index] - 48} 258 Q${centers[index] - 45} 315 ${centers[index]} 327 Q${centers[index] + 14} 275 ${centers[index] + 53} 258 Q${centers[index] + 48} 316 ${centers[index]} 340`} fill="#75a878" stroke="#405c59" strokeWidth="6" /><path d={`M${centers[index]} 350 V270`} stroke="#405c59" strokeWidth="6" strokeLinecap="round" /></g> : <g className="chain-creature" style={{ animationDelay: `${index * 160}ms` }}><ellipse cx={centers[index]} cy="303" rx={38 + index * 6} ry={30 + index * 3} fill="#fbf7ed" stroke="#405c59" strokeWidth="6" /><circle cx={centers[index] + 16 + index * 3} cy="294" r="5" fill="#405c59" /><path d={`M${centers[index] - 30} 332 q-18 20 -28 4 M${centers[index] + 24} 331 q18 20 30 2`} fill="none" stroke="#405c59" strokeWidth="6" strokeLinecap="round" /></g>}
+        <rect x={centers[index] - 88} y="445" width="176" height="64" rx="22" fill="#fbf7ed" stroke="#635f55" strokeWidth="5" /><text x={centers[index]} y="485" textAnchor="middle" fontSize="23" fontWeight="950" fill="#364f4c">{member.label}</text>
+      </g>)}
+      <g data-visual-cue="energy-flow-direction"><text x="500" y="562" textAnchor="middle" fontSize="22" fontWeight="900" fill="#79516a">FOOD → EATER · ENERGY MOVES THIS WAY</text>{centers.slice(0, -1).map((cx, index) => <circle key={cx} className="energy-particle" style={{ animationDelay: `${index * 260}ms` }} cx={cx + 105} cy="283" r="9" fill="#f0b94f" />)}</g>
+    </g>;
+  }
   if (isDoublingGrowthRelation(relation)) {
     const growthRelations = relations.filter(isDoublingGrowthRelation);
     if (relation.id !== growthRelations.find(({ kind }) => kind === "growthStartsAt")?.id) return null;
@@ -913,7 +932,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service", "compute-unit", "memory-unit", "doubling-subject", "doubling-one", "doubling-two", "doubling-four", "doubling-eight"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service", "compute-unit", "memory-unit", "doubling-subject", "doubling-one", "doubling-two", "doubling-four", "doubling-eight", "chain-title", "chain-source", "chain-consumer-1", "chain-consumer-2", "chain-consumer-3"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

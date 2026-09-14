@@ -36,6 +36,7 @@ import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "./
 import { fifoGeometry, isFifoRelation } from "./fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "./processorMemoryLink";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "./doublingGrowth";
+import { consumptionChainGeometry, isConsumptionChainRelation } from "./consumptionChain";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -266,6 +267,8 @@ export function validateDoodleScript(
   if (processorMemoryRelations.length && !processorMemoryGeometry(processorMemoryRelations, projected.entities)) issues.push({ gate: "semantic", message: "Fast data access needs one processing unit, one distinct nearby memory unit, and a shared bidirectional data link." });
   const doublingRelations = (projected.relations ?? []).filter(isDoublingGrowthRelation);
   if (doublingRelations.length && !doublingGrowthGeometry(doublingRelations, projected.entities)) issues.push({ gate: "semantic", message: "Doubling growth needs one subject and the distinct ordered stages 1, 2, 4, and 8." });
+  const consumptionRelations = (projected.relations ?? []).filter(isConsumptionChainRelation);
+  if (consumptionRelations.length && !consumptionChainGeometry(consumptionRelations, projected.entities)) issues.push({ gate: "semantic", message: "A consumption chain needs one title and four distinct members ordered from food to eater." });
   for (const entity of projected.entities) {
     if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });

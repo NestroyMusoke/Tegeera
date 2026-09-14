@@ -20,9 +20,9 @@ const relation = (kind: SceneRelation["kind"], overrides: Partial<SceneRelation>
 
 describe("versioned relation registry", () => {
   it("covers every schema relationship with a validated semantic contract", () => {
-    expect(RELATION_REGISTRY_VERSION).toBe("2.23.0");
+    expect(RELATION_REGISTRY_VERSION).toBe("2.24.0");
     expect(relationRegistry.map(({ kind }) => kind).sort()).toEqual([
-      "accelerates", "accessedAt", "actsOn", "appliedTo", "away", "before", "calls", "carries", "causes", "checksCondition", "contacts", "contains", "containsCells", "doublesTo", "evaporatesTo", "exchangesWith", "fallsFrom", "fallsTo", "fifoBefore", "findsTarget", "flowsFrom", "flowsInto", "flowsTo", "growthStartsAt", "handover", "hasFirstNode", "illuminates", "infiltrates", "keptNear", "measures", "narrowsTo", "opposes", "owns", "partOf", "pointsNext", "pumpsTo", "pushesToward", "queuedFor", "reflectsFrom", "resultsIn", "returnsControlTo", "returnsTo", "risesTo", "routineBefore", "servedBy", "shares", "startsIndexAt", "startsSearchWith", "storesValues", "subtracts", "sumsTo", "takesFalsePath", "takesTruePath", "toward", "transformsTo", "travelsTo", "trianglePartOf", "visualAction"
+      "accelerates", "accessedAt", "actsOn", "appliedTo", "away", "before", "calls", "carries", "causes", "chainStartsWith", "checksCondition", "contacts", "contains", "containsCells", "doublesTo", "eatenBy", "evaporatesTo", "exchangesWith", "fallsFrom", "fallsTo", "fifoBefore", "findsTarget", "flowsFrom", "flowsInto", "flowsTo", "growthStartsAt", "handover", "hasFirstNode", "illuminates", "infiltrates", "keptNear", "measures", "narrowsTo", "opposes", "owns", "partOf", "pointsNext", "pumpsTo", "pushesToward", "queuedFor", "reflectsFrom", "resultsIn", "returnsControlTo", "returnsTo", "risesTo", "routineBefore", "servedBy", "shares", "startsIndexAt", "startsSearchWith", "storesValues", "subtracts", "sumsTo", "takesFalsePath", "takesTruePath", "toward", "transformsTo", "travelsTo", "trianglePartOf", "visualAction"
     ]);
     expect(validateRelationRegistry()).toEqual([]);
   });

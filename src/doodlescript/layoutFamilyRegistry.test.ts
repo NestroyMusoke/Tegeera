@@ -9,9 +9,9 @@ import {
 
 describe("versioned layout family registry", () => {
   it("declares every active visual grammar once", () => {
-    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.23.0");
+    expect(LAYOUT_FAMILY_REGISTRY_VERSION).toBe("2.24.0");
     expect(layoutFamilyRegistry.map(({ id }) => id).sort()).toEqual([
-      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "condition-flow", "contact", "convergent-plates", "doubling-growth", "event-graph", "fifo-queue", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "indexed-row", "labelled-container", "landscape-flow", "lifecycle-sequence", "lifo-stack", "linked-chain", "ordered-routine", "ownership", "part-whole-flow", "processor-memory-link", "progressive-narrowing", "queue", "reflection-ray", "triangle-angle-sum", "visual-flow", "water-cycle-loop"
+      "arrow", "call-return-flow", "changing-speed-motion", "circulation-loop", "condition-flow", "consumption-chain", "contact", "convergent-plates", "doubling-growth", "event-graph", "fifo-queue", "force-diagram", "fraction-subtraction", "geometric-construction", "group", "indexed-row", "labelled-container", "landscape-flow", "lifecycle-sequence", "lifo-stack", "linked-chain", "ordered-routine", "ownership", "part-whole-flow", "processor-memory-link", "progressive-narrowing", "queue", "reflection-ray", "triangle-angle-sum", "visual-flow", "water-cycle-loop"
     ]);
     expect(validateLayoutFamilyRegistry()).toEqual([]);
   });
@@ -44,6 +44,7 @@ describe("versioned layout family registry", () => {
     expect(layoutFamilyFor("fifo-queue")).toMatchObject({ topology: "fifo-lane", readingDirection: "left-to-right", maximumVisibleNodes: 4 });
     expect(layoutFamilyFor("processor-memory-link")).toMatchObject({ topology: "nearby-bus", readingDirection: "bidirectional", maximumVisibleNodes: 2 });
     expect(layoutFamilyFor("doubling-growth")).toMatchObject({ topology: "branching-growth", readingDirection: "left-to-right", maximumVisibleNodes: 5 });
+    expect(layoutFamilyFor("consumption-chain")).toMatchObject({ topology: "directed-consumption-chain", readingDirection: "left-to-right", maximumVisibleNodes: 5 });
     expect(layoutFamilySupportsRelation("contact", "performance")).toBe(true);
     expect(layoutFamilySupportsRelation("contact", "event")).toBe(false);
   });

@@ -33,6 +33,7 @@ import { planProgressiveNarrowing } from "./progressiveNarrowing";
 import { planFifoQueue } from "./fifoQueue";
 import { planProcessorMemoryLink } from "./processorMemoryLink";
 import { planDoublingGrowth } from "./doublingGrowth";
+import { planConsumptionChain } from "./consumptionChain";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -76,7 +77,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0", "2.21.0", "2.22.0", "2.23.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0", "2.21.0", "2.22.0", "2.23.0", "2.24.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -580,6 +581,26 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "doublesTo", sourceIds: [twoId], targetIds: [fourId] } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "doublesTo", sourceIds: [fourId], targetIds: [eightId] } });
         focus([subjectId], [oneId, twoId, fourId, eightId]); continue;
+      }
+      const consumptionChain = frame.consumptionChains[0];
+      if (consumptionChain?.construction === "consumption-chain") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const before = new Set(working.entities.map(({ id }) => id));
+        const chainId = eventNode(mentionText(consumptionChain.chainMentionId), "chain-title", true, true);
+        const sourceId = eventNode(mentionText(consumptionChain.sourceMentionId), "chain-source", true, true);
+        const firstId = eventNode(mentionText(consumptionChain.firstMentionId), "chain-consumer-1", true, true);
+        const secondId = eventNode(mentionText(consumptionChain.secondMentionId), "chain-consumer-2", true, true);
+        const thirdId = eventNode(mentionText(consumptionChain.thirdMentionId), "chain-consumer-3", true, true);
+        const ids = { chainId, sourceId, firstId, secondId, thirdId };
+        if (new Set(Object.values(ids)).size !== 5) throw new Clarification("A consumption chain needs a title and four distinct members.", "conflicting-scene");
+        const moves = planConsumptionChain(working, ids, new Set(working.entities.filter(({ id }) => !before.has(id)).map(({ id }) => id)));
+        if (!moves) throw new Clarification("That consumption chain cannot fit readably.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "chainStartsWith", sourceIds: [chainId], targetIds: [sourceId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "eatenBy", sourceIds: [sourceId], targetIds: [firstId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "eatenBy", sourceIds: [firstId], targetIds: [secondId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "eatenBy", sourceIds: [secondId], targetIds: [thirdId] } });
+        focus([chainId], [sourceId, firstId, secondId, thirdId]); continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
       if (forceDiagram?.construction === "force-diagram") {

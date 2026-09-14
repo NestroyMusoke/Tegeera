@@ -27,7 +27,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("validates a unique, cross-domain first annotation batch", () => {
     const parsed = independentGoldCorpusSchema.parse(gold);
-    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 2, 11, 12, 21, 22, 24, 28, 31, 32, 41, 42, 3, 4, 13, 23, 25, 29, 26, 27, 30, 33, 44, 51, 53, 56, 60]);
+    expect(parsed.cases.map(({ id }) => id)).toEqual([1, 2, 11, 12, 21, 22, 24, 28, 31, 32, 41, 42, 3, 4, 6, 13, 23, 25, 29, 26, 27, 30, 33, 44, 51, 53, 56, 60]);
     expect(new Set(parsed.cases.map(({ id }) => teacherCases.find((item) => item.id === id)?.subject))).toEqual(new Set([
       "Biology", "Physics", "Computer Science", "Mathematics", "Geography",
       "Everyday / cross-cutting / deliberately ambiguous"
@@ -60,17 +60,17 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
-      1: observeCase(1), 2: observeCase(2), 3: observeCase(3), 4: observeCase(4), 11: observeCase(11), 12: observeCase(12), 13: observeCase(13), 21: observeCase(21), 22: observeCase(22), 23: observeCase(23), 24: observeCase(24), 25: observeCase(25), 26: observeCase(26), 27: observeCase(27), 28: observeCase(28), 29: observeCase(29), 30: observeCase(30), 31: observeCase(31), 32: observeCase(32), 33: observeCase(33), 41: observeCase(41), 42: observeCase(42), 44: observeCase(44), 51: observeCase(51)
+      1: observeCase(1), 2: observeCase(2), 3: observeCase(3), 4: observeCase(4), 6: observeCase(6), 11: observeCase(11), 12: observeCase(12), 13: observeCase(13), 21: observeCase(21), 22: observeCase(22), 23: observeCase(23), 24: observeCase(24), 25: observeCase(25), 26: observeCase(26), 27: observeCase(27), 28: observeCase(28), 29: observeCase(29), 30: observeCase(30), 31: observeCase(31), 32: observeCase(32), 33: observeCase(33), 41: observeCase(41), 42: observeCase(42), 44: observeCase(44), 51: observeCase(51)
     });
-    expect(result.total).toBe(27);
-    expect(result.results).toHaveLength(27);
+    expect(result.total).toBe(28);
+    expect(result.results).toHaveLength(28);
     expect(result.passed).toBeLessThan(result.total);
     expect(result.results.find(({ id }) => id === 1)).toMatchObject({
       passed: false, falseConfident: false, automatedReady: true,
       failures: ["human visual review pending"]
     });
     expect(result.passed).toBe(3);
-    expect(result.automatedReady).toBe(27);
+    expect(result.automatedReady).toBe(28);
     expect(result.falseConfident).toBe(0);
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
@@ -113,6 +113,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it.each([
     [4, "doubling-growth", ["single-origin", "two-offspring", "four-offspring", "eight-offspring", "doubling-branches", "exponential-counts"]],
+    [6, "consumption-chain", ["resource-source", "primary-consumer", "secondary-consumer", "top-consumer", "eaten-to-eater-arrows", "energy-flow-direction"]],
     [23, "lifo-stack", ["vertical-stack", "top-marker", "push-at-top", "pop-at-top"]],
     [24, "condition-flow", ["repeated-step", "condition-diamond", "loop-back-arrow", "false-exit-path"]],
     [25, "indexed-row", ["indexed-box-row", "cell-values", "zero-based-indices", "left-to-right-indexing"]],

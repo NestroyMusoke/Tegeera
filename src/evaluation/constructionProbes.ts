@@ -146,8 +146,21 @@ const doublingGrowthProbes: ConstructionProbe[] = [
   id: `doubling-${index}`, text: `In ${subject}, the ${quantity} doubles from one to two to four to eight.`, layout: "doubling-growth"
 }));
 
+const consumptionChainProbes: ConstructionProbe[] = [
+  ["grass", "grasshopper", "frog", "snake"],
+  ["algae", "zooplankton", "small fish", "large fish"],
+  ["grain", "mouse", "owl", "eagle"],
+  ["leaf", "caterpillar", "bird", "hawk"],
+  ["nectar", "insect", "frog", "heron"],
+  ["plankton", "krill", "penguin", "seal"],
+  ["seed", "beetle", "lizard", "falcon"],
+  ["berry", "small bird", "snake", "eagle"]
+].map(([source, first, second, third], index) => ({
+  id: `consumption-${index}`, text: `${source} is eaten by ${first}, which is eaten by ${second}, which is eaten by ${third}.`, layout: "consumption-chain"
+}));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes, ...fifoProbes, ...processorMemoryProbes, ...doublingGrowthProbes
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes, ...fifoProbes, ...processorMemoryProbes, ...doublingGrowthProbes, ...consumptionChainProbes
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -192,5 +205,9 @@ export const unsafeConstructionNearMisses = [
   "A population grows quickly.",
   "A population doubles from one to two.",
   "A population might double from one to two to four to eight.",
-  "A population does not double from one to two to four to eight."
+  "A population does not double from one to two to four to eight.",
+  "Grass is eaten by grasshopper.",
+  "Grass is eaten by grasshopper, which is eaten by frog.",
+  "Grass might be eaten by grasshopper, which is eaten by frog, which is eaten by snake.",
+  "Grass is not eaten by grasshopper, which is eaten by frog, which is eaten by snake."
 ] as const;

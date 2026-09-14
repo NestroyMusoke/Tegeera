@@ -196,8 +196,8 @@ motion understanding.
 An independent 60-statement teacher corpus lives at
 [`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
 It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present observational baseline draws 24/60, holds the scene for 1/60
-non-visual utterance, and asks for clarification on 35/60. Those numbers measure
+grammar. The present observational baseline draws 25/60, holds the scene for 1/60
+non-visual utterance, and asks for clarification on 34/60. Those numbers measure
 coverage, not semantic accuracy: each accepted graph still
 requires comparison with the separately written intended visual.
 
@@ -210,7 +210,7 @@ construction. The expanded gold batch also has automated evidence for circulatio
 force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
 geometric-construction, landscape-flow, water-cycle-loop, lifecycle-sequence,
 reflection-ray, lifo-stack, triangle-angle-sum, convergent-plates, ordered-routine, and
-indexed-row, linked-chain, shared condition-flow, progressive narrowing, analogy-aware FIFO queues, processor-memory links, and doubling growth. All 27 gold cases are automated-ready. Drawing cases remain
+indexed-row, linked-chain, shared condition-flow, progressive narrowing, analogy-aware FIFO queues, processor-memory links, doubling growth, and directed consumption chains. All 28 gold cases are automated-ready. Drawing cases remain
 pending until a reviewer accepts the actual doodles.
 Validation can prove script safety; it cannot substitute for semantic or visual completeness.
 
@@ -253,21 +253,25 @@ The doubling-growth grammar preserves an open subject plus the distinct 1, 2, 4,
 stages. Its procedural drawing increases the visible population at every step, connects
 successive stages with split paths, and labels the ×2 rule instead of merely printing a
 number sequence.
+The consumption-chain grammar resolves repeated references while retaining a separate
+chain identity and four open-vocabulary members. Its semantic arrows run from food to
+eater, and the specialist drawing makes that energy direction explicit with animated
+flow, distinct trophic positions, readable labels, and a complete static reduced-motion view.
 
-A generated construction-generalization probe now exercises 134 deterministic paraphrase
+A generated construction-generalization probe now exercises 142 deterministic paraphrase
 combinations across stack, triangle, plate-convergence, ordered-routine, reflection, lifecycle,
-indexed-row, linked-chain, condition-flow, progressive-narrowing, FIFO, processor-memory, and doubling-growth grammars. It also checks 42 incomplete, negated, uncertain, or structurally wrong
+indexed-row, linked-chain, condition-flow, progressive-narrowing, FIFO, processor-memory, doubling-growth, and consumption-chain grammars. It also checks 46 incomplete, negated, uncertain, or structurally wrong
 near-misses. Every accepted probe must produce valid typed relations, the expected specialist
 layout, deterministic output, and real component markup without generic-object leakage; every
 near-miss must clarify. This is development conformance evidence, not a hidden classroom
 accuracy score. The production build is split into local React, schema, and application chunks,
 and `npm run build` enforces a 500 KiB maximum for every JavaScript chunk.
 
-The thirteen newer families are complemented by 136 generated variations across the ten
+The fourteen newer families are complemented by 136 generated variations across the ten
 foundational specialist families, with 19 incomplete, unsafe, or wrong-domain near-misses.
-Together, all twenty-three families contribute 270 supported variations and 61 near-misses.
+Together, all twenty-four families contribute 278 supported variations and 65 near-misses.
 
-The combined 270-input workload drives a warmed local SVG-ready performance envelope.
+The combined 278-input workload drives a warmed local SVG-ready performance envelope.
 It times interpretation, validation, immutable scene application, and full SVG markup
 serialization separately, with coarse anti-regression budgets that fail the test suite.
 The in-app performance panel continues through real browser commit and paint, retains a

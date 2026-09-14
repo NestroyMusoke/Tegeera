@@ -272,6 +272,28 @@
       }
     },
     {
+      "id": 6,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "consumption-chain",
+        "concepts": [
+          { "key": "chain", "labels": ["food chain"] },
+          { "key": "grass", "labels": ["grass"] },
+          { "key": "grasshopper", "labels": ["grasshopper"] },
+          { "key": "frog", "labels": ["frog"] },
+          { "key": "snake", "labels": ["snake"] }
+        ],
+        "relations": [
+          { "predicate": "chainStartsWith", "source": "chain", "target": "grass" },
+          { "predicate": "eatenBy", "source": "grass", "target": "grasshopper" },
+          { "predicate": "eatenBy", "source": "grasshopper", "target": "frog" },
+          { "predicate": "eatenBy", "source": "frog", "target": "snake" }
+        ],
+        "visualCues": ["resource-source", "primary-consumer", "secondary-consumer", "top-consumer", "eaten-to-eater-arrows", "energy-flow-direction"]
+      }
+    },
+    {
       "id": 13,
       "expected": {
         "intent": "draw",
