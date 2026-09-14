@@ -30,6 +30,7 @@ import { isLinkedChainRelation, linkedChainGeometry } from "../doodlescript/link
 import { conditionFlowGeometry, isConditionFlowRelation } from "../doodlescript/conditionFlow";
 import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "../doodlescript/progressiveNarrowing";
 import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
+import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -186,6 +187,19 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isProcessorMemoryRelation(relation)) {
+    const dataRelations = relations.filter(isProcessorMemoryRelation);
+    if (relation.id !== dataRelations.find(({ kind }) => kind === "exchangesWith")?.id) return null;
+    const geometry = processorMemoryGeometry(dataRelations, entities); if (!geometry) return null;
+    return <g className="processor-memory-annotation" aria-label={`${geometry.processor.label} exchanges data both ways with nearby ${geometry.memory.label} for fast access`}>
+      <text x="500" y="92" textAnchor="middle" fontSize="31" fontWeight="950" fill="#334f4c">FAST DATA ACCESS</text>
+      <g data-visual-cue="processor-block"><rect x="150" y="205" width="245" height="230" rx="32" fill="#b9ded2" stroke="#405c59" strokeWidth="8" /><rect x="205" y="260" width="135" height="120" rx="18" fill="#f8f3e7" stroke="#49776f" strokeWidth="6" />{[190, 230, 270, 310, 350].map((y) => <g key={y}><path d={`M125 ${y} H150 M395 ${y} H420`} stroke="#405c59" strokeWidth="7" /></g>)}<text x="272" y="330" textAnchor="middle" fontSize="30" fontWeight="950" fill="#31534e">{geometry.processor.label}</text></g>
+      <g data-visual-cue="memory-block"><rect x="650" y="205" width="210" height="230" rx="26" fill="#c8d8ef" stroke="#405c59" strokeWidth="8" />{[245, 300, 355].map((y, index) => <g key={y}><rect x="685" y={y} width="140" height="38" rx="8" fill={index === 1 ? "#f2cf91" : "#f8f3e7"} stroke="#52708b" strokeWidth="4" /><circle cx="800" cy={y + 19} r="5" fill="#52708b" /></g>)}<text x="755" y="475" textAnchor="middle" fontSize="27" fontWeight="950" fill="#3d5269">{geometry.memory.label}</text></g>
+      <g data-visual-cue="bidirectional-data-bus"><path d="M420 285 H625 M625 350 H420" fill="none" stroke="#4b786f" strokeWidth="9" strokeLinecap="round" /><path d="M600 266 L628 285 L600 304 M445 331 L417 350 L445 369" fill="none" stroke="#4b786f" strokeWidth="8" strokeLinejoin="round" /><text x="522" y="267" textAnchor="middle" fontSize="20" fontWeight="900" fill="#3f6d65">DATA</text></g>
+      <g data-visual-cue="speed-pulses">{[0, 1, 2].map((index) => <circle key={index} className="data-pulse" style={{ animationDelay: `${index * 180}ms` }} cx={462 + index * 58} cy="285" r="10" fill="#f0b94f" />)}</g>
+      <g data-visual-cue="nearby-spacing"><path d="M395 510 V535 H650 V510" fill="none" stroke="#94617a" strokeWidth="6" strokeLinecap="round" /><text x="522" y="570" textAnchor="middle" fontSize="22" fontWeight="950" fill="#7d4e68">KEPT NEARBY</text></g>
+    </g>;
+  }
   if (isFifoRelation(relation)) {
     const fifoRelations = relations.filter(isFifoRelation);
     if (relation.id !== fifoRelations.find(({ kind }) => kind === "servedBy")?.id) return null;
@@ -876,7 +890,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service", "compute-unit", "memory-unit"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

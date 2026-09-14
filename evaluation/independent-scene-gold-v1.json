@@ -365,6 +365,23 @@
       }
     },
     {
+      "id": 30,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "processor-memory-link",
+        "concepts": [
+          { "key": "processor", "labels": ["cpu", "processor"] },
+          { "key": "memory", "labels": ["memory"] }
+        ],
+        "relations": [
+          { "predicate": "exchangesWith", "source": "processor", "target": "memory" },
+          { "predicate": "keptNear", "source": "processor", "target": "memory" }
+        ],
+        "visualCues": ["processor-block", "memory-block", "bidirectional-data-bus", "speed-pulses", "nearby-spacing"]
+      }
+    },
+    {
       "id": 33,
       "expected": {
         "intent": "draw",

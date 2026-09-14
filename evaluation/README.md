@@ -39,7 +39,7 @@ figures.
 
 Current automated evidence covers cases 1 (`part-whole-flow`), 2 (`circulation-loop`),
 11 (`force-diagram`), 12 (`changing-speed-motion`), 13 (`reflection-ray`), 21 (`labelled-container`), 22
-(`call-return-flow`), 23 (`lifo-stack`), 24 and 28 (`condition-flow`), 25 (`indexed-row`), 26 (`progressive-narrowing`), 27 (`fifo-queue`), 29 (`linked-chain`), 31 (`geometric-construction`), 32
+(`call-return-flow`), 23 (`lifo-stack`), 24 and 28 (`condition-flow`), 25 (`indexed-row`), 26 (`progressive-narrowing`), 27 (`fifo-queue`), 29 (`linked-chain`), 30 (`processor-memory-link`), 31 (`geometric-construction`), 32
 (`fraction-subtraction`), 33 (`triangle-angle-sum`), 41 (`landscape-flow`), 42
 (`water-cycle-loop`), 44 (`convergent-plates`), and 51 (`ordered-routine`). All remain human-review
 pending, so the strict drawing pass count is still zero. This separation is intentional:
@@ -48,7 +48,7 @@ self-certified by the code that produced it.
 
 Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
 case 60 passes strictly with a validated no-op scene hold. Therefore the complete frozen
-batch is 3/25 strict, 25/25 automated-ready, and zero false-confident. All twenty-two implemented
+batch is 3/26 strict, 26/26 automated-ready, and zero false-confident. All twenty-three implemented
 drawings remain behind the explicit human-review gate. No visual approval has
 been fabricated.
 
@@ -74,7 +74,7 @@ values, visible initial and removed portions, and a mathematically validated sim
 remainder. Case 42 is now automated-ready through five distinct hydrology identities,
 three typed relations, precipitation and infiltration cues, visible underground water,
 and an evaporation return that visibly closes the loop. The frozen batch is therefore
-3/25 strict, 25/25 automated-ready, and zero false-confident; all twenty-two implemented
+3/26 strict, 26/26 automated-ready, and zero false-confident; all twenty-three implemented
 drawing cases still require real human visual approval.
 
 The third development batch freezes cases 3, 13, 23, 33, 44, and 51 across lifecycle,
@@ -92,9 +92,13 @@ semantic graph retains three ordered entry identities and one service endpoint, 
 the renderer intentionally discards the literal bank-line scenery. Its review evidence
 requires an abstract box lane, front/rear markers, both enqueue and dequeue directions,
 and an explicit first-served cue.
+Case 30 is automated-ready through `processor-memory-link`. The scorer requires separate
+processing and memory identities, bidirectional data exchange, a proximity constraint,
+and five visible cues; literal brain imagery is explicitly absent from the specialist
+renderer.
 
 `visual-review-protocol.md` defines the human-only approval criteria. Running
-`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a twenty-two-scene,
+`node scripts/visual-check.mjs` now generates `human-visual-review.html`, a twenty-three-scene,
 390-pixel review station with explicit approve/reject decisions, required rejection
 notes, device metadata, reduced-motion confirmation, and downloadable JSON evidence.
 Every export carries a content-derived fixture revision; it never changes gold results
@@ -102,21 +106,21 @@ automatically.
 
 ## Generated construction-generalization probe
 
-`src/evaluation/constructionGeneralization.test.tsx` generates 118 accepted paraphrase
+`src/evaluation/constructionGeneralization.test.tsx` generates 126 accepted paraphrase
 combinations from independent structural slots rather than copying the frozen corpus
 sentences. It spans ten reusable construction families: LIFO stack, triangle angle sum,
 convergent plates, ordered routine, reflected light, lifecycle sequence, indexed rows, linked chains,
-condition flows, progressive narrowing, and FIFO queues. For every
+condition flows, progressive narrowing, FIFO queues, and processor-memory links. For every
 probe it requires deterministic interpretation, valid DoodleScript, typed relations whose
 registry selects the expected specialist layout, and real rendered markup with no generic
 object fallback.
 
-Thirty-four paired near-misses cover missing semantic roles, wrong domains, negation,
+Thirty-eight paired near-misses cover missing semantic roles, wrong domains, negation,
 uncertainty, duplicate routine stages, and incomplete sequences. They must all clarify.
-The resulting 118/118 accepted and 34/34 safely clarified checkpoint is a broad development
+The resulting 126/126 accepted and 38/38 safely clarified checkpoint is a broad development
 regression test. It is not a hidden, independent, or real-teacher accuracy measurement and
-does not replace the gold result of 3/25 strict, 25/25 automated-ready, and zero
-false-confident. Human visual approval remains outstanding for all twenty-two drawings.
+does not replace the gold result of 3/26 strict, 26/26 automated-ready, and zero
+false-confident. Human visual approval remains outstanding for all twenty-three drawings.
 
 ## Foundational construction-generalization probe
 
@@ -129,14 +133,14 @@ fixed two real defects: self-referential container content and collapsed identit
 removed fraction and remainder have the same numeric value.
 
 This remains generated development conformance, not a hidden classroom split. Combined
-with the newer-family matrix, the checkpoint covers 254 supported variations and 53 safe
-near-misses across all twenty-one specialist layouts.
+with the newer-family matrix, the checkpoint covers 262 supported variations and 57 safe
+near-misses across all twenty-two specialist layouts.
 
 ## Local render-time evidence
 
-The combined generated 254-input workload drives `runtimeEnvelope.test.tsx`, so performance
+The combined generated 262-input workload drives `runtimeEnvelope.test.tsx`, so performance
 cannot be measured against easier phrases than semantic conformance. After warming all
-paths, it records 762 samples and separates interpretation, validation, immutable scene
+paths, it records 786 samples and separates interpretation, validation, immutable scene
 application, SVG serialization, and total local-ready time. The suite fails at coarse
 anti-regression limits: 75 ms decision p95, 100 ms SVG-serialization p95, 150 ms local-
 ready p95, or 500 ms for any single local-ready sample.

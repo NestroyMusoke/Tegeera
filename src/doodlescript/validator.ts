@@ -34,6 +34,7 @@ import { isLinkedChainRelation, linkedChainGeometry } from "./linkedChain";
 import { conditionFlowGeometry, isConditionFlowRelation } from "./conditionFlow";
 import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "./progressiveNarrowing";
 import { fifoGeometry, isFifoRelation } from "./fifoQueue";
+import { isProcessorMemoryRelation, processorMemoryGeometry } from "./processorMemoryLink";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -260,6 +261,8 @@ export function validateDoodleScript(
   if (narrowingRelations.length && !progressiveNarrowingGeometry(narrowingRelations, projected.entities)) issues.push({ gate: "semantic", message: "Progressive narrowing needs one full candidate range, one smaller range, and one final target in order." });
   const fifoRelations = (projected.relations ?? []).filter(isFifoRelation);
   if (fifoRelations.length && !fifoGeometry(fifoRelations, projected.entities)) issues.push({ gate: "semantic", message: "A FIFO queue needs exactly three ordered entries and one service endpoint, with the earliest entry at the front." });
+  const processorMemoryRelations = (projected.relations ?? []).filter(isProcessorMemoryRelation);
+  if (processorMemoryRelations.length && !processorMemoryGeometry(processorMemoryRelations, projected.entities)) issues.push({ gate: "semantic", message: "Fast data access needs one processing unit, one distinct nearby memory unit, and a shared bidirectional data link." });
   for (const entity of projected.entities) {
     if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });

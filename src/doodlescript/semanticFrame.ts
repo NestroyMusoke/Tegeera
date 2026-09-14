@@ -23,6 +23,7 @@ import { matchLinkedChain } from "./linkedChain";
 import { matchConditionFlow } from "./conditionFlow";
 import { matchProgressiveNarrowing } from "./progressiveNarrowing";
 import { matchFifoQueue } from "./fifoQueue";
+import { matchProcessorMemoryLink } from "./processorMemoryLink";
 
 export type SemanticIntent = "unresolved" | "describe" | "add" | "remove" | "update" | "reorder" | "compare" | "hold";
 
@@ -175,6 +176,7 @@ export interface SemanticLinkedChainMention { construction: "linked-chain"; coll
 export interface SemanticConditionFlowMention { construction: "condition-flow"; mode: "branch" | "loop"; entryMentionId: string; conditionMentionId: string; trueMentionId: string; falseMentionId: string }
 export interface SemanticProgressiveNarrowingMention { construction: "progressive-narrowing"; processMentionId: string; initialMentionId: string; reducedMentionId: string; foundMentionId: string }
 export interface SemanticFifoQueueMention { construction: "fifo-queue"; queueMentionId: string; serviceMentionId: string; firstMentionId: string; secondMentionId: string; thirdMentionId: string }
+export interface SemanticProcessorMemoryMention { construction: "processor-memory-link"; processorMentionId: string; memoryMentionId: string }
 
 export interface SemanticQuantity {
   mentionId: string;
@@ -187,7 +189,7 @@ export interface SemanticReference {
   resolvedEntityIds: string[];
 }
 
-export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure" | "conditional-control" | "progressive-reduction" | "fifo-order";
+export type SemanticCandidateFamily = "human-action" | "relationship" | "visual-action" | "composition" | "mechanical" | "containment" | "geometry" | "landscape" | "circulation" | "kinematics" | "control-flow" | "arithmetic" | "hydrology" | "lifecycle" | "optics" | "data-structure" | "angle-sum" | "tectonics" | "routine" | "indexed-collection" | "linked-structure" | "conditional-control" | "progressive-reduction" | "fifo-order" | "data-access";
 
 export interface SemanticMeaningCandidate {
   family: SemanticCandidateFamily;
@@ -231,6 +233,7 @@ export interface SemanticFrame {
   conditionFlows: SemanticConditionFlowMention[];
   progressiveNarrowings: SemanticProgressiveNarrowingMention[];
   fifoQueues: SemanticFifoQueueMention[];
+  processorMemoryLinks: SemanticProcessorMemoryMention[];
   safetyIntent?: SafetyIntent;
   quantities: SemanticQuantity[];
   references: SemanticReference[];
@@ -365,6 +368,7 @@ function populateMeaning(frame: SemanticFrame): void {
   const conditionFlow = matchConditionFlow(frame.normalizedText);
   const progressiveNarrowing = matchProgressiveNarrowing(frame.normalizedText);
   const fifoQueue = matchFifoQueue(frame.normalizedText);
+  const processorMemoryLink = matchProcessorMemoryLink(frame.normalizedText);
   if (frame.discourse.negated || frame.discourse.uncertain || (frame.discourse.conditional && !forceDiagram && !callReturn && !fractionSubtraction && !lifecycleSequence && !reflectionRay && !conditionFlow)) return;
   const safetyIntent = classifySafetyIntent(frame.normalizedText);
   if (safetyIntent) {
@@ -539,6 +543,12 @@ function populateMeaning(frame: SemanticFrame): void {
     frame.intent = "describe";
     frame.fifoQueues.push({ construction: "fifo-queue", queueMentionId: addParticipant(frame, fifoQueue.queueText), serviceMentionId: addParticipant(frame, fifoQueue.serviceText), firstMentionId: addParticipant(frame, fifoQueue.firstText), secondMentionId: addParticipant(frame, fifoQueue.secondText), thirdMentionId: addParticipant(frame, fifoQueue.thirdText) });
     frame.meaningCandidates = [{ family: "fifo-order", predicate: "fifo-queue" }];
+    frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
+  }
+  if (processorMemoryLink) {
+    frame.intent = "describe";
+    frame.processorMemoryLinks.push({ construction: "processor-memory-link", processorMentionId: addParticipant(frame, processorMemoryLink.processorText), memoryMentionId: addParticipant(frame, processorMemoryLink.memoryText) });
+    frame.meaningCandidates = [{ family: "data-access", predicate: "processor-memory-link" }];
     frame.resolutionStatus = visualSlotsAreReadable(frame) ? "resolved" : "needs-clarification"; return;
   }
   frame.meaningCandidates = detectMeaningCandidates(frame.normalizedText);
@@ -730,6 +740,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
       conditionFlows: [],
       progressiveNarrowings: [],
       fifoQueues: [],
+      processorMemoryLinks: [],
       quantities: [],
       references: [],
       meaningCandidates: [],
@@ -743,7 +754,7 @@ export function analyzeTeacherInput(input: string): SemanticInput {
   };
 
   const wholeNormalized = normalizeTeacherClause(body.toLowerCase().replace(/^imagine\s+/, ""));
-  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized) || matchIndexedCollection(wholeNormalized) || matchLinkedChain(wholeNormalized) || matchFifoQueue(wholeNormalized)) {
+  if (matchChangingSpeedMotion(wholeNormalized) || matchCallReturnFlow(wholeNormalized) || matchFractionSubtraction(wholeNormalized) || matchLifecycleSequence(wholeNormalized) || matchReflectionRay(wholeNormalized) || matchOrderedRoutine(wholeNormalized) || matchIndexedCollection(wholeNormalized) || matchLinkedChain(wholeNormalized) || matchFifoQueue(wholeNormalized) || matchProcessorMemoryLink(wholeNormalized)) {
     addFrame(0, body.length);
     cursor = body.length;
   } else {

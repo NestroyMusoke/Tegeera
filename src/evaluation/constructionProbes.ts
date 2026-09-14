@@ -120,8 +120,21 @@ const fifoProbes: ConstructionProbe[] = [
   id: `fifo-${index}`, text: `In a ${queue}, the first ${item} ${arrival} is the first ${outcome}.`, layout: "fifo-queue"
 }));
 
+const processorMemoryProbes: ConstructionProbe[] = [
+  ["processor", "communicates with", "cache", "respond", "quickly"],
+  ["controller", "exchanges data with", "storage", "run", "fast"],
+  ["graphics unit", "passes data back and forth with", "video memory", "work", "quickly"],
+  ["compute unit", "communicates with", "local memory", "work", "fast"],
+  ["signal engine", "exchanges data with", "buffer", "respond", "quickly"],
+  ["network engine", "passes data back and forth with", "packet memory", "run", "fast"],
+  ["control unit", "communicates with", "register bank", "respond", "fast"],
+  ["render engine", "exchanges data with", "frame buffer", "work", "quickly"]
+].map(([processor, verb, memory, outcome, speed], index) => ({
+  id: `processor-memory-${index}`, text: `A ${processor} ${verb} nearby ${memory} to ${outcome} ${speed}.`, layout: "processor-memory-link"
+}));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes, ...fifoProbes
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes, ...fifoProbes, ...processorMemoryProbes
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -158,5 +171,9 @@ export const unsafeConstructionNearMisses = [
   "A queue contains several items.",
   "In a task queue, the last task in is the first processed.",
   "In a print queue, the first task might be the first processed.",
-  "In a message queue, the first item to arrive is not the first out."
+  "In a message queue, the first item to arrive is not the first out.",
+  "A processor has memory.",
+  "A processor communicates with cache.",
+  "A processor might communicate with nearby cache to respond quickly.",
+  "A processor does not communicate with nearby cache to respond quickly."
 ] as const;

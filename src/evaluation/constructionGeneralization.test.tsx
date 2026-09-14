@@ -10,10 +10,10 @@ import { acceptedConstructionProbes as accepted, unsafeConstructionNearMisses as
 
 describe("generated construction generalization probe", () => {
   it("covers a nontrivial Cartesian matrix outside production source", () => {
-    expect(accepted).toHaveLength(118);
+    expect(accepted).toHaveLength(126);
     expect(new Set(accepted.map(({ text }) => text)).size).toBe(accepted.length);
     expect(new Set(accepted.map(({ layout }) => layout))).toEqual(new Set([
-      "lifo-stack", "triangle-angle-sum", "convergent-plates", "ordered-routine", "reflection-ray", "lifecycle-sequence", "indexed-row", "linked-chain", "condition-flow", "progressive-narrowing", "fifo-queue"
+      "lifo-stack", "triangle-angle-sum", "convergent-plates", "ordered-routine", "reflection-ray", "lifecycle-sequence", "indexed-row", "linked-chain", "condition-flow", "progressive-narrowing", "fifo-queue", "processor-memory-link"
     ]));
   });
 
