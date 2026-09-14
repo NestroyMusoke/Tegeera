@@ -107,8 +107,21 @@ const narrowingProbes: ConstructionProbe[] = [
   ["range search", "number range", "chosen number", "cutting", "in"]
 ].map(([process, collection, target, verb, preposition], index) => ({ id: `narrowing-${index}`, text: `In a ${process}, you keep ${verb} the ${collection} ${preposition} half until you find the ${target}.`, layout: "progressive-narrowing" }));
 
+const fifoProbes: ConstructionProbe[] = [
+  ["print queue", "task", "in", "processed"],
+  ["message queue", "item", "to arrive", "out"],
+  ["request queue", "request", "in", "served"],
+  ["job queue", "entry", "to arrive", "processed"],
+  ["support queue", "request", "to arrive", "served"],
+  ["packet queue", "item", "in", "out"],
+  ["checkout queue", "entry", "in", "served"],
+  ["task queue", "task", "to arrive", "processed"]
+].map(([queue, item, arrival, outcome], index) => ({
+  id: `fifo-${index}`, text: `In a ${queue}, the first ${item} ${arrival} is the first ${outcome}.`, layout: "fifo-queue"
+}));
+
 export const acceptedConstructionProbes = [
-  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes
+  ...stackProbes, ...triangleProbes, ...plateProbes, ...routineProbes, ...reflectionProbes, ...lifecycleProbes, ...indexedProbes, ...linkedProbes, ...conditionBranches, ...conditionLoops, ...narrowingProbes, ...fifoProbes
 ] as const;
 
 export const unsafeConstructionNearMisses = [
@@ -141,5 +154,9 @@ export const unsafeConstructionNearMisses = [
   "A binary search uses a list.",
   "In a binary search, you keep cutting the list until you find the target.",
   "In a binary search, you might keep cutting the list in half until you find the target.",
-  "In a binary search, you do not keep cutting the list in half until you find the target."
+  "In a binary search, you do not keep cutting the list in half until you find the target.",
+  "A queue contains several items.",
+  "In a task queue, the last task in is the first processed.",
+  "In a print queue, the first task might be the first processed.",
+  "In a message queue, the first item to arrive is not the first out."
 ] as const;

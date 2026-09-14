@@ -30,6 +30,7 @@ import { planIndexedCollection } from "./indexedCollection";
 import { planLinkedChain } from "./linkedChain";
 import { planConditionFlow } from "./conditionFlow";
 import { planProgressiveNarrowing } from "./progressiveNarrowing";
+import { planFifoQueue } from "./fifoQueue";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -73,7 +74,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0", "2.21.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -517,6 +518,24 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "narrowsTo", sourceIds: [initialId], targetIds: [reducedId] } });
         append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "findsTarget", sourceIds: [reducedId], targetIds: [foundId] } });
         focus([processId, initialId], [reducedId, foundId]); continue;
+      }
+      const fifoQueue = frame.fifoQueues[0];
+      if (fifoQueue?.construction === "fifo-queue") {
+        const mentionText = (mentionId: string) => [...frame.entities, ...frame.references].find((mention) => mention.mentionId === mentionId)?.text ?? "";
+        const before = new Set(working.entities.map(({ id }) => id));
+        const firstId = eventNode(mentionText(fifoQueue.firstMentionId), "fifo-first", true);
+        const secondId = eventNode(mentionText(fifoQueue.secondMentionId), "fifo-second", true);
+        const thirdId = eventNode(mentionText(fifoQueue.thirdMentionId), "fifo-third", true);
+        const serviceId = eventNode(mentionText(fifoQueue.serviceMentionId), "fifo-service", true);
+        const ids = { firstId, secondId, thirdId, serviceId };
+        if (new Set(Object.values(ids)).size !== 4) throw new Clarification("A FIFO queue needs three distinct entries and one service endpoint.", "conflicting-scene");
+        const moves = planFifoQueue(working, ids, new Set(working.entities.filter(({ id }) => !before.has(id)).map(({ id }) => id)));
+        if (!moves) throw new Clarification("That FIFO queue cannot fit readably.", "layout-limit");
+        moves.forEach((move) => append({ action: "move", ...move }));
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "fifoBefore", sourceIds: [firstId], targetIds: [secondId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "fifoBefore", sourceIds: [secondId], targetIds: [thirdId] } });
+        append({ action: "relate", relation: { id: `relation-${scene.revision + 1}-${commands.length}`, kind: "servedBy", sourceIds: [firstId], targetIds: [serviceId] } });
+        focus([firstId, secondId, thirdId], [serviceId]); continue;
       }
       const forceDiagram = frame.forceDiagrams[0];
       if (forceDiagram?.construction === "force-diagram") {

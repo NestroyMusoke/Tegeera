@@ -345,6 +345,26 @@
       }
     },
     {
+      "id": 27,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "fifo-queue",
+        "concepts": [
+          { "key": "first", "labels": ["item 1"] },
+          { "key": "second", "labels": ["item 2"] },
+          { "key": "third", "labels": ["item 3"] },
+          { "key": "service", "labels": ["service"] }
+        ],
+        "relations": [
+          { "predicate": "fifoBefore", "source": "first", "target": "second" },
+          { "predicate": "fifoBefore", "source": "second", "target": "third" },
+          { "predicate": "servedBy", "source": "first", "target": "service" }
+        ],
+        "visualCues": ["fifo-box-lane", "rear-marker", "front-marker", "enqueue-arrow", "dequeue-arrow", "first-served-cue"]
+      }
+    },
+    {
       "id": 33,
       "expected": {
         "intent": "draw",

@@ -29,6 +29,7 @@ import { indexedCollectionGeometry, isIndexedCollectionRelation } from "../doodl
 import { isLinkedChainRelation, linkedChainGeometry } from "../doodlescript/linkedChain";
 import { conditionFlowGeometry, isConditionFlowRelation } from "../doodlescript/conditionFlow";
 import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "../doodlescript/progressiveNarrowing";
+import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -185,6 +186,24 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 }
 
 function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+  if (isFifoRelation(relation)) {
+    const fifoRelations = relations.filter(isFifoRelation);
+    if (relation.id !== fifoRelations.find(({ kind }) => kind === "servedBy")?.id) return null;
+    const geometry = fifoGeometry(fifoRelations, entities); if (!geometry) return null;
+    const boxes = [{ entity: geometry.third, x: 135, fill: "#c8d8ef" }, { entity: geometry.second, x: 350, fill: "#f2cf91" }, { entity: geometry.first, x: 565, fill: "#b9ded2" }];
+    return <g className="fifo-queue-annotation" aria-label={`First in, first out: ${geometry.first.label} is served first`}>
+      <text x="500" y="92" textAnchor="middle" fontSize="32" fontWeight="950" fill="#334f4c">FIRST IN, FIRST OUT</text>
+      <g data-visual-cue="fifo-box-lane">
+        <path d="M92 210 V405 H760 V210" fill="none" stroke="#405c59" strokeWidth="8" strokeLinecap="round" />
+        {boxes.map(({ entity, x, fill }) => <g key={entity.id}><rect x={x} y="245" width="170" height="120" rx="18" fill={fill} stroke="#405c59" strokeWidth="6" /><text x={x + 85} y="315" textAnchor="middle" fontSize="25" fontWeight="900" fill="#314744">{entity.label}</text></g>)}
+      </g>
+      <g data-visual-cue="rear-marker"><text x="100" y="450" textAnchor="middle" fontSize="21" fontWeight="950" fill="#75506a">REAR</text></g>
+      <g data-visual-cue="front-marker"><text x="744" y="450" textAnchor="middle" fontSize="21" fontWeight="950" fill="#3f766b">FRONT</text></g>
+      <g data-visual-cue="enqueue-arrow"><path className="fifo-flow" d="M28 305 H120" fill="none" stroke="#527dab" strokeWidth="9" strokeDasharray="14 10" strokeLinecap="round" /><path d="M98 286 L122 305 L98 324" fill="none" stroke="#527dab" strokeWidth="8" /></g>
+      <g data-visual-cue="dequeue-arrow"><path className="fifo-flow" d="M750 305 H835" fill="none" stroke="#43806f" strokeWidth="9" strokeDasharray="14 10" strokeLinecap="round" /><path d="M812 286 L838 305 L812 324" fill="none" stroke="#43806f" strokeWidth="8" /></g>
+      <g data-visual-cue="first-served-cue"><rect x="840" y="235" width="130" height="140" rx="28" fill="#e9b8c8" stroke="#664652" strokeWidth="7" /><path d="M870 282 h70 M870 310 h52" stroke="#8c5367" strokeWidth="8" strokeLinecap="round" /><text x="905" y="414" textAnchor="middle" fontSize="22" fontWeight="950" fill="#65404d">{geometry.service.label}</text></g>
+    </g>;
+  }
   if (isProgressiveNarrowingRelation(relation)) {
     const narrowing = relations.filter(isProgressiveNarrowingRelation);
     if (relation.id !== narrowing.find(({ kind }) => kind === "startsSearchWith")?.id) return null;
@@ -857,7 +876,7 @@ function DoodleEntity({
     "--performance-breathe": `${-(1 + attachment.intensity * 2)}px`
   } as React.CSSProperties : undefined;
 
-  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found"].includes(entity.visualRole ?? "")) {
+  if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service"].includes(entity.visualRole ?? "")) {
     return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
   }
 

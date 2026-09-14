@@ -33,6 +33,7 @@ import { indexedCollectionGeometry, isIndexedCollectionRelation } from "./indexe
 import { isLinkedChainRelation, linkedChainGeometry } from "./linkedChain";
 import { conditionFlowGeometry, isConditionFlowRelation } from "./conditionFlow";
 import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "./progressiveNarrowing";
+import { fifoGeometry, isFifoRelation } from "./fifoQueue";
 
 export type GateName = "schema" | "semantic" | "layout" | "confidence";
 
@@ -257,6 +258,8 @@ export function validateDoodleScript(
   if (conditionRelations.length && !conditionFlowGeometry(conditionRelations, projected.entities)) issues.push({ gate: "semantic", message: "A condition flow needs one decision with exactly one true route and one false route; a loop must return only on true." });
   const narrowingRelations = (projected.relations ?? []).filter(isProgressiveNarrowingRelation);
   if (narrowingRelations.length && !progressiveNarrowingGeometry(narrowingRelations, projected.entities)) issues.push({ gate: "semantic", message: "Progressive narrowing needs one full candidate range, one smaller range, and one final target in order." });
+  const fifoRelations = (projected.relations ?? []).filter(isFifoRelation);
+  if (fifoRelations.length && !fifoGeometry(fifoRelations, projected.entities)) issues.push({ gate: "semantic", message: "A FIFO queue needs exactly three ordered entries and one service endpoint, with the earliest entry at the front." });
   for (const entity of projected.entities) {
     if (entity.performance && !conceptSupports(entity.kind, "human-performance")) {
       issues.push({ gate: "semantic", message: "Articulated character performance can only target a person." });

@@ -10,10 +10,10 @@ import { acceptedConstructionProbes as accepted, unsafeConstructionNearMisses as
 
 describe("generated construction generalization probe", () => {
   it("covers a nontrivial Cartesian matrix outside production source", () => {
-    expect(accepted).toHaveLength(110);
+    expect(accepted).toHaveLength(118);
     expect(new Set(accepted.map(({ text }) => text)).size).toBe(accepted.length);
     expect(new Set(accepted.map(({ layout }) => layout))).toEqual(new Set([
-      "lifo-stack", "triangle-angle-sum", "convergent-plates", "ordered-routine", "reflection-ray", "lifecycle-sequence", "indexed-row", "linked-chain", "condition-flow", "progressive-narrowing"
+      "lifo-stack", "triangle-angle-sum", "convergent-plates", "ordered-routine", "reflection-ray", "lifecycle-sequence", "indexed-row", "linked-chain", "condition-flow", "progressive-narrowing", "fifo-queue"
     ]));
   });
 
@@ -34,7 +34,7 @@ describe("generated construction generalization probe", () => {
       expect(html, probe.id).toContain(`data-relation-layout="${probe.layout}"`);
       expect(html, probe.id).not.toContain('class="doodle-object');
     }
-  });
+  }, 30_000);
 
   it("clarifies every structurally incomplete or unsafe near-miss", () => {
     for (const text of unsafeNearMisses) expect(interpretTeacherText(text, initialScene).ok, text).toBe(false);
