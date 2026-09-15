@@ -1,308 +1,199 @@
 # Tegeera
 
-**Speak it. See it. Understand it.**
+### Speak it. See it. Understand it.
 
-The path from the current bounded grammar to broad, compositional visualization
-is specified in [`OPEN_VISUALIZATION_ARCHITECTURE.md`](OPEN_VISUALIZATION_ARCHITECTURE.md).
-New domains should not add sentence-specific parser branches.
+[Try the live web demo](https://nestorymusoke.github.io/Tegeera/) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
 
-The original procedural-character contract is documented in
-[`TEGEERA_POSE_EXPRESSION_SPEC.md`](TEGEERA_POSE_EXPRESSION_SPEC.md). Open Peeps is
-used only to study coverage and modularity; DiceBear is used only to study typed,
-deterministic component architecture. Tegeera imports neither project's artwork,
-paths, proportions, nor style definitions.
+Tegeera turns a spoken or typed explanation into a simple, animated visual story while the explanation is still happening.
 
-Tegeera is an offline-first visual teaching instrument that turns explanations into in-session editable, hand-drawn scenes. It began with a simple experience at Uganda Christian University: sometimes words are not enough, and drawing the idea is what finally makes it understandable.
+It is an Android-first education product in active development, created and developed by **Nestroy Musoke**.
 
-## First working slice
+## The name
 
-The current foundation includes:
+**Tegeera** means **“understand”** in Luganda.
 
-- DoodleScript v1 with schema, semantic, layout and confidence gates;
-- deterministic animated SVG people and objects;
-- typed natural-language commands;
-- in-session scene revisions and undo;
-- safe clarification instead of guessed drawings;
-- Capacitor configuration for the Android application.
-- swappable live-speech engine with Android support, safe confidence handling and typed fallback.
+That is not branding added after the product was built. It is the reason the product exists.
 
-Try commands such as:
+## Why I started building it
 
-- `Draw three students waiting in a queue`
-- `Add a teacher`
-- `Draw a car`
-- `Move the car left`
-- `Remove the car`
-- `Clear everything`
+When I was studying Biology during my O Levels, one of my teachers had arthritis. He understood the subject deeply, but writing and demonstrating ideas on a chalkboard was physically difficult for him. I watched him work through that pain while trying to help us picture roots absorbing water, food chains, life cycles, and systems inside the body.
 
-The original university workflow is now available:
+Years later, I found myself facing a different version of the same problem. During presentations, I sometimes knew what I meant but struggled to turn the explanation in my head into something an audience could immediately see.
 
-- `Imagine three processes waiting in a CPU queue`
-- `Make that four processes`
-- `Move the CPU to the right`
-- `What if the second process goes first?`
+Tegeera grew from both experiences.
 
-The queue preserves process identities through count and order changes. It models
-ready-queue order, not execution timing or a complete scheduling algorithm.
+It is for the teacher whose hands make drawing difficult. It is for the student who has an idea but cannot explain it confidently. It is for the learner who understands better through pictures than paragraphs. Its long-term vision includes people who are blind or have low vision, people with mobility or dexterity impairments, and anyone whose way of communicating does not fit the tools already in the classroom.
 
-## Run locally
+Tegeera is not a cool demo looking for a problem. It is a personal attempt to make understanding easier to reach.
+
+## The problem is larger than one classroom
+
+- The World Health Organization estimates that **1.3 billion people—about 16% of the world—experience significant disability**. [WHO: Disability and health](https://www.who.int/news-room/fact-sheets/detail/disability-and-health)
+- Around **1.71 billion people live with musculoskeletal conditions**, which can limit mobility and dexterity. [WHO: Musculoskeletal health](https://www.who.int/news-room/fact-sheets/detail/musculoskeletal-conditions)
+- UNICEF estimates that **nearly 240 million children live with disabilities**, and says they remain among the children most likely to be excluded from education. [UNICEF: Inclusive education](https://www.unicef.org/education/inclusive-education)
+
+These numbers do not prove that Tegeera is the answer. They explain why presentation and teaching tools should not assume that everyone can draw quickly, see clearly, speak confidently, or interact in the same way.
+
+## What Tegeera can do today
+
+Tegeera already accepts speech or typed input and turns supported explanations into deterministic, editable SVG scenes. It can currently visualize structures including:
+
+- queues, ownership, sharing, movement, gestures, contact, carrying, and handovers;
+- cause-and-effect graphs and multi-step visual flows;
+- plant intake through roots and leaves;
+- circulation, water cycles, life cycles, and food chains;
+- forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
+- stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
+
+Try explanations such as:
+
+```text
+A plant takes in water through its roots and sunlight through its leaves.
+
+The food chain starts with grass, then a grasshopper eats it,
+then a frog eats the grasshopper, then a snake eats the frog.
+
+A ball thrown upward slows down, stops for a moment,
+then speeds up as it falls because of gravity.
+
+In a print queue, the first task to arrive is the first one processed.
+```
+
+When Tegeera cannot support the meaning safely, it preserves the current scene and asks for clarification. A confident-looking wrong diagram is worse than an honest pause.
+
+## What happens after you speak
+
+```text
+Speech or typed explanation
+          ↓
+Semantic frame: entities, actions, quantities and relationships
+          ↓
+DoodleScript: a small, versioned visual language
+          ↓
+Schema → meaning → layout → confidence safety gates
+          ↓
+Deterministic procedural SVG scene
+```
+
+The language model does not draw pixels directly. Every interpretation must become constrained DoodleScript and pass independent validation before it can change the lesson. Direct edits and prepared lessons can remain local and fast.
+
+This architecture gives Tegeera three properties that matter in a classroom:
+
+1. **Speed:** common supported meanings do not wait for image generation.
+2. **Consistency:** the same meaning produces the same visual structure.
+3. **Safety:** unsupported or contradictory meaning cannot silently mutate the scene.
+
+## Evidence, not inflated accuracy
+
+The current checkpoint is reproducible from this repository:
+
+| Check | Current evidence |
+| --- | ---: |
+| Automated tests | **405/405 passing** across 57 files |
+| Generated supported variations | **278** |
+| Incomplete, unsafe, or structurally wrong near-misses | **65 safely clarified** |
+| Independent teacher corpus | **25/60 drawn**, 1 held, 34 clarified |
+| Gold semantic-scene cases | **28/28 automated-ready** |
+| False-confident gold acceptances | **0** |
+| Strict gold result | **3/28** |
+| Human-approved drawing cases | **0/25 so far** |
+| Local SVG-ready benchmark | **56.62 ms p95** over 834 warmed samples in the latest full run |
+| Production JavaScript | Largest chunk **298.28 KiB**, below the 500 KiB guardrail |
+| Visual-review output | **44 fixtures**, including a 25-scene human-review station |
+
+The strict score is intentionally lower than the automated-ready score. Code can prove that required concepts, relationships, visual cues, and validation gates exist. It cannot declare its own drawings beautiful or classroom-ready. Every drawing case remains behind a real human-review gate.
+
+The 60-statement corpus is kept outside production grammar so the product cannot secretly read its answers. The full methodology is documented in [evaluation/README.md](evaluation/README.md).
+
+## Accessibility is a direction and a test obligation
+
+Today, Tegeera includes:
+
+- typed input that remains available when speech recognition fails;
+- semantic accessibility labels for rendered relationships and specialist diagrams;
+- keyboard-readable controls and a detail view for larger labels;
+- reduced-motion behavior that preserves the meaning of animated scenes;
+- offline-first deterministic rendering for supported lessons;
+- privacy-safe performance reports that exclude lesson text and transcripts.
+
+The vision is broader: screen-reader narration of scene changes, switch and voice navigation, tactile and high-contrast representations, multilingual explanation, and testing led by people with disabilities.
+
+Those features are not claimed as complete. In particular, physical Android accessibility testing and human visual approval are still outstanding.
+
+## Built for openness, not sixty hard-coded answers
+
+Tegeera separates four things that are often mixed together:
+
+- **language understanding** identifies the meaning;
+- **DoodleScript** represents the meaning without deciding its art style;
+- **layout grammars** decide how relationships should be arranged;
+- **procedural SVG rigs** decide how the scene looks and moves.
+
+New nouns occupy open semantic slots. New visual families are registered as reusable structures rather than complete classroom sentences. Open Peeps and DiceBear informed only the study of pose coverage and modular component architecture; no artwork, paths, proportions, or style definitions were imported. Tegeera's visual identity and procedural rig are original.
+
+See [TEGEERA_POSE_EXPRESSION_SPEC.md](TEGEERA_POSE_EXPRESSION_SPEC.md) for the character contract and [OPEN_VISUALIZATION_ARCHITECTURE.md](OPEN_VISUALIZATION_ARCHITECTURE.md) for the long-term system design.
+
+## Test it in a browser
 
 Requirements: Node.js 20 or newer.
 
 ```bash
+git clone https://github.com/NestroyMusoke/Tegeera.git
+cd Tegeera
 npm install
 npm run dev
 ```
 
-## Test and build
+Then open the local URL printed by Vite and try the example explanations above.
+
+Run the complete engineering checks:
 
 ```bash
 npm test
+npm run lint
 npm run build
+node scripts/visual-check.mjs
 ```
 
-Run `node scripts/visual-check.mjs` to generate ignored local visual fixtures.
+The visual-review command generates ignored local fixtures in `.visual-check/`. Open `human-visual-review.html` to inspect and record real drawing decisions.
 
-Open concepts now use a versioned, local visual-symbol ontology. Known labels are
-composed from reusable SVG anchors and capability cues (for example, water plus
-upward motion for evaporation); unfamiliar or ambiguous labels remain honest
-labelled nodes. The resolver uses concept data and token evidence rather than
-sentence-specific drawing branches.
+## Android remains the product architecture
 
-DoodleScript 1.9 adds evidence-backed visual phrases. A versioned action registry
-extracts open subject and object slots around reusable actions such as absorption,
-release, production, transformation, influence, and flow. The planner preserves
-existing identities, moves only concepts created by the active utterance, samples
-the actual connector curve for glyph collisions, and keeps relation labels clear.
-Animated particles reinforce direction, while the static arrow and accessible
-relationship text retain the meaning when reduced motion is enabled.
-
-Multi-relation explanations are planned atomically. A clause such as “A plant
-absorbs sunlight and water, then produces oxygen” expands coordinated objects into
-separate semantic roles, explicitly inherits the one unambiguous prior subject,
-and lays out the complete input–process–output graph before persisting any edge.
-The topology planner reserves future growth space, protects retained connectors,
-and refuses a fourth simultaneous lane rather than merging concepts or overlapping
-the drawing.
-
-Interpretation failures now return a structured clarification reason, the exact
-clause that triggered it, and bounded response alternatives. Negation, conditions,
-uncertainty, missing quantities, unresolved references, ambiguous meanings, layout
-limits, conflicts, and unsupported meanings have stable machine-readable codes.
-The semantic layer enumerates candidate parser families before choosing one; if
-future registry growth makes a clause match more than one meaning, Tegeera pauses
-instead of silently relying on parser order.
-
-The separate `evaluation/synthetic-language-holdout.json` corpus measures expected
-predicates, valid scripts, safe clarification, and false-confident acceptance. It is
-explicitly synthetic regression evidence—not a classroom accuracy percentage. Real
-accuracy still requires a frozen, consented corpus from teachers who did not author
-the grammar.
-
-Concrete concepts now come from a versioned registry shared by noun parsing,
-semantic frames, capability checks, and renderer selection. Every schema entity kind
-declares singular/plural forms, aliases, a semantic category, glyph key, countability,
-and supported behaviors. Startup validation rejects missing kinds, duplicate IDs,
-duplicate aliases, and renderer-key mismatches. Semantic frames retain the resolved
-concept ID and category, while rendered SVG exposes the same registry version and
-meaning as inspectable metadata. Adding an alias such as `table`/`tables` requires
-registry data only; unfamiliar open concepts still use honest labelled nodes.
-
-Relationships now have the same kind of shared contract. A versioned relation
-registry owns semantic family, forward/inverse aliases, readable label, minimum
-DoodleScript version, source/target/object cardinality, directionality, and layout
-capability for every schema relation. Semantic extraction, validation, accessible
-labels, relationship keys, and SVG metadata consume that registry. Specialist
-geometry remains separate: the registry selects `queue`, `contact`, `event-graph`,
-or `visual-flow`; the relevant planner still proves that the actual geometry is safe.
-
-Ordered-container language is also registered. Reusable templates bind either
-`sources → verb → target container` or the inverse `target container → verb →
-sources` before scene planning. The old CPU-specific sentence regular expression
-has been removed from the interpreter. Queue-member and queue-target capabilities
-plus registered domain compatibility validate the extracted concepts. CPU processes
-and students waiting at a school therefore use the same ordered-row planner, while
-cross-domain combinations such as students in a CPU scheduling queue are rejected.
-
-Milestone 3 includes a shared constraint-based layout kernel and a versioned registry
-for seven active visual grammars. Event graphs, open visual flows, and ordinary
-actor-target staging submit candidates through the same deterministic bounds,
-collision, movement-stability, and connector-crossing evaluation. Each registered
-family owns its topology, capacity, reading direction and scoring policy while still
-supplying its own semantic geometry check, so sharing safety machinery does not erase
-the visual meaning of a flow, event, queue, ownership group, or gesture.
-Open `.visual-check/app-phone.html` or `.visual-check/app-small-phone.html` in a
-browser for the real typed-input workflow check. Each ends with PASS or FAIL.
-These checks do not substitute for Android touch, keyboard and speech testing.
-
-On a populated scene, **Read details** enlarges the unchanged SVG inside a
-scrollable canvas so labels remain readable on narrow screens. **Overview** returns
-to the complete scene and resets the scroll position. Switching view does not add
-a revision or consume Undo.
-
-## Android
-
-The native Android project is added after installing dependencies:
+The hosted demo is a second delivery target, not a replacement for the Android application. Both targets use the same React, DoodleScript, renderer, and test suite.
 
 ```bash
-npx cap add android
 npm run android:sync
-npm run android:open
+cd android
+gradlew.bat assembleDebug
 ```
 
-The Android speech bridge requests microphone permission only when the user taps
-**Speak**. It asks Android to prefer an offline recognizer. Availability still
-depends on the recognition service and offline language pack installed on the
-device; when neither is available, Tegeera preserves the current scene and keeps
-typed input enabled.
+The Android speech bridge requests microphone permission only after the user presses **Speak**, prefers an offline recognizer, and preserves typed input when speech is unavailable.
 
-## Safety contract
+The web application and Android assets currently build and synchronize successfully. Native Gradle execution on the development machine is still blocked by a local `Unable to establish loopback connection` error; a release-signed APK and physical-device verification remain release work.
 
-The first visual-understanding increment supports composable sharing and ownership
-scenes. Try `Three students share two books`, followed by
-`Another student arrives with her own book` and `Highlight the second student`.
-Unsupported or ambiguous clauses preserve the previous scene and show a specific
-clarification. This is currently a bounded grammar, not arbitrary language understanding.
-Follow-up corrections include `Make that four students` and, after the arrival,
-`She gives her book to the first student`. Undo restores ownership and conversation
-context. Count changes and transfers keep the surviving objects' identities.
-Common classroom framing is accepted too, including `Could you please show me
-three students sharing two books?`, `There are three students sharing two books`,
-and `A car is moving toward a person`. Meaning-bearing words are preserved:
-negation, uncertainty and unsupported trailing actions still request clarification.
-See `ENGINEERING_STATUS.md` for evaluation methods, limitations and the next work.
+## What comes next
 
-Individual quantities are distinct from sharing: `Three students each have two
-books` creates six books with two assigned to each student. `Three students share
-two books` creates only two shared books. Existing groups support `They each have
-a book` or `The students have a book each`. These add new possessions; they do not
-distribute existing books. The ten-object layout limit still applies.
-Matching O-codes beneath owners and items show personal ownership across rows;
-readable “Who owns what” cards group the same doodles with their owner. Transfers
-restage only the giver, recipient, and original object into a two-person handover;
-the same object ID then appears under its new owner. Shared resources keep their
-separate shared relationship.
+1. Expand from registered constructions to retrieval over reusable semantic visual templates.
+2. Add a constrained planner for uncovered language, with DoodleScript validation still mandatory.
+3. Collect consented teacher speech covering Ugandan English, different accents, classroom noise, and real corrections.
+4. Complete assistive-technology testing with blind, low-vision, and mobility-impaired participants.
+5. Add multilingual narration, prepared offline lessons, teacher-authored templates, and tactile/export formats.
+6. Publish separate measurements for transcription, meaning, coverage, clarification, visual readability, latency, and memory.
 
-Directed motion examples: `A car approaches a person`, `Make it go the other way`,
-and `Stop it`. Human figures also support `A student walks toward a school`.
-These show direction with arrows and facing/pose changes, not physical movement
-or collision simulation. Objects must share a row with room for an arrow.
-Directional phrasing is registered as semantic relation data. Canonical modes such
-as `move`, `walk`, and `drive`, their aliases, readable labels, and required actor
-capabilities share one registry; the interpreter no longer owns a sentence-specific
-motion regular expression. This remains a bounded verb vocabulary, not arbitrary
-motion understanding.
+The goal is ambitious: say almost anything teachable and watch it become a clear visual explanation in real time. The current system does not claim to have reached that goal. It proves that the path can be engineered carefully, measured honestly, and expanded without turning into a collection of hard-coded demos.
 
-An independent 60-statement teacher corpus lives at
-[`evaluation/independent-teacher-corpus.md`](evaluation/independent-teacher-corpus.md).
-It is parsed only by evaluation code and is deliberately invisible to the production
-grammar. The present observational baseline draws 25/60, holds the scene for 1/60
-non-visual utterance, and asks for clarification on 34/60. Those numbers measure
-coverage, not semantic accuracy: each accepted graph still
-requires comparison with the separately written intended visual.
+## Two launches, one product
 
-The first cross-domain subset now has versioned machine-readable gold scenes in
-[`evaluation/independent-scene-gold-v1.json`](evaluation/independent-scene-gold-v1.json).
-Its strict scorer requires independent concept identities, semantic endpoints, correct
-intent routing, observed visual cues, and explicit human visual approval. DoodleScript 2
-now makes the plant example automated-ready through a reusable `part-whole-flow`
-construction. The expanded gold batch also has automated evidence for circulation-loop,
-force-diagram, changing-speed-motion, labelled-container, call-return-flow, fraction-subtraction,
-geometric-construction, landscape-flow, water-cycle-loop, lifecycle-sequence,
-reflection-ray, lifo-stack, triangle-angle-sum, convergent-plates, ordered-routine, and
-indexed-row, linked-chain, shared condition-flow, progressive narrowing, analogy-aware FIFO queues, processor-memory links, doubling growth, and directed consumption chains. All 28 gold cases are automated-ready. Drawing cases remain
-pending until a reviewer accepts the actual doodles.
-Validation can prove script safety; it cannot substitute for semantic or visual completeness.
+Tegeera remains Android-first for the RevenueCat hackathon's New Gen category. Its deliverable will be a directly downloadable, release-signed APK—not a Play Store listing.
 
-Reflection is a geometric construction, not a decorative arrow template. Controlled
-light-source and reflective-surface slots produce distinct incident-light, surface, and
-reflected-light identities. The outgoing vector is computed from the incoming vector and
-surface normal with `r = v - 2(v·n)n`; validation requires both typed rays to meet the same
-surface in a readable configuration. The renderer exposes the impact point, normal, equal
-angle cues, incident direction, and reflected direction while reduced-motion mode preserves
-the complete static explanation.
+The same product is presented through a hosted browser demo for the GPT-6 Astra Challenge on Product Hunt, allowing judges and early users to experience the core interaction immediately. GPT-6 Astra has served as an engineering collaborator; the lived problem, product vision, direction, decisions, and ownership belong to Nestroy Musoke.
 
-The advanced construction layer adds four more reusable grammars without storing corpus
-sentences. LIFO stacks constrain push and pop operations to an explicit top identity;
-triangle diagrams preserve the triangle, its three angles, and the 180-degree total as
-separate semantic roles; convergent boundaries require two opposing landmasses and one
-central uplift; ordered routines accept three short arbitrary stages and retain their
-exact order. Each grammar has its own topology, relation family, validator, procedural
-SVG composition, accessibility description, reduced-motion behavior, and mobile fixture.
-The indexed-collection grammar adds a four-role contract for a named collection, its cells,
-stored values, and a zero- or one-based starting index; its procedural row is vocabulary-
-independent rather than an array-specific lesson template.
-The linked-chain grammar likewise separates a verbal chain analogy from its real pointer
-topology: three distinct node boxes, dedicated pointer compartments, forward next arrows,
-a head marker, and an explicit terminal marker are generated from open item vocabulary.
-The condition-flow grammar models branches and condition-controlled loops with the same
-typed graph. A decision diamond owns one true and one false route; loop mode returns the
-true route to the repeated step and keeps the false exit separate.
-Progressive narrowing shows a full candidate set becoming a visibly smaller set and
-then one highlighted result, with discarded regions preserved as semantic evidence.
-The FIFO grammar extracts queue order from either direct descriptions or familiar
-analogies, but renders the underlying mechanism rather than literal bank customers:
-three abstract entries, explicit front and rear, enqueue/dequeue directions, and a
-separate service endpoint. This keeps the visual reusable across print, message,
-request, job, packet, checkout, and task queues.
-The processor-memory grammar similarly separates metaphor from mechanism. It ignores
-literal brain imagery and preserves two named component identities, their bidirectional
-data exchange, and the nearby placement needed for fast access. Its procedural view uses
-an abstract processor package, memory cells, a two-way bus, and animated data pulses.
-The doubling-growth grammar preserves an open subject plus the distinct 1, 2, 4, and 8
-stages. Its procedural drawing increases the visible population at every step, connects
-successive stages with split paths, and labels the ×2 rule instead of merely printing a
-number sequence.
-The consumption-chain grammar resolves repeated references while retaining a separate
-chain identity and four open-vocabulary members. Its semantic arrows run from food to
-eater, and the specialist drawing makes that energy direction explicit with animated
-flow, distinct trophic positions, readable labels, and a complete static reduced-motion view.
+## Maker
 
-A generated construction-generalization probe now exercises 142 deterministic paraphrase
-combinations across stack, triangle, plate-convergence, ordered-routine, reflection, lifecycle,
-indexed-row, linked-chain, condition-flow, progressive-narrowing, FIFO, processor-memory, doubling-growth, and consumption-chain grammars. It also checks 46 incomplete, negated, uncertain, or structurally wrong
-near-misses. Every accepted probe must produce valid typed relations, the expected specialist
-layout, deterministic output, and real component markup without generic-object leakage; every
-near-miss must clarify. This is development conformance evidence, not a hidden classroom
-accuracy score. The production build is split into local React, schema, and application chunks,
-and `npm run build` enforces a 500 KiB maximum for every JavaScript chunk.
+**Created and developed by Nestroy Musoke.**
 
-The fourteen newer families are complemented by 136 generated variations across the ten
-foundational specialist families, with 19 incomplete, unsafe, or wrong-domain near-misses.
-Together, all twenty-four families contribute 278 supported variations and 65 near-misses.
+Tegeera began with a teacher who kept teaching through pain, a student who remembered, and a belief that understanding should not depend on how easily someone can fill a chalkboard.
 
-The combined 278-input workload drives a warmed local SVG-ready performance envelope.
-It times interpretation, validation, immutable scene application, and full SVG markup
-serialization separately, with coarse anti-regression budgets that fail the test suite.
-The in-app performance panel continues through real browser commit and paint, retains a
-rolling 50-sample window, and can export privacy-safe evidence for physical-device review.
-The JSON contains timings and device capability, never lesson text or transcripts.
+## License
 
-The construction is not plant-specific. A registered intake action binds an open whole,
-one to three inputs, and the named parts they travel through. Symbol capabilities choose
-flow versus illumination, while the shared layout planner preserves distinct identities
-and left-to-right reading order. The resulting plant scene contains separate `plant`,
-`roots`, `leaves`, `water`, and `sunlight` identities plus four typed relations.
-
-Temporal and causal concept diagrams accept open, readable labels inside registered
-relationship structures. Try `Evaporation happens before condensation`, followed by
-`Condensation comes before rainfall`, or `Heavy rain causes soil erosion`. `After`
-is normalized into the same earlier-to-later graph; `leads to` and `results in` use
-the same causal relation. Matching concepts are reused, cycles and duplicate claims
-are rejected atomically, and unknown verbs outside these structures still require
-clarification.
-Connected event graphs are laid out by topological rank. A cause can branch into
-multiple results, several causes can converge on one result, and long edges use an
-outer routing lane instead of crossing intermediate nodes. Existing readable linear
-timelines and unrelated scene objects retain their positions.
-
-No language model draws directly onto the canvas. Every parser or model must produce DoodleScript, and every script must pass four gates before it changes a lesson:
-
-1. schema validity;
-2. semantic reference validity;
-3. safe, readable layout;
-4. minimum interpretation confidence.
-
-## Licence
-
-Tegeera is available under the MIT License.
+MIT
