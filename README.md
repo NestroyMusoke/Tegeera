@@ -2,7 +2,7 @@
 
 ### Speak it. See it. Understand it.
 
-[Try the live web demo](https://nestorymusoke.github.io/Tegeera/) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
+[Try the live web demo](https://nestroymusoke.github.io/Tegeera/) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
 
 Tegeera turns a spoken or typed explanation into a simple, animated visual story while the explanation is still happening.
 

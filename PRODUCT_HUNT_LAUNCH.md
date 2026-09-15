@@ -4,9 +4,11 @@ This file contains draft launch material. Nothing here has been submitted automa
 
 ## Primary link
 
-`https://nestorymusoke.github.io/Tegeera/`
+`https://nestroymusoke.github.io/Tegeera/`
 
-The GitHub Pages workflow verifies the project before publishing the `dist` directory. In the repository settings, select **Pages → Source → GitHub Actions** once, then push the deployment commit.
+The GitHub Pages workflow uses Node.js 24, verifies the project in a dedicated job, and only then publishes the `dist` directory. Before the first deployment, open the repository on GitHub and select **Settings → Pages → Build and deployment → Source → GitHub Actions**. This one-time repository setting must exist before `actions/configure-pages` can read the Pages site.
+
+If a run says `Get Pages site failed` or `Not Found`, the application tests did not necessarily fail. Enable Pages using the setting above, open the failed workflow run, and select **Re-run all jobs**. Do not enable the temporary `ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION` escape hatch; the workflow and its actions are already Node.js 24 compatible.
 
 ## Listing
 
