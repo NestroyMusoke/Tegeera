@@ -11,6 +11,7 @@ import { useSpeechSession } from "./speech/useSpeechSession";
 import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
+import { interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
 import {
   makeLatencySample,
   createLatencyEvidence,
@@ -43,6 +44,7 @@ function App() {
   const [issues, setIssues] = useState<GateIssue[]>([]);
   const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
   const [holdNotice, setHoldNotice] = useState<string | null>(null);
+  const [remoteBusy, setRemoteBusy] = useState(false);
   const [latencySamples, setLatencySamples] = useState<LatencySample[]>([]);
   const pendingLatency = useRef<PendingLatency | null>(null);
   const latencySequence = useRef(0);
@@ -74,6 +76,34 @@ function App() {
     };
     const interpretation = interpretTeacherText(text, scene);
     if (!interpretation.ok) {
+      if (remoteInterpreterEnabled()) {
+        setRemoteBusy(true);
+        setHoldNotice(null);
+        setClarification(null);
+        setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
+        void interpretRemotely(text, scene).then(({ candidate }) => {
+          const result = validateDoodleScript(candidate, scene);
+          if (!result.ok) {
+            markDecision("reject");
+            setClarification(interpretation.clarification);
+            setIssues([{ gate: "confidence", message: interpretation.message }]);
+            return;
+          }
+          const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
+          const nextScene = isHold ? scene : applyDoodleScript(scene, result.script);
+          markDecision(isHold ? "hold" : "draw");
+          if (!isHold) setHistory((current) => [...current, nextScene]);
+          setInput("");
+          setIssues([]);
+          setClarification(null);
+          setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
+        }).catch(() => {
+          markDecision("clarify");
+          setClarification(interpretation.clarification);
+          setIssues([{ gate: "confidence", message: interpretation.message }]);
+        }).finally(() => setRemoteBusy(false));
+        return;
+      }
       markDecision("clarify");
       setHoldNotice(null);
       setClarification(interpretation.clarification);
@@ -209,8 +239,8 @@ function App() {
               placeholder="Imagine three students waiting in a queue…"
               autoComplete="off"
             />
-            <button className="draw-button" type="submit">
-              Draw it
+            <button className="draw-button" disabled={remoteBusy} type="submit">
+              {remoteBusy ? "Understanding…" : "Draw it"}
             </button>
             <button
               aria-label={isListening ? "Stop listening" : "Start listening"}

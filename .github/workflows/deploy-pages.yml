@@ -36,6 +36,8 @@ jobs:
 
       - name: Build static demo
         run: npm run build
+        env:
+          VITE_TEGEERA_INTERPRETER_URL: ${{ vars.TEGEERA_INTERPRETER_URL }}
 
   deploy:
     needs: verify
@@ -58,6 +60,8 @@ jobs:
 
       - name: Build static demo
         run: npm run build
+        env:
+          VITE_TEGEERA_INTERPRETER_URL: ${{ vars.TEGEERA_INTERPRETER_URL }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6

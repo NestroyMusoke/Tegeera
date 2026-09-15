@@ -137,6 +137,10 @@ See [TEGEERA_POSE_EXPRESSION_SPEC.md](TEGEERA_POSE_EXPRESSION_SPEC.md) for the c
 
 Requirements: Node.js 20 or newer.
 
+### Optional broad-language interpreter
+
+Tegeera always attempts its fast deterministic interpreter first. When a public backend URL is configured, unsupported language can fall through to an OpenRouter-powered semantic planner; its output must pass the same DoodleScript schema, semantic, confidence and layout gates before anything is drawn. No API credential is stored in the web app or APK. See [the interpreter deployment guide](server/README.md).
+
 ```bash
 git clone https://github.com/NestroyMusoke/Tegeera.git
 cd Tegeera
