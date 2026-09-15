@@ -45,6 +45,7 @@ function App() {
   const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
   const [holdNotice, setHoldNotice] = useState<string | null>(null);
   const [remoteBusy, setRemoteBusy] = useState(false);
+  const [openRouterKey, setOpenRouterKey] = useState("");
   const [latencySamples, setLatencySamples] = useState<LatencySample[]>([]);
   const pendingLatency = useRef<PendingLatency | null>(null);
   const latencySequence = useRef(0);
@@ -76,12 +77,12 @@ function App() {
     };
     const interpretation = interpretTeacherText(text, scene);
     if (!interpretation.ok) {
-      if (remoteInterpreterEnabled()) {
+      if (remoteInterpreterEnabled(openRouterKey)) {
         setRemoteBusy(true);
         setHoldNotice(null);
         setClarification(null);
         setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
-        void interpretRemotely(text, scene).then(({ candidate }) => {
+        void interpretRemotely(text, scene, openRouterKey).then(({ candidate }) => {
           const result = validateDoodleScript(candidate, scene);
           if (!result.ok) {
             markDecision("reject");
@@ -299,6 +300,21 @@ function App() {
             Download performance evidence
           </button>
           <small>The evidence contains timings and device capability only—never lesson text or transcripts.</small>
+        </details>
+
+        <details className="latency-panel">
+          <summary>AI understanding (optional)</summary>
+          <label htmlFor="openrouter-key">OpenRouter key for this session</label>
+          <input
+            id="openrouter-key"
+            type="password"
+            value={openRouterKey}
+            onChange={(event) => setOpenRouterKey(event.target.value)}
+            placeholder="Paste a newly generated key"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <small>The key stays in memory only, is never saved by Tegeera, and disappears when this page closes. Unsupported explanations use OpenRouter; familiar instructions remain local and fast.</small>
         </details>
 
         {issues.length ? (

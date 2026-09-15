@@ -139,7 +139,7 @@ Requirements: Node.js 20 or newer.
 
 ### Optional broad-language interpreter
 
-Tegeera always attempts its fast deterministic interpreter first. When a public backend URL is configured, unsupported language can fall through to an OpenRouter-powered semantic planner; its output must pass the same DoodleScript schema, semantic, confidence and layout gates before anything is drawn. No API credential is stored in the web app or APK. See [the interpreter deployment guide](server/README.md).
+Tegeera always attempts its fast deterministic interpreter first. For a personal demo with no backend, open **AI understanding** and provide your own OpenRouter key; it remains in memory only until the page closes. Unsupported language can then fall through to an OpenRouter-powered semantic planner, whose output must pass the same DoodleScript schema, semantic, confidence and layout gates before anything is drawn. A backend boundary remains available for a later public production deployment; no credential is committed or built into the web app or APK. See [the interpreter deployment guide](server/README.md).
 
 ```bash
 git clone https://github.com/NestroyMusoke/Tegeera.git
