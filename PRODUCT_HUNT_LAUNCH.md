@@ -32,6 +32,29 @@ Education · Accessibility · Artificial Intelligence · Productivity
 
 Beta / active development
 
+## X launch identity
+
+Create a dedicated product account so Product Hunt links to Tegeera rather than an empty campaign profile.
+
+**Handle preference:** `@Tegeera`, then `@TegeeraApp`, then `@TegeeraHQ`. Availability must be confirmed inside X during signup.
+
+**Display name:** Tegeera — Speak it. See it.
+
+**Bio:** Speak an idea. See it become a clear, animated doodle. An Android-first, accessibility-minded education tool built by Nestroy Musoke.
+
+**Location:** Kampala, Uganda
+
+**Website:** `https://nestroymusoke.github.io/Tegeera/`
+
+**Profile image:** `public/brand/tegeera-mark-v1.png`
+
+**Pinned launch post:**
+
+> I built Tegeera after watching my Biology teacher teach through arthritis—and later struggling to explain ideas myself. Speak a concept; Tegeera turns it into a live visual story. It is early, imperfect and real. Try the vision ↓
+> https://nestroymusoke.github.io/Tegeera/
+
+Use the Product Hunt launch URL as the website link on launch day if its rules require the launch page rather than the product demo. The account should post real progress, demonstrations and limitations; never manufactured engagement.
+
 ## Maker comment
 
 I built Tegeera because I remember watching my O-Level Biology teacher teach through arthritis. He knew how to make difficult ideas understandable, but writing and demonstrating them on a chalkboard was physically hard.
@@ -40,7 +63,7 @@ Later, I experienced my own difficulty turning ideas into clear explanations dur
 
 In Luganda, “Tegeera” means “understand.” The vision is simple to say and difficult to build: speak a concept and see it become a clear visual explanation while you are still speaking.
 
-The current beta does not pretend to understand everything. Supported meanings become deterministic, animated SVG scenes through a constrained visual language called DoodleScript. Uncertain or unsupported meanings preserve the scene and ask for clarification. The repository currently has 405 passing tests, 278 generated supported variations, 65 safe near-misses, and zero false-confident acceptances across 28 gold cases. Human visual review and wider classroom testing remain ahead.
+The current beta does not pretend to understand everything. Supported meanings become deterministic, animated SVG scenes through a constrained visual language called DoodleScript. Uncertain or unsupported meanings preserve the scene and ask for clarification. The repository includes 278 generated supported variations, 65 safe near-misses, and zero false-confident acceptances across 28 gold cases. Broader public visual review and classroom testing remain ahead.
 
 I am building Tegeera for teachers whose movement makes drawing difficult, students who struggle to present an idea, visual learners, and eventually people who need richer screen-reader, voice, switch, tactile, or multilingual ways to communicate.
 

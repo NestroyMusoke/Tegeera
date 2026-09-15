@@ -220,7 +220,7 @@ function App() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">
-            T
+            <img src="./brand/tegeera-mark-v1.png" alt="" />
           </span>
           <div>
             <strong>Tegeera</strong>

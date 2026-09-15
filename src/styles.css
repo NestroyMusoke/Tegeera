@@ -52,13 +52,18 @@ button {
   place-items: center;
   width: 43px;
   height: 43px;
-  color: #fffaf0;
-  background: #2c6e57;
+  overflow: hidden;
+  background: #fffaf0;
   border: 2px solid #234a3c;
   border-radius: 47% 53% 45% 55%;
-  font: 600 27px/1 Georgia, serif;
   transform: rotate(-3deg);
   box-shadow: 3px 3px 0 #d69c3c;
+}
+
+.brand-mark img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
 
 .brand div {
