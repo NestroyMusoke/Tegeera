@@ -12,7 +12,7 @@ import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
 import { interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
-import { showcaseGroups } from "./evaluation/showcaseExamples";
+import { allTestedPhrases, showcaseGroups } from "./evaluation/showcaseExamples";
 import {
   makeLatencySample,
   createLatencyEvidence,
@@ -50,11 +50,19 @@ function App() {
   const [openRouterKey, setOpenRouterKey] = useState("");
   const [aiStatus, setAiStatus] = useState("Not enabled");
   const [lastRemoteModel, setLastRemoteModel] = useState<string | null>(null);
+  const [exampleSearch, setExampleSearch] = useState("");
+  const [exampleLimit, setExampleLimit] = useState(24);
   const [latencySamples, setLatencySamples] = useState<LatencySample[]>([]);
   const pendingLatency = useRef<PendingLatency | null>(null);
   const latencySequence = useRef(0);
   const scene = history.at(-1) ?? initialScene;
   const canUndo = history.length > 1;
+  const filteredTestedPhrases = useMemo(() => {
+    const query = exampleSearch.trim().toLowerCase();
+    return query
+      ? allTestedPhrases.filter(({ text, layout }) => `${text} ${layout}`.toLowerCase().includes(query))
+      : allTestedPhrases;
+  }, [exampleSearch]);
 
   const spokenSummary = useMemo(
     () => {
@@ -70,7 +78,12 @@ function App() {
     [scene.entities, scene.relations]
   );
 
-  const submit = (text = input, speechTiming?: AcceptedSpeechTranscript) => {
+  const submit = (
+    text = input,
+    speechTiming?: AcceptedSpeechTranscript,
+    targetScene = scene,
+    replaceScene = false
+  ) => {
     const receivedAt = speechTiming?.finalReceivedAt ?? performance.now();
     const source: InputSource = speechTiming ? "speech" : "typed";
     const markDecision = (outcome: PipelineOutcome) => {
@@ -79,17 +92,17 @@ function App() {
         decisionAt: performance.now(), speechFinalizationMs: speechTiming?.finalizationMs
       };
     };
-    const interpretation = interpretTeacherText(text, scene);
+    const interpretation = interpretTeacherText(text, targetScene);
     if (!interpretation.ok) {
       if (remoteInterpreterEnabled(openRouterKey)) {
         setRemoteBusy(true);
         setHoldNotice(null);
         setClarification(null);
         setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
-        void interpretRemotely(text, scene, openRouterKey).then(({ candidate, model }) => {
+        void interpretRemotely(text, targetScene, openRouterKey).then(({ candidate, model }) => {
           setLastRemoteModel(model ?? "OpenRouter-selected free model");
           setAiStatus("Enabled and working");
-          const result = validateDoodleScript(candidate, scene);
+          const result = validateDoodleScript(candidate, targetScene);
           if (!result.ok) {
             markDecision("reject");
             setClarification(interpretation.clarification);
@@ -97,9 +110,9 @@ function App() {
             return;
           }
           const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
-          const nextScene = isHold ? scene : applyDoodleScript(scene, result.script);
+          const nextScene = isHold ? targetScene : applyDoodleScript(targetScene, result.script);
           markDecision(isHold ? "hold" : "draw");
-          if (!isHold) setHistory((current) => [...current, nextScene]);
+          if (!isHold) setHistory((current) => replaceScene ? [initialScene, nextScene] : [...current, nextScene]);
           setInput("");
           setIssues([]);
           setClarification(null);
@@ -123,7 +136,7 @@ function App() {
       ]);
       return;
     }
-    const result = validateDoodleScript(interpretation.script, scene);
+    const result = validateDoodleScript(interpretation.script, targetScene);
     if (!result.ok) {
       markDecision("reject");
       setHoldNotice(null);
@@ -132,9 +145,9 @@ function App() {
       return;
     }
     const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
-    const nextScene = isHold ? scene : applyDoodleScript(scene, result.script);
+    const nextScene = isHold ? targetScene : applyDoodleScript(targetScene, result.script);
     markDecision(isHold ? "hold" : "draw");
-    if (!isHold) setHistory((current) => [...current, nextScene]);
+    if (!isHold) setHistory((current) => replaceScene ? [initialScene, nextScene] : [...current, nextScene]);
     setInput("");
     setIssues([]);
     setClarification(null);
@@ -231,7 +244,7 @@ function App() {
 
       <aside className="development-note" role="note">
         <strong>You are seeing the vision in active development.</strong>
-        <span>Tegeera is not fully ready yet. These demonstrations are backed by automated semantic and rendering checks, but no drawing has completed human visual approval. Try them, challenge them, and imagine where accessible real-time explanation can go.</span>
+        <span>Tegeera is not fully ready yet and has only reached a small early group of testers. These demonstrations are backed by automated semantic and rendering checks. Try them, challenge them, and help the vision of accessible real-time explanation grow.</span>
       </aside>
 
       <DoodleCanvas scene={scene}>
@@ -387,16 +400,28 @@ function App() {
           <div>
             <p className="eyebrow">Demonstrated visual grammars</p>
             <h2 id="showcase-title">Try everything Tegeera can currently demonstrate</h2>
-            <p>Each example below is automatically tested for interpretation and validator safety. Visual quality is still awaiting human approval.</p>
+            <p>Each example below is automatically tested for interpretation and validator safety. Early public testing is still limited, so your visual feedback matters.</p>
           </div>
           {showcaseGroups.map((group) => (
             <details key={group.subject} open>
               <summary>{group.subject} · {group.examples.length}</summary>
               <div className="showcase-grid">
-                {group.examples.map((example) => <button key={example} disabled={remoteBusy} type="button" onClick={() => { setInput(example); submit(example); }}>{example}</button>)}
+                {group.examples.map((example) => <button key={example} disabled={remoteBusy} type="button" onClick={() => { setInput(example); submit(example, undefined, initialScene, true); }}>{example}</button>)}
               </div>
             </details>
           ))}
+          <details>
+            <summary>All {allTestedPhrases.length} accepted language probes</summary>
+            <p className="architecture-note"><strong>These are not phrase-to-picture shortcuts.</strong> Every sentence is interpreted through shared semantic frames, typed relation registries, reusable layout planners and one validator. The variations deliberately change subjects, verbs and wording to test whether the same visual grammar generalizes.</p>
+            <label htmlFor="example-search">Find a tested explanation</label>
+            <input id="example-search" type="search" value={exampleSearch} onChange={(event) => { setExampleSearch(event.target.value); setExampleLimit(24); }} placeholder="Search plants, queues, fractions…" />
+            <small>Showing {Math.min(exampleLimit, filteredTestedPhrases.length)} of {filteredTestedPhrases.length} matching probes.</small>
+            <div className="showcase-grid full-library">
+              {filteredTestedPhrases.slice(0, exampleLimit)
+                .map(({ id, text, layout }) => <button key={id} title={`Reusable visual grammar: ${layout}`} disabled={remoteBusy} type="button" onClick={() => { setInput(text); submit(text, undefined, initialScene, true); }}><span>{text}</span><small>{layout}</small></button>)}
+            </div>
+            {exampleLimit < filteredTestedPhrases.length ? <button className="load-more" type="button" onClick={() => setExampleLimit((current) => current + 24)}>Show 24 more</button> : null}
+          </details>
         </section>
       </section>
       </DoodleCanvas>

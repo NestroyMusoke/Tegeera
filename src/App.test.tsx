@@ -116,4 +116,13 @@ describe("teaching workflow", () => {
     explain("A light ray travels toward a mirror and reflects off it");
     await waitFor(() => expect(download.disabled).toBe(false));
   });
+  it("replaces one demonstration with another without a page refresh", () => {
+    const { container } = render(<App />);
+    fireEvent.click(screen.getAllByRole("button", { name: "A light ray travels toward a mirror and reflects off it." })[0]);
+    expect(container.querySelector('[data-visual-cue="straight-incident-ray"]')).not.toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "In a stack, you push and pop items only at the top." })[0]);
+    expect(container.querySelector(".lifo-stack-annotation")).not.toBeNull();
+    expect(container.querySelector('[data-visual-cue="straight-incident-ray"]')).toBeNull();
+    expect(screen.getByText("Revision 1")).toBeTruthy();
+  });
 });

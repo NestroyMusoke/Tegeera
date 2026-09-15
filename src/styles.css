@@ -639,6 +639,41 @@ button {
   background: #f1faf6;
 }
 
+.showcase input[type="search"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border: 1px solid #d4ccbd;
+  border-radius: 10px;
+  background: #fffdf8;
+}
+
+.architecture-note {
+  margin-top: 10px !important;
+  padding: 10px 12px;
+  color: #31564f !important;
+  background: #eaf6f1;
+  border-radius: 10px;
+}
+
+.full-library {
+  max-height: 430px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.full-library button span,
+.full-library button small { display: block; }
+
+.full-library button small {
+  margin-top: 5px;
+  color: #66817b;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
 .hold-notice {
   align-items: flex-start;
   background: #eaf8f4;

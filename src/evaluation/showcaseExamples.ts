@@ -47,3 +47,10 @@ export const showcaseGroups: readonly ShowcaseGroup[] = [
 ] as const;
 
 export const showcaseExamples = showcaseGroups.flatMap((group) => group.examples);
+
+export const allTestedPhrases = [
+  ...acceptedFoundationalConstructionProbes,
+  ...acceptedConstructionProbes
+].map(({ id, text, layout }) => ({ id, text, layout }));
+import { acceptedConstructionProbes } from "./constructionProbes";
+import { acceptedFoundationalConstructionProbes } from "./foundationalConstructionProbes";
