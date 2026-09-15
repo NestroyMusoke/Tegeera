@@ -12,6 +12,7 @@ import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
 import { interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
+import { showcaseGroups } from "./evaluation/showcaseExamples";
 import {
   makeLatencySample,
   createLatencyEvidence,
@@ -45,7 +46,10 @@ function App() {
   const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
   const [holdNotice, setHoldNotice] = useState<string | null>(null);
   const [remoteBusy, setRemoteBusy] = useState(false);
+  const [openRouterKeyDraft, setOpenRouterKeyDraft] = useState("");
   const [openRouterKey, setOpenRouterKey] = useState("");
+  const [aiStatus, setAiStatus] = useState("Not enabled");
+  const [lastRemoteModel, setLastRemoteModel] = useState<string | null>(null);
   const [latencySamples, setLatencySamples] = useState<LatencySample[]>([]);
   const pendingLatency = useRef<PendingLatency | null>(null);
   const latencySequence = useRef(0);
@@ -82,7 +86,9 @@ function App() {
         setHoldNotice(null);
         setClarification(null);
         setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
-        void interpretRemotely(text, scene, openRouterKey).then(({ candidate }) => {
+        void interpretRemotely(text, scene, openRouterKey).then(({ candidate, model }) => {
+          setLastRemoteModel(model ?? "OpenRouter-selected free model");
+          setAiStatus("Enabled and working");
           const result = validateDoodleScript(candidate, scene);
           if (!result.ok) {
             markDecision("reject");
@@ -99,6 +105,7 @@ function App() {
           setClarification(null);
           setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
         }).catch(() => {
+          setAiStatus("Enabled, but the last request failed safely");
           markDecision("clarify");
           setClarification(interpretation.clarification);
           setIssues([{ gate: "confidence", message: interpretation.message }]);
@@ -222,6 +229,11 @@ function App() {
         </p>
       </section>
 
+      <aside className="development-note" role="note">
+        <strong>You are seeing the vision in active development.</strong>
+        <span>Tegeera is not fully ready yet. These demonstrations are backed by automated semantic and rendering checks, but no drawing has completed human visual approval. Try them, challenge them, and imagine where accessible real-time explanation can go.</span>
+      </aside>
+
       <DoodleCanvas scene={scene}>
 
       <section className="control-card">
@@ -308,13 +320,25 @@ function App() {
           <input
             id="openrouter-key"
             type="password"
-            value={openRouterKey}
-            onChange={(event) => setOpenRouterKey(event.target.value)}
+            value={openRouterKeyDraft}
+            onChange={(event) => setOpenRouterKeyDraft(event.target.value)}
             placeholder="Paste a newly generated key"
             autoComplete="off"
             spellCheck={false}
           />
-          <small>The key stays in memory only, is never saved by Tegeera, and disappears when this page closes. Unsupported explanations use OpenRouter; familiar instructions remain local and fast.</small>
+          <button
+            type="button"
+            disabled={!openRouterKeyDraft.trim()}
+            onClick={() => {
+              setOpenRouterKey(openRouterKeyDraft.trim());
+              setOpenRouterKeyDraft("");
+              setAiStatus("Enabled for this session");
+              setLastRemoteModel(null);
+            }}
+          >Enable AI understanding</button>
+          {openRouterKey ? <button type="button" onClick={() => { setOpenRouterKey(""); setAiStatus("Not enabled"); setLastRemoteModel(null); }}>Forget key</button> : null}
+          <div className="ai-connection-status" role="status" data-ai-enabled={Boolean(openRouterKey)}><strong>{aiStatus}</strong>{lastRemoteModel ? ` · Last model: ${lastRemoteModel}` : " · Router: openrouter/free"}</div>
+          <small>The key stays in memory only, is never saved by Tegeera, and disappears when this page closes. The password field clears after enabling by design. Unsupported explanations use OpenRouter; familiar instructions remain local and fast.</small>
         </details>
 
         {issues.length ? (
@@ -358,6 +382,22 @@ function App() {
             Undo
           </button>
         </div>
+
+        <section className="showcase" aria-labelledby="showcase-title">
+          <div>
+            <p className="eyebrow">Demonstrated visual grammars</p>
+            <h2 id="showcase-title">Try everything Tegeera can currently demonstrate</h2>
+            <p>Each example below is automatically tested for interpretation and validator safety. Visual quality is still awaiting human approval.</p>
+          </div>
+          {showcaseGroups.map((group) => (
+            <details key={group.subject} open>
+              <summary>{group.subject} · {group.examples.length}</summary>
+              <div className="showcase-grid">
+                {group.examples.map((example) => <button key={example} disabled={remoteBusy} type="button" onClick={() => { setInput(example); submit(example); }}>{example}</button>)}
+              </div>
+            </details>
+          ))}
+        </section>
       </section>
       </DoodleCanvas>
       <p className="sr-only" aria-live="polite">
