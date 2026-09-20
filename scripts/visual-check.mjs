@@ -57,6 +57,8 @@ const css = await readFile("src/styles.css", "utf8") + `
   }`;
 const fixtureRevision = `sha256:${createHash("sha256").update(result.outputFiles[0].text).update(css).update(JSON.stringify(gold)).digest("hex").slice(0, 16)}`;
 const cases = {
+  appearance: ["A yellow book", "A blue car and a green tree"],
+  appearanceEdit: ["A book", "Make the book purple"],
   individual: ["Three students each have two books"],
   transfer: ["Three students each have a book", "The first student gives book 1 to the second student"],
   shared: ["Three students share two books"],

@@ -1512,3 +1512,36 @@ offline-local and partitioned: application 245.26 kB (67.80 kB gzip), React 192.
 19/19 automated-ready, and zero false-confident; sixteen drawings still require real human
 visual approval. Native Android assembly, physical-device paint timing, microphone trials,
 projector inspection, and independent real-teacher generalization remain outstanding.
+
+## DoodleScript 2.25 composable object appearance
+
+Ordinary descriptions such as `A yellow book`, `Three blue cars`, and `A green tree
+and an orange car` now stay on Tegeera's fast deterministic path. Quantity, color,
+and noun are parsed as independent slots; the grammar does not contain complete
+appearance sentences. Eleven bounded color values can combine with every registered
+entity kind, while an unknown adjective such as `striped` still clarifies instead of
+being silently discarded.
+
+DoodleScript 2.25 stores color as typed entity data and permits a later update such as
+`Make the book green` without recreating the object or changing its identity. The SVG
+renderer applies the color to the meaningful body region of each procedural glyph.
+Visible labels and the SVG accessibility summary repeat the color name, so the scene
+does not communicate this attribute by color alone. Both the session-only OpenRouter
+prompt and the optional backend prompt expose the same bounded field; model output
+still crosses the normal schema, semantic, layout, and confidence gates.
+
+The version gate was also made monotonic: a newer DoodleScript version now inherits
+the legal features of earlier versions instead of relying on stale hand-maintained
+version allowlists. Focused coverage proves appearance composition with counts,
+ownership, and animated performance; invalid colors and pre-2.25 appearance data are
+rejected. The public demo exposes three tested appearance examples and the visual-check
+generator adds creation and recoloring fixtures.
+
+The complete checkpoint passes 417 tests across 60 files. The 278-probe local SVG-ready
+workload measured 0.92 ms decision p50, 2.76 ms decision p95, 18.32 ms SVG p50,
+36.67 ms SVG p95, and 39.06 ms total-ready p95 across 834 warmed samples. Production
+JavaScript remains partitioned below the 500 KiB ceiling: application 317.95 KiB,
+React 187.84 KiB, and schema 83.51 KiB. Lint, TypeScript, production build, bundle
+budgets, and 46 real-component visual fixtures pass. A headless settled-frame inspection
+confirmed readable yellow-book, blue-car, and green-tree fills with redundant labels.
+These remain local/browser results, not physical Android paint or microphone evidence.

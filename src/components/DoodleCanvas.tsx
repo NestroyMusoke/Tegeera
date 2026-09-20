@@ -46,6 +46,10 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const inspecting = detail && scene.entities.length > 0;
   const focusedId = scene.context?.subjectIds[0];
   const focused = scene.entities.find((entity) => entity.id === focusedId) ?? scene.entities[0];
+  const spokenEntityLabels = scene.entities.slice(0, 8).map((entity) => {
+    const label = entity.label ?? entity.kind;
+    return entity.color && !label.startsWith(`${entity.color} `) ? `${entity.color} ${label}` : label;
+  });
   const focusedX = focused?.x;
   const focusedY = focused?.y;
   useLayoutEffect(() => {
@@ -73,7 +77,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
         role="img"
         aria-label={
           scene.entities.length
-            ? `Drawing containing ${scene.entities.length} objects`
+            ? `Drawing containing ${scene.entities.length} objects: ${spokenEntityLabels.join(", ")}`
             : "Empty drawing canvas"
         }
       >
@@ -933,11 +937,11 @@ function DoodleEntity({
   } as React.CSSProperties : undefined;
 
   if (["force", "surface", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service", "compute-unit", "memory-unit", "doubling-subject", "doubling-one", "doubling-two", "doubling-four", "doubling-eight", "chain-title", "chain-source", "chain-consumer-1", "chain-consumer-2", "chain-consumer-3"].includes(entity.visualRole ?? "")) {
-    return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={entity.label ?? entity.kind} />;
+    return <g data-entity-id={entity.id} data-visual-role={entity.visualRole} aria-label={`${entity.color && !(entity.label ?? entity.kind).startsWith(`${entity.color} `) ? `${entity.color} ` : ""}${entity.label ?? entity.kind}`} />;
   }
 
   return (
-    <g className={className} data-entity-id={entity.id} data-attached-to={attachment?.actorId} data-handover-object={handoverObject || undefined} transform={transform} style={delay}>
+    <g className={className} data-entity-id={entity.id} data-attached-to={attachment?.actorId} data-handover-object={handoverObject || undefined} aria-label={`${entity.color && !(entity.label ?? entity.kind).startsWith(`${entity.color} `) ? `${entity.color} ` : ""}${entity.label ?? entity.kind}`} transform={transform} style={delay}>
       <g className={attachment ? `attached-object motion-${attachment.loop}` : undefined} style={attachmentStyle}>
         <EntityGlyph entity={entity} moving={moving} />
       </g>

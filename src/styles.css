@@ -321,6 +321,11 @@ button {
   animation-delay: calc(var(--draw-delay) + 100ms);
 }
 
+.entity-color-fill {
+  fill: var(--entity-color, transparent);
+  fill-opacity: .62;
+}
+
 .highlighted {
   filter: drop-shadow(0 0 9px rgba(222, 164, 67, 0.7));
 }

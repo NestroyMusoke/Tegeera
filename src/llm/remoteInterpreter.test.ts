@@ -12,7 +12,7 @@ describe("remote interpreter boundary", () => {
     vi.resetModules();
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       model: "example/free-model",
-      choices: [{ message: { content: JSON.stringify({ schemaVersion: "2.24.0" }) } }]
+      choices: [{ message: { content: JSON.stringify({ schemaVersion: "2.25.0" }) } }]
     }), { status: 200, headers: { "content-type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
     const remote = await import("./remoteInterpreter");

@@ -17,4 +17,10 @@ describe("public demonstrated examples", () => {
     expect(allTestedPhrases).toHaveLength(278);
     expect(new Set(allTestedPhrases.map(({ id }) => id)).size).toBe(278);
   });
+
+  it("publishes composable appearance examples instead of hiding the new capability", () => {
+    expect(showcaseExamples).toEqual(expect.arrayContaining([
+      "A yellow book.", "Three blue cars.", "A green tree and an orange car."
+    ]));
+  });
 });

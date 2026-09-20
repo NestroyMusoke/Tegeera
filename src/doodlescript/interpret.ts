@@ -1,4 +1,4 @@
-import type { CharacterPerformance, DoodleCommand, DoodleScript, EntityKind, SceneEntity, SceneState, SceneContext } from "./schema";
+import type { CharacterPerformance, DoodleCommand, DoodleScript, EntityColor, EntityKind, SceneEntity, SceneState, SceneContext } from "./schema";
 import { applyDoodleScript } from "./scene";
 import { nextPosition, nextPositionFor } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
@@ -39,12 +39,12 @@ export type Interpretation =
   | { ok: true; script: DoodleScript }
   | { ok: false; message: string; clause: string; clarification: ClarificationRequest };
 
-function nounPhrase(phrase: string): { kind: EntityKind; count: number } {
+function nounPhrase(phrase: string): { kind: EntityKind; count: number; color?: EntityColor } {
   const parsed = parseEntityPhrase(phrase);
   if (!parsed) throw new Clarification(`I cannot yet represent “${phrase}”. Please describe its objects separately.`, "unsupported-meaning");
   if (parsed.count < 1 || parsed.count > 12) throw new Clarification("Use a count from one to twelve; I have not changed the scene.", "missing-quantity");
   if (!parsed.countToken && (parsed.noun.endsWith("s") || parsed.noun === "people")) throw new Clarification(`How many ${parsed.noun} should I draw?`, "missing-quantity");
-  return { kind: parsed.kind, count: parsed.count };
+  return { kind: parsed.kind, count: parsed.count, color: parsed.color };
 }
 
 function resolve(phrase: string, scene: SceneState): SceneEntity {
@@ -77,7 +77,7 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   let currentEvidence = input;
   let context: SceneContext | undefined = scene.context;
   let schemaVersion: DoodleScript["schemaVersion"] = "1.4.0";
-  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0", "2.21.0", "2.22.0", "2.23.0", "2.24.0"];
+  const versionOrder: DoodleScript["schemaVersion"][] = ["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0", "2.21.0", "2.22.0", "2.23.0", "2.24.0", "2.25.0"];
   const upgradeVersion = (minimum: DoodleScript["schemaVersion"]) => {
     if (versionOrder.indexOf(schemaVersion) < versionOrder.indexOf(minimum)) schemaVersion = minimum;
   };
@@ -87,6 +87,8 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
   });
   const append = (command: DoodleCommand) => {
     if (command.action === "hold") upgradeVersion("2.5.0");
+    if ((command.action === "create" && command.entity.color)
+      || (command.action === "update" && command.color !== undefined)) upgradeVersion("2.25.0");
     if ((command.action === "create" && command.entity.performance)
       || (command.action === "update" && command.performance !== undefined)) upgradeVersion("1.5.0");
     if (command.action === "unrelate") {
@@ -133,8 +135,8 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
       while (working.entities.some((entity) => entity.id === `${spec.kind}-${number}`)) number++;
       const id = `${spec.kind}-${number}`;
       append({ action: "create", entity: {
-        id, kind: spec.kind, label: `${spec.kind} ${number}`, ...position,
-        scale: 1, direction: "right", highlighted: false, performance
+        id, kind: spec.kind, label: `${spec.color ? `${spec.color} ` : ""}${spec.kind} ${number}`, ...position,
+        scale: 1, direction: "right", highlighted: false, color: spec.color, performance
       } });
       ids.push(id);
     }
@@ -864,6 +866,15 @@ export function interpretTeacherText(input: string, scene: SceneState): Interpre
         const geometry = target ? motionGeometry(actor, target, previous.kind as "toward" | "away") : null;
         if (geometry) append({ action: "update", targetId: actorId, direction: geometry.direction });
         stopMotion(actorId); focus([actorId]); continue;
+      }
+      const recolor = text.match(/^(?:make|colou?r|paint) (.+?) (red|orange|yellow|green|blue|purple|pink|brown|black|white|gr(?:a|e)y)$/)
+        ?? text.match(/^change (.+?) to (red|orange|yellow|green|blue|purple|pink|brown|black|white|gr(?:a|e)y)$/);
+      if (recolor) {
+        const target = resolve(recolor[1], working);
+        const color = (recolor[2] === "grey" ? "gray" : recolor[2]) as EntityColor;
+        append({ action: "update", targetId: target.id, color });
+        focus([target.id]);
+        continue;
       }
       const correction = text.match(/^(?:make that|make it|change (?:that|it) to) (\w+)(?: (\w+))?$/);
       if (correction) {

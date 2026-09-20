@@ -5,6 +5,14 @@ export interface ShowcaseGroup {
 
 export const showcaseGroups: readonly ShowcaseGroup[] = [
   {
+    subject: "Objects and appearance",
+    examples: [
+      "A yellow book.",
+      "Three blue cars.",
+      "A green tree and an orange car."
+    ]
+  },
+  {
     subject: "Science",
     examples: [
       "A tree takes in water through its roots and sunlight through its leaves.",

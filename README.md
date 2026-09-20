@@ -39,6 +39,7 @@ These numbers do not prove that Tegeera is the answer. They explain why presenta
 Tegeera already accepts speech or typed input and turns supported explanations into deterministic, editable SVG scenes. It can currently visualize structures including:
 
 - queues, ownership, sharing, movement, gestures, contact, carrying, and handovers;
+- composable object colors across singular objects, counted groups, ownership, and actions;
 - cause-and-effect graphs and multi-step visual flows;
 - plant intake through roots and leaves;
 - circulation, water cycles, life cycles, and food chains;
@@ -49,6 +50,8 @@ Try explanations such as:
 
 ```text
 A plant takes in water through its roots and sunlight through its leaves.
+
+A yellow book. Then say: Make the book green.
 
 The food chain starts with grass, then a grasshopper eats it,
 then a frog eats the grasshopper, then a snake eats the frog.
@@ -89,7 +92,7 @@ The current checkpoint is reproducible from this repository:
 
 | Check | Current evidence |
 | --- | ---: |
-| Automated tests | **405/405 passing** across 57 files |
+| Automated tests | **417/417 passing** across 60 files |
 | Generated supported variations | **278** |
 | Incomplete, unsafe, or structurally wrong near-misses | **65 safely clarified** |
 | Independent teacher corpus | **25/60 drawn**, 1 held, 34 clarified |
@@ -97,9 +100,9 @@ The current checkpoint is reproducible from this repository:
 | False-confident gold acceptances | **0** |
 | Strict gold result | **3/28** |
 | Human-approved drawing cases | **0/25 so far** |
-| Local SVG-ready benchmark | **56.62 ms p95** over 834 warmed samples in the latest full run |
-| Production JavaScript | Largest chunk **298.28 KiB**, below the 500 KiB guardrail |
-| Visual-review output | **44 fixtures**, including a 25-scene human-review station |
+| Local SVG-ready benchmark | **39.06 ms p95** over 834 warmed samples in the latest full run |
+| Production JavaScript | Largest chunk **317.95 KiB**, below the 500 KiB guardrail |
+| Visual-review output | **46 fixtures**, including a 25-scene human-review station |
 
 The strict score is intentionally lower than the automated-ready score. Code can prove that required concepts, relationships, visual cues, and validation gates exist. It cannot declare its own drawings beautiful or classroom-ready. Every drawing case remains behind a real human-review gate.
 
@@ -113,6 +116,7 @@ Today, Tegeera includes:
 - semantic accessibility labels for rendered relationships and specialist diagrams;
 - keyboard-readable controls and a detail view for larger labels;
 - reduced-motion behavior that preserves the meaning of animated scenes;
+- color descriptions repeated in visible labels and accessibility summaries, so color is never the only cue;
 - offline-first deterministic rendering for supported lessons;
 - privacy-safe performance reports that exclude lesson text and transcripts.
 

@@ -1,4 +1,4 @@
-import type { EntityKind } from "./schema";
+import { entityColorSchema, type EntityColor, type EntityKind } from "./schema";
 import { conceptForAlias, type ConceptCategory } from "./conceptRegistry";
 
 export const numberWords = [
@@ -27,19 +27,30 @@ export interface ParsedEntityPhrase {
   category: ConceptCategory;
   count: number;
   countToken?: string;
+  color?: EntityColor;
   noun: string;
 }
 
 export function parseEntityPhrase(phrase: string): ParsedEntityPhrase | null {
-  const match = phrase.trim().match(/^(?:(\w+) )?(\w+)$/);
-  const concept = match ? conceptForAlias(match[2]) : undefined;
-  if (!match || !concept) return null;
+  const tokens = phrase.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return null;
+  let countToken: string | undefined;
+  const possibleCount = parseCountToken(tokens[0]);
+  if (possibleCount >= 0 || /^(?:a|an|another)$/.test(tokens[0])) countToken = tokens.shift();
+  const color = entityColorSchema.safeParse(tokens[0]);
+  const parsedColor = color.success ? color.data : undefined;
+  if (parsedColor) tokens.shift();
+  if (tokens.length !== 1) return null;
+  const noun = tokens[0];
+  const concept = conceptForAlias(noun);
+  if (!concept) return null;
   return {
     kind: concept.kind,
     conceptId: concept.id,
     category: concept.category,
-    count: match[1] ? parseCountToken(match[1]) : 1,
-    countToken: match[1],
-    noun: match[2]
+    count: countToken ? parseCountToken(countToken) : 1,
+    countToken,
+    color: parsedColor,
+    noun
   };
 }

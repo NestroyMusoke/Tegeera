@@ -42,6 +42,7 @@ function applyCommand(
               label: command.label ?? entity.label,
               highlighted: command.highlighted ?? entity.highlighted,
               direction: command.direction ?? entity.direction,
+              color: command.color === undefined ? entity.color : command.color ?? undefined,
               performance: command.performance === undefined ? entity.performance : command.performance ?? undefined
             }
           : entity
