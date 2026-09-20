@@ -18,6 +18,19 @@ export const directionSchema = z.enum(["left", "right", "up", "down"]);
 export const entityColorSchema = z.enum([
   "red", "orange", "yellow", "green", "blue", "purple", "pink", "brown", "black", "white", "gray"
 ]);
+export const visualPrimitiveSchema = z.object({
+  shape: z.enum(["circle", "ellipse", "rect", "line", "arc", "triangle", "wave"]),
+  x: z.number().min(-50).max(50),
+  y: z.number().min(-55).max(55),
+  width: z.number().min(2).max(100),
+  height: z.number().min(2).max(110),
+  rotation: z.number().min(-180).max(180).default(0),
+  tone: z.enum(["outline", "primary", "accent", "muted"]).default("outline")
+});
+export const proceduralVisualSchema = z.object({
+  primitives: z.array(visualPrimitiveSchema).min(1).max(12),
+  motion: z.enum(["none", "pulse", "float", "spin"]).default("none")
+});
 export const visualRoleSchema = z.enum(["object", "surface", "force", "container", "contained", "geometry", "measurement", "watercourse", "elevated-source", "water-destination", "circulation-source", "circulation-destination", "circulation-payload", "circulation-enrichment", "trajectory-object", "trajectory-apex", "trajectory-force", "control-caller", "control-function", "control-call-site", "fraction-whole", "fraction-initial", "fraction-removed", "fraction-remainder", "cycle-cloud", "cycle-rain", "cycle-soil", "cycle-water", "cycle-evaporation", "lifecycle-start", "lifecycle-intermediate", "lifecycle-final", "optics-incident", "optics-surface", "optics-reflected", "stack-container", "stack-items", "stack-top", "triangle-shape", "triangle-angles", "triangle-sum", "plate-left", "plate-right", "plate-mountain", "routine-first", "routine-middle", "routine-final", "indexed-collection", "indexed-cells", "indexed-values", "indexed-start", "linked-collection", "linked-first", "linked-middle", "linked-final", "control-entry", "control-condition", "control-true", "control-false", "control-step", "control-exit", "narrowing-process", "narrowing-initial", "narrowing-reduced", "narrowing-found", "fifo-first", "fifo-second", "fifo-third", "fifo-service", "compute-unit", "memory-unit", "doubling-subject", "doubling-one", "doubling-two", "doubling-four", "doubling-eight", "chain-title", "chain-source", "chain-consumer-1", "chain-consumer-2", "chain-consumer-3"]);
 
 export const limbPerformanceSchema = z.object({
@@ -55,6 +68,7 @@ export const sceneEntitySchema = z.object({
   direction: directionSchema.default("right"),
   highlighted: z.boolean().default(false),
   color: entityColorSchema.optional(),
+  visual: proceduralVisualSchema.optional(),
   visualRole: visualRoleSchema.optional(),
   fraction: z.object({ numerator: z.number().int().min(1).max(12), denominator: z.number().int().min(2).max(12) }).optional(),
   performance: characterPerformanceSchema.optional()
@@ -62,7 +76,7 @@ export const sceneEntitySchema = z.object({
 
 export const relationSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["shares", "owns", "toward", "away", "queuedFor", "actsOn", "handover", "before", "causes", "visualAction", "partOf", "flowsInto", "illuminates", "appliedTo", "opposes", "contacts", "contains", "measures", "flowsFrom", "flowsTo", "pumpsTo", "returnsTo", "carries", "risesTo", "fallsFrom", "accelerates", "calls", "returnsControlTo", "subtracts", "resultsIn", "fallsTo", "infiltrates", "evaporatesTo", "transformsTo", "travelsTo", "reflectsFrom", "accessedAt", "trianglePartOf", "sumsTo", "pushesToward", "routineBefore", "containsCells", "storesValues", "startsIndexAt", "hasFirstNode", "pointsNext", "checksCondition", "takesTruePath", "takesFalsePath", "startsSearchWith", "narrowsTo", "findsTarget", "fifoBefore", "servedBy", "exchangesWith", "keptNear", "growthStartsAt", "doublesTo", "chainStartsWith", "eatenBy"]),
+  kind: z.enum(["shares", "owns", "toward", "away", "queuedFor", "actsOn", "handover", "before", "causes", "visualAction", "partOf", "flowsInto", "illuminates", "appliedTo", "opposes", "contacts", "contains", "measures", "flowsFrom", "flowsTo", "pumpsTo", "returnsTo", "carries", "risesTo", "fallsFrom", "accelerates", "calls", "returnsControlTo", "subtracts", "resultsIn", "fallsTo", "infiltrates", "evaporatesTo", "transformsTo", "travelsTo", "reflectsFrom", "accessedAt", "trianglePartOf", "sumsTo", "pushesToward", "routineBefore", "containsCells", "storesValues", "startsIndexAt", "hasFirstNode", "pointsNext", "checksCondition", "takesTruePath", "takesFalsePath", "startsSearchWith", "narrowsTo", "findsTarget", "fifoBefore", "servedBy", "exchangesWith", "keptNear", "growthStartsAt", "doublesTo", "chainStartsWith", "eatenBy", "relatesTo"]),
   sourceIds: z.array(z.string().min(1)).min(1).max(12),
   targetIds: z.array(z.string().min(1)).min(1).max(12),
   objectIds: z.array(z.string().min(1)).min(1).max(12).optional(),
@@ -109,7 +123,7 @@ export const contextSchema = z.object({
 });
 
 export const doodleScriptSchema = z.object({
-  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0", "2.21.0", "2.22.0", "2.23.0", "2.24.0", "2.25.0"]),
+  schemaVersion: z.enum(["1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0", "1.6.0", "1.7.0", "1.8.0", "1.9.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0", "2.13.0", "2.14.0", "2.15.0", "2.16.0", "2.17.0", "2.18.0", "2.19.0", "2.20.0", "2.21.0", "2.22.0", "2.23.0", "2.24.0", "2.25.0", "2.26.0"]),
   context: contextSchema.optional(),
   sceneId: z.string().min(1),
   revision: z.number().int().nonnegative(),
@@ -120,6 +134,7 @@ export const doodleScriptSchema = z.object({
 
 export type EntityKind = z.infer<typeof entityKindSchema>;
 export type EntityColor = z.infer<typeof entityColorSchema>;
+export type ProceduralVisual = z.infer<typeof proceduralVisualSchema>;
 export type SceneEntity = z.infer<typeof sceneEntitySchema>;
 export type DoodleCommand = z.infer<typeof commandSchema>;
 export type DoodleScript = z.infer<typeof doodleScriptSchema>;

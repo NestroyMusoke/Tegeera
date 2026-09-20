@@ -480,6 +480,26 @@
       }
     },
     {
+      "id": 15,
+      "expected": {
+        "intent": "draw",
+        "requiresHumanVisualReview": true,
+        "visualGrammar": "linear-propagation",
+        "concepts": [
+          { "key": "source", "labels": ["heat source", "heated end", "flame"] },
+          { "key": "medium", "labels": ["metal rod", "rod"] },
+          { "key": "payload", "labels": ["heat", "thermal energy"] },
+          { "key": "destination", "labels": ["other end", "far end", "opposite end"] }
+        ],
+        "relations": [
+          { "predicate": "enters", "source": "source", "target": "medium" },
+          { "predicate": "propagatesThrough", "source": "payload", "target": "medium" },
+          { "predicate": "reaches", "source": "payload", "target": "destination" }
+        ],
+        "visualCues": ["linear-medium", "source-at-one-end", "warm-to-cool-gradient", "forward-propagation-arrow", "moving-energy-pulses", "far-end-marker"]
+      }
+    },
+    {
       "id": 53,
       "expected": {
         "intent": "clarify",

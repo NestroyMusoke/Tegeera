@@ -15,6 +15,7 @@ const result = await build({
     import { interpretTeacherText } from './src/doodlescript/interpret';
     import { validateDoodleScript } from './src/doodlescript/validator';
     import { initialScene, applyDoodleScript } from './src/doodlescript/scene';
+    import { compileUniversalScene } from './src/llm/universalScene';
     export function render(commands) {
       let scene = initialScene;
       for (const text of commands) {
@@ -43,12 +44,39 @@ const result = await build({
         scale: 0.9, direction: 'right', highlighted: false
       })) };
       return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
+    }
+    export function renderUniversal() {
+      const blueprint = { blueprintVersion: '1.0', mode: 'replace', confidence: .92, objects: [
+        { id: 'dragon', label: 'flying dragon', kind: 'generic', color: 'green', x: 18, y: 36, visual: { motion: 'float', primitives: [
+          { shape: 'ellipse', x: -4, y: 5, width: 64, height: 34, rotation: -8, tone: 'primary' },
+          { shape: 'circle', x: 30, y: -5, width: 27, height: 27, rotation: 0, tone: 'primary' },
+          { shape: 'triangle', x: -18, y: -24, width: 42, height: 35, rotation: -24, tone: 'accent' },
+          { shape: 'triangle', x: 10, y: -25, width: 42, height: 35, rotation: 20, tone: 'accent' },
+          { shape: 'triangle', x: 45, y: -3, width: 24, height: 15, rotation: 95, tone: 'primary' },
+          { shape: 'arc', x: -36, y: 7, width: 35, height: 27, rotation: -28, tone: 'outline' },
+          { shape: 'line', x: -10, y: 25, width: 5, height: 21, rotation: 10, tone: 'outline' },
+          { shape: 'line', x: 14, y: 23, width: 5, height: 19, rotation: -10, tone: 'outline' },
+          { shape: 'circle', x: 35, y: -9, width: 5, height: 5, rotation: 0, tone: 'outline' }
+        ] } },
+        { id: 'village', label: 'tiny village', kind: 'generic', x: 82, y: 68, visual: { motion: 'none', primitives: [
+          { shape: 'rect', x: -27, y: 17, width: 28, height: 31, rotation: 0, tone: 'muted' },
+          { shape: 'triangle', x: -27, y: -7, width: 35, height: 24, rotation: 0, tone: 'accent' },
+          { shape: 'rect', x: 5, y: 9, width: 35, height: 46, rotation: 0, tone: 'primary' },
+          { shape: 'triangle', x: 5, y: -22, width: 44, height: 30, rotation: 0, tone: 'accent' },
+          { shape: 'rect', x: 35, y: 20, width: 24, height: 27, rotation: 0, tone: 'muted' },
+          { shape: 'triangle', x: 35, y: -1, width: 31, height: 21, rotation: 0, tone: 'accent' },
+          { shape: 'rect', x: 5, y: 21, width: 10, height: 22, rotation: 0, tone: 'outline' },
+          { shape: 'line', x: 0, y: 43, width: 92, height: 2, rotation: 0, tone: 'outline' }
+        ] } }
+      ], connections: [{ from: 'dragon', to: 'village', label: 'flies over' }] };
+      const script = compileUniversalScene(blueprint, initialScene, 'A dragon flies over a tiny village');
+      return renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)}/>);
     }`, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "node", format: "cjs", jsx: "automatic", write: false,
 });
 const bundlePath = resolve(output, "renderer.cjs");
 await writeFile(bundlePath, result.outputFiles[0].text);
-const { render, renderPerformance, renderSymbolAtlas } = createRequire(import.meta.url)(bundlePath);
+const { render, renderPerformance, renderSymbolAtlas, renderUniversal } = createRequire(import.meta.url)(bundlePath);
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
@@ -107,6 +135,7 @@ for (const [name, commands] of Object.entries(cases)) {
 }
 await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Composable performance protocol</h1>${renderPerformance()}</main></body></html>`);
 await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
+await writeFile(resolve(output, "universal-scene.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Universal procedural scene — unseen nouns</h1>${renderUniversal()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
 const reviewFixtureById = {
   1: "partWholeFlow.html", 2: "circulationLoop.html", 3: "lifecycleSequence.html", 4: "doublingGrowth.html", 6: "consumptionChain.html", 11: "forceDiagram.html",
@@ -131,7 +160,7 @@ function refresh(){document.getElementById('status').textContent=Object.keys(dec
 for(const card of cards){for(const button of card.querySelectorAll('[data-decision]'))button.addEventListener('click',()=>{const id=Number(card.dataset.reviewCase);const decision=button.dataset.decision;decisions[id]={decision,note:card.querySelector('textarea').value};card.classList.remove('approved','rejected');card.classList.add(decision);card.querySelector('[data-current]').textContent=decision;refresh();});}
 document.getElementById('export').addEventListener('click',()=>{for(const card of cards){const id=Number(card.dataset.reviewCase);if(decisions[id])decisions[id].note=card.querySelector('textarea').value;}const rejectedWithoutNote=Object.entries(decisions).find(([,value])=>value.decision==='rejected'&&!value.note.trim());if(rejectedWithoutNote){alert('Case '+rejectedWithoutNote[0]+' needs a rejection note.');return;}const evidence={schemaVersion:'1.0.0',fixtureRevision:${JSON.stringify(fixtureRevision)},reviewedAt:new Date().toISOString(),reviewer:document.getElementById('reviewer').value,device:document.getElementById('device').value,viewportPx:390,reducedMotionChecked:document.getElementById('reduced').checked,cases:decisions};if(!evidence.reviewer||!evidence.device||Object.keys(decisions).length!==cards.length){alert('Enter reviewer and device, and decide every case.');return;}const blob=new Blob([JSON.stringify(evidence,null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='tegeera-human-visual-review.json';link.click();URL.revokeObjectURL(link.href);});
 </script></body></html>`);
-console.log(`Rendered ${Object.keys(cases).length + 2} real-component fixtures in ${output}`);
+console.log(`Rendered ${Object.keys(cases).length + 3} real-component fixtures in ${output}`);
 
 // Exercise the real App in a browser, without adding test-only props to production.
 const appBundle = await build({

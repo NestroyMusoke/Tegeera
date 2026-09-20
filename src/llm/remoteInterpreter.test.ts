@@ -22,6 +22,11 @@ describe("remote interpreter boundary", () => {
     expect(fetchMock).toHaveBeenCalledWith("https://openrouter.ai/api/v1/chat/completions", expect.objectContaining({
       headers: expect.objectContaining({ authorization: "Bearer session-key" })
     }));
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(request.body as string);
+    expect(body.response_format).toEqual({ type: "json_object" });
+    expect(body.messages[0].content).toContain('"blueprintVersion":"1.0"');
+    expect(body.messages[0].content).toContain("Primitive shapes: circle, ellipse, rect, line, arc, triangle, wave");
     vi.unstubAllGlobals();
   });
 });

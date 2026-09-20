@@ -890,6 +890,25 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
       </g>
     );
   }
+  if (relation.kind === "relatesTo") {
+    const source = entities.find(({ id }) => id === relation.sourceIds[0]);
+    const target = entities.find(({ id }) => id === relation.targetIds[0]);
+    if (!source || !target) return null;
+    const sx = source.x * 10; const sy = source.y * 6.2;
+    const tx = target.x * 10; const ty = target.y * 6.2;
+    const length = Math.hypot(tx - sx, ty - sy) || 1;
+    const ux = (tx - sx) / length; const uy = (ty - sy) / length;
+    const startX = sx + ux * 52; const startY = sy + uy * 42;
+    const endX = tx - ux * 52; const endY = ty - uy * 42;
+    const normalX = -uy * 9; const normalY = ux * 9;
+    const label = relation.predicate ?? "relates to";
+    return <g className="universal-relation" aria-label={`${source.label} ${label} ${target.label}`} data-visual-cue="semantic-connection">
+      <path className="universal-relation-flow" d={`M${startX} ${startY} L${endX} ${endY}`} fill="none" stroke="#49776f" strokeWidth="4" strokeDasharray="10 7" strokeLinecap="round" />
+      <path d={`M${endX - ux * 14 + normalX} ${endY - uy * 14 + normalY} L${endX} ${endY} L${endX - ux * 14 - normalX} ${endY - uy * 14 - normalY}`} fill="none" stroke="#49776f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x={(startX + endX) / 2 - Math.min(72, label.length * 4.5)} y={(startY + endY) / 2 - 23} width={Math.min(144, label.length * 9)} height="25" rx="9" fill="#fbf7ed" opacity=".94" />
+      <text x={(startX + endX) / 2} y={(startY + endY) / 2 - 6} textAnchor="middle" fill="#315f59" fontSize="14" fontWeight="800">{label}</text>
+    </g>;
+  }
   // Mixed-row relations remain in the explicit key until routed connectors exist.
   if (members.some((entity) => entity.y !== members[0].y)) return null;
   const y = Math.max(...members.map((entity) => entity.y * 6.2 + 110 * entity.scale)) + 18;

@@ -12,6 +12,7 @@ import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
 import { interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
+import { compileUniversalScene } from "./llm/universalScene";
 import { allTestedPhrases, showcaseGroups } from "./evaluation/showcaseExamples";
 import {
   makeLatencySample,
@@ -102,11 +103,13 @@ function App() {
         void interpretRemotely(text, targetScene, openRouterKey).then(({ candidate, model }) => {
           setLastRemoteModel(model ?? "OpenRouter-selected free model");
           setAiStatus("Enabled and working");
-          const result = validateDoodleScript(candidate, targetScene);
+          const compiled = compileUniversalScene(candidate, targetScene, text);
+          const result = validateDoodleScript(compiled, targetScene);
           if (!result.ok) {
             markDecision("reject");
-            setClarification(interpretation.clarification);
-            setIssues([{ gate: "confidence", message: interpretation.message }]);
+            setAiStatus("Enabled, but the last visual plan was rejected safely");
+            setClarification(null);
+            setIssues(result.issues.slice(0, 1));
             return;
           }
           const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
@@ -117,11 +120,11 @@ function App() {
           setIssues([]);
           setClarification(null);
           setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
-        }).catch(() => {
+        }).catch((error: unknown) => {
           setAiStatus("Enabled, but the last request failed safely");
           markDecision("clarify");
-          setClarification(interpretation.clarification);
-          setIssues([{ gate: "confidence", message: interpretation.message }]);
+          setClarification(null);
+          setIssues([{ gate: "confidence", message: `AI understanding could not complete: ${error instanceof Error ? error.message : "unknown service error"}` }]);
         }).finally(() => setRemoteBusy(false));
         return;
       }

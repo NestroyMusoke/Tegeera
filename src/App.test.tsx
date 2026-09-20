@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 function explain(text: string) {
   fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: text } });
@@ -124,5 +124,32 @@ describe("teaching workflow", () => {
     expect(container.querySelector(".lifo-stack-annotation")).not.toBeNull();
     expect(container.querySelector('[data-visual-cue="straight-incident-ray"]')).toBeNull();
     expect(screen.getByText("Revision 1")).toBeTruthy();
+  });
+  it("turns unfamiliar language into a validated procedural scene when session AI is enabled", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      model: "example/free-visual-model",
+      choices: [{ message: { content: JSON.stringify({
+        blueprintVersion: "1.0", mode: "replace", confidence: 0.92,
+        objects: [
+          { id: "dragon", label: "flying dragon", kind: "generic", color: "green", x: 20, y: 35, visual: { motion: "float", primitives: [
+            { shape: "ellipse", x: 0, y: 0, width: 70, height: 38, rotation: 0, tone: "primary" },
+            { shape: "triangle", x: -24, y: -22, width: 34, height: 28, rotation: -18, tone: "accent" }
+          ] } },
+          { id: "village", label: "tiny village", kind: "generic", x: 80, y: 68, visual: { motion: "none", primitives: [
+            { shape: "rect", x: 0, y: 12, width: 58, height: 42, rotation: 0, tone: "muted" },
+            { shape: "triangle", x: 0, y: -22, width: 70, height: 35, rotation: 0, tone: "accent" }
+          ] } }
+        ], connections: [{ from: "dragon", to: "village", label: "flies over" }]
+      }) } }]
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<App />);
+    fireEvent.change(screen.getByLabelText("OpenRouter key for this session"), { target: { value: "session-key" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enable AI understanding" }));
+    explain("A dragon flies over a tiny village");
+    await waitFor(() => expect(container.querySelectorAll('[data-procedural-visual="true"]')).toHaveLength(2));
+    expect(container.querySelector('[data-visual-cue="semantic-connection"]')).not.toBeNull();
+    expect(screen.getByText(/Last model: example\/free-visual-model/)).toBeTruthy();
+    expect(screen.queryByText("Help me understand")).toBeNull();
   });
 });

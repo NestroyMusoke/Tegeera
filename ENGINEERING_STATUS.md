@@ -1545,3 +1545,45 @@ React 187.84 KiB, and schema 83.51 KiB. Lint, TypeScript, production build, bund
 budgets, and 46 real-component visual fixtures pass. A headless settled-frame inspection
 confirmed readable yellow-book, blue-car, and green-tree fills with redundant labels.
 These remain local/browser results, not physical Android paint or microphone evidence.
+
+## DoodleScript 2.26 universal visual blueprint
+
+Development has stopped adding sentence-shaped production branches as the primary route
+to broad language. When the deterministic interpreter cannot resolve an explanation and
+session AI is enabled, OpenRouter now returns a high-level `UniversalSceneBlueprint`
+instead of attempting to author low-level DoodleScript. The blueprint has open object
+labels, semantic positions, and labelled connections. Unfamiliar objects are composed
+from a bounded alphabet of circles, ellipses, rectangles, lines, arcs, triangles, and
+waves, with four visual tones and optional pulse, float, or spin motion. There is no
+dragon, village, volcano, organ, or curriculum-specific object list in production code.
+
+The client treats the blueprint as untrusted. Zod limits it to eight objects, twelve
+connections, twelve primitives per object, short labels, bounded geometry, and a small
+motion/color vocabulary. A local compiler cleans and de-duplicates IDs, preserves
+semantic relative placement while snapping to collision-resistant slots, scales sparse
+scenes more generously than dense scenes, preserves established identities on explicit
+extensions, and emits DoodleScript 2.26. Arbitrary SVG paths, markup, scripts, and unknown
+fields cannot cross this boundary. `relatesTo` supplies an open labelled semantic arrow;
+the normal schema, reference, relation, confidence, canvas, overlap, and revision gates
+still decide whether the scene may change.
+
+The real App workflow is covered with an unfamiliar `dragon flies over a tiny village`
+utterance. Its local grammar clarifies, the mocked OpenRouter response returns the generic
+blueprint, the compiler produces valid DoodleScript, and the rendered canvas contains two
+multi-primitive doodles plus a labelled connector without refreshing. Additional tests
+cover scene extension, relationship-ID collision avoidance, pre-2.26 rejection, unsafe
+primitive rejection, JSON response mode, and disclosure of the exact OpenRouter-selected
+model. AI failures now expose a safe diagnostic instead of falling back to the misleading
+original local-language clarification.
+
+The complete checkpoint passes 421 tests across 61 files. The unchanged 278 local probes
+measure 1.07 ms decision p50, 3.17 ms decision p95, 21.49 ms SVG p50, 43.47 ms SVG p95,
+and 46.26 ms total-ready p95 across 834 warmed samples; network/model latency is deliberately
+excluded and must be measured separately. Production JavaScript remains below budget at
+324.84 KiB for the largest application chunk. Lint, production build, all tests, 47
+real-component fixtures, and Android asset synchronization pass. A headless 1280×900
+inspection confirmed the unseen-noun fixture renders a multi-part flying creature, a
+three-building village, and a readable directional connection. This is a real general
+composition foundation, not a claim that arbitrary scenes are already visually perfect;
+frozen unseen-language evaluation, stronger procedural art direction, connector routing,
+model latency, physical Android tests, and teacher review remain required.

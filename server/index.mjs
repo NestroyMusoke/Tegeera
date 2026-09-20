@@ -38,7 +38,11 @@ function extractJson(content) {
   return JSON.parse((content.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ?? content).trim());
 }
 function makePrompt(text, scene) {
-  return `You are Tegeera's conservative semantic planner. Return JSON only, never markdown and never invent facts. Produce DoodleScript with schemaVersion "2.25.0", sceneId ${JSON.stringify(scene.sceneId)}, revision ${Number(scene.revision) + 1}, confidence 0..1, sourceText exactly ${JSON.stringify(text)}, and 1-30 commands. Entity kinds: ${kinds.join(", ")}. Directions: left, right, up, down. Colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray. Relation kinds: ${relations.join(", ")}. Commands: create {entity:{id,kind,label?,color?,x,y,scale,direction,highlighted}}, relate {relation:{id,kind,sourceIds,targetIds,objectIds?,predicate?,preposition?}}, move, update, remove, unrelate, clear. Coordinates x=6..94, y=12..88, scale=.5..2. Use unique IDs; reference only existing/new IDs. Use generic with a concise label for unknown concrete objects. Do not output unknown fields. Current scene: ${JSON.stringify(scene)}`;
+  return `You are Tegeera's visual scene architect. Return exactly one JSON object, no markdown. Convert the teacher's meaning into this blueprint:
+{"blueprintVersion":"1.0","mode":"replace","confidence":0.0,"objects":[{"id":"short-id","label":"short label","kind":"generic","color":"green","x":50,"y":50,"visual":{"motion":"none","primitives":[{"shape":"ellipse","x":0,"y":0,"width":60,"height":40,"rotation":0,"tone":"primary"}]}}],"connections":[{"from":"short-id","to":"other-id","label":"short action"}]}.
+Use 1-8 objects and 0-12 connections. Show meaning, not every word. Kinds: ${kinds.join(", ")}; use generic for anything else. Colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray; omit unstated color. x/y are semantic 0..100 positions. Each object needs 1-12 primitives made only from circle, ellipse, rect, line, arc, triangle, wave. Primitive x=-50..50, y=-55..55, width=2..100, height=2..110, rotation=-180..180, tone=outline|primary|accent|muted. motion=none|pulse|float|spin. Build a recognizable silhouette with meaningful details, never a letter placeholder. Labels use at most four words. Connections reference object ids. Do not invent semantic facts. Use confidence below .58 only when essential meaning is ambiguous. mode is replace unless explicitly extending the current scene.
+Teacher: ${JSON.stringify(text)}
+Current scene for reference: ${JSON.stringify(scene)}`;
 }
 
 createServer(async (req, res) => {
@@ -57,7 +61,7 @@ createServer(async (req, res) => {
     const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json", "http-referer": process.env.APP_URL || "https://nestroymusoke.github.io/Tegeera/", "x-title": "Tegeera" },
-      body: JSON.stringify({ model, messages: [{ role: "user", content: makePrompt(body.text.trim(), body.scene) }], temperature: 0, max_tokens: 2200, provider: { allow_fallbacks: true, data_collection: "deny" } }),
+      body: JSON.stringify({ model, messages: [{ role: "user", content: makePrompt(body.text.trim(), body.scene) }], temperature: 0, max_tokens: 2200, response_format: { type: "json_object" }, provider: { allow_fallbacks: true, data_collection: "deny" } }),
       signal: AbortSignal.timeout(12_000)
     });
     const result = await upstream.json();

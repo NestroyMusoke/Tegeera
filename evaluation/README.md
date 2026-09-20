@@ -47,9 +47,10 @@ implementation and cue presence can be tested, but visual quality cannot be
 self-certified by the code that produced it.
 
 Safety cases 53 and 56 now pass strictly with their expected clarification codes, and
-case 60 passes strictly with a validated no-op scene hold. Therefore the complete frozen
-batch is 3/28 strict, 28/28 automated-ready, and zero false-confident. All twenty-five implemented
-drawings remain behind the explicit human-review gate. No visual approval has
+case 60 passes strictly with a validated no-op scene hold. Case 15 is now frozen as a four-role
+linear-propagation expectation but deliberately remains unsupported by the deterministic path.
+Therefore the complete frozen batch is 3/29 strict, 28/29 automated-ready, and zero false-confident. All twenty-five implemented
+drawings and the unimplemented case 15 remain behind the explicit human-review gate. No visual approval has
 been fabricated.
 
 The second development batch froze cases 2, 12, 22, 32, and 42 before their production
@@ -74,7 +75,7 @@ values, visible initial and removed portions, and a mathematically validated sim
 remainder. Case 42 is now automated-ready through five distinct hydrology identities,
 three typed relations, precipitation and infiltration cues, visible underground water,
 and an evaporation return that visibly closes the loop. The frozen batch is therefore
-3/28 strict, 28/28 automated-ready, and zero false-confident; all twenty-five implemented
+3/29 strict, 28/29 automated-ready, and zero false-confident; all twenty-five implemented
 drawing cases still require real human visual approval.
 
 The third development batch freezes cases 3, 13, 23, 33, 44, and 51 across lifecycle,
@@ -125,8 +126,8 @@ Forty-six paired near-misses cover missing semantic roles, wrong domains, negati
 uncertainty, duplicate routine stages, and incomplete sequences. They must all clarify.
 The resulting 142/142 accepted and 46/46 safely clarified checkpoint is a broad development
 regression test. It is not a hidden, independent, or real-teacher accuracy measurement and
-does not replace the gold result of 3/28 strict, 28/28 automated-ready, and zero
-false-confident. Human visual approval remains outstanding for all twenty-five drawings.
+does not replace the gold result of 3/29 strict, 28/29 automated-ready, and zero
+false-confident. Human visual approval remains outstanding for all twenty-six drawing expectations.
 
 ## Foundational construction-generalization probe
 

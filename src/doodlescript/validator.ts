@@ -96,6 +96,10 @@ export function validateDoodleScript(
   }
 
   for (const command of script.commands) {
+    const changesProceduralVisual = command.action === "create" && Boolean(command.entity.visual);
+    if (changesProceduralVisual && !versionAtLeast(script.schemaVersion, "2.26.0")) {
+      issues.push({ gate: "schema", message: "Procedural visual compositions require DoodleScript 2.26.0 or later." });
+    }
     const changesColor = command.action === "create" ? Boolean(command.entity.color)
       : command.action === "update" ? command.color !== undefined : false;
     if (changesColor && !versionAtLeast(script.schemaVersion, "2.25.0")) {

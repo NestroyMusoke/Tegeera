@@ -125,6 +125,29 @@ function Generic({ entity }: EntityRendererProps) {
   return <g data-symbol-id="labelled-node" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true"><path className="doodle-stroke entity-color-fill" d="M0-55 C34-55 47-34 43-4 C47 27 24 45 0 42 C-28 47-47 25-43-4 C-47-34-31-55 0-55Z" /><text x="0" y="5" textAnchor="middle" fill="#302e29" fontSize="30" fontWeight="700">{initial}</text></g>;
 }
 
+function ProceduralDoodle({ entity }: EntityRendererProps) {
+  const visual = entity.visual!;
+  const tone = (value: typeof visual.primitives[number]["tone"]) => ({
+    outline: { fill: "none", stroke: "#3f514e" },
+    primary: { fill: "var(--entity-color, #b9ded2)", stroke: "#3f514e" },
+    accent: { fill: "#f2cf91", stroke: "#6a5540" },
+    muted: { fill: "#dce2df", stroke: "#61706c" }
+  }[value]);
+  return <g className={`procedural-doodle universal-motion-${visual.motion}`} data-procedural-visual="true" data-primitive-count={visual.primitives.length}>
+    {visual.primitives.map((primitive, index) => {
+      const style = tone(primitive.tone); const transform = `rotate(${primitive.rotation} ${primitive.x} ${primitive.y})`;
+      const common = { ...style, strokeWidth: 4, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, transform };
+      if (primitive.shape === "circle") return <circle key={index} {...common} cx={primitive.x} cy={primitive.y} r={Math.min(primitive.width, primitive.height) / 2} />;
+      if (primitive.shape === "ellipse") return <ellipse key={index} {...common} cx={primitive.x} cy={primitive.y} rx={primitive.width / 2} ry={primitive.height / 2} />;
+      if (primitive.shape === "rect") return <rect key={index} {...common} x={primitive.x - primitive.width / 2} y={primitive.y - primitive.height / 2} width={primitive.width} height={primitive.height} rx={Math.min(10, primitive.width / 5)} />;
+      if (primitive.shape === "line") return <path key={index} {...common} d={`M${primitive.x - primitive.width / 2} ${primitive.y - primitive.height / 2} L${primitive.x + primitive.width / 2} ${primitive.y + primitive.height / 2}`} />;
+      if (primitive.shape === "triangle") return <path key={index} {...common} d={`M${primitive.x} ${primitive.y - primitive.height / 2} L${primitive.x + primitive.width / 2} ${primitive.y + primitive.height / 2} L${primitive.x - primitive.width / 2} ${primitive.y + primitive.height / 2} Z`} />;
+      if (primitive.shape === "arc") return <path key={index} {...common} d={`M${primitive.x - primitive.width / 2} ${primitive.y + primitive.height / 2} Q${primitive.x} ${primitive.y - primitive.height / 2} ${primitive.x + primitive.width / 2} ${primitive.y + primitive.height / 2}`} />;
+      return <path key={index} {...common} d={`M${primitive.x - primitive.width / 2} ${primitive.y} q${primitive.width / 4} ${-primitive.height / 2} ${primitive.width / 2} 0 q${primitive.width / 4} ${primitive.height / 2} ${primitive.width / 2} 0`} />;
+    })}
+  </g>;
+}
+
 const entityRendererRegistry: Record<EntityKind, ComponentType<EntityRendererProps>> = {
   person: Character,
   teacher: Character,
@@ -149,5 +172,5 @@ export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
     data-renderer={concept.glyphKey}
     data-entity-color={entity.color}
     style={entity.color ? { "--entity-color": entityColors[entity.color] } as CSSProperties : undefined}
-  ><Renderer entity={entity} moving={moving} /></g>;
+  >{entity.visual ? <ProceduralDoodle entity={entity} moving={moving} /> : <Renderer entity={entity} moving={moving} />}</g>;
 }

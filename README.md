@@ -46,6 +46,8 @@ Tegeera already accepts speech or typed input and turns supported explanations i
 - forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
 - stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
 
+With **AI understanding** enabled, unfamiliar subjects no longer have to collapse into a letter inside a generic blob. An OpenRouter model produces a high-level visual blueprint from reusable geometry; Tegeera compiles it locally into safe IDs, collision-resistant layout, procedural object silhouettes, subtle motion, and labelled semantic connections. This path is intentionally general: it composes circles, ellipses, rectangles, lines, arcs, triangles, and waves instead of looking up a hard-coded dragon, volcano, organ, or lesson.
+
 Try explanations such as:
 
 ```text
@@ -69,9 +71,11 @@ When Tegeera cannot support the meaning safely, it preserves the current scene a
 ```text
 Speech or typed explanation
           ↓
-Semantic frame: entities, actions, quantities and relationships
+Fast local semantic frame ── or ── AI visual blueprint for unfamiliar language
           ↓
-DoodleScript: a small, versioned visual language
+Local blueprint compiler: safe IDs, density-aware layout and procedural geometry
+          ↓
+DoodleScript: a small, versioned visual language (current: 2.26)
           ↓
 Schema → meaning → layout → confidence safety gates
           ↓
@@ -92,17 +96,17 @@ The current checkpoint is reproducible from this repository:
 
 | Check | Current evidence |
 | --- | ---: |
-| Automated tests | **417/417 passing** across 60 files |
+| Automated tests | **421/421 passing** across 61 files |
 | Generated supported variations | **278** |
 | Incomplete, unsafe, or structurally wrong near-misses | **65 safely clarified** |
 | Independent teacher corpus | **25/60 drawn**, 1 held, 34 clarified |
-| Gold semantic-scene cases | **28/28 automated-ready** |
+| Gold semantic-scene cases | **28/29 automated-ready** |
 | False-confident gold acceptances | **0** |
-| Strict gold result | **3/28** |
-| Human-approved drawing cases | **0/25 so far** |
-| Local SVG-ready benchmark | **39.06 ms p95** over 834 warmed samples in the latest full run |
-| Production JavaScript | Largest chunk **317.95 KiB**, below the 500 KiB guardrail |
-| Visual-review output | **46 fixtures**, including a 25-scene human-review station |
+| Strict gold result | **3/29** |
+| Human-approved drawing cases | **0/26 so far** |
+| Local SVG-ready benchmark | **46.26 ms p95** over 834 warmed samples in the latest full run |
+| Production JavaScript | Largest chunk **324.84 KiB**, below the 500 KiB guardrail |
+| Visual-review output | **47 fixtures**, including a 25-scene implemented-case review station and an unseen-noun procedural scene |
 
 The strict score is intentionally lower than the automated-ready score. Code can prove that required concepts, relationships, visual cues, and validation gates exist. It cannot declare its own drawings beautiful or classroom-ready. Every drawing case remains behind a real human-review gate.
 
@@ -143,7 +147,9 @@ Requirements: Node.js 20 or newer.
 
 ### Optional broad-language interpreter
 
-Tegeera always attempts its fast deterministic interpreter first. For a personal demo with no backend, open **AI understanding** and provide your own OpenRouter key; it remains in memory only until the page closes. Unsupported language can then fall through to an OpenRouter-powered semantic planner, whose output must pass the same DoodleScript schema, semantic, confidence and layout gates before anything is drawn. A backend boundary remains available for a later public production deployment; no credential is committed or built into the web app or APK. See [the interpreter deployment guide](server/README.md).
+Tegeera always attempts its fast deterministic interpreter first. For a personal demo with no backend, open **AI understanding**, paste a newly generated OpenRouter key, and press **Enable AI understanding**. The password field clears on purpose after enabling; the status immediately confirms that the key is active in memory. It is never written to local storage and disappears when the page closes.
+
+Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not SVG, HTML, executable code, or low-level scene commands. Tegeera accepts only a bounded primitive vocabulary, compiles spacing and identities locally, and requires the resulting DoodleScript to pass the same schema, semantic, confidence, and layout gates. The interface reports the exact model OpenRouter selected and now exposes a safe failure reason instead of disguising an AI failure as the original local clarification. A backend boundary remains available for a later public deployment; no credential is committed or built into the web app or APK. See [the interpreter deployment guide](server/README.md).
 
 ```bash
 git clone https://github.com/NestroyMusoke/Tegeera.git
@@ -181,8 +187,8 @@ The web application and Android assets currently build and synchronize successfu
 
 ## What comes next
 
-1. Expand from registered constructions to retrieval over reusable semantic visual templates.
-2. Add a constrained planner for uncovered language, with DoodleScript validation still mandatory.
+1. Evaluate the universal blueprint path on frozen unseen explanations and add automatic repair only where failures are measurable.
+2. Improve primitive composition, connector routing, character reuse, and density-aware layout without adding lesson-specific object branches.
 3. Collect consented teacher speech covering Ugandan English, different accents, classroom noise, and real corrections.
 4. Complete assistive-technology testing with blind, low-vision, and mobility-impaired participants.
 5. Add multilingual narration, prepared offline lessons, teacher-authored templates, and tactile/export formats.
