@@ -12,7 +12,7 @@ claim. Some speech is ambiguous, some concepts have no faithful doodle, and spee
 recognition can be wrong. The operational promise is:
 
 1. represent understood meaning faithfully;
-2. compose a useful visual from reusable primitives;
+2. compose a useful visual from trusted rigs and validated noun glyphs;
 3. preserve and edit the existing scene;
 4. expose uncertainty and ask the smallest useful clarification;
 5. never turn unsupported meaning into a confident but incorrect picture.

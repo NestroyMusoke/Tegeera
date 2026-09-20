@@ -47,27 +47,31 @@ const result = await build({
     }
     export function renderUniversal() {
       const blueprint = { blueprintVersion: '1.0', mode: 'replace', confidence: .92, objects: [
-        { id: 'dragon', label: 'flying dragon', kind: 'generic', color: 'green', x: 18, y: 36, visual: { motion: 'float', primitives: [
-          { shape: 'ellipse', x: -4, y: 5, width: 64, height: 34, rotation: -8, tone: 'primary' },
-          { shape: 'circle', x: 30, y: -5, width: 27, height: 27, rotation: 0, tone: 'primary' },
-          { shape: 'triangle', x: -18, y: -24, width: 42, height: 35, rotation: -24, tone: 'accent' },
-          { shape: 'triangle', x: 10, y: -25, width: 42, height: 35, rotation: 20, tone: 'accent' },
-          { shape: 'triangle', x: 45, y: -3, width: 24, height: 15, rotation: 95, tone: 'primary' },
-          { shape: 'arc', x: -36, y: 7, width: 35, height: 27, rotation: -28, tone: 'outline' },
-          { shape: 'line', x: -10, y: 25, width: 5, height: 21, rotation: 10, tone: 'outline' },
-          { shape: 'line', x: 14, y: 23, width: 5, height: 19, rotation: -10, tone: 'outline' },
-          { shape: 'circle', x: 35, y: -9, width: 5, height: 5, rotation: 0, tone: 'outline' }
-        ] } },
-        { id: 'village', label: 'tiny village', kind: 'generic', x: 82, y: 68, visual: { motion: 'none', primitives: [
-          { shape: 'rect', x: -27, y: 17, width: 28, height: 31, rotation: 0, tone: 'muted' },
-          { shape: 'triangle', x: -27, y: -7, width: 35, height: 24, rotation: 0, tone: 'accent' },
-          { shape: 'rect', x: 5, y: 9, width: 35, height: 46, rotation: 0, tone: 'primary' },
-          { shape: 'triangle', x: 5, y: -22, width: 44, height: 30, rotation: 0, tone: 'accent' },
-          { shape: 'rect', x: 35, y: 20, width: 24, height: 27, rotation: 0, tone: 'muted' },
-          { shape: 'triangle', x: 35, y: -1, width: 31, height: 21, rotation: 0, tone: 'accent' },
-          { shape: 'rect', x: 5, y: 21, width: 10, height: 22, rotation: 0, tone: 'outline' },
-          { shape: 'line', x: 0, y: 43, width: 92, height: 2, rotation: 0, tone: 'outline' }
-        ] } }
+        { id: 'dragon', label: 'flying dragon', kind: 'generic', color: 'green', x: 18, y: 36, glyph: {
+          schemaVersion: '1.0.0', viewBox: '0 0 100 100', parts: [
+            { id: 'body', d: 'M23 57 C26 39 47 34 65 43 C75 48 79 62 69 71 C55 80 31 75 23 57 Z', fill: '#84a98c', stroke: '#2f3e46' },
+            { id: 'neck-head', d: 'M58 49 C63 35 73 28 85 34 C94 39 93 50 84 55 C76 59 69 54 62 59 Z', fill: '#84a98c', stroke: '#2f3e46' },
+            { id: 'snout', d: 'M83 39 L97 44 L84 51 Z', fill: '#84a98c', stroke: '#2f3e46' },
+            { id: 'wing', d: 'M48 43 Q42 14 23 18 L35 37 Q23 28 17 39 Q32 43 48 57 Z', fill: '#e9c46a', stroke: '#2f3e46' },
+            { id: 'tail', d: 'M26 54 C15 51 13 39 5 36 Q13 59 29 66', fill: 'none', stroke: '#2f3e46' },
+            { id: 'horn', d: 'M72 33 L76 23 L80 35 Z', fill: '#f4a261', stroke: '#2f3e46' },
+            { id: 'leg-front', d: 'M61 70 Q64 82 73 87', fill: 'none', stroke: '#2f3e46' },
+            { id: 'leg-back', d: 'M39 72 Q37 84 30 89', fill: 'none', stroke: '#2f3e46' },
+            { id: 'eye', d: 'M82 39 C85 39 86 42 84 44 C81 45 79 43 80 40 C80 39 81 39 82 39 Z', fill: '#2f3e46', stroke: '#2f3e46' }
+          ], anchors: { top: [48,18], ground: [52,89], front: [97,44] }
+        } },
+        { id: 'village', label: 'tiny village', kind: 'generic', x: 82, y: 68, glyph: {
+          schemaVersion: '1.0.0', viewBox: '0 0 100 100', parts: [
+            { id: 'ground', d: 'M5 88 Q49 84 95 88', fill: 'none', stroke: '#52796f' },
+            { id: 'center-house', d: 'M35 43 L66 43 L66 86 L35 86 Z', fill: '#cad2c5', stroke: '#2f3e46' },
+            { id: 'center-roof', d: 'M29 45 L50 25 L72 45 Z', fill: '#f4a261', stroke: '#2f3e46' },
+            { id: 'door', d: 'M47 65 L57 65 L57 86 L47 86 Z', fill: '#52796f', stroke: '#2f3e46' },
+            { id: 'left-house', d: 'M8 58 L34 58 L34 86 L8 86 Z', fill: '#e9c46a', stroke: '#2f3e46' },
+            { id: 'left-roof', d: 'M5 60 L21 45 L38 60 Z', fill: '#84a98c', stroke: '#2f3e46' },
+            { id: 'right-house', d: 'M67 62 L92 62 L92 86 L67 86 Z', fill: '#cad2c5', stroke: '#2f3e46' },
+            { id: 'right-roof', d: 'M63 64 L79 49 L96 64 Z', fill: '#e9c46a', stroke: '#2f3e46' }
+          ], anchors: { top: [50,25], ground: [50,88], front: [92,72] }
+        } }
       ], connections: [{ from: 'dragon', to: 'village', label: 'flies over' }] };
       const script = compileUniversalScene(blueprint, initialScene, 'A dragon flies over a tiny village');
       return renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)}/>);
@@ -80,7 +84,7 @@ const { render, renderPerformance, renderSymbolAtlas, renderUniversal } = create
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
-  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .chain-energy-flow, .energy-particle, .chain-creature, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
+  .doodle-stroke, .doodle-detail, .accent-stroke, .entity-label, .glyph-ink-path, .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .circulation-flow, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .chain-energy-flow, .energy-particle, .chain-creature, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .attached-object {
     animation: none !important; stroke-dashoffset: 0; opacity: 1;
   }`;
 const fixtureRevision = `sha256:${createHash("sha256").update(result.outputFiles[0].text).update(css).update(JSON.stringify(gold)).digest("hex").slice(0, 16)}`;

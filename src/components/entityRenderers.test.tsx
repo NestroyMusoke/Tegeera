@@ -53,10 +53,11 @@ describe("entity renderer registry", () => {
     expect(rainfall).toContain("symbol-cue");
   });
 
-  it("keeps unsupported concepts as explicit labelled nodes", () => {
+  it("keeps unsupported concepts as honest neutral stickers", () => {
     const html = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic"), label: "constitutional legitimacy" }} />);
-    expect(html).toContain('data-symbol-id="labelled-node"');
+    expect(html).toContain('data-symbol-id="honest-sticker"');
+    expect(html).toContain('data-glyph-source="sticker"');
     expect(html).toContain('data-symbol-fallback="true"');
-    expect(html).toContain(">C</text>");
+    expect(html).not.toContain(">C</text>");
   });
 });

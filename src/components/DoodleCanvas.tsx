@@ -33,6 +33,7 @@ import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
+import { glyphAnchor } from "../glyphs/glyph";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -894,12 +895,19 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
     const source = entities.find(({ id }) => id === relation.sourceIds[0]);
     const target = entities.find(({ id }) => id === relation.targetIds[0]);
     if (!source || !target) return null;
-    const sx = source.x * 10; const sy = source.y * 6.2;
-    const tx = target.x * 10; const ty = target.y * 6.2;
+    const sourceCenter = { x: source.x * 10, y: source.y * 6.2 };
+    const targetCenter = { x: target.x * 10, y: target.y * 6.2 };
+    const nearestAnchor = (entity: SceneEntity, toward: { x: number; y: number }) => entity.glyph
+      ? (["top", "ground", "front"] as const).map((name) => glyphAnchor(entity, name))
+        .sort((a, b) => Math.hypot(a.x - toward.x, a.y - toward.y) - Math.hypot(b.x - toward.x, b.y - toward.y))[0]
+      : { x: entity.x * 10, y: entity.y * 6.2 };
+    const sourceAnchor = nearestAnchor(source, targetCenter); const targetAnchor = nearestAnchor(target, sourceCenter);
+    const sx = sourceAnchor.x; const sy = sourceAnchor.y;
+    const tx = targetAnchor.x; const ty = targetAnchor.y;
     const length = Math.hypot(tx - sx, ty - sy) || 1;
     const ux = (tx - sx) / length; const uy = (ty - sy) / length;
-    const startX = sx + ux * 52; const startY = sy + uy * 42;
-    const endX = tx - ux * 52; const endY = ty - uy * 42;
+    const startX = source.glyph ? sx : sx + ux * 52; const startY = source.glyph ? sy : sy + uy * 42;
+    const endX = target.glyph ? tx : tx - ux * 52; const endY = target.glyph ? ty : ty - uy * 42;
     const normalX = -uy * 9; const normalY = ux * 9;
     const label = relation.predicate ?? "relates to";
     return <g className="universal-relation" aria-label={`${source.label} ${label} ${target.label}`} data-visual-cue="semantic-connection">

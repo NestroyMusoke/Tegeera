@@ -100,6 +100,10 @@ export function validateDoodleScript(
     if (changesProceduralVisual && !versionAtLeast(script.schemaVersion, "2.26.0")) {
       issues.push({ gate: "schema", message: "Procedural visual compositions require DoodleScript 2.26.0 or later." });
     }
+    const changesGlyph = command.action === "create" && Boolean(command.entity.glyph);
+    if (changesGlyph && !versionAtLeast(script.schemaVersion, "2.27.0")) {
+      issues.push({ gate: "schema", message: "Validated noun glyphs require DoodleScript 2.27.0 or later." });
+    }
     const changesColor = command.action === "create" ? Boolean(command.entity.color)
       : command.action === "update" ? command.color !== undefined : false;
     if (changesColor && !versionAtLeast(script.schemaVersion, "2.25.0")) {

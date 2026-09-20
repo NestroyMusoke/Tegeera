@@ -8,6 +8,7 @@ import {
   type DoodleScript,
   type SceneState
 } from "../doodlescript/schema";
+import { glyphSchema } from "../glyphs/glyph";
 
 export const universalSceneBlueprintSchema = z.object({
   blueprintVersion: z.literal("1.0"),
@@ -20,7 +21,12 @@ export const universalSceneBlueprintSchema = z.object({
     color: entityColorSchema.optional(),
     x: z.number().min(0).max(100),
     y: z.number().min(0).max(100),
-    visual: proceduralVisualSchema
+    glyph: glyphSchema.optional(),
+    visual: proceduralVisualSchema.optional()
+  }).superRefine((object, context) => {
+    if (object.kind === "generic" && !object.glyph) context.addIssue({
+      code: "custom", message: "Every unfamiliar AI-planned object needs a validated glyph."
+    });
   })).min(1).max(8),
   connections: z.array(z.object({
     from: z.string().min(1).max(30),
@@ -80,7 +86,8 @@ export function compileUniversalScene(candidate: unknown, scene: SceneState, sou
     used.add(id); idMap.set(object.id, id); createdIds.push(id);
     commands.push({ action: "create", entity: {
       id, kind: object.kind, label: object.label.trim(), ...positions[index], scale: visualScale,
-      direction: "right", highlighted: false, color: object.color, visual: object.visual
+      direction: "right", highlighted: false, color: object.color, glyph: object.glyph,
+      ...(object.visual ? { visual: object.visual } : {})
     } });
   });
   blueprint.connections.forEach((connection, index) => {
@@ -97,7 +104,7 @@ export function compileUniversalScene(candidate: unknown, scene: SceneState, sou
     } });
   });
   return {
-    schemaVersion: "2.26.0", sceneId: scene.sceneId, revision: scene.revision + 1,
+    schemaVersion: "2.27.0", sceneId: scene.sceneId, revision: scene.revision + 1,
     confidence: blueprint.confidence, sourceText, commands,
     context: { subjectIds: createdIds.slice(0, 1), objectIds: createdIds.slice(1) }
   };

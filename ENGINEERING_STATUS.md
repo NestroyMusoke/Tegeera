@@ -1587,3 +1587,36 @@ three-building village, and a readable directional connection. This is a real ge
 composition foundation, not a claim that arbitrary scenes are already visually perfect;
 frozen unseen-language evaluation, stronger procedural art direction, connector routing,
 model latency, physical Android tests, and teacher review remain required.
+
+## DoodleScript 2.27 validated noun glyphs
+
+The universal route no longer asks a model to assemble unfamiliar nouns from unrelated
+circles and triangles. Each AI-planned object now carries one coherent `Glyph`: one
+bounded 100×100 view box, at most twelve named paths, and top/ground/front attachment
+anchors. Only absolute M/L/C/Q/Z commands and six Tegeera palette colors are accepted.
+Coordinates outside the box, lowercase or unsupported commands, duplicate part IDs,
+long paths, unknown fields, markup, and event attributes are rejected before React
+receives them. DoodleScript versions before 2.27 cannot carry glyph data.
+
+The source-neutral `GlyphResolver` has deterministic precedence: established Tegeera
+rig, curated glyph pack (including synonym lookup), licensed emoji/icon adapter,
+validated cache, validated runtime generation, then an honest neutral sticker. Invalid
+provider, pack, or cache data is skipped rather than thrown or rendered. Third-party
+packs are not yet bundled; their license and provenance gate is documented separately.
+
+The renderer applies one original Tegeera monoline treatment—3px rounded strokes, a
+six-color palette, and ordered write-on animation—to every accepted glyph. Semantic
+connectors choose the closest declared anchor rather than aiming blindly at the object's
+center. The final fallback no longer invents a letter blob that resembles a drawing.
+
+The unseen-noun fixture now contains a connected dragon silhouette with wings, horn,
+tail, legs, and face plus a multi-building village. This fixture is evaluation data, not
+a production noun lookup. Runtime language remains open: unfamiliar noun knowledge comes
+through the validated model artifact, while Tegeera owns safety, composition, layout,
+style, and motion.
+
+The complete checkpoint passes 423 tests across 62 files. The serial 278-probe
+SVG-ready benchmark measured 0.29 ms decision p50, 0.81 ms decision p95, 4.16 ms SVG
+p50, 9.31 ms SVG p95, and 10.20 ms total-ready p95 across 834 warmed samples. The
+largest application chunk is 328.20 KiB, below the 500 KiB guardrail. Lint, TypeScript,
+production build, bundle budgets, and 47 real-component fixtures pass.

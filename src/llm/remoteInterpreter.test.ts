@@ -26,7 +26,9 @@ describe("remote interpreter boundary", () => {
     const body = JSON.parse(request.body as string);
     expect(body.response_format).toEqual({ type: "json_object" });
     expect(body.messages[0].content).toContain('"blueprintVersion":"1.0"');
-    expect(body.messages[0].content).toContain("Primitive shapes: circle, ellipse, rect, line, arc, triangle, wave");
+    expect(body.messages[0].content).toContain("Every generic object needs one glyph");
+    expect(body.messages[0].content).toContain("uppercase M L C Q Z only");
+    expect(body.max_tokens).toBe(3600);
     vi.unstubAllGlobals();
   });
 });

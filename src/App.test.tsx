@@ -131,14 +131,20 @@ describe("teaching workflow", () => {
       choices: [{ message: { content: JSON.stringify({
         blueprintVersion: "1.0", mode: "replace", confidence: 0.92,
         objects: [
-          { id: "dragon", label: "flying dragon", kind: "generic", color: "green", x: 20, y: 35, visual: { motion: "float", primitives: [
-            { shape: "ellipse", x: 0, y: 0, width: 70, height: 38, rotation: 0, tone: "primary" },
-            { shape: "triangle", x: -24, y: -22, width: 34, height: 28, rotation: -18, tone: "accent" }
-          ] } },
-          { id: "village", label: "tiny village", kind: "generic", x: 80, y: 68, visual: { motion: "none", primitives: [
-            { shape: "rect", x: 0, y: 12, width: 58, height: 42, rotation: 0, tone: "muted" },
-            { shape: "triangle", x: 0, y: -22, width: 70, height: 35, rotation: 0, tone: "accent" }
-          ] } }
+          { id: "dragon", label: "flying dragon", kind: "generic", color: "green", x: 20, y: 35, glyph: {
+            schemaVersion: "1.0.0", viewBox: "0 0 100 100",
+            parts: [
+              { id: "body", d: "M20 58 C25 34 59 32 73 48 C80 59 69 76 48 77 C31 77 22 69 20 58 Z", fill: "#84a98c", stroke: "#2f3e46" },
+              { id: "wing", d: "M48 44 Q38 12 18 20 Q30 40 48 59 Z", fill: "#e9c46a", stroke: "#2f3e46" }
+            ], anchors: { top: [38, 20], ground: [48, 77], front: [73, 48] }
+          } },
+          { id: "village", label: "tiny village", kind: "generic", x: 80, y: 68, glyph: {
+            schemaVersion: "1.0.0", viewBox: "0 0 100 100",
+            parts: [
+              { id: "house", d: "M22 48 L78 48 L78 88 L22 88 Z", fill: "#cad2c5", stroke: "#2f3e46" },
+              { id: "roof", d: "M15 50 L50 20 L85 50 Z", fill: "#f4a261", stroke: "#2f3e46" }
+            ], anchors: { top: [50, 20], ground: [50, 88], front: [78, 68] }
+          } }
         ], connections: [{ from: "dragon", to: "village", label: "flies over" }]
       }) } }]
     }), { status: 200, headers: { "content-type": "application/json" } }));
@@ -147,7 +153,8 @@ describe("teaching workflow", () => {
     fireEvent.change(screen.getByLabelText("OpenRouter key for this session"), { target: { value: "session-key" } });
     fireEvent.click(screen.getByRole("button", { name: "Enable AI understanding" }));
     explain("A dragon flies over a tiny village");
-    await waitFor(() => expect(container.querySelectorAll('[data-procedural-visual="true"]')).toHaveLength(2));
+    await waitFor(() => expect(container.querySelectorAll(".validated-glyph")).toHaveLength(2));
+    expect(container.querySelectorAll('[data-glyph-source="generated"]')).toHaveLength(2);
     expect(container.querySelector('[data-visual-cue="semantic-connection"]')).not.toBeNull();
     expect(screen.getByText(/Last model: example\/free-visual-model/)).toBeTruthy();
     expect(screen.queryByText("Help me understand")).toBeNull();

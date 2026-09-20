@@ -1,6 +1,6 @@
 # Tegeera remote interpreter
 
-This optional Node 24 service is the only production component allowed to hold an LLM credential. The Android/Web client first tries Tegeera's deterministic local interpreter; only unsupported language reaches this service. The model returns a bounded high-level visual blueprint. The client compiles that untrusted blueprint into DoodleScript and validates the result before the scene changes; model output is never injected as SVG, HTML, script, or a raw path.
+This optional Node 24 service is the only production component allowed to hold an LLM credential. The Android/Web client first tries Tegeera's deterministic local interpreter; only unsupported language reaches this service. The model returns a bounded high-level visual blueprint. Its noun glyphs use a tiny path-data grammar, never SVG/XML markup; the client allowlists commands, bounds every coordinate, limits path and part counts, normalizes style, compiles to DoodleScript, and validates the complete result before the scene changes.
 
 ## Required runtime settings
 

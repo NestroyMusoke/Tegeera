@@ -260,6 +260,8 @@ button {
 @keyframes universal-pulse { from { transform: scale(.94); } to { transform: scale(1.04); } }
 @keyframes universal-float { from { transform: translateY(3px); } to { transform: translateY(-4px); } }
 @keyframes universal-spin { to { transform: rotate(360deg); } }
+.glyph-ink-path { stroke-dasharray: 1; stroke-dashoffset: 0; animation: glyph-write 520ms ease-out both; animation-delay: var(--glyph-delay); }
+@keyframes glyph-write { from { stroke-dashoffset: 1; opacity: .35; } to { stroke-dashoffset: 0; opacity: 1; } }
 .chain-energy-flow { animation: condition-flow 900ms linear infinite; }
 .energy-particle { animation: chain-energy-particle 1.15s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 .chain-creature { animation: chain-creature 1.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
@@ -279,7 +281,7 @@ button {
 @keyframes handover-object { 45% { transform: translateY(-7px) scale(1.08); } }
 @keyframes visual-particle { to { transform: scale(1.55); opacity: .45; } }
 @media (prefers-reduced-motion: reduce) {
-  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .chain-energy-flow, .energy-particle, .chain-creature, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines, .universal-motion-pulse, .universal-motion-float, .universal-motion-spin, .universal-relation-flow { animation: none; }
+  .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .chain-energy-flow, .energy-particle, .chain-creature, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines, .universal-motion-pulse, .universal-motion-float, .universal-motion-spin, .universal-relation-flow, .glyph-ink-path { animation: none; }
 }
 
 .doodle-stroke,
@@ -787,7 +789,7 @@ button {
   .water-cycle-flow {
     animation: none !important;
   }
-  .lifecycle-flow, .lifecycle-creature, .lifecycle-cocoon, .reflection-flow, .stack-flow, .routine-flow, .plate-force, .linked-flow, .condition-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .chain-energy-flow, .energy-particle, .chain-creature, .universal-motion-pulse, .universal-motion-float, .universal-motion-spin, .universal-relation-flow { animation: none !important; }
+  .lifecycle-flow, .lifecycle-creature, .lifecycle-cocoon, .reflection-flow, .stack-flow, .routine-flow, .plate-force, .linked-flow, .condition-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .chain-energy-flow, .energy-particle, .chain-creature, .universal-motion-pulse, .universal-motion-float, .universal-motion-spin, .universal-relation-flow, .glyph-ink-path { animation: none !important; }
 }
 
 .circulation-flow {

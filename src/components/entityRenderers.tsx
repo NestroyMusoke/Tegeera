@@ -4,6 +4,7 @@ import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { characterPoseFor, type LimbPose } from "./characterPerformance";
 import { ComposedSymbol } from "./symbolPrimitives";
 import { CONCEPT_REGISTRY_VERSION, conceptForKind } from "../doodlescript/conceptRegistry";
+import { resolveGlyph } from "../glyphs/glyph";
 
 export interface EntityRendererProps {
   entity: SceneEntity;
@@ -121,8 +122,11 @@ function Generic({ entity }: EntityRendererProps) {
       <ComposedSymbol category={plan.category} primitives={plan.primitives} capabilities={plan.capabilities} rotation={rotation} />
     </g>;
   }
-  const initial = (entity.label ?? entity.kind).trim().charAt(0).toUpperCase() || "?";
-  return <g data-symbol-id="labelled-node" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true"><path className="doodle-stroke entity-color-fill" d="M0-55 C34-55 47-34 43-4 C47 27 24 45 0 42 C-28 47-47 25-43-4 C-47-34-31-55 0-55Z" /><text x="0" y="5" textAnchor="middle" fill="#302e29" fontSize="30" fontWeight="700">{initial}</text></g>;
+  return <g data-symbol-id="honest-sticker" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true">
+    <path className="doodle-stroke entity-color-fill" d="M-43-50 Q-3-55 39-48 Q47-10 40 39 Q3 48-40 41 Q-47 2-43-50 Z" />
+    <path className="accent-stroke" d="M-23-17 Q0-26 23-16 M-23 1 Q-3-6 18 1 M-23 18 Q-9 13 7 17" />
+    <path className="doodle-detail" d="M31-47 Q45-36 40-23 Q28-30 31-47 Z" />
+  </g>;
 }
 
 function ProceduralDoodle({ entity }: EntityRendererProps) {
@@ -148,6 +152,25 @@ function ProceduralDoodle({ entity }: EntityRendererProps) {
   </g>;
 }
 
+function ValidatedGlyph({ entity }: EntityRendererProps) {
+  const glyph = entity.glyph!;
+  return <g className="validated-glyph" data-glyph-version={glyph.schemaVersion} data-glyph-parts={glyph.parts.length} transform="translate(-50 -50)">
+    {glyph.parts.map((part, index) => <path
+      key={part.id}
+      className="glyph-ink-path"
+      data-glyph-part={part.id}
+      d={part.d}
+      fill={part.fill}
+      stroke={part.stroke}
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      pathLength="1"
+      style={{ "--glyph-delay": `${index * 70}ms` } as CSSProperties}
+    />)}
+  </g>;
+}
+
 const entityRendererRegistry: Record<EntityKind, ComponentType<EntityRendererProps>> = {
   person: Character,
   teacher: Character,
@@ -165,6 +188,7 @@ const entityRendererRegistry: Record<EntityKind, ComponentType<EntityRendererPro
 export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
   const concept = conceptForKind(entity.kind);
   const Renderer = entityRendererRegistry[concept.glyphKey] ?? Generic;
+  const glyph = resolveGlyph({ noun: entity.label ?? entity.kind, kind: entity.kind, generated: entity.glyph });
   return <g
     data-concept-id={concept.id}
     data-concept-category={concept.category}
@@ -172,5 +196,8 @@ export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
     data-renderer={concept.glyphKey}
     data-entity-color={entity.color}
     style={entity.color ? { "--entity-color": entityColors[entity.color] } as CSSProperties : undefined}
-  >{entity.visual ? <ProceduralDoodle entity={entity} moving={moving} /> : <Renderer entity={entity} moving={moving} />}</g>;
+    data-glyph-source={glyph.source}
+  >{glyph.glyph ? <ValidatedGlyph entity={entity} moving={moving} />
+    : entity.visual ? <ProceduralDoodle entity={entity} moving={moving} />
+      : <Renderer entity={entity} moving={moving} />}</g>;
 }
