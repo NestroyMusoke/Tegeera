@@ -1,11 +1,13 @@
 import { defineConfig } from "vitest/config";
+import { loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { localAiProxy } from "./scripts/localAiProxy";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // Relative assets work in both Capacitor's Android WebView and a repository-level
   // static host such as GitHub Pages. Hosting remains a delivery target, not a fork.
   base: "./",
-  plugins: [react()],
+  plugins: [react(), localAiProxy(loadEnv(mode, process.cwd(), "").OPENROUTER_API_KEY?.trim() ?? "")],
   build: {
     rollupOptions: {
       output: {
@@ -20,4 +22,4 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts"
   }
-});
+}));

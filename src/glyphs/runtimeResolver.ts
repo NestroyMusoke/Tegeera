@@ -18,6 +18,7 @@ interface ResolverOptions {
   synonyms?: ReadonlyMap<string, string>;
   generator?: GlyphGenerator;
   persist?: (noun: string, glyph: TegeeraGlyph) => Promise<unknown>;
+  onGenerationError?: (noun: string, error: unknown) => void;
   maxConcurrent?: number;
   timeoutMs?: number;
 }
@@ -29,6 +30,7 @@ export class LiveGlyphResolver {
   private readonly emoji?: ReadonlyMap<string, TegeeraGlyph>;
   private readonly synonyms?: ReadonlyMap<string, string>;
   private readonly persist?: ResolverOptions["persist"];
+  private readonly onGenerationError?: ResolverOptions["onGenerationError"];
   private readonly maxConcurrent: number;
   private readonly timeoutMs: number;
   private readonly listeners = new Set<() => void>();
@@ -48,6 +50,7 @@ export class LiveGlyphResolver {
     this.synonyms = options.synonyms;
     this.generator = options.generator;
     this.persist = options.persist;
+    this.onGenerationError = options.onGenerationError;
     this.maxConcurrent = Math.max(1, Math.min(2, options.maxConcurrent ?? 2));
     this.timeoutMs = Math.max(1, options.timeoutMs ?? 12_000);
   }
@@ -174,10 +177,11 @@ export class LiveGlyphResolver {
         this.previews.delete(noun);
         this.emit();
         if (this.persist) void this.persist(noun, glyph).catch(() => undefined);
-      }).catch(() => {
+      }).catch((error: unknown) => {
         this.previews.delete(noun);
         this.emit();
         this.failedUntil.set(noun, Date.now() + 30_000);
+        this.onGenerationError?.(noun, error);
       }).finally(() => {
         if (timer) clearTimeout(timer);
         this.inFlight.delete(noun);

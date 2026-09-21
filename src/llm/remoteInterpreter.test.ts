@@ -31,4 +31,18 @@ describe("remote interpreter boundary", () => {
     expect(body.max_tokens).toBe(3600);
     vi.unstubAllGlobals();
   });
+
+  it("uses the private local bridge without sending a browser credential", async () => {
+    vi.resetModules();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      model: "example/free-model", choices: [{ message: { content: '{"blueprintVersion":"1.0"}' } }]
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const remote = await import("./remoteInterpreter");
+    expect(remote.remoteInterpreterEnabled("", true)).toBe(true);
+    await remote.interpretRemotely("Draw a book", initialScene, "", undefined, [], true);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/tegeera-ai/chat/completions");
+    expect(fetchMock.mock.calls[0][1].headers.authorization).toBeUndefined();
+    vi.unstubAllGlobals();
+  });
 });

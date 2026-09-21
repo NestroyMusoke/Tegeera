@@ -3,19 +3,20 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { spawn } from 'node:child_process';
 import { DOMParser } from '@xmldom/xmldom';
 import svgpath from 'svgpath';
 import { optimize } from 'svgo';
 import { Resvg } from '@resvg/resvg-js';
+import vtracer from '@visioncortex/vtracer';
 
 const ROOT = resolve(import.meta.dirname, '..');
-const VISUAL = join(ROOT, '.visual-check');
-const OUT = join(ROOT, 'public', 'glyphs');
 const PALETTE = ['#2f3e46', '#52796f', '#84a98c', '#f4a261', '#e9c46a', '#cad2c5'];
 const args = process.argv.slice(2);
 const option = (name, fallback) => { const at = args.indexOf(name); return at < 0 ? fallback : args[at + 1]; };
 const has = (name) => args.includes(name);
+const VISUAL = resolve(option('--visual-dir', join(ROOT, '.visual-check')));
+const OUT = resolve(option('--out-dir', join(ROOT, 'public', 'glyphs')));
+const PACK_OUTPUT = resolve(option('--pack-output', join(ROOT, 'src', 'glyphs', 'offline-pack.json')));
 const slug = (noun) => noun.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 const saveJson = (path, data) => writeFile(path, `${JSON.stringify(data, null, 2)}\n`);
 const escapeHtml = (value) => value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -30,7 +31,7 @@ export function parseNouns(text) {
 }
 
 const allowedTags = new Set(['svg', 'g', 'path']);
-const allowedAttrs = new Set(['xmlns', 'viewBox', 'width', 'height', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'fill-rule', 'id']);
+const allowedAttrs = new Set(['xmlns', 'version', 'viewBox', 'width', 'height', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'fill-rule', 'id']);
 
 /** Rejects active content before optimizing. Nothing from source XML is injected into the app. */
 export function extractSafePaths(svg) {
@@ -103,29 +104,33 @@ export function normalizeSvg(svg) {
   return { glyph, svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${parts.map((p) => `<path d="${p.d}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}</svg>` };
 }
 
-async function runVtracer(input, output, mode) {
-  const command = option('--vtracer', 'vtracer');
-  const flags = [input, output, '--clustering', mode === 'binary' ? 'bw' : 'color', '--filter-speckle', '4', '--path-precision', '2'];
-  await new Promise((done, fail) => {
-    const child = spawn(command, flags, { stdio: 'ignore', windowsHide: true });
-    child.on('error', fail); child.on('exit', (code) => code === 0 ? done() : fail(new Error(`vtracer exited ${code}`)));
+export function traceRaster(image, mode) {
+  if (!['binary', 'color'].includes(mode)) throw new Error('Mode must be binary or color');
+  return vtracer.convertBuffer(image, {
+    clustering: mode === 'binary' ? 'bw' : 'color-cluster',
+    mode: 'spline', simplify: 2.5, filterSpeckle: 4, pathPrecision: 2,
+    ...(mode === 'color' ? { palette: PALETTE, maxColors: 6 } : {})
   });
 }
 
-async function fetchImage(noun, model, signal, improvement = '') {
+export async function fetchImage(noun, model, signal, improvement = '') {
   const response = await fetch('https://openrouter.ai/api/v1/images', {
     method: 'POST', signal, headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, prompt: `One original, simple classroom doodle of ${noun}, isolated on plain white, clearly recognizable silhouette, no words, no labels, no shadows, flat colors. ${improvement}`, output_format: 'png' })
   });
   if (!response.ok) throw new Error(`Image API HTTP ${response.status}`);
   const result = await response.json();
-  const base64 = result.data?.[0]?.b64_json;
+  const image = result.data?.[0];
+  if (image?.media_type && image.media_type !== 'image/png') throw new Error(`Image model returned ${image.media_type}; select a PNG-capable model`);
+  const base64 = image?.b64_json;
   if (typeof base64 !== 'string' || base64.length > 12_000_000) throw new Error('No bounded base64 image returned');
-  return Buffer.from(base64, 'base64');
+  const bytes = Buffer.from(base64, 'base64');
+  if (bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Image API did not return PNG bytes');
+  return bytes;
 }
 
 /** Optional one-round visual critique of the actual final-size vector candidate. */
-async function critiqueImage(noun, image, model) {
+export async function critiqueImage(noun, image, model) {
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST', signal: AbortSignal.timeout(45_000),
     headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
@@ -169,12 +174,12 @@ async function importApproved(path, reviewer, rightsNote) {
     provenance: { source: 'model-assisted', author: `AI-assisted; curated by ${reviewer.trim()}`, license: rightsNote.trim() },
     review: { reviewer: reviewer.trim(), reviewedAt: new Date().toISOString(), readableAt64px: true, subjectRecognizableWithoutLabel: true, noUnwantedMeaning: true, tegeeraStyleConsistent: true }
   }));
-  await saveJson(join(ROOT, 'src', 'glyphs', 'offline-pack.json'), { formatVersion: '1.0.0', entries });
+  await saveJson(PACK_OUTPUT, { formatVersion: '1.0.0', entries });
   console.log(`Imported ${entries.length} approved glyphs. Run npm test and visually verify the app.`);
 }
 
 async function main() {
-  if (has('--help')) { console.log('Usage: node scripts/build-glyph-pack.mjs [--nouns nouns.txt] [--execute --model MODEL --max-images N] [--vision-review --vision-model MODEL] [--mode binary|color] | --import-approved approved.json --reviewer NAME --rights-note VERIFIED_TERMS'); return; }
+  if (has('--help')) { console.log('Usage: node scripts/build-glyph-pack.mjs [--nouns nouns.txt] [--execute --model MODEL --max-images N | --local-images DIR] [--vision-review --vision-model MODEL] [--mode binary|color] | --import-approved approved.json --reviewer NAME --rights-note VERIFIED_TERMS'); return; }
   await mkdir(VISUAL, { recursive: true }); await mkdir(OUT, { recursive: true });
   if (has('--import-approved')) return importApproved(resolve(option('--import-approved')), option('--reviewer'), option('--rights-note'));
   const nouns = parseNouns(await readFile(resolve(option('--nouns', join(ROOT, 'nouns.txt'))), 'utf8'));
@@ -184,12 +189,16 @@ async function main() {
   const persistManifest = () => { manifestWrite = manifestWrite.then(() => saveJson(manifestPath, manifest)); return manifestWrite; };
   const mode = option('--mode', 'binary');
   if (!['binary', 'color'].includes(mode)) throw new Error('Mode must be binary or color');
-  if (!has('--execute')) { console.log(`Dry run: ${nouns.length} nouns, ${nouns.filter((n) => manifest.items[n.slug]?.status !== 'ready').length} not ready. No API calls. Use --execute --model MODEL --max-images N to spend credits.`); return; }
-  const model = option('--model'); const max = Number(option('--max-images', '0'));
-  if (!model || !Number.isInteger(max) || max < 1) throw new Error('Explicit --model and positive --max-images are required');
+  const localImages = option('--local-images');
+  if (localImages && has('--execute')) throw new Error('Choose either --local-images or --execute, not both');
+  if (!has('--execute') && !localImages) { console.log(`Dry run: ${nouns.length} nouns, ${nouns.filter((n) => manifest.items[n.slug]?.status !== 'ready').length} not ready. No API calls. Use --local-images DIR for free local PNGs or --execute --model MODEL --max-images N to spend credits.`); return; }
+  const model = localImages ? 'local-provided' : option('--model');
+  const max = Number(option('--max-images', localImages ? String(nouns.length) : '0'));
+  if (!model || !Number.isInteger(max) || max < 1) throw new Error('Explicit --model and positive --max-images are required for API generation');
   const visionModel = option('--vision-model');
   if (has('--vision-review') && !visionModel) throw new Error('Vision review requires explicit --vision-model and may make one extra image request per noun');
-  if (!process.env.OPENROUTER_API_KEY) throw new Error('Set OPENROUTER_API_KEY in your shell; never put it in the repo');
+  if (localImages && has('--vision-review')) throw new Error('Automatic revision is unavailable for local PNGs; use the contact sheet for review');
+  if (!localImages && !process.env.OPENROUTER_API_KEY) throw new Error('Set OPENROUTER_API_KEY in your shell; never put it in the repo');
   const pending = nouns.filter((n) => manifest.items[n.slug]?.status !== 'ready').slice(0, max);
   let cursor = 0;
   async function worker() {
@@ -197,11 +206,13 @@ async function main() {
       const item = pending[cursor++];
       const png = join(VISUAL, `${item.slug}.png`), traced = join(VISUAL, `${item.slug}.traced.svg`);
       try {
-        let image = await withRetry(() => fetchImage(item.noun, model, AbortSignal.timeout(45_000)));
+        let image = localImages
+          ? await readFile(join(resolve(localImages), `${item.slug}.png`))
+          : await withRetry(() => fetchImage(item.noun, model, AbortSignal.timeout(45_000)));
         const traceAndNormalize = async (raster) => {
           await writeFile(png, raster);
-          await runVtracer(png, traced, mode);
-          const source = await readFile(traced, 'utf8');
+          const source = traceRaster(raster, mode);
+          await writeFile(traced, source);
           extractSafePaths(source); // fail closed before optimizer touches untrusted XML
           const optimized = optimize(source, { multipass: true }).data;
           return normalizeSvg(optimized);

@@ -29,6 +29,18 @@ describe("remote stroke boundary", () => {
     expect(body.messages[0].content).toContain("50x50 grid");
   });
 
+  it("streams through the local bridge without putting the key in the browser request", async () => {
+    const stream = new ReadableStream<Uint8Array>({ start(controller) {
+      controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ choices: [{ delta: { content: JSON.stringify(strokes) } }] })}\n\n`));
+      controller.close();
+    } });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(stream, { status: 200 })));
+    const glyph = await generateStrokeGlyphRemotely("bird", "", new AbortController().signal, () => undefined, undefined, true);
+    expect(glyph.strokes).toHaveLength(2);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe("/api/tegeera-ai/chat/completions");
+    expect((vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers).not.toHaveProperty("authorization");
+  });
+
   it("applies a bounded model edit instead of replacing unaffected strokes", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
       ops: [{ op: "replace", index: 1, stroke: { part: "new-detail", color: "#e9c46a", pts: [[12, 21], [20, 21], [30, 21], [38, 21]] } }]

@@ -165,7 +165,7 @@ describe("teaching workflow", () => {
     await waitFor(() => expect(container.querySelectorAll('[data-glyph-source="cache"]')).toHaveLength(1), { timeout: 5_000 });
     expect(container.querySelectorAll('[data-glyph-source="generated"]')).toHaveLength(1);
     expect(container.querySelector('[data-visual-cue="semantic-connection"]')).not.toBeNull();
-    expect(screen.getByText(/Last model: example\/free-visual-model/)).toBeTruthy();
+    expect(screen.getByText(/Last scene model: example\/free-visual-model/)).toBeTruthy();
     expect(screen.queryByText("Help me understand")).toBeNull();
   }, 15_000);
 });

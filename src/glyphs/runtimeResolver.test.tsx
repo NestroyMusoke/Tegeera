@@ -13,6 +13,17 @@ const glyph = {
 };
 
 describe("non-blocking glyph resolver", () => {
+  it("keeps a labelled placeholder and reports a rate-limited provider", async () => {
+    const onGenerationError = vi.fn();
+    const resolver = new LiveGlyphResolver({
+      generator: async () => { throw new Error("OpenRouter stroke stream failed (429)."); },
+      onGenerationError
+    });
+    expect(resolver.resolve("dragon").status).toBe("placeholder");
+    await vi.waitFor(() => expect(onGenerationError).toHaveBeenCalledOnce());
+    expect(onGenerationError.mock.calls[0][0]).toBe("dragon");
+    expect(resolver.resolve("dragon").status).toBe("placeholder");
+  });
   it("publishes complete strokes before the provider finishes, then permits a bounded edit", async () => {
     const first: Stroke = { part: "body", color: "#2f3e46", pts: [[10, 10], [40, 10], [40, 40], [10, 10]] };
     const second: Stroke = { part: "feature", color: "#52796f", pts: [[15, 20], [20, 20], [25, 20], [30, 20]] };

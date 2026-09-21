@@ -3,19 +3,20 @@ import { z } from "zod";
 
 const endpoint = "https://openrouter.ai/api/v1/chat/completions";
 const palette = "#2f3e46 #52796f #84a98c #f4a261 #e9c46a #cad2c5";
+export const DEFAULT_FREE_GLYPH_MODEL = "google/gemma-4-31b-it:free";
 
-async function requestJson(prompt: string, key: string, signal: AbortSignal, maxTokens: number): Promise<unknown> {
-  if (!key.trim()) throw new Error("AI glyph generation is not enabled.");
-  const response = await fetch(endpoint, {
+async function requestJson(prompt: string, key: string, signal: AbortSignal, maxTokens: number, model = DEFAULT_FREE_GLYPH_MODEL, localBridge = false): Promise<unknown> {
+  if (!key.trim() && !localBridge) throw new Error("AI glyph generation is not enabled.");
+  const response = await fetch(localBridge && !key.trim() ? "/api/tegeera-ai/chat/completions" : endpoint, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${key.trim()}`,
+      ...(key.trim() ? { authorization: `Bearer ${key.trim()}` } : {}),
       "content-type": "application/json",
       "http-referer": window.location.href,
       "x-title": "Tegeera"
     },
     body: JSON.stringify({
-      model: "openrouter/free",
+      model,
       messages: [{ role: "user", content: prompt }],
       temperature: 0, max_tokens: maxTokens,
       response_format: { type: "json_object" },
@@ -23,9 +24,9 @@ async function requestJson(prompt: string, key: string, signal: AbortSignal, max
     }),
     signal
   });
-  if (!response.ok) throw new Error(`OpenRouter glyph request failed (${response.status}).`);
-  const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const content = payload.choices?.[0]?.message?.content;
+  const payload = await response.json().catch(() => null) as { error?: { message?: string }; choices?: Array<{ message?: { content?: string } }> } | null;
+  if (!response.ok) throw new Error(`OpenRouter glyph request failed (${response.status}): ${payload?.error?.message ?? 'no detail'}`);
+  const content = payload?.choices?.[0]?.message?.content;
   if (!content) throw new Error("No glyph response.");
   return JSON.parse(content);
 }
@@ -54,29 +55,35 @@ const strokePrompt = (noun: string) => `Draw ONE original, recognizable classroo
 
 /** Streams validated complete strokes; a partial JSON token is never shown as artwork. */
 export async function generateStrokeGlyphRemotely(
-  noun: string, key: string, signal: AbortSignal, onStroke: (stroke: Stroke) => void
+  noun: string, key: string, signal: AbortSignal, onStroke: (stroke: Stroke) => void,
+  model = DEFAULT_FREE_GLYPH_MODEL,
+  localBridge = false
 ): Promise<StrokeGlyph> {
-  if (!key.trim()) throw new Error("AI glyph generation is not enabled.");
-  const response = await fetch(endpoint, {
+  if (!key.trim() && !localBridge) throw new Error("AI glyph generation is not enabled.");
+  const response = await fetch(localBridge && !key.trim() ? "/api/tegeera-ai/chat/completions" : endpoint, {
     method: "POST", signal,
-    headers: { authorization: `Bearer ${key.trim()}`, "content-type": "application/json", "http-referer": window.location.href, "x-title": "Tegeera" },
-    body: JSON.stringify({ model: "openrouter/free", stream: true,
+    headers: { ...(key.trim() ? { authorization: `Bearer ${key.trim()}` } : {}), "content-type": "application/json", "http-referer": window.location.href, "x-title": "Tegeera" },
+    body: JSON.stringify({ model, stream: true,
       messages: [{ role: "user", content: strokePrompt(noun) }],
-      temperature: 0, max_tokens: 1500,
+      temperature: 0, max_tokens: 2600,
+      response_format: { type: "json_object" },
       provider: { allow_fallbacks: true, data_collection: "deny" } })
   });
   if (!response.ok || !response.body) throw new Error(`OpenRouter stroke stream failed (${response.status}).`);
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   const parser = new StrokeStreamParser();
-  let lines = "", content = "";
+  let lines = "", content = "", responseModel = "unknown", finish = "unknown";
   const acceptLine = (line: string) => {
     if (!line.startsWith("data:")) return;
     const data = line.slice(5).trim();
     if (!data || data === "[DONE]") return;
     let delta: unknown;
     try { delta = JSON.parse(data); } catch { return; }
-    const chunk = (delta as { choices?: Array<{ delta?: { content?: unknown } }> }).choices?.[0]?.delta?.content;
+    const event = delta as { model?: string; choices?: Array<{ finish_reason?: string; delta?: { content?: unknown } }> };
+    if (event.model) responseModel = event.model;
+    if (event.choices?.[0]?.finish_reason) finish = event.choices[0].finish_reason;
+    const chunk = event.choices?.[0]?.delta?.content;
     if (typeof chunk !== "string") return;
     content += chunk;
     for (const stroke of parser.push(chunk)) onStroke(stroke);
@@ -94,7 +101,10 @@ export async function generateStrokeGlyphRemotely(
   }
   if (lines.trim()) acceptLine(lines.trim());
   if (content.length > 32_000) throw new Error("Oversized stroke glyph");
-  return strokeGlyphSchema.parse(JSON.parse(content));
+  try { return strokeGlyphSchema.parse(JSON.parse(content)); }
+  catch {
+    throw new Error(`Invalid stroke stream (model ${responseModel}; finish ${finish}; ${content.length} chars; ${parser.count} completed strokes).`);
+  }
 }
 
 const editOperation = z.discriminatedUnion("op", [
@@ -105,11 +115,11 @@ const editOperation = z.discriminatedUnion("op", [
 const editSchema = z.object({ ops: z.array(editOperation).min(1).max(4) }).strict();
 
 /** A bounded semantic edit—not executable code or a raw SVG replacement. */
-export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph, instruction: string, key: string, signal: AbortSignal): Promise<StrokeGlyph> {
+export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph, instruction: string, key: string, signal: AbortSignal, model = DEFAULT_FREE_GLYPH_MODEL, localBridge = false): Promise<StrokeGlyph> {
   if (!instruction.trim() || instruction.length > 160) throw new Error("Describe one short doodle change.");
   const candidate = editSchema.parse(await requestJson(
     `Edit this classroom doodle of ${JSON.stringify(noun)}. Current strokes: ${JSON.stringify(current)}. User instruction: ${JSON.stringify(instruction)}. Return ONLY JSON {"ops":[{"op":"add","stroke":{"part":"feature","color":"#2f3e46","pts":[[10,10],[11,11],[12,12],[13,13]]}}]} using 1-4 add, replace, or remove operations. For replace/remove include zero-based index. Preserve unaffected strokes; do not regenerate the whole drawing. Each stroke needs 4-14 integer points in 3..47 and a color from ${palette}.`,
-    key, signal, 800
+    key, signal, 800, model, localBridge
   ));
   const strokes: Stroke[] = [...current.strokes];
   for (const operation of candidate.ops) {
@@ -121,10 +131,10 @@ export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph
   return strokeGlyphSchema.parse({ strokes });
 }
 
-export async function planLessonNouns(topic: string, key: string, signal: AbortSignal): Promise<string[]> {
+export async function planLessonNouns(topic: string, key: string, signal: AbortSignal, model = DEFAULT_FREE_GLYPH_MODEL, localBridge = false): Promise<string[]> {
   const result = await requestJson(
     `For a classroom lesson on ${JSON.stringify(topic)}, return only JSON {"nouns":["..."]} with exactly 30 likely concrete nouns that a teacher might need to draw. Each noun must be 2-48 characters, distinct, and no complete lesson sentences or abstract topics.`,
-    key, signal, 1000
+    key, signal, 1000, model, localBridge
   );
   if (!result || typeof result !== "object" || !("nouns" in result) || !Array.isArray(result.nouns)) {
     throw new Error("Invalid lesson noun plan.");

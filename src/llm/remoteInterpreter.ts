@@ -8,8 +8,8 @@ export interface RemoteInterpretation {
 
 const endpoint = (import.meta.env.VITE_TEGEERA_INTERPRETER_URL as string | undefined)?.trim().replace(/\/$/, "");
 
-export function remoteInterpreterEnabled(sessionKey = ""): boolean {
-  return Boolean(endpoint || sessionKey.trim());
+export function remoteInterpreterEnabled(sessionKey = "", localBridge = false): boolean {
+  return Boolean(endpoint || sessionKey.trim() || localBridge);
 }
 
 export const plannerPrompt = (text: string, scene: SceneState, reusableNouns: readonly string[] = []) => `You are Tegeera's visual scene architect. Translate the teacher's meaning into a simple, lively 2D doodle blueprint. Return exactly one JSON object, with no markdown.
@@ -36,8 +36,11 @@ Teacher: ${JSON.stringify(text)}
 Current scene, for reference only: ${JSON.stringify({ entities: scene.entities.map(({ id, kind, label, x, y }) => ({ id, kind, label, x, y })), relations: scene.relations ?? [] })}`;
 
 function parseModelJson(content: unknown): unknown {
-  if (typeof content !== "string") throw new Error("The model returned no plan.");
-  return JSON.parse((content.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ?? content).trim());
+  const text = typeof content === "string" ? content
+    : Array.isArray(content) ? content.filter((part): part is { type: "text"; text: string } =>
+      part?.type === "text" && typeof part.text === "string").map((part) => part.text).join("") : "";
+  if (!text.trim()) throw new Error("The model returned no plan.");
+  return JSON.parse((text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ?? text).trim());
 }
 
 export async function interpretRemotely(
@@ -45,14 +48,16 @@ export async function interpretRemotely(
   scene: SceneState,
   sessionKey = "",
   signal?: AbortSignal,
-  reusableNouns: readonly string[] = []
+  reusableNouns: readonly string[] = [],
+  localBridge = false
 ): Promise<RemoteInterpretation> {
-  if (!endpoint && !sessionKey.trim()) throw new Error("Remote interpretation is not configured.");
+  if (!endpoint && !sessionKey.trim() && !localBridge) throw new Error("Remote interpretation is not configured.");
   if (!endpoint) {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const useLocalBridge = localBridge && !sessionKey.trim();
+    const response = await fetch(useLocalBridge ? "/api/tegeera-ai/chat/completions" : "https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        authorization: `Bearer ${sessionKey.trim()}`,
+        ...(useLocalBridge ? {} : { authorization: `Bearer ${sessionKey.trim()}` }),
         "content-type": "application/json",
         "http-referer": window.location.href,
         "x-title": "Tegeera"
@@ -67,9 +72,17 @@ export async function interpretRemotely(
       }),
       signal
     });
-    const payload = await response.json().catch(() => null) as { error?: { message?: string }; model?: string; choices?: Array<{ message?: { content?: string } }> } | null;
+    const payload = await response.json().catch(() => null) as { error?: { message?: string }; model?: string; choices?: Array<{ finish_reason?: string; message?: { content?: unknown } }> } | null;
     if (!response.ok) throw new Error(payload?.error?.message ?? `OpenRouter failed (${response.status}).`);
-    return { candidate: parseModelJson(payload?.choices?.[0]?.message?.content), provider: "openrouter", model: payload?.model };
+    let candidate: unknown;
+    try { candidate = parseModelJson(payload?.choices?.[0]?.message?.content); }
+    catch (error) {
+      if (error instanceof Error && error.message === "The model returned no plan.") {
+        throw new Error(`OpenRouter returned no visual plan (model ${payload?.model ?? "unknown"}; finish ${payload?.choices?.[0]?.finish_reason ?? "unknown"}).`);
+      }
+      throw error;
+    }
+    return { candidate, provider: "openrouter", model: payload?.model };
   }
   const response = await fetch(`${endpoint}/v1/interpret`, {
     method: "POST",

@@ -65,6 +65,8 @@ export class StrokeStreamParser {
   private buffer = "";
   private emitted = 0;
 
+  get count() { return this.emitted; }
+
   push(chunk: string): Stroke[] {
     this.buffer += chunk;
     if (this.buffer.length > 32_000) throw new Error("Stroke stream exceeds limit");

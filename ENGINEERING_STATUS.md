@@ -1680,3 +1680,40 @@ builder has an optional PNG vision critique and one image fix round; it is
 disabled by default and has not been exercised against a live paid provider.
 This adds a mechanism for progressive appearance, not proof of visual quality
 or universal recognition.
+
+## 2.30 integration hardening
+
+The pack builder now uses the official VTracer Node/WASM package rather than
+requiring a separate command-line installation. A local-PNG mode exercises the
+same trace, sanitize, normalization, manifest, contact-sheet, and approval
+import path without an image API or credential. Integration tests also render
+the SVG at 64px and verify the OpenRouter image and vision HTTP contracts with
+mock responses. A fresh gitignored local key was used only for explicit free
+text-provider smoke checks. One live semantic scene passed validation in 10.2s;
+one water-cycle lesson request returned 30 nouns in 7.9s. These are single
+samples, not reliability or latency benchmarks. A later stroke request to the
+pinned free doodle model returned HTTP 429. An earlier free-router stroke
+response was incomplete, so **no live generated glyph has passed visual review**.
+The app now retains its labelled fallback and reports a doodle rate limit.
+No live image or vision call was made: the image-generation catalog did not
+advertise a free model, and paid calls were not authorized. The offline pack
+remains empty. Local build, lint, 438 app tests, and seven pack integration
+tests pass; the three explicit live tests are excluded from the ordinary suite.
+This evidence does not establish end-to-end reliability, actual glyph quality,
+Android-device performance, or universal visual accuracy.
+
+## 2.31 automatic private local AI bridge
+
+Local Vite development now reads the gitignored `OPENROUTER_API_KEY` from
+`.env.local` on the **server** and exposes a narrow same-origin completion
+bridge. The app checks its health at startup and automatically enables semantic
+interpretation, streamed noun strokes, edits, and lesson prefetch without a
+paste/enable step. Browser requests carry no credential. The bridge limits
+models, request shape, body size, and call rate; it is not included in the
+production static build. Local health returned `configured: true`, a bad
+request was rejected with HTTP 400, and one bounded free text request through
+the bridge returned HTTP 200 with nonempty model content. This verifies the
+private request path, not a successful live glyph: the free provider returned
+HTTP 429 in the last live stroke attempt. Public Pages and Android still need a private hosted
+backend for unattended shared-key access. No key has been added to Git or a
+client environment variable.

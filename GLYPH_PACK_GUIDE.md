@@ -8,14 +8,23 @@ layout, or lesson.
 ## Candidate-to-pack workflow
 
 1. Add concrete nouns to `nouns.txt` (optional synonyms after `|`). Run
-   `npm run glyph-pack` to see the dry-run count. To generate candidates, install
-   the `vtracer` CLI, set `OPENROUTER_API_KEY` in your shell, then run
+   `npm run glyph-pack` to see the dry-run count. VTracer's Node/WASM tracer is
+   bundled as a development dependency. To generate candidates, set
+   `OPENROUTER_API_KEY` in your shell, then run
    `npm run glyph-pack -- --execute --model YOUR_IMAGE_MODEL --max-images 10`.
    This makes image API calls that may cost money. Concurrency is four, failed
    candidates retry, and `.visual-check/manifest.json` resumes completed work.
    `--mode binary` is the default; `--mode color` quantizes into Tegeera's six
-   palette colors. VTracer uses speckle filter 4 and path precision 2.
+   palette colors. The bundled Node/WASM VTracer uses speckle filter 4,
+   path precision 2, and curve simplification. The image-model request is
+   billable unless your selected provider explicitly offers a free endpoint;
+   verify current pricing before using `--execute`.
    Complexity failures remain failed candidates, not silently broken glyphs.
+   If image API credits are unavailable, use `npm run glyph-pack -- --local-images
+   PATH_TO_PNG_FOLDER --max-images 10`. Name each PNG after its noun slug (for
+   example `plant.png`). This runs the same tracer, sanitizer, contact sheet and
+   approval path with no image API calls. It does not support automatic revision;
+   review and redraw failed local artwork yourself.
    Optional `--vision-review --vision-model YOUR_VISION_MODEL` renders the
    normalized SVG back to a 64px PNG and sends that actual candidate to a
    vision model for a silhouette check. A failed first check triggers one
@@ -54,3 +63,24 @@ Those cached glyphs are **not** human-approved or shipped as part of the offline
 pack. Partial speech can speculatively prefetch nouns; Prepare a lesson asks a
 planner for up to 30 likely nouns, then queues them. Both can incur API usage.
 No API key, transcript, or raw model response is stored in the glyph cache.
+
+## Testing with a personal OpenRouter key
+
+For local development and developer smoke tests, put `OPENROUTER_API_KEY=...`
+in the root `.env.local` file (gitignored), then run `npm run dev` or
+`npm run test:live:glyph`. Vite reads it server-side and enables the local
+AI bridge automatically; the Node smoke-test runner reads it separately.
+Neither path bundles the key into the website or Android app. On the public
+static site, the optional manual **AI understanding** field remains until a
+private backend is deployed; it holds each visitor's key in browser memory
+for that session only.
+Never put a private key in `VITE_` variables, GitHub Actions variables, or a
+public Pages deployment.
+
+The scene request uses OpenRouter's free-model router. Stroke, edit, and lesson
+requests currently target `google/gemma-4-31b-it:free`; free availability can
+change or be rate-limited. The app keeps a labelled placeholder and reports a
+429 instead of presenting that placeholder as a completed doodle. The live
+smoke test is opt-in and may consume free quotas. Image and vision checks in
+the pack builder are separate, potentially billable requests and are never
+part of the default test command.
