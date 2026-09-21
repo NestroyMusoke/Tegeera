@@ -281,8 +281,14 @@ button {
 @keyframes handover-object { 45% { transform: translateY(-7px) scale(1.08); } }
 @keyframes visual-particle { to { transform: scale(1.55); opacity: .45; } }
 @media (prefers-reduced-motion: reduce) {
+  .glyph-crossfade-placeholder, .glyph-crossfade-final { animation: none !important; }
   .motion-flow, .handover-flow, .event-flow, .visual-action-flow, .visual-action-particle, .trajectory-flow, .control-flow, .water-cycle-flow, .lifecycle-flow, .reflection-flow, .stack-flow, .plate-force, .plate-shift, .mountain-uplift, .routine-flow, .linked-flow, .condition-flow, .narrowing-flow, .fifo-flow, .data-pulse, .doubling-flow, .doubling-pop, .chain-energy-flow, .energy-particle, .chain-creature, .lifecycle-creature, .lifecycle-cocoon, .handover-object > g:first-child, .character-rig .rig-motion-layer, .character-rig .rig-arm, .attached-object, .rig-speed-lines, .universal-motion-pulse, .universal-motion-float, .universal-motion-spin, .universal-relation-flow, .glyph-ink-path { animation: none; }
 }
+
+.glyph-crossfade-placeholder { animation: glyph-placeholder-out .45s ease-in both; }
+.glyph-crossfade-final { animation: glyph-final-in .45s ease-out both; }
+@keyframes glyph-placeholder-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes glyph-final-in { from { opacity: 0; } to { opacity: 1; } }
 
 .doodle-stroke,
 .doodle-detail,
@@ -599,6 +605,13 @@ button {
   color: #35685c;
   font-size: .78rem;
 }
+
+.glyph-review { margin-top: 1rem; padding: 1rem; border: 1px solid #adc9bf; border-radius: 16px; background: #f4fbf7; }
+.glyph-review p { margin: .35rem 0 .8rem; max-width: 65ch; }
+.glyph-review-list { display: flex; flex-wrap: wrap; gap: .65rem; }
+.glyph-review-item { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; padding: .4rem .6rem; border-radius: 12px; background: white; }
+.glyph-review-item svg { width: 64px; height: 64px; flex: none; }
+.glyph-review-item span { font-weight: 700; margin-right: .3rem; }
 
 .showcase {
   display: grid;

@@ -46,7 +46,12 @@ Tegeera already accepts speech or typed input and turns supported explanations i
 - forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
 - stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
 
-With **AI understanding** enabled, unfamiliar subjects no longer have to collapse into a letter inside a generic blob. An OpenRouter model produces a high-level visual blueprint containing small, coherent noun glyphs. Tegeera accepts only a deliberately tiny path language, validates every coordinate and color, and compiles the result locally into safe IDs, collision-resistant layout, anchored relationships, write-on motion, and labelled semantic connections. This path is intentionally general: the model supplies visual knowledge for an unfamiliar noun while Tegeera keeps layout, style, animation, and safety deterministic.
+With **AI understanding** enabled, an OpenRouter model produces a high-level semantic blueprint. Noun drawing is a separate, non-blocking step: the scene appears with a labelled placeholder immediately; an approved offline glyph or validated cached glyph appears synchronously, while an unseen noun is queued for bounded generation and crossfades in later. Tegeera validates the tiny path language, coordinates and palette, and compiles layout, motion, and relationships locally. This is a general noun mechanism, not a bank of scripted classroom sentences.
+
+Generated noun artwork is presented for review. A user may keep an individual doodle
+for reuse on that device or decline it; Tegeera does not automatically turn a
+model-made drawing into a trusted offline asset. The shipped offline pack has a
+separate provenance and visual-approval gate and is still empty while curation begins.
 
 Try explanations such as:
 
@@ -140,7 +145,7 @@ Tegeera separates five things that are often mixed together:
 
 New nouns occupy open semantic slots. New visual families are registered as reusable structures rather than complete classroom sentences. Open Peeps and DiceBear informed only the study of pose coverage and modular component architecture; no artwork, paths, proportions, or style definitions were imported. Tegeera's visual identity and procedural rig are original.
 
-See [TEGEERA_POSE_EXPRESSION_SPEC.md](TEGEERA_POSE_EXPRESSION_SPEC.md) for the character contract and [OPEN_VISUALIZATION_ARCHITECTURE.md](OPEN_VISUALIZATION_ARCHITECTURE.md) for the long-term system design.
+See [TEGEERA_POSE_EXPRESSION_SPEC.md](TEGEERA_POSE_EXPRESSION_SPEC.md) for the character contract, [GLYPH_PACK_GUIDE.md](GLYPH_PACK_GUIDE.md) for noun-art curation, and [OPEN_VISUALIZATION_ARCHITECTURE.md](OPEN_VISUALIZATION_ARCHITECTURE.md) for the long-term system design.
 
 ## Test it in a browser
 
@@ -150,7 +155,7 @@ Requirements: Node.js 20 or newer.
 
 Tegeera always attempts its fast deterministic interpreter first. For a personal demo with no backend, open **AI understanding**, paste a newly generated OpenRouter key, and press **Enable AI understanding**. The password field clears on purpose after enabling; the status immediately confirms that the key is active in memory. It is never written to local storage and disappears when the page closes.
 
-Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. A noun glyph may contain at most twelve paths in an allowlisted absolute-path language using only M/L/C/Q/Z commands, bounded 0–100 coordinates, unique part IDs, and Tegeera's six-color palette. Tegeera compiles spacing and identities locally and requires the resulting DoodleScript to pass the same schema, semantic, confidence, and layout gates. The interface reports the exact model OpenRouter selected and exposes a safe failure reason instead of disguising an AI failure as the original local clarification. A backend boundary remains available for a later public deployment; no credential is committed or built into the web app or APK. See [the interpreter deployment guide](server/README.md).
+Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. A separate noun-glyph request never blocks the scene. Its result may contain at most twelve paths in an allowlisted absolute-path language using only M/L/C/Q/Z commands, bounded 0–100 coordinates, unique part IDs, and Tegeera's six-color palette. Tegeera compiles spacing and identities locally and requires the resulting DoodleScript to pass the same schema, semantic, confidence, and layout gates. The interface reports the exact model OpenRouter selected for the semantic request. Speculative and lesson prefetch can make additional API calls. A backend boundary remains available for a later public deployment; no credential is committed or built into the web app or APK. See [the interpreter deployment guide](server/README.md) and [glyph pack guide](GLYPH_PACK_GUIDE.md).
 
 ```bash
 git clone https://github.com/NestroyMusoke/Tegeera.git

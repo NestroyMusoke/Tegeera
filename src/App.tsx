@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DoodleCanvas } from "./components/DoodleCanvas";
 import { interpretTeacherText } from "./doodlescript/interpret";
 import { applyDoodleScript, initialScene } from "./doodlescript/scene";
@@ -13,6 +13,11 @@ import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
 import { interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
 import { compileUniversalScene } from "./llm/universalScene";
+import { loadGlyphCache, rememberGlyph } from "./glyphs/cache";
+import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
+import { offlineGlyphCatalog } from "./glyphs/catalog";
+import { LiveGlyphResolver } from "./glyphs/runtimeResolver";
+import { generateGlyphRemotely, planLessonNouns } from "./llm/generateGlyph";
 import { allTestedPhrases, showcaseGroups } from "./evaluation/showcaseExamples";
 import {
   makeLatencySample,
@@ -51,12 +56,31 @@ function App() {
   const [openRouterKey, setOpenRouterKey] = useState("");
   const [aiStatus, setAiStatus] = useState("Not enabled");
   const [lastRemoteModel, setLastRemoteModel] = useState<string | null>(null);
+  const glyphCache = useRef(new Map<string, TegeeraGlyph>());
+  const glyphResolver = useRef<LiveGlyphResolver | null>(null);
+  if (!glyphResolver.current) glyphResolver.current = new LiveGlyphResolver({
+    ...offlineGlyphCatalog, cache: glyphCache.current, persist: rememberGlyph
+  });
+  const [glyphRevision, setGlyphRevision] = useState(0);
+  const [lessonTopic, setLessonTopic] = useState("");
+  const [lessonPrepStatus, setLessonPrepStatus] = useState("");
+  const [pendingGlyphReview, setPendingGlyphReview] = useState<Array<{ noun: string; glyph: TegeeraGlyph }>>([]);
   const [exampleSearch, setExampleSearch] = useState("");
   const [exampleLimit, setExampleLimit] = useState(24);
   const [latencySamples, setLatencySamples] = useState<LatencySample[]>([]);
   const pendingLatency = useRef<PendingLatency | null>(null);
   const latencySequence = useRef(0);
   const scene = history.at(-1) ?? initialScene;
+  const visualScene = useMemo<SceneState>(() => ({
+    ...scene,
+    entities: scene.entities.map((entity) => {
+      if (entity.kind !== "generic" || entity.glyph || !entity.label) return entity;
+      const resolution = glyphResolver.current!.resolve(entity.label);
+      return resolution.glyph ? { ...entity, glyph: resolution.glyph, glyphSource: resolution.source === "cache" ? "deferred" : resolution.source === "glyph-pack" ? "glyph-pack" : "emoji" } : entity;
+    })
+  // The service emits only after a validated glyph replaces a placeholder.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [scene, glyphRevision]);
   const canUndo = history.length > 1;
   const filteredTestedPhrases = useMemo(() => {
     const query = exampleSearch.trim().toLowerCase();
@@ -64,6 +88,22 @@ function App() {
       ? allTestedPhrases.filter(({ text, layout }) => `${text} ${layout}`.toLowerCase().includes(query))
       : allTestedPhrases;
   }, [exampleSearch]);
+
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = glyphResolver.current!.subscribe(() => setGlyphRevision((current) => current + 1));
+    void loadGlyphCache().then((persisted) => {
+      if (!active) return;
+      glyphResolver.current!.seedCache(persisted);
+    });
+    return () => { active = false; unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    glyphResolver.current!.setGenerator(openRouterKey
+      ? (noun, signal) => generateGlyphRemotely(noun, openRouterKey, signal)
+      : undefined);
+  }, [openRouterKey]);
 
   const spokenSummary = useMemo(
     () => {
@@ -85,6 +125,7 @@ function App() {
     targetScene = scene,
     replaceScene = false
   ) => {
+    setPendingGlyphReview([]);
     const receivedAt = speechTiming?.finalReceivedAt ?? performance.now();
     const source: InputSource = speechTiming ? "speech" : "typed";
     const markDecision = (outcome: PipelineOutcome) => {
@@ -100,10 +141,14 @@ function App() {
         setHoldNotice(null);
         setClarification(null);
         setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
-        void interpretRemotely(text, targetScene, openRouterKey).then(({ candidate, model }) => {
+        const reusableNouns = [...offlineGlyphCatalog.pack.keys(), ...glyphCache.current.keys()]
+          .filter((noun) => text.toLowerCase().includes(noun)).slice(0, 12);
+        void interpretRemotely(text, targetScene, openRouterKey, undefined, reusableNouns).then(({ candidate, model }) => {
           setLastRemoteModel(model ?? "OpenRouter-selected free model");
           setAiStatus("Enabled and working");
-          const compiled = compileUniversalScene(candidate, targetScene, text);
+          const compiled = compileUniversalScene(candidate, targetScene, text, {
+            ...offlineGlyphCatalog, cache: glyphCache.current
+          });
           const result = validateDoodleScript(compiled, targetScene);
           if (!result.ok) {
             markDecision("reject");
@@ -115,6 +160,11 @@ function App() {
           const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
           const nextScene = isHold ? targetScene : applyDoodleScript(targetScene, result.script);
           markDecision(isHold ? "hold" : "draw");
+          setPendingGlyphReview(result.script.commands.flatMap((command) =>
+            command.action === "create" && command.entity.glyphSource === "generated"
+              && command.entity.glyph && command.entity.label
+              ? [{ noun: glyphKey(command.entity.label), glyph: command.entity.glyph }] : []
+          ));
           if (!isHold) setHistory((current) => replaceScene ? [initialScene, nextScene] : [...current, nextScene]);
           setInput("");
           setIssues([]);
@@ -196,6 +246,11 @@ function App() {
   };
 
   const speech = useSpeechSession((transcript, timing) => submit(transcript, timing));
+  useEffect(() => {
+    if (!openRouterKey || !speech.partialTranscript.trim()) return;
+    const timer = setTimeout(() => glyphResolver.current!.speculativePrefetch(speech.partialTranscript), 400);
+    return () => clearTimeout(timer);
+  }, [openRouterKey, speech.partialTranscript]);
   const isListening = speech.status === "listening";
   const speechBusy =
     speech.status === "checking" ||
@@ -250,7 +305,7 @@ function App() {
         <span>Tegeera is not fully ready yet and has only reached a small early group of testers. These demonstrations are backed by automated semantic and rendering checks. Try them, challenge them, and help the vision of accessible real-time explanation grow.</span>
       </aside>
 
-      <DoodleCanvas scene={scene}>
+      <DoodleCanvas scene={visualScene}>
 
       <section className="control-card">
         <form
@@ -331,6 +386,20 @@ function App() {
         </details>
 
         <details className="latency-panel">
+          <summary>Prepare a lesson (optional)</summary>
+          <label htmlFor="lesson-topic">Lesson topic</label>
+          <input id="lesson-topic" value={lessonTopic} onChange={(event) => setLessonTopic(event.target.value)} placeholder="For example, plant reproduction" />
+          <button type="button" disabled={!openRouterKey || !lessonTopic.trim()} onClick={() => {
+            setLessonPrepStatus("Planning likely drawings…");
+            void glyphResolver.current!.prepareLesson(lessonTopic,
+              (topic, signal) => planLessonNouns(topic, openRouterKey, signal)
+            ).then((count) => setLessonPrepStatus(count ? `Queued up to ${count} noun doodles. The lesson remains usable while they load.` : "No nouns were queued. Check AI understanding or try a narrower topic."));
+          }}>Prepare lesson nouns</button>
+          <small>This asks the configured model for up to 30 likely nouns and may make up to 30 more requests. Start it explicitly only when your provider budget allows.</small>
+          {lessonPrepStatus ? <output>{lessonPrepStatus}</output> : null}
+        </details>
+
+        <details className="latency-panel">
           <summary>AI understanding (optional)</summary>
           <label htmlFor="openrouter-key">OpenRouter key for this session</label>
           <input
@@ -356,6 +425,25 @@ function App() {
           <div className="ai-connection-status" role="status" data-ai-enabled={Boolean(openRouterKey)}><strong>{aiStatus}</strong>{lastRemoteModel ? ` · Last model: ${lastRemoteModel}` : " · Router: openrouter/free"}</div>
           <small>The key stays in memory only, is never saved by Tegeera, and disappears when this page closes. The password field clears after enabling by design. Unsupported explanations use OpenRouter; familiar instructions remain local and fast.</small>
         </details>
+
+        {pendingGlyphReview.length ? <section className="glyph-review" aria-label="Review generated doodles">
+          <strong>Are these doodles worth reusing?</strong>
+          <p>Model-made artwork is a draft. Keep only the noun drawings you recognize at a glance; they will be saved on this device, not sent to the public offline pack.</p>
+          <div className="glyph-review-list">{pendingGlyphReview.map(({ noun, glyph }) => <div className="glyph-review-item" key={noun}>
+            <svg viewBox="0 0 100 100" role="img" aria-label={`Generated doodle for ${noun}`}>
+              {glyph.parts.map((part) => <path key={part.id} d={part.d} fill={part.fill} stroke={part.stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />)}
+            </svg>
+            <span>{noun}</span>
+            <button type="button" onClick={() => {
+              glyphCache.current.set(noun, glyph);
+              void rememberGlyph(noun, glyph);
+              setPendingGlyphReview((current) => current.filter((item) => item.noun !== noun));
+            }}>Keep this doodle</button>
+            <button type="button" onClick={() =>
+              setPendingGlyphReview((current) => current.filter((item) => item.noun !== noun))
+            }>Do not reuse</button>
+          </div>)}</div>
+        </section> : null}
 
         {issues.length ? (
           <div className="clarification" role="status" data-clarification-code={clarification?.code}>

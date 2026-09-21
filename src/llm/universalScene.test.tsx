@@ -90,4 +90,30 @@ describe("universal visual scene compiler", () => {
       ] } }]
     }, initialScene, "unsafe")).toThrow();
   });
+
+  it("reuses a validated cached glyph over a new model glyph and accepts omitted glyphs", () => {
+    const cached = new Map([["flying dragon", dragonGlyph]]);
+    const replaced = compileUniversalScene({
+      ...blueprint,
+      objects: [{ ...blueprint.objects[0], glyph: cloudGlyph }]
+    }, initialScene, "A flying dragon", { cache: cached });
+    const create = replaced.commands.find((command) => command.action === "create");
+    expect(create?.action).toBe("create");
+    if (create?.action !== "create") return;
+    expect(create.entity.glyph).toEqual(dragonGlyph);
+    expect(create.entity.glyphSource).toBe("cache");
+
+    const omitted = compileUniversalScene({
+      ...blueprint,
+      objects: [{ id: "flying-dragon", label: "flying dragon", kind: "generic", x: 50, y: 50 }]
+    }, initialScene, "A flying dragon", { cache: cached });
+    expect(validateDoodleScript(omitted, initialScene).ok).toBe(true);
+    const placeholderScript = compileUniversalScene({
+      ...blueprint,
+      objects: [{ id: "unseen", label: "unseen thing", kind: "generic", x: 50, y: 50 }]
+    }, initialScene, "unseen thing", { cache: cached });
+    expect(validateDoodleScript(placeholderScript, initialScene).ok).toBe(true);
+    expect(renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, placeholderScript)} />))
+      .toContain('data-glyph-source="sticker"');
+  });
 });

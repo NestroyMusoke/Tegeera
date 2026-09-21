@@ -8,7 +8,14 @@ import {
   type DoodleScript,
   type SceneState
 } from "../doodlescript/schema";
-import { glyphSchema } from "../glyphs/glyph";
+import { glyphSchema, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
+
+export interface UniversalGlyphSources {
+  pack?: ReadonlyMap<string, TegeeraGlyph>;
+  emoji?: ReadonlyMap<string, TegeeraGlyph>;
+  cache?: ReadonlyMap<string, TegeeraGlyph>;
+  synonyms?: ReadonlyMap<string, string>;
+}
 
 export const universalSceneBlueprintSchema = z.object({
   blueprintVersion: z.literal("1.0"),
@@ -22,11 +29,8 @@ export const universalSceneBlueprintSchema = z.object({
     x: z.number().min(0).max(100),
     y: z.number().min(0).max(100),
     glyph: glyphSchema.optional(),
+    glyphSource: z.enum(["glyph-pack", "emoji", "cache", "generated"]).optional(),
     visual: proceduralVisualSchema.optional()
-  }).superRefine((object, context) => {
-    if (object.kind === "generic" && !object.glyph) context.addIssue({
-      code: "custom", message: "Every unfamiliar AI-planned object needs a validated glyph."
-    });
   })).min(1).max(8),
   connections: z.array(z.object({
     from: z.string().min(1).max(30),
@@ -64,10 +68,30 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], scene: Scene
 }
 
 /** Converts untrusted high-level model output into deterministic, validator-safe DoodleScript. */
-export function compileUniversalScene(candidate: unknown, scene: SceneState, sourceText: string): DoodleScript {
+export function compileUniversalScene(
+  candidate: unknown, scene: SceneState, sourceText: string, glyphSources: UniversalGlyphSources = {}
+): DoodleScript {
   const existing = doodleScriptSchema.safeParse(candidate);
   if (existing.success) return existing.data;
-  const parsedBlueprint = universalSceneBlueprintSchema.safeParse(candidate);
+  const hydrated = typeof candidate === "object" && candidate !== null && !Array.isArray(candidate)
+    ? {
+      ...candidate,
+      objects: Array.isArray((candidate as { objects?: unknown }).objects)
+        ? (candidate as { objects: unknown[] }).objects.map((raw) => {
+          if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
+          const object = raw as Record<string, unknown>;
+          if (typeof object.label !== "string") return raw;
+          const kind = typeof object.kind === "string" ? object.kind : "generic";
+          if (kind !== "generic") return { ...object, glyph: undefined, glyphSource: undefined };
+          const resolved = resolveGlyph({
+            noun: object.label, kind: "generic",
+            ...glyphSources, generated: object.glyph as TegeeraGlyph | undefined
+          });
+          if (!resolved.glyph || resolved.source === "sticker" || resolved.source === "hero-rig") return raw;
+          return { ...object, glyph: resolved.glyph, glyphSource: resolved.source };
+        }) : (candidate as { objects?: unknown }).objects
+    } : candidate;
+  const parsedBlueprint = universalSceneBlueprintSchema.safeParse(hydrated);
   if (!parsedBlueprint.success) throw new Error("The model returned an incomplete visual blueprint. Try again or shorten the explanation.");
   const blueprint = parsedBlueprint.data;
   const positions = assignedSlots(blueprint.objects, scene, blueprint.mode === "extend");
@@ -87,6 +111,7 @@ export function compileUniversalScene(candidate: unknown, scene: SceneState, sou
     commands.push({ action: "create", entity: {
       id, kind: object.kind, label: object.label.trim(), ...positions[index], scale: visualScale,
       direction: "right", highlighted: false, color: object.color, glyph: object.glyph,
+      glyphSource: object.glyphSource,
       ...(object.visual ? { visual: object.visual } : {})
     } });
   });

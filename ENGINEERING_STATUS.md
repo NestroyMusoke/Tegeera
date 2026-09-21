@@ -1615,8 +1615,55 @@ a production noun lookup. Runtime language remains open: unfamiliar noun knowled
 through the validated model artifact, while Tegeera owns safety, composition, layout,
 style, and motion.
 
+## 2.27 follow-on: persistent reuse with explicit review
+
+The source-neutral catalog is now connected to the universal compiler, not just
+declared in a resolver. Pack, synonym, emoji-adapter, and cache glyphs take
+deterministic precedence over a newly generated glyph. The model receives a short
+list of exact reusable noun labels in the current utterance and may omit their
+path data; the compiler hydrates the approved glyph before the normal schema
+and scene gates. Known Tegeera rig kinds never need generated glyph paths.
+
+Validated generated glyphs remain drafts. The App shows each at 64px and lets
+the user choose **Keep this doodle** or **Do not reuse**. Only explicitly kept
+glyphs enter the in-memory cache and the bounded 256-entry IndexedDB store.
+Storage denial/private mode is treated as a cache miss, not a scene error; API
+keys, transcripts, and raw model responses are not persisted there.
+
+The offline pack currently contains zero entries. It now has a strict manifest
+contract for up to 2,000 glyphs, canonical nouns and aliases, provenance, and
+four explicit visual-review checks. Duplicate aliases, unsafe paths, and
+unattributed third-party data cannot be bundled. This is infrastructure for
+curation, not a claim of 2,000 finished drawings.
+
 The complete checkpoint passes 423 tests across 62 files. The serial 278-probe
 SVG-ready benchmark measured 0.29 ms decision p50, 0.81 ms decision p95, 4.16 ms SVG
 p50, 9.31 ms SVG p95, and 10.20 ms total-ready p95 across 834 warmed samples. The
 largest application chunk is 328.20 KiB, below the 500 KiB guardrail. Lint, TypeScript,
 production build, bundle budgets, and 47 real-component fixtures pass.
+
+## 2.28 follow-on: non-blocking noun artwork and batch curation
+
+The scene no longer waits for a noun path from the semantic planner. A synchronous
+resolver tries the reviewed pack, emoji adapter, and validated local cache, then
+returns a labelled placeholder and queues an unseen noun for separate generation.
+Generation is deduplicated, limited to two concurrent jobs and a 12-second timeout.
+When a valid glyph arrives, an update event repaints the scene with a crossfade
+and write-on motion. A slow-provider test makes the provider take eight seconds
+while verifying initial rendering stays below 100 ms. This does **not** include
+speech recognition, remote semantic planning, browser paint, or device latency.
+
+Partial speech can speculatively prefetch conservative noun candidates. An
+explicit Prepare a lesson action asks for up to 30 likely concrete nouns and
+queues them; both mechanisms may use additional OpenRouter calls. Runtime
+generated glyphs are now automatically stored after strict schema validation
+in bounded IndexedDB, **without human art approval**; they remain a separate
+trust tier from the shipped pack. The earlier explicit review control applies
+only to any glyph the semantic planner embeds directly, a path now discouraged.
+
+`scripts/build-glyph-pack.mjs` accepts a noun data file, uses an explicitly
+selected image model only with `--execute`, resumes from a manifest, traces via
+VTracer, normalizes to a bounded Tegeera glyph, and produces an HTML review
+sheet. The approved import is the only path into the checked-in offline pack.
+No image API was called and the pack remains empty pending actual artwork and
+human review. Existing corpus/gold acceptance is unchanged by this work.

@@ -62,7 +62,7 @@ export interface GlyphResolution {
   glyph?: TegeeraGlyph;
 }
 
-const key = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+export const glyphKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const validFrom = (source: GlyphSource, candidate?: unknown): GlyphResolution | undefined => {
   if (!candidate) return undefined;
   const parsed = glyphSchema.safeParse(candidate);
@@ -90,7 +90,7 @@ export function resolveGlyph(options: {
   synonyms?: ReadonlyMap<string, string>;
 }): GlyphResolution {
   if (options.kind !== "generic") return { source: "hero-rig" };
-  const noun = key(options.noun);
+  const noun = glyphKey(options.noun);
   const packed = lookup(noun, "glyph-pack", options.pack, options.synonyms);
   if (packed) return packed;
   const emoji = lookup(noun, "emoji", options.emoji, options.synonyms);

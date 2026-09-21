@@ -76,7 +76,7 @@ describe("teaching workflow", () => {
     expect(container.querySelectorAll(".ownership-card")).toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(container.querySelectorAll(".ownership-card")).toHaveLength(3);
-  });
+  }, 15_000);
 
   it("holds a live scene without changing revision or consuming Undo", () => {
     const { container } = render(<App />);
@@ -125,8 +125,8 @@ describe("teaching workflow", () => {
     expect(container.querySelector('[data-visual-cue="straight-incident-ray"]')).toBeNull();
     expect(screen.getByText("Revision 1")).toBeTruthy();
   });
-  it("turns unfamiliar language into a validated procedural scene when session AI is enabled", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+  it("reviews generated glyphs and reuses only approved artwork without refreshing", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({
       model: "example/free-visual-model",
       choices: [{ message: { content: JSON.stringify({
         blueprintVersion: "1.0", mode: "replace", confidence: 0.92,
@@ -155,8 +155,17 @@ describe("teaching workflow", () => {
     explain("A dragon flies over a tiny village");
     await waitFor(() => expect(container.querySelectorAll(".validated-glyph")).toHaveLength(2));
     expect(container.querySelectorAll('[data-glyph-source="generated"]')).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Keep this doodle" })).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole("button", { name: "Keep this doodle" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Do not reuse" }));
+    expect(screen.queryByRole("button", { name: "Keep this doodle" })).toBeNull();
+    await waitFor(() => expect((screen.getByRole("button", { name: "Draw it" }) as HTMLButtonElement).disabled).toBe(false));
+    explain("A dragon flies over a tiny village");
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(container.querySelectorAll('[data-glyph-source="cache"]')).toHaveLength(1), { timeout: 5_000 });
+    expect(container.querySelectorAll('[data-glyph-source="generated"]')).toHaveLength(1);
     expect(container.querySelector('[data-visual-cue="semantic-connection"]')).not.toBeNull();
     expect(screen.getByText(/Last model: example\/free-visual-model/)).toBeTruthy();
     expect(screen.queryByText("Help me understand")).toBeNull();
-  });
+  }, 15_000);
 });

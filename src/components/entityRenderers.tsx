@@ -196,8 +196,10 @@ export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
     data-renderer={concept.glyphKey}
     data-entity-color={entity.color}
     style={entity.color ? { "--entity-color": entityColors[entity.color] } as CSSProperties : undefined}
-    data-glyph-source={glyph.source}
-  >{glyph.glyph ? <ValidatedGlyph entity={entity} moving={moving} />
+    data-glyph-source={entity.glyphSource ?? glyph.source}
+  >{glyph.glyph ? entity.glyphSource === "deferred"
+    ? <g className="glyph-crossfade"><g className="glyph-crossfade-placeholder"><Generic entity={entity} /></g><g className="glyph-crossfade-final"><ValidatedGlyph entity={entity} moving={moving} /></g></g>
+    : <ValidatedGlyph entity={entity} moving={moving} />
     : entity.visual ? <ProceduralDoodle entity={entity} moving={moving} />
       : <Renderer entity={entity} moving={moving} />}</g>;
 }

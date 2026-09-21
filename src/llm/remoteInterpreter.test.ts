@@ -26,8 +26,8 @@ describe("remote interpreter boundary", () => {
     const body = JSON.parse(request.body as string);
     expect(body.response_format).toEqual({ type: "json_object" });
     expect(body.messages[0].content).toContain('"blueprintVersion":"1.0"');
-    expect(body.messages[0].content).toContain("Every generic object needs one glyph");
-    expect(body.messages[0].content).toContain("uppercase M L C Q Z only");
+    expect(body.messages[0].content).toContain("Omit glyph for all objects");
+    expect(body.messages[0].content).toContain("Only uppercase M L C Q Z commands");
     expect(body.max_tokens).toBe(3600);
     vi.unstubAllGlobals();
   });

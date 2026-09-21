@@ -1,0 +1,12 @@
+# One concrete noun per line; optional synonyms separated by |.
+# Generated artwork is a candidate only until the contact sheet is reviewed.
+plant | seedling
+sun
+soil
+root
+leaf
+water
+dragon
+village
+mountain
+river

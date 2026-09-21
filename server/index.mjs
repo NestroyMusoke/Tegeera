@@ -37,10 +37,11 @@ function extractJson(content) {
   if (typeof content !== "string") throw new Error("Missing model output");
   return JSON.parse((content.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ?? content).trim());
 }
-function makePrompt(text, scene) {
+function makePrompt(text, scene, reusableNouns = []) {
   return `You are Tegeera's visual scene architect. Return exactly one JSON object, no markdown. Convert the teacher's meaning into this blueprint:
 {"blueprintVersion":"1.0","mode":"replace","confidence":0.0,"objects":[{"id":"short-id","label":"short label","kind":"generic","color":"green","x":50,"y":50,"glyph":{"schemaVersion":"1.0.0","viewBox":"0 0 100 100","parts":[{"id":"body","d":"M10 50 C10 20 90 20 90 50 Q90 85 50 88 L10 50 Z","fill":"#84a98c","stroke":"#2f3e46"}],"anchors":{"top":[50,20],"ground":[50,88],"front":[90,50]}}}],"connections":[{"from":"short-id","to":"other-id","label":"short action"}]}.
-Use 1-8 objects and 0-12 connections. Show meaning, not every word. Kinds: ${kinds.join(", ")}; use generic for anything else. Colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray; omit unstated color. x/y are semantic 0..100 positions. Every generic object needs one coherent glyph with 1-12 path parts; omit glyph for a known rig kind. Paths may use uppercase M L C Q Z only, with a command repeated before every coordinate group, and all coordinates stay inside 0..100. No text, markup, relative commands, gradients, filters, images, or handlers. Fill: none, #2f3e46, #52796f, #84a98c, #f4a261, #e9c46a, #cad2c5; stroke uses the same palette except none. Build one recognizable 80%-box silhouette, then 2-4 joined signature features. Anchors top, ground and front must touch the visible silhouette. Labels use at most four words. Connections reference object ids. Do not invent semantic facts. Use confidence below .58 only when essential meaning is ambiguous. mode is replace unless explicitly extending the current scene.
+Use 1-8 objects and 0-12 connections. Show meaning, not every word. Kinds: ${kinds.join(", ")}; use generic for anything else. Colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray; omit unstated color. x/y are semantic 0..100 positions. Omit glyphs: Tegeera paints placeholders immediately and resolves noun artwork separately. Labels use at most four words. Connections reference object ids. Do not invent semantic facts. Use confidence below .58 only when essential meaning is ambiguous. mode is replace unless explicitly extending the current scene.
+Tegeera already has validated glyphs for these exact noun labels: ${JSON.stringify(reusableNouns)}. If an object's label exactly matches one, omit its glyph to save response time. Otherwise provide a glyph.
 Teacher: ${JSON.stringify(text)}
 Current scene for reference: ${JSON.stringify(scene)}`;
 }
@@ -61,7 +62,9 @@ createServer(async (req, res) => {
     const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json", "http-referer": process.env.APP_URL || "https://nestroymusoke.github.io/Tegeera/", "x-title": "Tegeera" },
-      body: JSON.stringify({ model, messages: [{ role: "user", content: makePrompt(body.text.trim(), body.scene) }], temperature: 0, max_tokens: 3600, response_format: { type: "json_object" }, provider: { allow_fallbacks: true, data_collection: "deny" } }),
+      body: JSON.stringify({ model, messages: [{ role: "user", content: makePrompt(body.text.trim(), body.scene,
+        Array.isArray(body.reusableGlyphNouns) ? body.reusableGlyphNouns.filter((noun) => typeof noun === "string" && noun.length <= 48).slice(0, 12) : []
+      ) }], temperature: 0, max_tokens: 3600, response_format: { type: "json_object" }, provider: { allow_fallbacks: true, data_collection: "deny" } }),
       signal: AbortSignal.timeout(12_000)
     });
     const result = await upstream.json();
