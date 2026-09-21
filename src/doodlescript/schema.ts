@@ -71,7 +71,7 @@ export const sceneEntitySchema = z.object({
   color: entityColorSchema.optional(),
   visual: proceduralVisualSchema.optional(),
   glyph: glyphSchema.optional(),
-  glyphSource: z.enum(["glyph-pack", "emoji", "cache", "generated", "deferred"]).optional(),
+  glyphSource: z.enum(["glyph-pack", "emoji", "cache", "generated", "deferred", "streaming"]).optional(),
   visualRole: visualRoleSchema.optional(),
   fraction: z.object({ numerator: z.number().int().min(1).max(12), denominator: z.number().int().min(2).max(12) }).optional(),
   performance: characterPerformanceSchema.optional()

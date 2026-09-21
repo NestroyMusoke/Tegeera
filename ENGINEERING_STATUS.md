@@ -1667,3 +1667,16 @@ VTracer, normalizes to a bounded Tegeera glyph, and produces an HTML review
 sheet. The approved import is the only path into the checked-in offline pack.
 No image API was called and the pack remains empty pending actual artwork and
 human review. Existing corpus/gold acceptance is unchanged by this work.
+
+## 2.29 follow-on: sequential stroke glyphs
+
+Runtime long-tail glyphs now use an original 50×50 point-stroke format instead
+of asking the model for SVG path syntax. Individual strokes are validated and
+converted through Catmull–Rom smoothing into the existing bounded glyph schema.
+The OpenRouter request streams JSON tokens; only complete validated stroke
+objects can update the scene. A bounded edit operation modifies an in-memory
+stroke drawing without replacing unrelated scene objects. The offline pack
+builder has an optional PNG vision critique and one image fix round; it is
+disabled by default and has not been exercised against a live paid provider.
+This adds a mechanism for progressive appearance, not proof of visual quality
+or universal recognition.

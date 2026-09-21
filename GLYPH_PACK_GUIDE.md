@@ -16,6 +16,12 @@ layout, or lesson.
    `--mode binary` is the default; `--mode color` quantizes into Tegeera's six
    palette colors. VTracer uses speckle filter 4 and path precision 2.
    Complexity failures remain failed candidates, not silently broken glyphs.
+   Optional `--vision-review --vision-model YOUR_VISION_MODEL` renders the
+   normalized SVG back to a 64px PNG and sends that actual candidate to a
+   vision model for a silhouette check. A failed first check triggers one
+   revised image, re-tracing, and one second check, then rejects it if it still
+   fails. This can add several paid requests per noun, including retries. It is
+   off by default; neither check replaces human contact-sheet approval.
 2. Check that its silhouette is recognizable **without its label** at both 64px and
    classroom/projector size. Review the static frame and reduced-motion mode.
 3. Check the signature features, attachment anchors, color-independent meaning,
@@ -40,7 +46,10 @@ visual inspection remains essential.
 
 Runtime model glyphs are separate from the shipped pack. The non-blocking
 resolver returns a sticker immediately, generates at most two glyphs in parallel,
-times out after 12 seconds, and caches only schema-validated glyphs in IndexedDB.
+times out after 12 seconds, streams complete validated point-strokes as they
+arrive, and caches only compiled schema-validated glyphs in IndexedDB. A short
+edit sends the current in-memory stroke list and returns bounded add/replace/
+remove operations; it never accepts executable code or unrestricted SVG.
 Those cached glyphs are **not** human-approved or shipped as part of the offline
 pack. Partial speech can speculatively prefetch nouns; Prepare a lesson asks a
 planner for up to 30 likely nouns, then queues them. Both can incur API usage.

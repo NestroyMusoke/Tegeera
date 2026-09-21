@@ -4,6 +4,7 @@ import { DoodleCanvas } from "../components/DoodleCanvas";
 import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { compileUniversalScene } from "../llm/universalScene";
 import { LiveGlyphResolver } from "./runtimeResolver";
+import type { Stroke } from "./strokeGlyph";
 
 const glyph = {
   schemaVersion: "1.0.0", viewBox: "0 0 100 100",
@@ -12,6 +13,31 @@ const glyph = {
 };
 
 describe("non-blocking glyph resolver", () => {
+  it("publishes complete strokes before the provider finishes, then permits a bounded edit", async () => {
+    const first: Stroke = { part: "body", color: "#2f3e46", pts: [[10, 10], [40, 10], [40, 40], [10, 10]] };
+    const second: Stroke = { part: "feature", color: "#52796f", pts: [[15, 20], [20, 20], [25, 20], [30, 20]] };
+    let finish!: () => void;
+    const gate = new Promise<void>((resolve) => { finish = resolve; });
+    const resolver = new LiveGlyphResolver({ generator: async (_noun, _signal, publish) => {
+      publish(first);
+      await gate;
+      publish(second);
+      return { strokes: [first, second] };
+    } });
+    const changed = vi.fn();
+    resolver.subscribe(changed);
+    expect(resolver.resolve("new bird").status).toBe("placeholder");
+    await vi.waitFor(() => expect(resolver.resolve("new bird").glyph?.parts).toHaveLength(1));
+    expect(resolver.resolve("new bird").status).toBe("placeholder");
+    finish();
+    await vi.waitFor(() => expect(resolver.resolve("new bird").status).toBe("final"));
+    expect(resolver.hasEditableStrokes("new bird")).toBe(true);
+    expect(await resolver.editGlyph("new bird", "add a line", async (_noun, current) => ({
+      strokes: [...current.strokes, { part: "detail", color: "#e9c46a", pts: [[10, 30], [20, 30], [30, 30], [40, 30]] }]
+    }))).toBe(true);
+    expect(resolver.resolve("new bird").glyph?.parts).toHaveLength(3);
+    expect(changed).toHaveBeenCalled();
+  });
   it("paints an unseen noun in under 100ms even when generation takes eight seconds", async () => {
     vi.useFakeTimers();
     try {

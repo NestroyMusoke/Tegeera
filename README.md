@@ -46,12 +46,14 @@ Tegeera already accepts speech or typed input and turns supported explanations i
 - forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
 - stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
 
-With **AI understanding** enabled, an OpenRouter model produces a high-level semantic blueprint. Noun drawing is a separate, non-blocking step: the scene appears with a labelled placeholder immediately; an approved offline glyph or validated cached glyph appears synchronously, while an unseen noun is queued for bounded generation and crossfades in later. Tegeera validates the tiny path language, coordinates and palette, and compiles layout, motion, and relationships locally. This is a general noun mechanism, not a bank of scripted classroom sentences.
+With **AI understanding** enabled, an OpenRouter model produces a high-level semantic blueprint. Noun drawing is a separate, non-blocking step: the scene appears with a labelled placeholder immediately; an approved offline glyph or validated cached glyph appears synchronously. For an unseen noun, a second model emits coarse-grid strokes; each complete, validated stroke appears with write-on motion while the model continues. Tegeera smooths those points into bounded SVG paths locally. A short instruction can add, replace, or remove strokes of a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
 
-Generated noun artwork is presented for review. A user may keep an individual doodle
-for reuse on that device or decline it; Tegeera does not automatically turn a
-model-made drawing into a trusted offline asset. The shipped offline pack has a
-separate provenance and visual-approval gate and is still empty while curation begins.
+Validated runtime strokes are cached on that device automatically but are not
+human-approved artwork. The shipped offline pack has a separate provenance and
+visual-approval gate and is still empty while curation begins. Streaming strokes
+and editing require a reachable model; the existing scene remains usable without one.
+
+Related work: [SketchAgent (CVPR 2025)](https://openaccess.thecvf.com/content/CVPR2025/html/Vinker_SketchAgent_Language-Driven_Sequential_Sketch_Generation_CVPR_2025_paper.html) demonstrates sequential, language-driven sketching and conversational refinement. Tegeera takes inspiration from that research direction but uses its own stroke schema and rendering code; no SketchAgent code or artwork is copied. Tegeera's focus is a validated, offline-first classroom scene with immediate placeholders and explicit ambiguity handling. The paper is evidence that the method is promising, not evidence that Tegeera can yet draw every requested concept accurately.
 
 Try explanations such as:
 
@@ -155,7 +157,7 @@ Requirements: Node.js 20 or newer.
 
 Tegeera always attempts its fast deterministic interpreter first. For a personal demo with no backend, open **AI understanding**, paste a newly generated OpenRouter key, and press **Enable AI understanding**. The password field clears on purpose after enabling; the status immediately confirms that the key is active in memory. It is never written to local storage and disappears when the page closes.
 
-Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. A separate noun-glyph request never blocks the scene. Its result may contain at most twelve paths in an allowlisted absolute-path language using only M/L/C/Q/Z commands, bounded 0–100 coordinates, unique part IDs, and Tegeera's six-color palette. Tegeera compiles spacing and identities locally and requires the resulting DoodleScript to pass the same schema, semantic, confidence, and layout gates. The interface reports the exact model OpenRouter selected for the semantic request. Speculative and lesson prefetch can make additional API calls. A backend boundary remains available for a later public deployment; no credential is committed or built into the web app or APK. See [the interpreter deployment guide](server/README.md) and [glyph pack guide](GLYPH_PACK_GUIDE.md).
+Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. A separate noun-stroke request never blocks the scene. It can emit at most ten strokes with 4–14 bounded grid points apiece and Tegeera's six-color palette. Tegeera compiles each stroke into its allowlisted SVG path format, then handles spacing and scene identities locally. The semantic DoodleScript must pass the same schema, confidence, and layout gates. The interface reports the exact model OpenRouter selected for the semantic request; the routed stroke model may differ. Speculative and lesson prefetch can make additional API calls. A backend boundary remains available for a later public deployment; no credential is committed or built into the web app or APK. See [the interpreter deployment guide](server/README.md) and [glyph pack guide](GLYPH_PACK_GUIDE.md).
 
 ```bash
 git clone https://github.com/NestroyMusoke/Tegeera.git

@@ -1,4 +1,5 @@
-import { glyphSchema, type TegeeraGlyph } from "../glyphs/glyph";
+import { strokeGlyphSchema, strokeSchema, StrokeStreamParser, type Stroke, type StrokeGlyph } from "../glyphs/strokeGlyph";
+import { z } from "zod";
 
 const endpoint = "https://openrouter.ai/api/v1/chat/completions";
 const palette = "#2f3e46 #52796f #84a98c #f4a261 #e9c46a #cad2c5";
@@ -29,11 +30,95 @@ async function requestJson(prompt: string, key: string, signal: AbortSignal, max
   return JSON.parse(content);
 }
 
-export async function generateGlyphRemotely(noun: string, key: string, signal: AbortSignal): Promise<TegeeraGlyph> {
-  const prompt = `Draw ONE original, recognizable classroom doodle of ${JSON.stringify(noun)}.
-Return only JSON: {"schemaVersion":"1.0.0","viewBox":"0 0 100 100","parts":[{"id":"body","d":"M10 10 L90 10 L90 90 L10 90 Z","fill":"#cad2c5","stroke":"#2f3e46"}],"anchors":{"top":[50,10],"ground":[50,90],"front":[90,50]}}.
-Use 1-12 joined paths; first make a coherent silhouette, then 2-4 unmistakable signature features. Prefer a clear side view and visual character over generic geometric icons. Only absolute M, L, C, Q, Z commands; repeat a command before every coordinate group; all numbers 0..100. No markup, text, relative paths, filters, images or event attributes. Fill is none or one of ${palette}; stroke is one of those six colors. Keep three anchors on visible parts of the drawing. The result must be readable at 64px.`;
-  return glyphSchema.parse(await requestJson(prompt, key, signal, 1700));
+const strokeExamples = [
+  { noun: "house", strokes: [
+    { part: "walls", color: "#2f3e46", pts: [[10,25],[10,42],[40,42],[40,25],[10,25]] },
+    { part: "roof", color: "#e9c46a", pts: [[7,26],[25,8],[43,26],[7,26]] },
+    { part: "door", color: "#52796f", pts: [[22,42],[22,32],[28,32],[28,42]] }
+  ] },
+  { noun: "sun", strokes: [
+    { part: "disc", color: "#e9c46a", pts: [[25,12],[34,16],[38,25],[34,34],[25,38],[16,34],[12,25],[16,16],[25,12]] },
+    { part: "ray-top", color: "#2f3e46", pts: [[25,4],[25,7],[25,9],[25,11]] },
+    { part: "ray-right", color: "#2f3e46", pts: [[39,25],[42,25],[44,25],[46,25]] },
+    { part: "ray-left", color: "#2f3e46", pts: [[4,25],[6,25],[8,25],[11,25]] }
+  ] },
+  { noun: "fish", strokes: [
+    { part: "body", color: "#52796f", pts: [[10,25],[18,17],[33,17],[41,25],[33,33],[18,33],[10,25]] },
+    { part: "tail", color: "#52796f", pts: [[11,25],[4,17],[4,33],[11,25]] },
+    { part: "eye", color: "#2f3e46", pts: [[31,23],[32,22],[33,23],[31,23]] },
+    { part: "fin", color: "#e9c46a", pts: [[20,18],[25,11],[29,18],[20,18]] }
+  ] }
+];
+
+const strokePrompt = (noun: string) => `Draw ONE original, recognizable classroom doodle of ${JSON.stringify(noun)} on a 50x50 grid (0,0 top-left). Return ONLY one JSON object {"strokes":[{"part":"name","color":"#2f3e46","pts":[[x,y],[x,y],[x,y],[x,y]]}]}. Draw 4-10 ordered strokes, silhouette first, then 2-4 distinguishing features. Each stroke has 4-14 integer points in 3..47. Close a loop by repeating its first point. No words, labels, SVG, markdown or extra fields. Use only ${palette}. Examples of the FORMAT (do not copy their subject for another noun): ${JSON.stringify(strokeExamples)}. Make the requested subject recognizable at 64px, with one coherent body rather than scattered shapes.`;
+
+/** Streams validated complete strokes; a partial JSON token is never shown as artwork. */
+export async function generateStrokeGlyphRemotely(
+  noun: string, key: string, signal: AbortSignal, onStroke: (stroke: Stroke) => void
+): Promise<StrokeGlyph> {
+  if (!key.trim()) throw new Error("AI glyph generation is not enabled.");
+  const response = await fetch(endpoint, {
+    method: "POST", signal,
+    headers: { authorization: `Bearer ${key.trim()}`, "content-type": "application/json", "http-referer": window.location.href, "x-title": "Tegeera" },
+    body: JSON.stringify({ model: "openrouter/free", stream: true,
+      messages: [{ role: "user", content: strokePrompt(noun) }],
+      temperature: 0, max_tokens: 1500,
+      provider: { allow_fallbacks: true, data_collection: "deny" } })
+  });
+  if (!response.ok || !response.body) throw new Error(`OpenRouter stroke stream failed (${response.status}).`);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const parser = new StrokeStreamParser();
+  let lines = "", content = "";
+  const acceptLine = (line: string) => {
+    if (!line.startsWith("data:")) return;
+    const data = line.slice(5).trim();
+    if (!data || data === "[DONE]") return;
+    let delta: unknown;
+    try { delta = JSON.parse(data); } catch { return; }
+    const chunk = (delta as { choices?: Array<{ delta?: { content?: unknown } }> }).choices?.[0]?.delta?.content;
+    if (typeof chunk !== "string") return;
+    content += chunk;
+    for (const stroke of parser.push(chunk)) onStroke(stroke);
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    lines += decoder.decode(value, { stream: true });
+    if (lines.length > 64_000) throw new Error("Oversized stroke stream");
+    let newline: number;
+    while ((newline = lines.indexOf("\n")) >= 0) {
+      acceptLine(lines.slice(0, newline).trimEnd());
+      lines = lines.slice(newline + 1);
+    }
+  }
+  if (lines.trim()) acceptLine(lines.trim());
+  if (content.length > 32_000) throw new Error("Oversized stroke glyph");
+  return strokeGlyphSchema.parse(JSON.parse(content));
+}
+
+const editOperation = z.discriminatedUnion("op", [
+  z.object({ op: z.literal("add"), stroke: strokeSchema }).strict(),
+  z.object({ op: z.literal("replace"), index: z.number().int().min(0).max(9), stroke: strokeSchema }).strict(),
+  z.object({ op: z.literal("remove"), index: z.number().int().min(0).max(9) }).strict()
+]);
+const editSchema = z.object({ ops: z.array(editOperation).min(1).max(4) }).strict();
+
+/** A bounded semantic edit—not executable code or a raw SVG replacement. */
+export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph, instruction: string, key: string, signal: AbortSignal): Promise<StrokeGlyph> {
+  if (!instruction.trim() || instruction.length > 160) throw new Error("Describe one short doodle change.");
+  const candidate = editSchema.parse(await requestJson(
+    `Edit this classroom doodle of ${JSON.stringify(noun)}. Current strokes: ${JSON.stringify(current)}. User instruction: ${JSON.stringify(instruction)}. Return ONLY JSON {"ops":[{"op":"add","stroke":{"part":"feature","color":"#2f3e46","pts":[[10,10],[11,11],[12,12],[13,13]]}}]} using 1-4 add, replace, or remove operations. For replace/remove include zero-based index. Preserve unaffected strokes; do not regenerate the whole drawing. Each stroke needs 4-14 integer points in 3..47 and a color from ${palette}.`,
+    key, signal, 800
+  ));
+  const strokes: Stroke[] = [...current.strokes];
+  for (const operation of candidate.ops) {
+    if (operation.op === "add") strokes.push(operation.stroke);
+    else if (operation.index >= strokes.length) throw new Error("Edit referenced a missing stroke.");
+    else if (operation.op === "replace") strokes[operation.index] = operation.stroke;
+    else strokes.splice(operation.index, 1);
+  }
+  return strokeGlyphSchema.parse({ strokes });
 }
 
 export async function planLessonNouns(topic: string, key: string, signal: AbortSignal): Promise<string[]> {

@@ -1,4 +1,5 @@
 import { glyphKey, glyphSchema, resolveGlyph, type GlyphSource, type TegeeraGlyph } from "./glyph";
+import { compileStrokeGlyph, strokeGlyphSchema, strokeSchema, type Stroke, type StrokeGlyph } from "./strokeGlyph";
 
 export interface LiveGlyphResolution {
   glyph?: TegeeraGlyph;
@@ -6,8 +7,9 @@ export interface LiveGlyphResolution {
   status: "final" | "placeholder";
 }
 
-export type GlyphGenerator = (noun: string, signal: AbortSignal) => Promise<unknown>;
+export type GlyphGenerator = (noun: string, signal: AbortSignal, publishStroke: (stroke: Stroke) => void) => Promise<unknown>;
 export type LessonNounPlanner = (topic: string, signal: AbortSignal) => Promise<readonly string[]>;
+export type GlyphEditor = (noun: string, current: StrokeGlyph, instruction: string, signal: AbortSignal) => Promise<unknown>;
 
 interface ResolverOptions {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
@@ -33,6 +35,8 @@ export class LiveGlyphResolver {
   private readonly queued = new Set<string>();
   private readonly inFlight = new Set<string>();
   private readonly failedUntil = new Map<string, number>();
+  private readonly previews = new Map<string, StrokeGlyph>();
+  private readonly editable = new Map<string, StrokeGlyph>();
   private readonly queue: string[] = [];
   private active = 0;
   private generator?: GlyphGenerator;
@@ -74,6 +78,31 @@ export class LiveGlyphResolver {
     this.emit();
   }
 
+  hasEditableStrokes(noun: string) { return this.editable.has(glyphKey(noun)); }
+
+  async editGlyph(noun: string, instruction: string, editor: GlyphEditor): Promise<boolean> {
+    const key = glyphKey(noun);
+    const current = this.editable.get(key);
+    if (!current || !instruction.trim() || instruction.length > 160 || this.inFlight.has(key)) return false;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => { controller.abort(); reject(new Error("Glyph edit timed out")); }, this.timeoutMs);
+      });
+      const result = await Promise.race([editor(key, current, instruction.trim(), controller.signal), timeout]);
+      if (controller.signal.aborted) return false;
+      const strokes = strokeGlyphSchema.parse(result);
+      const glyph = compileStrokeGlyph(strokes);
+      this.editable.set(key, strokes);
+      this.cache.set(key, glyph);
+      this.emit();
+      if (this.persist) void this.persist(key, glyph).catch(() => undefined);
+      return true;
+    } catch { return false; }
+    finally { if (timer) clearTimeout(timer); }
+  }
+
   resolve(noun: string): LiveGlyphResolution {
     const key = glyphKey(noun);
     const resolved = resolveGlyph({
@@ -81,6 +110,8 @@ export class LiveGlyphResolver {
       cache: this.cache, synonyms: this.synonyms
     });
     if (resolved.glyph) return { ...resolved, status: "final" };
+    const preview = this.previews.get(key);
+    if (preview) return { glyph: compileStrokeGlyph(preview), source: "generated", status: "placeholder" };
     if (key && this.generator && (this.failedUntil.get(key) ?? 0) <= Date.now()
       && !this.queued.has(key) && !this.inFlight.has(key)) {
       this.queued.add(key);
@@ -121,17 +152,31 @@ export class LiveGlyphResolver {
       this.inFlight.add(noun);
       this.active += 1;
       const controller = new AbortController();
+      const publishStroke = (candidate: Stroke) => {
+        if (controller.signal.aborted) return;
+        const parsed = strokeSchema.safeParse(candidate);
+        if (!parsed.success) return;
+        const previous = this.previews.get(noun)?.strokes ?? [];
+        if (previous.length >= 10) return;
+        const preview = strokeGlyphSchema.parse({ strokes: [...previous, parsed.data] });
+        this.previews.set(noun, preview);
+        this.emit();
+      };
       let timer: ReturnType<typeof setTimeout> | undefined;
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => { controller.abort(); reject(new Error("Glyph generation timed out")); }, this.timeoutMs);
       });
-      void Promise.race([Promise.resolve().then(() => this.generator!(noun, controller.signal)), timeout]).then((candidate) => {
-        const parsed = glyphSchema.safeParse(candidate);
-        if (!parsed.success) throw new Error("Invalid generated glyph");
-        this.cache.set(noun, parsed.data);
+      void Promise.race([Promise.resolve().then(() => this.generator!(noun, controller.signal, publishStroke)), timeout]).then((candidate) => {
+        const strokes = strokeGlyphSchema.safeParse(candidate);
+        const glyph = strokes.success ? compileStrokeGlyph(strokes.data) : glyphSchema.parse(candidate);
+        if (strokes.success) this.editable.set(noun, strokes.data);
+        this.cache.set(noun, glyph);
+        this.previews.delete(noun);
         this.emit();
-        if (this.persist) void this.persist(noun, parsed.data).catch(() => undefined);
+        if (this.persist) void this.persist(noun, glyph).catch(() => undefined);
       }).catch(() => {
+        this.previews.delete(noun);
+        this.emit();
         this.failedUntil.set(noun, Date.now() + 30_000);
       }).finally(() => {
         if (timer) clearTimeout(timer);

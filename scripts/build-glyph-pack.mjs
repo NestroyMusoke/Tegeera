@@ -7,6 +7,7 @@ import { spawn } from 'node:child_process';
 import { DOMParser } from '@xmldom/xmldom';
 import svgpath from 'svgpath';
 import { optimize } from 'svgo';
+import { Resvg } from '@resvg/resvg-js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const VISUAL = join(ROOT, '.visual-check');
@@ -111,16 +112,37 @@ async function runVtracer(input, output, mode) {
   });
 }
 
-async function fetchImage(noun, model, signal) {
+async function fetchImage(noun, model, signal, improvement = '') {
   const response = await fetch('https://openrouter.ai/api/v1/images', {
     method: 'POST', signal, headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, prompt: `One original, simple classroom doodle of ${noun}, isolated on plain white, clearly recognizable silhouette, no words, no labels, no shadows, flat colors.`, output_format: 'png' })
+    body: JSON.stringify({ model, prompt: `One original, simple classroom doodle of ${noun}, isolated on plain white, clearly recognizable silhouette, no words, no labels, no shadows, flat colors. ${improvement}`, output_format: 'png' })
   });
   if (!response.ok) throw new Error(`Image API HTTP ${response.status}`);
   const result = await response.json();
   const base64 = result.data?.[0]?.b64_json;
   if (typeof base64 !== 'string' || base64.length > 12_000_000) throw new Error('No bounded base64 image returned');
   return Buffer.from(base64, 'base64');
+}
+
+/** Optional one-round visual critique of the actual final-size vector candidate. */
+async function critiqueImage(noun, image, model) {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST', signal: AbortSignal.timeout(45_000),
+    headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, temperature: 0, max_tokens: 250,
+      messages: [{ role: 'user', content: [
+        { type: 'text', text: `Assess this traced classroom doodle of ${noun} at its actual 64px display size. Return only JSON {"pass":true|false,"issue":"one concrete visual issue","revisionPrompt":"specific correction to the same subject"}. Pass only if the silhouette is recognizable without a label, features belong to the subject, and no text or tracing artifacts appear.` },
+        { type: 'image_url', image_url: { url: `data:image/png;base64,${image.toString('base64')}` } }
+      ] }] })
+  });
+  if (!response.ok) throw new Error(`Vision review HTTP ${response.status}`);
+  const payload = await response.json();
+  const content = payload.choices?.[0]?.message?.content;
+  if (typeof content !== 'string') throw new Error('No vision review returned');
+  const review = JSON.parse(content);
+  if (typeof review.pass !== 'boolean' || typeof review.issue !== 'string' || typeof review.revisionPrompt !== 'string'
+    || review.issue.length > 200 || review.revisionPrompt.length > 500) throw new Error('Invalid vision review');
+  return review;
 }
 
 async function withRetry(task, attempts = 3) {
@@ -139,6 +161,7 @@ function contactSheet(entries) {
 async function importApproved(path, reviewer, rightsNote) {
   if (!reviewer?.trim()) throw new Error('Use --reviewer "Your name" when importing approvals');
   if (!rightsNote?.trim()) throw new Error('Use --rights-note to record the image model output rights you verified');
+  if (reviewer.trim().length > 60 || rightsNote.trim().length > 80) throw new Error('Reviewer or rights note exceeds the pack schema limit');
   const decisions = JSON.parse(await readFile(path, 'utf8')).decisions;
   const candidates = JSON.parse(await readFile(join(OUT, 'glyphs.json'), 'utf8')).entries;
   const entries = candidates.filter((entry) => decisions[entry.noun] === 'approve').map(({ noun, synonyms, glyph }) => ({
@@ -151,7 +174,7 @@ async function importApproved(path, reviewer, rightsNote) {
 }
 
 async function main() {
-  if (has('--help')) { console.log('Usage: node scripts/build-glyph-pack.mjs [--nouns nouns.txt] [--execute --model MODEL --max-images N] [--mode binary|color] | --import-approved approved.json --reviewer NAME --rights-note VERIFIED_TERMS'); return; }
+  if (has('--help')) { console.log('Usage: node scripts/build-glyph-pack.mjs [--nouns nouns.txt] [--execute --model MODEL --max-images N] [--vision-review --vision-model MODEL] [--mode binary|color] | --import-approved approved.json --reviewer NAME --rights-note VERIFIED_TERMS'); return; }
   await mkdir(VISUAL, { recursive: true }); await mkdir(OUT, { recursive: true });
   if (has('--import-approved')) return importApproved(resolve(option('--import-approved')), option('--reviewer'), option('--rights-note'));
   const nouns = parseNouns(await readFile(resolve(option('--nouns', join(ROOT, 'nouns.txt'))), 'utf8'));
@@ -164,6 +187,8 @@ async function main() {
   if (!has('--execute')) { console.log(`Dry run: ${nouns.length} nouns, ${nouns.filter((n) => manifest.items[n.slug]?.status !== 'ready').length} not ready. No API calls. Use --execute --model MODEL --max-images N to spend credits.`); return; }
   const model = option('--model'); const max = Number(option('--max-images', '0'));
   if (!model || !Number.isInteger(max) || max < 1) throw new Error('Explicit --model and positive --max-images are required');
+  const visionModel = option('--vision-model');
+  if (has('--vision-review') && !visionModel) throw new Error('Vision review requires explicit --vision-model and may make one extra image request per noun');
   if (!process.env.OPENROUTER_API_KEY) throw new Error('Set OPENROUTER_API_KEY in your shell; never put it in the repo');
   const pending = nouns.filter((n) => manifest.items[n.slug]?.status !== 'ready').slice(0, max);
   let cursor = 0;
@@ -172,15 +197,37 @@ async function main() {
       const item = pending[cursor++];
       const png = join(VISUAL, `${item.slug}.png`), traced = join(VISUAL, `${item.slug}.traced.svg`);
       try {
-        const image = await withRetry(() => fetchImage(item.noun, model, AbortSignal.timeout(45_000)));
-        await writeFile(png, image);
-        await runVtracer(png, traced, mode);
-        const source = await readFile(traced, 'utf8');
-        extractSafePaths(source); // fail closed before optimizer touches untrusted XML
-        const optimized = optimize(source, { multipass: true }).data;
-        const normalized = normalizeSvg(optimized);
+        let image = await withRetry(() => fetchImage(item.noun, model, AbortSignal.timeout(45_000)));
+        const traceAndNormalize = async (raster) => {
+          await writeFile(png, raster);
+          await runVtracer(png, traced, mode);
+          const source = await readFile(traced, 'utf8');
+          extractSafePaths(source); // fail closed before optimizer touches untrusted XML
+          const optimized = optimize(source, { multipass: true }).data;
+          return normalizeSvg(optimized);
+        };
+        let normalized = await traceAndNormalize(image);
+        let visionReview;
+        if (has('--vision-review')) {
+          const renderCandidate = (svg) => Buffer.from(new Resvg(svg, {
+            fitTo: { mode: 'width', value: 64 }, background: '#ffffff', font: { loadSystemFonts: false }
+          }).render().asPng());
+          let preview = renderCandidate(normalized.svg);
+          await writeFile(join(VISUAL, `${item.slug}.review.png`), preview);
+          visionReview = await withRetry(() => critiqueImage(item.noun, preview, visionModel));
+          if (!visionReview.pass) {
+            image = await withRetry(() => fetchImage(item.noun, model, AbortSignal.timeout(45_000), visionReview.revisionPrompt));
+            normalized = await traceAndNormalize(image);
+            preview = renderCandidate(normalized.svg);
+            await writeFile(join(VISUAL, `${item.slug}.review.png`), preview);
+            const secondReview = await withRetry(() => critiqueImage(item.noun, preview, visionModel));
+            if (!secondReview.pass) throw new Error(`Vision review failed after one fix: ${secondReview.issue}`);
+            visionReview = secondReview;
+          }
+        }
         await writeFile(join(OUT, `${item.slug}.svg`), normalized.svg);
-        manifest.items[item.slug] = { status: 'ready', noun: item.noun, synonyms: item.synonyms, glyph: normalized.glyph, model, mode };
+        manifest.items[item.slug] = { status: 'ready', noun: item.noun, synonyms: item.synonyms, glyph: normalized.glyph, model, mode,
+          ...(visionReview ? { visionReview: { passed: true, model: visionModel, issue: visionReview.issue } } : {}) };
         console.log(`Candidate ready: ${item.noun}`);
       } catch (error) {
         manifest.items[item.slug] = { status: 'failed', noun: item.noun, error: error instanceof Error ? error.message : 'Unknown error' };

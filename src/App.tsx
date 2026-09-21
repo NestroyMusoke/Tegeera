@@ -17,7 +17,7 @@ import { loadGlyphCache, rememberGlyph } from "./glyphs/cache";
 import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
 import { offlineGlyphCatalog } from "./glyphs/catalog";
 import { LiveGlyphResolver } from "./glyphs/runtimeResolver";
-import { generateGlyphRemotely, planLessonNouns } from "./llm/generateGlyph";
+import { editStrokeGlyphRemotely, generateStrokeGlyphRemotely, planLessonNouns } from "./llm/generateGlyph";
 import { allTestedPhrases, showcaseGroups } from "./evaluation/showcaseExamples";
 import {
   makeLatencySample,
@@ -64,6 +64,10 @@ function App() {
   const [glyphRevision, setGlyphRevision] = useState(0);
   const [lessonTopic, setLessonTopic] = useState("");
   const [lessonPrepStatus, setLessonPrepStatus] = useState("");
+  const [editNoun, setEditNoun] = useState("");
+  const [editInstruction, setEditInstruction] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
   const [pendingGlyphReview, setPendingGlyphReview] = useState<Array<{ noun: string; glyph: TegeeraGlyph }>>([]);
   const [exampleSearch, setExampleSearch] = useState("");
   const [exampleLimit, setExampleLimit] = useState(24);
@@ -76,7 +80,8 @@ function App() {
     entities: scene.entities.map((entity) => {
       if (entity.kind !== "generic" || entity.glyph || !entity.label) return entity;
       const resolution = glyphResolver.current!.resolve(entity.label);
-      return resolution.glyph ? { ...entity, glyph: resolution.glyph, glyphSource: resolution.source === "cache" ? "deferred" : resolution.source === "glyph-pack" ? "glyph-pack" : "emoji" } : entity;
+      return resolution.glyph ? { ...entity, glyph: resolution.glyph,
+        glyphSource: resolution.status === "placeholder" ? "streaming" : resolution.source === "cache" ? "deferred" : resolution.source === "glyph-pack" ? "glyph-pack" : "emoji" } : entity;
     })
   // The service emits only after a validated glyph replaces a placeholder.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,9 +106,13 @@ function App() {
 
   useEffect(() => {
     glyphResolver.current!.setGenerator(openRouterKey
-      ? (noun, signal) => generateGlyphRemotely(noun, openRouterKey, signal)
+      ? (noun, signal, publishStroke) => generateStrokeGlyphRemotely(noun, openRouterKey, signal, publishStroke)
       : undefined);
   }, [openRouterKey]);
+
+  // The resolver update event triggers a rerender when a noun becomes editable.
+  const editableNouns = [...new Set(scene.entities.filter((entity) => entity.label && glyphResolver.current!.hasEditableStrokes(entity.label))
+    .map((entity) => entity.label!))];
 
   const spokenSummary = useMemo(
     () => {
@@ -384,6 +393,29 @@ function App() {
           </button>
           <small>The evidence contains timings and device capability only—never lesson text or transcripts.</small>
         </details>
+
+        {editableNouns.length && openRouterKey ? <details className="latency-panel">
+          <summary>Refine a doodle (optional)</summary>
+          <label htmlFor="edit-glyph-noun">Drawing</label>
+          <select id="edit-glyph-noun" value={editableNouns.includes(editNoun) ? editNoun : editableNouns[0]} onChange={(event) => setEditNoun(event.target.value)}>
+            {editableNouns.map((noun) => <option key={noun} value={noun}>{noun}</option>)}
+          </select>
+          <label htmlFor="edit-glyph-instruction">One visual change</label>
+          <input id="edit-glyph-instruction" value={editInstruction} onChange={(event) => setEditInstruction(event.target.value)} maxLength={160} placeholder="For example, add two small wings" />
+          <button type="button" disabled={editBusy || !editInstruction.trim()} onClick={() => {
+            const noun = editableNouns.includes(editNoun) ? editNoun : editableNouns[0];
+            setEditBusy(true);
+            setEditStatus("Applying a bounded stroke edit…");
+            void glyphResolver.current!.editGlyph(noun, editInstruction,
+              (name, current, instruction, signal) => editStrokeGlyphRemotely(name, current, instruction, openRouterKey, signal)
+            ).then((ok) => {
+              setEditStatus(ok ? "Doodle updated. Other scene objects stayed unchanged." : "The edit was rejected or timed out; the drawing is unchanged.");
+              if (ok) setEditInstruction("");
+            }).finally(() => setEditBusy(false));
+          }}>Refine drawing</button>
+          {editStatus ? <output>{editStatus}</output> : null}
+          <small>This sends the selected generated strokes and your short instruction to the configured model. Edits are validated before replacing the cached doodle.</small>
+        </details> : null}
 
         <details className="latency-panel">
           <summary>Prepare a lesson (optional)</summary>
