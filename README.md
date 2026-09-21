@@ -161,6 +161,8 @@ The public GitHub Pages site and installed APK cannot safely bundle a shared API
 
 Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. A separate noun-stroke request never blocks the scene. It can emit at most ten strokes with 4–14 bounded grid points apiece and Tegeera's six-color palette. Tegeera compiles each stroke into its allowlisted SVG path format, then handles spacing and scene identities locally. The semantic DoodleScript must pass the same schema, confidence, and layout gates. The interface reports the exact model OpenRouter selected for the semantic request; the doodle model is shown separately. Speculative and lesson prefetch can make additional API calls. See [the interpreter deployment guide](server/README.md) and [glyph pack guide](GLYPH_PACK_GUIDE.md).
 
+For exact concrete-noun matches, a compact offline Unicode emoji index can show an immediate recognizable **preview** while a Tegeera doodle is prepared. Typed words and partial speech can surface up to four such hints before the scene is accepted; they are marked unverified and do not change the canvas. This adds no network call and does not pretend emoji font art is finished Tegeera artwork. The label stays visible; unknown or ambiguous nouns remain honest stickers. See [the third-party notice](THIRD_PARTY_NOTICES.md).
+
 ```bash
 git clone https://github.com/NestroyMusoke/Tegeera.git
 cd Tegeera

@@ -45,6 +45,14 @@ const result = await build({
       })) };
       return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
     }
+    export function renderEmojiPreview() {
+      const labels = ['dragon', 'volcano', 'cell', 'constitutional legitimacy'];
+      const scene = { sceneId: 'emoji-preview', revision: 1, relations: [], entities: labels.map((label, index) => ({
+        id: 'preview-' + index, kind: 'generic', label,
+        x: 14 + index * 24, y: 48, scale: 1.1, direction: 'right', highlighted: false
+      })) };
+      return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
+    }
     export function renderUniversal() {
       const blueprint = { blueprintVersion: '1.0', mode: 'replace', confidence: .92, objects: [
         { id: 'dragon', label: 'flying dragon', kind: 'generic', color: 'green', x: 18, y: 36, glyph: {
@@ -80,7 +88,7 @@ const result = await build({
 });
 const bundlePath = resolve(output, "renderer.cjs");
 await writeFile(bundlePath, result.outputFiles[0].text);
-const { render, renderPerformance, renderSymbolAtlas, renderUniversal } = createRequire(import.meta.url)(bundlePath);
+const { render, renderPerformance, renderSymbolAtlas, renderEmojiPreview, renderUniversal } = createRequire(import.meta.url)(bundlePath);
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
@@ -139,6 +147,7 @@ for (const [name, commands] of Object.entries(cases)) {
 }
 await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Composable performance protocol</h1>${renderPerformance()}</main></body></html>`);
 await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
+await writeFile(resolve(output, "emoji-preview.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Instant preview: emoji matches versus honest labels</h1>${renderEmojiPreview()}</main></body></html>`);
 await writeFile(resolve(output, "universal-scene.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Universal procedural scene — unseen nouns</h1>${renderUniversal()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
 const reviewFixtureById = {
@@ -590,7 +599,11 @@ const appBundle = await build({
     (params.has('routine') ? verifyRoutine() : params.has('plates') ? verifyPlates() : params.has('triangle-sum') ? verifyTriangleSum() : params.has('stack') ? verifyStack() : params.has('reflection') ? verifyReflection() : params.has('lifecycle') ? verifyLifecycle() : params.has('water-cycle') ? verifyWaterCycle() : params.has('fraction') ? verifyFraction() : params.has('call-return') ? verifyCallReturn() : params.has('trajectory') ? verifyTrajectory() : params.has('circulation') ? verifyCirculation() : params.has('safety') ? verifySafety() : params.has('landscape') ? verifyLandscape() : params.has('geometry') ? verifyGeometry() : params.has('containers') ? verifyContainment() : params.has('force') ? verifyForce() : params.has('parts') ? verifyPartWhole() : params.has('motion') ? verifyMotion() : params.has('concepts') ? verifyConcepts() : params.has('phrases') ? verifyPhrases() : params.has('events') ? verifyEvents() : params.has('queue') ? verifyQueue() : verify()).catch(error => { document.getElementById('qa-result').textContent = 'FAIL: ' + error.message; });
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, platform: "browser", format: "iife", jsx: "automatic", write: false,
-  define: { "process.env.NODE_ENV": '"production"' },
+  define: {
+    "process.env.NODE_ENV": '"production"',
+    "import.meta.env.MODE": '"visual-check"',
+    "import.meta.env.VITE_TEGEERA_INTERPRETER_URL": "undefined"
+  },
 });
 await writeFile(resolve(output, "app-check.js"), appBundle.outputFiles[0].text);
 await writeFile(resolve(output, "app-check.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><div id="root"></div><output id="qa-result">RUNNING</output><script src="app-check.js"></script></body></html>`);

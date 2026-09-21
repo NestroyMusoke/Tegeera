@@ -10,6 +10,16 @@ function explain(text: string) {
 }
 
 describe("teaching workflow", () => {
+  it("shows instant unverified visual hints without mutating the accepted scene", () => {
+    const { container } = render(<App />);
+    fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: "A dragon flies above a volcano" } });
+    const hints = screen.getByRole("note", { name: "Unverified instant visual hints" });
+    expect(hints.textContent).toContain("🐉");
+    expect(hints.textContent).toContain("🌋");
+    expect(hints.textContent).toContain("not the checked drawing");
+    expect(container.querySelectorAll(".doodle-object")).toHaveLength(0);
+    expect(screen.getByText("Revision 0")).toBeTruthy();
+  });
   it("completes the CPU queue golden workflow through the real form", () => {
     const { container } = render(<App />);
     explain("Imagine three processes waiting in a CPU queue");

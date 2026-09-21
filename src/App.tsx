@@ -16,6 +16,7 @@ import { compileUniversalScene } from "./llm/universalScene";
 import { loadGlyphCache, rememberGlyph } from "./glyphs/cache";
 import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
 import { offlineGlyphCatalog } from "./glyphs/catalog";
+import { extractEmojiPreviews } from "./glyphs/emojiPreview";
 import { LiveGlyphResolver } from "./glyphs/runtimeResolver";
 import { DEFAULT_FREE_GLYPH_MODEL, editStrokeGlyphRemotely, generateStrokeGlyphRemotely, planLessonNouns } from "./llm/generateGlyph";
 import { allTestedPhrases, showcaseGroups } from "./evaluation/showcaseExamples";
@@ -277,6 +278,7 @@ function App() {
   };
 
   const speech = useSpeechSession((transcript, timing) => submit(transcript, timing));
+  const liveVisualHints = useMemo(() => extractEmojiPreviews(speech.partialTranscript || input), [speech.partialTranscript, input]);
   useEffect(() => {
     if ((!openRouterKey && !localAiEnabled) || !speech.partialTranscript.trim()) return;
     const timer = setTimeout(() => glyphResolver.current!.speculativePrefetch(speech.partialTranscript), 400);
@@ -392,6 +394,12 @@ function App() {
             </button>
           )}
         </div>
+
+        {liveVisualHints.length ? <div className="live-visual-hints" role="note" aria-label="Unverified instant visual hints">
+          <strong>Instant visual hints</strong>
+          <span>These are offline previews, not the checked drawing or its relationships.</span>
+          <div className="live-visual-hint-list">{liveVisualHints.map(({ label, emoji }) => <span className="live-visual-hint" key={label}><span aria-hidden="true">{emoji}</span>{label}</span>)}</div>
+        </div> : null}
 
         <details className="latency-panel">
           <summary>Device performance evidence</summary>

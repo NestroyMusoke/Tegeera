@@ -5,6 +5,7 @@ import { characterPoseFor, type LimbPose } from "./characterPerformance";
 import { ComposedSymbol } from "./symbolPrimitives";
 import { CONCEPT_REGISTRY_VERSION, conceptForKind } from "../doodlescript/conceptRegistry";
 import { resolveGlyph } from "../glyphs/glyph";
+import { emojiPreviewFor } from "../glyphs/emojiPreview";
 
 export interface EntityRendererProps {
   entity: SceneEntity;
@@ -122,6 +123,12 @@ function Generic({ entity }: EntityRendererProps) {
       <ComposedSymbol category={plan.category} primitives={plan.primitives} capabilities={plan.capabilities} rotation={rotation} />
     </g>;
   }
+  const emoji = emojiPreviewFor(entity.label ?? "");
+  if (emoji) return <g data-symbol-id="emoji-preview" data-symbol-version="cldr-17" data-symbol-category="temporary-preview" data-symbol-confidence="0.7" data-symbol-fallback="true">
+    <title>{`${entity.label} — temporary emoji preview while the doodle is prepared`}</title>
+    <path className="doodle-stroke" d="M-42 0 C-42-27-20-45 4-44 C32-43 45-22 43 3 C41 30 20 44-5 43 C-31 42-44 22-42 0 Z" fill="none" opacity="0.55" />
+    <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="65">{emoji}</text>
+  </g>;
   return <g data-symbol-id="honest-sticker" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true">
     <path className="doodle-stroke entity-color-fill" d="M-43-50 Q-3-55 39-48 Q47-10 40 39 Q3 48-40 41 Q-47 2-43-50 Z" />
     <path className="accent-stroke" d="M-23-17 Q0-26 23-16 M-23 1 Q-3-6 18 1 M-23 18 Q-9 13 7 17" />

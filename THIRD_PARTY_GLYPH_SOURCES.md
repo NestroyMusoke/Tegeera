@@ -4,6 +4,17 @@ Tegeera 2.27 introduces a source-neutral glyph contract and resolver. No Noto Em
 Quick, Draw!, Open Peeps, DiceBear, or Open Doodles artwork is currently bundled.
 Adding a resolver tier does not authorize importing its data.
 
+## Shipped preview metadata (not Tegeera glyph artwork)
+
+`src/glyphs/emojiIndex.json` is a compact, exact-label index generated from
+Emojibase Data 17.0.0 English metadata at
+https://github.com/milesj/emojibase/tree/master/packages/data (Miles Johnson,
+MIT license; see `THIRD_PARTY_NOTICES.md`). The app displays matching Unicode
+characters through the device's own emoji font as **temporary previews**.
+No Emojibase SVG artwork is bundled. Native emoji appearance varies by device,
+is not Tegeera's final doodle style, and must never be counted as a reviewed
+Tegeera glyph. Unmatched or ambiguous labels keep the honest sticker.
+
 Before any third-party asset enters the repository, record:
 
 - the exact upstream repository and revision;

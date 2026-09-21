@@ -471,6 +471,32 @@ button {
   font-size: 12px;
 }
 
+.live-visual-hints {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed #a9b9ae;
+  border-radius: 12px;
+  color: #425a50;
+  background: #f7f9f2;
+  font-size: 12px;
+}
+
+.live-visual-hints > span { color: #65746f; }
+.live-visual-hint-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+.live-visual-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #fffdf7;
+  border: 1px solid #d9e2d8;
+}
+.live-visual-hint > span { font-size: 20px; line-height: 1; }
+
 .latency-panel {
   margin-top: 10px;
   border: 1px solid rgba(47, 75, 68, 0.18);

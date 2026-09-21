@@ -60,4 +60,13 @@ describe("entity renderer registry", () => {
     expect(html).toContain('data-symbol-fallback="true"');
     expect(html).not.toContain(">C</text>");
   });
+
+  it("shows an immediate exact-name emoji preview for an unseen concrete noun", () => {
+    const html = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic"), label: "dragon" }} />);
+    expect(html).toContain('data-symbol-id="emoji-preview"');
+    expect(html).toContain("🐉");
+    expect(html).toContain("temporary emoji preview");
+    expect(renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic"), label: "cell" }} />))
+      .toContain('data-symbol-id="honest-sticker"');
+  });
 });

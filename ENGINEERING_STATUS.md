@@ -1717,3 +1717,35 @@ private request path, not a successful live glyph: the free provider returned
 HTTP 429 in the last live stroke attempt. Public Pages and Android still need a private hosted
 backend for unattended shared-key access. No key has been added to Git or a
 client environment variable.
+
+## 2.32 instant exact-noun previews
+
+An offline index generated from 1,554 unambiguous English Emojibase labels now
+provides a native Unicode emoji preview for exact concrete-noun matches such as
+`dragon` and `volcano`. The established Tegeera symbols, curated pack, and
+validated generated paths retain precedence. No model call is needed to paint
+the preview, and a later validated glyph replaces it. Ambiguous matches such
+as `cell` are deliberately not guessed. The native emoji is clearly a
+temporary visual aid, not original Tegeera doodle art or evidence of semantic
+accuracy; platform appearance varies. Its metadata provenance and MIT notice
+are recorded. This increases immediate recognizability for covered nouns but
+does not solve arbitrary language, scientific relationships, or live model
+rate limits.
+
+Partial speech and typed input now also show bounded offline concept hints
+before the semantic scene is accepted. They are explicitly marked unverified
+and never mutate the canvas or consume Undo. Exact-label retrieval runs on the
+device; a grammatical guard avoids turning `flies` in “a dragon flies” into a
+second fly drawing. The real-component 1280px fixture was visually inspected:
+dragon and volcano previews were recognizable, while `cell` and an abstract
+phrase remained honest stickers. This is perceived-latency work, not proof of
+instant full-scene understanding.
+
+The final app suite passes 444 tests; lint, production build, glyph-pack
+integration checks, and Capacitor Android asset synchronization pass. The
+production-dependency audit reports zero advisories. A debug APK was **not**
+verified: Gradle 8.11.1 failed before Android compilation with
+`Unable to establish loopback connection` under both system Java 24 and a
+portable Temurin 21 runtime. The portable runtime was extracted into the
+ignored `.visual-check` folder; the redundant download archive was removed.
+This is an Android build-environment blocker, not evidence that the APK works.
