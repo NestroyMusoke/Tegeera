@@ -19,6 +19,7 @@ Output shape:
 
 Rules:
 - Show the meaning, not every word. Use 1-8 distinct objects and 0-12 connections.
+- Include every object and relationship needed to explain the stated mechanism. A named whole does not replace its essential visible parts, inputs, outputs, or sources when the teacher's explanation depends on them. If the 8-object limit would hide essential meaning, lower confidence instead of returning a confident partial diagram.
 - mode is "replace" unless the teacher explicitly asks to extend the current scene.
 - kinds are person, teacher, student, process, cpu, car, book, desk, tree, building, generic. Use generic for anything else.
 - colors are red, orange, yellow, green, blue, purple, pink, brown, black, white, gray; omit color when unstated.
@@ -30,6 +31,7 @@ Rules:
 - Silhouette first: make it recognizable in one glance, filling roughly 80% of the box. Then add 2-4 signature features that distinguish the noun. Parts must join into one intentional doodle, not float as unrelated shapes.
 - Anchors top, ground, and front are [x,y] points inside 0..100. They must touch the visible silhouette so arrows attach naturally.
 - Connections must reference object ids and use a short visible action label. Do not invent semantic facts.
+- Every connection endpoint must be an exact object id from this plan, or an existing scene id when extending. Never reference an omitted object; never reuse an existing id for a new object. Do not silently drop a stated relationship.
 - Labels are at most 4 words. IDs are unique. confidence below .58 when essential meaning is genuinely ambiguous.
 
 Teacher: ${JSON.stringify(text)}

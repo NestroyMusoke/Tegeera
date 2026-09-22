@@ -1769,3 +1769,24 @@ The independent strict gold result is still 3/29; these reliability changes
 do not constitute new evidence of visual or semantic accuracy. No new APK was
 verified in this build because the previously observed Gradle loopback
 environment failure remains unresolved.
+
+## 2.34 no silently missing AI relationships
+
+The universal-scene compiler no longer drops a model-proposed connection when
+its source or target is absent, ambiguous, or the same object. It can resolve
+an endpoint written as a unique visible object label, including a label from
+the existing scene during an extension; otherwise it rejects the whole plan
+and preserves the current drawing. Duplicate new IDs and reuse of an
+established ID are rejected. This closes a route to high-confidence but
+semantically incomplete diagrams. The planner now asks for essential visible
+parts, inputs, outputs, and sources when the explanation depends on them, and
+for connections that reference actual objects. These prompt rules are
+guidance, not proof that the model includes every essential concept.
+
+Compiler and real-app tests cover label matching, missing endpoints,
+ambiguous labels, self-connections, duplicate IDs, extension references, and
+preserving a previous drawing after a malformed plan. The full suite passes
+450 tests (three optional live-provider smoke tests skipped); lint, production
+build, bundle budget, and Android web-asset sync pass. The strict independent
+gold result remains 3/29, with no newly approved visual cases. No APK was
+verified in this build.

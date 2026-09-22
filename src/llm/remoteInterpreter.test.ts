@@ -28,6 +28,8 @@ describe("remote interpreter boundary", () => {
     expect(body.messages[0].content).toContain('"blueprintVersion":"1.0"');
     expect(body.messages[0].content).toContain("Omit glyph for all objects");
     expect(body.messages[0].content).toContain("Only uppercase M L C Q Z commands");
+    expect(body.messages[0].content).toContain("essential visible parts, inputs, outputs, or sources");
+    expect(body.messages[0].content).toContain("Never reference an omitted object");
     expect(body.max_tokens).toBe(3600);
     vi.unstubAllGlobals();
   });

@@ -95,7 +95,7 @@ describe("universal visual scene compiler", () => {
     const cached = new Map([["flying dragon", dragonGlyph]]);
     const replaced = compileUniversalScene({
       ...blueprint,
-      objects: [{ ...blueprint.objects[0], glyph: cloudGlyph }]
+      objects: [{ ...blueprint.objects[0], glyph: cloudGlyph }], connections: []
     }, initialScene, "A flying dragon", { cache: cached });
     const create = replaced.commands.find((command) => command.action === "create");
     expect(create?.action).toBe("create");
@@ -105,15 +105,69 @@ describe("universal visual scene compiler", () => {
 
     const omitted = compileUniversalScene({
       ...blueprint,
-      objects: [{ id: "flying-dragon", label: "flying dragon", kind: "generic", x: 50, y: 50 }]
+      objects: [{ id: "flying-dragon", label: "flying dragon", kind: "generic", x: 50, y: 50 }], connections: []
     }, initialScene, "A flying dragon", { cache: cached });
     expect(validateDoodleScript(omitted, initialScene).ok).toBe(true);
     const placeholderScript = compileUniversalScene({
       ...blueprint,
-      objects: [{ id: "unseen", label: "unseen thing", kind: "generic", x: 50, y: 50 }]
+      objects: [{ id: "unseen", label: "unseen thing", kind: "generic", x: 50, y: 50 }], connections: []
     }, initialScene, "unseen thing", { cache: cached });
     expect(validateDoodleScript(placeholderScript, initialScene).ok).toBe(true);
     expect(renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, placeholderScript)} />))
       .toContain('data-glyph-source="sticker"');
+  });
+
+  it("preserves a relation when the model refers to unique visible labels instead of IDs", () => {
+    const script = compileUniversalScene({
+      ...blueprint,
+      connections: [{ from: "flying dragon", to: "tiny village", label: "flies over" }]
+    }, initialScene, "A dragon flies over a tiny village");
+    expect(script.commands.filter(({ action }) => action === "relate")).toHaveLength(1);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.relations?.[0]).toMatchObject({ sourceIds: ["flying-dragon"], targetIds: ["tiny-village"] });
+  });
+
+  it("never accepts a partially connected or ambiguous visual plan", () => {
+    const missing = { ...blueprint, connections: [{ from: "flying-dragon", to: "missing-object", label: "flies over" }] };
+    expect(() => compileUniversalScene(missing, initialScene, "A dragon flies over a tiny village"))
+      .toThrow(/missing or ambiguous/);
+    expect(() => compileUniversalScene({ ...blueprint, connections: [
+      { from: "flying-dragon", to: "tiny-village", label: "flies over" },
+      { from: "flying-dragon", to: "unknown", label: "guards" }
+    ] }, initialScene, "Two relationships"))
+      .toThrow(/missing or ambiguous/);
+    expect(() => compileUniversalScene({ ...blueprint, connections: [
+      { from: "flying-dragon", to: "flying-dragon", label: "flies over" }
+    ] }, initialScene, "Self relationship"))
+      .toThrow(/missing or ambiguous/);
+    expect(() => compileUniversalScene({ ...blueprint, objects: [
+      { id: "first", label: "same label", kind: "generic", x: 20, y: 40 },
+      { id: "second", label: "same label", kind: "generic", x: 80, y: 40 }
+    ], connections: [{ from: "same label", to: "first", label: "follows" }] }, initialScene, "Ambiguous labels"))
+      .toThrow(/missing or ambiguous/);
+    expect(() => compileUniversalScene({ ...blueprint, objects: [
+      blueprint.objects[0], { ...blueprint.objects[1], id: blueprint.objects[0].id }
+    ] }, initialScene, "Duplicate IDs"))
+      .toThrow(/object ID more than once/);
+  });
+
+  it("connects an extension to an established object without losing its identity", () => {
+    const first = compileUniversalScene(blueprint, initialScene, "A dragon flies over a tiny village");
+    const scene = applyDoodleScript(initialScene, first);
+    const extension = compileUniversalScene({
+      blueprintVersion: "1.0", mode: "extend", confidence: 0.9,
+      objects: [{ id: "storm-cloud", label: "storm cloud", kind: "generic", x: 50, y: 10 }],
+      connections: [{ from: "storm cloud", to: "flying dragon", label: "above" }]
+    }, scene, "Add a storm cloud above the dragon");
+    expect(validateDoodleScript(extension, scene).ok).toBe(true);
+    expect(extension.commands.find((command) => command.action === "relate"))
+      .toMatchObject({ relation: { sourceIds: ["storm-cloud"], targetIds: ["flying-dragon"] } });
+    expect(() => compileUniversalScene({
+      blueprintVersion: "1.0", mode: "extend", confidence: 0.9,
+      objects: [{ id: "flying-dragon", label: "another dragon", kind: "generic", x: 50, y: 10 }],
+      connections: []
+    }, scene, "Add another dragon"))
+      .toThrow(/object ID more than once/);
   });
 });

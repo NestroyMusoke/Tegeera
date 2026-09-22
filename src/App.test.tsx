@@ -226,4 +226,25 @@ describe("teaching workflow", () => {
     expect(screen.getByText("Revision 1")).toBeTruthy();
     expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(drawing);
   });
+  it("does not replace a good drawing with an AI plan that omitted a relationship endpoint", async () => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
+      Promise.resolve(init?.method ? new Response(JSON.stringify({
+        model: "example/free-visual-model",
+        choices: [{ message: { content: JSON.stringify({
+          blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+          objects: [{ id: "dragon", label: "dragon", kind: "generic", x: 50, y: 50 }],
+          connections: [{ from: "dragon", to: "village", label: "flies over" }]
+        }) } }]
+      }), { status: 200 }) : new Response("{}", { status: 200 })));
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<App />);
+    fireEvent.change(screen.getByLabelText("OpenRouter key for this session"), { target: { value: "session-key" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enable AI understanding" }));
+    explain("Draw a car");
+    const drawing = container.querySelector(".doodle-canvas")!.innerHTML;
+    explain("A dragon flies over a tiny village");
+    await waitFor(() => expect(screen.getByText(/visual relationship referred to a missing or ambiguous object/i)).toBeTruthy());
+    expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(drawing);
+    expect(screen.getByText("Revision 1")).toBeTruthy();
+  });
 });

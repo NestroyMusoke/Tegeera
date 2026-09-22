@@ -8,7 +8,7 @@ import {
   type DoodleScript,
   type SceneState
 } from "../doodlescript/schema";
-import { glyphSchema, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
+import { glyphKey, glyphSchema, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
 
 export interface UniversalGlyphSources {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
@@ -94,6 +94,14 @@ export function compileUniversalScene(
   const parsedBlueprint = universalSceneBlueprintSchema.safeParse(hydrated);
   if (!parsedBlueprint.success) throw new Error("The model returned an incomplete visual blueprint. Try again or shorten the explanation.");
   const blueprint = parsedBlueprint.data;
+  const existingIds = new Set(blueprint.mode === "extend" ? scene.entities.map(({ id }) => id) : []);
+  const newIds = new Set<string>();
+  for (const object of blueprint.objects) {
+    if (newIds.has(object.id) || existingIds.has(object.id)) {
+      throw new Error("The visual plan used an object ID more than once. Please try again.");
+    }
+    newIds.add(object.id);
+  }
   const positions = assignedSlots(blueprint.objects, scene, blueprint.mode === "extend");
   const sceneDensity = blueprint.objects.length + (blueprint.mode === "extend" ? scene.entities.length : 0);
   const visualScale = sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 0.72;
@@ -115,9 +123,27 @@ export function compileUniversalScene(
       ...(object.visual ? { visual: object.visual } : {})
     } });
   });
+  const aliases = new Map<string, Set<string>>();
+  const addAlias = (label: string | undefined, id: string) => {
+    const key = glyphKey(label ?? "");
+    if (!key) return;
+    const matches = aliases.get(key) ?? new Set<string>();
+    matches.add(id);
+    aliases.set(key, matches);
+  };
+  if (blueprint.mode === "extend") scene.entities.forEach(({ id, label }) => addAlias(label, id));
+  blueprint.objects.forEach((object) => addAlias(object.label, idMap.get(object.id)!));
+  const resolveReference = (reference: string) => {
+    const exact = idMap.get(reference);
+    if (exact) return exact;
+    const matches = aliases.get(glyphKey(reference));
+    return matches?.size === 1 ? [...matches][0] : undefined;
+  };
   blueprint.connections.forEach((connection, index) => {
-    const sourceId = idMap.get(connection.from); const targetId = idMap.get(connection.to);
-    if (!sourceId || !targetId || sourceId === targetId) return;
+    const sourceId = resolveReference(connection.from); const targetId = resolveReference(connection.to);
+    if (!sourceId || !targetId || sourceId === targetId) {
+      throw new Error("A visual relationship referred to a missing or ambiguous object. Please try again.");
+    }
     let relationId = `universal-relation-${index + 1}`; let suffix = 2;
     while ((scene.relations ?? []).some(({ id }) => id === relationId)
       || commands.some((command) => command.action === "relate" && command.relation.id === relationId)) {
