@@ -1832,3 +1832,14 @@ APK is claimed. A debug APK is not release-signed. Physical Android latency,
 microphone, TalkBack, visual readability, teacher review, private hosted AI,
 and reliable long-tail doodle quality remain release gates. Tegeera is not
 yet finished for all arbitrary spoken explanations.
+
+## 2.36 Android CI Java toolchain correction
+
+The first Linux debug-APK workflow run on 2026-09-22 passed npm tests, lint,
+the production web build and Android asset sync, SDK installation, and Gradle
+setup. Gradle then failed at `:capacitor-android:compileDebugJavaWithJavac`
+with `error: invalid source release: 21`. The generated Android Gradle file
+requests Java 21, but the workflow had installed Java 17. The workflow now
+installs Temurin Java 21. This is a diagnosed toolchain mismatch, not a
+verified APK fix until GitHub reruns the corrected workflow. No APK artifact
+exists from the failed run.

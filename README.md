@@ -198,7 +198,7 @@ gradlew.bat assembleDebug
 
 The Android speech bridge requests microphone permission only after the user presses **Speak**, prefers an offline recognizer, and preserves typed input when speech is unavailable.
 
-The web application and Android assets currently build and synchronize successfully. Native Gradle execution on this Windows machine is still blocked by `Unable to establish loopback connection` before Android compilation. A separate GitHub Actions workflow now attempts a Linux debug build after each push to `main` and uploads `tegeera-debug-apk` if successful. In GitHub, open **Actions → Build Tegeera Android debug APK → latest successful run → Artifacts** to download it. That workflow has not run for this commit yet, and a debug APK is not a release-signed APK. Physical-device and accessibility verification remain release work.
+The web application and Android assets currently build and synchronize successfully. Native Gradle execution on this Windows machine is still blocked by `Unable to establish loopback connection` before Android compilation. The first Linux GitHub Actions run reached Java compilation, then failed because its Java 17 setup could not compile Capacitor's Java 21 source. The workflow now installs Java 21; this correction needs a new run before an APK can be claimed. If it succeeds, open **Actions → Build Tegeera Android debug APK → latest successful run → Artifacts** to download `tegeera-debug-apk`. A debug APK is not a release-signed APK. Physical-device and accessibility verification remain release work.
 
 ## What comes next
 
