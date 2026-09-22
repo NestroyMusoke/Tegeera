@@ -2,11 +2,11 @@ import { createServer } from "node:http";
 
 const port = Number(process.env.PORT || 8080);
 const apiKey = process.env.OPENROUTER_API_KEY;
-const model = process.env.OPENROUTER_MODEL || "openrouter/free";
+const model = process.env.OPENROUTER_MODEL;
+const freeModels = ["google/gemma-4-26b-a4b-it:free", "google/gemma-4-31b-it:free", "openrouter/free"];
 const origins = new Set((process.env.ALLOWED_ORIGINS || "http://localhost:5173").split(",").map((v) => v.trim()).filter(Boolean));
 const buckets = new Map();
 const kinds = ["person", "teacher", "student", "process", "cpu", "car", "book", "desk", "tree", "building", "generic"];
-const relations = ["shares", "owns", "toward", "away", "queuedFor", "actsOn", "handover", "before", "causes", "visualAction", "partOf", "flowsInto", "illuminates", "appliedTo", "opposes", "contacts", "contains", "measures", "flowsFrom", "flowsTo", "pumpsTo", "returnsTo", "carries", "risesTo", "fallsFrom", "accelerates", "calls", "returnsControlTo", "subtracts", "resultsIn", "fallsTo", "infiltrates", "evaporatesTo", "transformsTo", "travelsTo", "reflectsFrom", "accessedAt", "trianglePartOf", "sumsTo", "pushesToward", "routineBefore", "containsCells", "storesValues", "startsIndexAt", "hasFirstNode", "pointsNext", "checksCondition", "takesTruePath", "takesFalsePath", "startsSearchWith", "narrowsTo", "findsTarget", "fifoBefore", "servedBy", "exchangesWith", "keptNear", "growthStartsAt", "doublesTo", "chainStartsWith", "eatenBy"];
 
 function cors(origin) {
   return origin && origins.has(origin) ? { "access-control-allow-origin": origin, "access-control-allow-methods": "POST,OPTIONS", "access-control-allow-headers": "content-type", vary: "Origin" } : {};
@@ -38,10 +38,10 @@ function extractJson(content) {
   return JSON.parse((content.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ?? content).trim());
 }
 function makePrompt(text, scene, reusableNouns = []) {
-  return `You are Tegeera's visual scene architect. Return exactly one JSON object, no markdown. Convert the teacher's meaning into this blueprint:
-{"blueprintVersion":"1.0","mode":"replace","confidence":0.0,"objects":[{"id":"short-id","label":"short label","kind":"generic","color":"green","x":50,"y":50,"glyph":{"schemaVersion":"1.0.0","viewBox":"0 0 100 100","parts":[{"id":"body","d":"M10 50 C10 20 90 20 90 50 Q90 85 50 88 L10 50 Z","fill":"#84a98c","stroke":"#2f3e46"}],"anchors":{"top":[50,20],"ground":[50,88],"front":[90,50]}}}],"connections":[{"from":"short-id","to":"other-id","label":"short action"}]}.
-Use 1-8 objects and 0-12 connections. Show meaning, not every word. Kinds: ${kinds.join(", ")}; use generic for anything else. Colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray; omit unstated color. x/y are semantic 0..100 positions. Omit glyphs: Tegeera paints placeholders immediately and resolves noun artwork separately. Labels use at most four words. Connections reference object ids. Do not invent semantic facts. Use confidence below .58 only when essential meaning is ambiguous. mode is replace unless explicitly extending the current scene.
-Tegeera already has validated glyphs for these exact noun labels: ${JSON.stringify(reusableNouns)}. If an object's label exactly matches one, omit its glyph to save response time. Otherwise provide a glyph.
+  return `Translate a teacher's explanation into a small, accurate 2D visual plan. Return ONLY JSON, no markdown.
+{"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"source","label":"source","kind":"generic","x":20,"y":30},{"id":"target","label":"target","kind":"generic","x":80,"y":70}],"connections":[{"from":"source","to":"target","label":"flows to"}]}
+Preserve every essential visible part, input, output, source, and stated relationship without inventing facts. Use 1-8 distinct objects and 0-12 connections. If the limit hides meaning, confidence must be below 0.58. Kinds: ${kinds.join(", ")}; use generic for anything else. Optional colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray. x/y are semantic 0..100 positions and must preserve above/below and left/right. Labels use at most four words. Every connection endpoint must be an exact object ID or an existing scene ID in extend mode. Never reference an omitted object or reuse an existing ID for a new object. Mode is replace unless explicitly extending. Do not emit glyphs, SVG, paths, pixels, explanations, or extra fields. Artwork is resolved separately.
+Existing artwork labels (do not change meaning to favor them): ${JSON.stringify(reusableNouns)}.
 Teacher: ${JSON.stringify(text)}
 Current scene for reference: ${JSON.stringify(scene)}`;
 }
@@ -62,14 +62,14 @@ createServer(async (req, res) => {
     const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json", "http-referer": process.env.APP_URL || "https://nestroymusoke.github.io/Tegeera/", "x-title": "Tegeera" },
-      body: JSON.stringify({ model, messages: [{ role: "user", content: makePrompt(body.text.trim(), body.scene,
+      body: JSON.stringify({ ...(model ? { model } : { models: freeModels }), messages: [{ role: "user", content: makePrompt(body.text.trim(), body.scene,
         Array.isArray(body.reusableGlyphNouns) ? body.reusableGlyphNouns.filter((noun) => typeof noun === "string" && noun.length <= 48).slice(0, 12) : []
-      ) }], temperature: 0, max_tokens: 3600, response_format: { type: "json_object" }, provider: { allow_fallbacks: true, data_collection: "deny" } }),
-      signal: AbortSignal.timeout(12_000)
+      ) }], temperature: 0, max_tokens: 3600, reasoning: { enabled: false }, response_format: { type: "json_object" }, provider: { allow_fallbacks: true, data_collection: "deny" } }),
+      signal: AbortSignal.timeout(45_000)
     });
     const result = await upstream.json();
     if (!upstream.ok) return send(res, 502, { error: "The language service is temporarily unavailable." }, headers);
-    return send(res, 200, { candidate: extractJson(result?.choices?.[0]?.message?.content), provider: "openrouter", model: result.model || model }, headers);
+    return send(res, 200, { candidate: extractJson(result?.choices?.[0]?.message?.content), provider: "openrouter", model: result.model || model || freeModels[0] }, headers);
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Interpreter failure");
     return send(res, 502, { error: "I could not safely translate that explanation." }, headers);

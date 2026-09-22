@@ -18,6 +18,7 @@ interface ResolverOptions {
   synonyms?: ReadonlyMap<string, string>;
   generator?: GlyphGenerator;
   persist?: (noun: string, glyph: TegeeraGlyph) => Promise<unknown>;
+  onGenerated?: (noun: string, glyph: TegeeraGlyph) => void;
   onGenerationError?: (noun: string, error: unknown) => void;
   maxConcurrent?: number;
   timeoutMs?: number;
@@ -30,6 +31,7 @@ export class LiveGlyphResolver {
   private readonly emoji?: ReadonlyMap<string, TegeeraGlyph>;
   private readonly synonyms?: ReadonlyMap<string, string>;
   private readonly persist?: ResolverOptions["persist"];
+  private readonly onGenerated?: ResolverOptions["onGenerated"];
   private readonly onGenerationError?: ResolverOptions["onGenerationError"];
   private readonly maxConcurrent: number;
   private readonly timeoutMs: number;
@@ -50,6 +52,7 @@ export class LiveGlyphResolver {
     this.synonyms = options.synonyms;
     this.generator = options.generator;
     this.persist = options.persist;
+    this.onGenerated = options.onGenerated;
     this.onGenerationError = options.onGenerationError;
     this.maxConcurrent = Math.max(1, Math.min(2, options.maxConcurrent ?? 2));
     this.timeoutMs = Math.max(1, options.timeoutMs ?? 12_000);
@@ -76,8 +79,11 @@ export class LiveGlyphResolver {
   }
 
   reject(noun: string) {
-    this.cache.delete(glyphKey(noun));
-    this.failedUntil.set(glyphKey(noun), Date.now() + 30_000);
+    const key = glyphKey(noun);
+    this.cache.delete(key);
+    this.editable.delete(key);
+    this.previews.delete(key);
+    this.failedUntil.set(key, Date.now() + 30_000);
     this.emit();
   }
 
@@ -100,6 +106,7 @@ export class LiveGlyphResolver {
       this.editable.set(key, strokes);
       this.cache.set(key, glyph);
       this.emit();
+      this.onGenerated?.(key, glyph);
       if (this.persist) void this.persist(key, glyph).catch(() => undefined);
       return true;
     } catch { return false; }
@@ -176,6 +183,7 @@ export class LiveGlyphResolver {
         this.cache.set(noun, glyph);
         this.previews.delete(noun);
         this.emit();
+        this.onGenerated?.(noun, glyph);
         if (this.persist) void this.persist(noun, glyph).catch(() => undefined);
       }).catch((error: unknown) => {
         this.previews.delete(noun);

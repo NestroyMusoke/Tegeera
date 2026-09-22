@@ -28,7 +28,7 @@ describe('explicit live OpenRouter text/stroke smoke (never run by npm test)', (
     const started = performance.now();
     const interpretation = await interpretRemotely('A dragon flies above a village', initialScene,
       process.env.OPENROUTER_API_KEY!, AbortSignal.timeout(45_000));
-    evidence.semantic = { model: interpretation.model ?? null, milliseconds: Math.round(performance.now() - started) };
+    evidence.semantic = { model: interpretation.model ?? null, milliseconds: Math.round(performance.now() - started), candidate: interpretation.candidate };
     const script = compileUniversalScene(interpretation.candidate, initialScene, 'A dragon flies above a village');
     expect(validateDoodleScript(script, initialScene).ok).toBe(true);
   }, 50_000);

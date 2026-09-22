@@ -175,7 +175,7 @@ describe("teaching workflow", () => {
     await waitFor(() => expect(container.querySelectorAll('[data-glyph-source="cache"]')).toHaveLength(1), { timeout: 5_000 });
     expect(container.querySelectorAll('[data-glyph-source="generated"]')).toHaveLength(1);
     expect(container.querySelector('[data-visual-cue="semantic-connection"]')).not.toBeNull();
-    expect(screen.getByText(/Last scene model: example\/free-visual-model/)).toBeTruthy();
+    expect(screen.getByText(/Scene model: example\/free-visual-model/)).toBeTruthy();
     expect(screen.queryByText("Help me understand")).toBeNull();
   }, 15_000);
   it("lets a newer AI explanation win even when the older response arrives last", async () => {
@@ -247,4 +247,39 @@ describe("teaching workflow", () => {
     expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(drawing);
     expect(screen.getByText("Revision 1")).toBeTruthy();
   });
+  it("asks for approval of a completed runtime doodle and removes a rejected draft", async () => {
+    const strokeText = JSON.stringify({ strokes: [
+      { part: "body", color: "#2f3e46", pts: [[10, 10], [40, 10], [40, 40], [10, 10]] },
+      { part: "wing", color: "#e9c46a", pts: [[15, 25], [22, 12], [31, 24], [15, 25]] }
+    ] });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (!init?.method) return Promise.resolve(new Response("{}", { status: 200 }));
+      const body = JSON.parse(init.body as string);
+      if (body.stream) {
+        const stream = new ReadableStream<Uint8Array>({ start(controller) {
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ choices: [{ delta: { content: strokeText } }] })}\n\n`));
+          controller.close();
+        } });
+        return Promise.resolve(new Response(stream, { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({
+        model: "example/free-visual-model",
+        choices: [{ message: { content: JSON.stringify({
+          blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+          objects: [{ id: "griffin", label: "griffin", kind: "generic", x: 50, y: 50 }], connections: []
+        }) } }]
+      }), { status: 200 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<App />);
+    fireEvent.change(screen.getByLabelText("OpenRouter key for this session"), { target: { value: "session-key" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enable AI understanding" }));
+    explain("Illustrate a griffin with feathered wings");
+    await waitFor(() => expect(screen.getByRole("region", { name: "Review generated doodles" })).toBeTruthy());
+    expect(container.querySelector(".validated-glyph")).not.toBeNull();
+    expect(container.querySelector('[data-glyph-source="deferred"]')).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Do not reuse" }));
+    await waitFor(() => expect(container.querySelector(".validated-glyph")).toBeNull());
+    expect(container.querySelector('[data-glyph-source="sticker"]')).not.toBeNull();
+  }, 15_000);
 });

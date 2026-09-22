@@ -4,7 +4,7 @@
 
 [Try the live web demo](https://nestroymusoke.github.io/Tegeera/) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
 
-Tegeera turns a spoken or typed explanation into a simple, animated visual story while the explanation is still happening.
+Tegeera turns supported spoken or typed explanations into simple, animated visual stories. For unfamiliar explanations, it can show unverified concept hints immediately while an optional AI planner works toward a validated scene.
 
 It is an Android-first education product in active development, created and developed by **Nestroy Musoke**.
 
@@ -46,12 +46,15 @@ Tegeera already accepts speech or typed input and turns supported explanations i
 - forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
 - stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
 
-With **AI understanding** enabled, an OpenRouter model produces a high-level semantic blueprint. Noun drawing is a separate, non-blocking step: the scene appears with a labelled placeholder immediately; an approved offline glyph or validated cached glyph appears synchronously. For an unseen noun, a second model emits coarse-grid strokes; each complete, validated stroke appears with write-on motion while the model continues. Tegeera smooths those points into bounded SVG paths locally. A short instruction can add, replace, or remove strokes of a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
+With **AI understanding** enabled, an OpenRouter model produces a high-level semantic blueprint. The validated scene appears after that planner returns—not instantly. Noun drawing is a separate, non-blocking step: the accepted scene can show labelled placeholders while approved offline artwork or validated cached artwork appears synchronously. For an unseen noun, a second model emits coarse-grid strokes; each complete, validated stroke can appear with write-on motion while generation continues. Tegeera smooths those points into bounded SVG paths locally. A short instruction can add, replace, or remove strokes of a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
 
-Validated runtime strokes are cached on that device automatically but are not
-human-approved artwork. The shipped offline pack has a separate provenance and
-visual-approval gate and is still empty while curation begins. Streaming strokes
-and editing require a reachable model; the existing scene remains usable without one.
+Validated runtime strokes remain session drafts until the user explicitly keeps
+them; shape validation alone cannot prove that they resemble the requested noun.
+Only approved drafts are saved on that device. Previously auto-saved, unreviewed
+artwork is ignored on upgrade. The shipped offline pack has a separate provenance
+and visual-approval gate and is still empty while curation begins. Streaming
+strokes and editing require a reachable model; the existing scene remains usable
+without one.
 
 Related work: [SketchAgent (CVPR 2025)](https://openaccess.thecvf.com/content/CVPR2025/html/Vinker_SketchAgent_Language-Driven_Sequential_Sketch_Generation_CVPR_2025_paper.html) demonstrates sequential, language-driven sketching and conversational refinement. Tegeera takes inspiration from that research direction but uses its own stroke schema and rendering code; no SketchAgent code or artwork is copied. Tegeera's focus is a validated, offline-first classroom scene with immediate placeholders and explicit ambiguity handling. The paper is evidence that the method is promising, not evidence that Tegeera can yet draw every requested concept accurately.
 
@@ -103,7 +106,7 @@ The current checkpoint is reproducible from this repository:
 
 | Check | Current evidence |
 | --- | ---: |
-| Automated tests | **423/423 passing** across 62 files |
+| Automated tests | **454 passing**, 3 optional live-provider tests skipped |
 | Generated supported variations | **278** |
 | Incomplete, unsafe, or structurally wrong near-misses | **65 safely clarified** |
 | Independent teacher corpus | **25/60 drawn**, 1 held, 34 clarified |
@@ -111,8 +114,8 @@ The current checkpoint is reproducible from this repository:
 | False-confident gold acceptances | **0** |
 | Strict gold result | **3/29** |
 | Formal external classroom review | **Pending**; local visual fixtures are ready |
-| Local SVG-ready benchmark | **10.20 ms p95** over 834 warmed samples in the latest serial run |
-| Production JavaScript | Largest chunk **328.20 KiB**, below the 500 KiB guardrail |
+| Local SVG-ready benchmark | **47.28 ms p95** over 834 warmed samples in the latest full run; excludes speech, browser paint, and Android scheduling |
+| Production JavaScript | Guardrailed at **500 KiB** per chunk; largest current chunk **389.34 KiB** |
 | Visual-review output | **47 fixtures**, including a 25-scene implemented-case review station and an unseen-noun procedural scene |
 
 The strict score is intentionally lower than the automated-ready score. Code can prove that required concepts, relationships, visual cues, and validation gates exist. It cannot declare its own drawings beautiful or classroom-ready. Formal external classroom review remains a release gate.
@@ -159,7 +162,7 @@ Tegeera always attempts its fast deterministic interpreter first. For local deve
 
 The public GitHub Pages site and installed APK cannot safely bundle a shared API key. They still need a private hosted backend for automatic AI access. Until one exists, the static website offers a personal session-key field; that field is an optional demo fallback, not an automatic public deployment. A GitHub Actions variable or `VITE_` variable is **not** a safe place for the key.
 
-Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. A separate noun-stroke request never blocks the scene. It can emit at most ten strokes with 4–14 bounded grid points apiece and Tegeera's six-color palette. Tegeera compiles each stroke into its allowlisted SVG path format, then handles spacing and scene identities locally. The semantic DoodleScript must pass the same schema, confidence, and layout gates. The interface reports the exact model OpenRouter selected for the semantic request; the doodle model is shown separately. Speculative and lesson prefetch can make additional API calls. See [the interpreter deployment guide](server/README.md) and [glyph pack guide](GLYPH_PACK_GUIDE.md).
+Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. The current free-model preference is Gemma 4 26B, then Gemma 4 31B, then the OpenRouter free router when an upstream model errors. Free availability and latency are variable: a recent live semantic request took about 23 seconds, and later requests encountered invalid plans and HTTP 429. Immediate hints are not proof of a real-time accepted scene. A separate noun-stroke request never blocks an already accepted scene. It can emit at most ten strokes with 4–14 bounded grid points apiece and Tegeera's six-color palette. Tegeera compiles each stroke into its allowlisted SVG path format, then handles spacing and scene identities locally. The semantic DoodleScript must pass the same schema, confidence, and layout gates. The interface reports the exact model OpenRouter selected for the semantic request; the doodle model is shown separately. Speculative and lesson prefetch can make additional API calls. See [the interpreter deployment guide](server/README.md) and [glyph pack guide](GLYPH_PACK_GUIDE.md).
 
 For exact concrete-noun matches, a compact offline Unicode emoji index can show an immediate recognizable **preview** while a Tegeera doodle is prepared. Typed words and partial speech can surface up to four such hints before the scene is accepted; they are marked unverified and do not change the canvas. This adds no network call and does not pretend emoji font art is finished Tegeera artwork. The label stays visible; unknown or ambiguous nouns remain honest stickers. See [the third-party notice](THIRD_PARTY_NOTICES.md).
 
@@ -195,7 +198,7 @@ gradlew.bat assembleDebug
 
 The Android speech bridge requests microphone permission only after the user presses **Speak**, prefers an offline recognizer, and preserves typed input when speech is unavailable.
 
-The web application and Android assets currently build and synchronize successfully. Native Gradle execution on the development machine is still blocked by a local `Unable to establish loopback connection` error; a release-signed APK and physical-device verification remain release work.
+The web application and Android assets currently build and synchronize successfully. Native Gradle execution on this Windows machine is still blocked by `Unable to establish loopback connection` before Android compilation. A separate GitHub Actions workflow now attempts a Linux debug build after each push to `main` and uploads `tegeera-debug-apk` if successful. In GitHub, open **Actions → Build Tegeera Android debug APK → latest successful run → Artifacts** to download it. That workflow has not run for this commit yet, and a debug APK is not a release-signed APK. Physical-device and accessibility verification remain release work.
 
 ## What comes next
 

@@ -1,0 +1,70 @@
+name: Build Tegeera Android debug APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-debug-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install exact JavaScript dependencies
+        run: npm ci
+
+      - name: Verify application behavior
+        run: npm test
+
+      - name: Check application source
+        run: npm run lint
+
+      - name: Build and synchronize Android web assets
+        run: npm run android:sync
+
+      - name: Use Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android 35 platform
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: bash ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Show APK checksum
+        run: sha256sum android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: tegeera-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

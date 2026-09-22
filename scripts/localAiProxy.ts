@@ -1,7 +1,7 @@
 import type { Plugin } from "vite";
 
 const route = "/api/tegeera-ai";
-const allowedModels = new Set(["openrouter/free", "google/gemma-4-31b-it:free"]);
+const allowedModels = new Set(["google/gemma-4-26b-a4b-it:free", "google/gemma-4-31b-it:free", "openrouter/free"]);
 
 /** Development-only bridge: the browser never receives the local OpenRouter key. */
 export function localAiProxy(apiKey: string): Plugin {
@@ -35,8 +35,11 @@ export function localAiProxy(apiKey: string): Plugin {
             raw += chunk;
             if (raw.length > 32_000) return send(413, { error: "Request too large." });
           }
-          const body = JSON.parse(raw) as { model?: unknown; messages?: unknown; stream?: unknown; max_tokens?: unknown };
-          if (typeof body.model !== "string" || !allowedModels.has(body.model)
+          const body = JSON.parse(raw) as { model?: unknown; models?: unknown; messages?: unknown; stream?: unknown; max_tokens?: unknown };
+          const validModel = typeof body.model === "string" && allowedModels.has(body.model);
+          const validFallbacks = Array.isArray(body.models) && body.models.length >= 1 && body.models.length <= 3
+            && body.models.every((model: unknown) => typeof model === "string" && allowedModels.has(model));
+          if ((!validModel && !validFallbacks)
             || !Array.isArray(body.messages) || body.messages.length !== 1
             || body.messages[0]?.role !== "user" || typeof body.messages[0]?.content !== "string"
             || body.messages[0].content.length > 20_000

@@ -7,35 +7,31 @@ export interface RemoteInterpretation {
 }
 
 const endpoint = (import.meta.env.VITE_TEGEERA_INTERPRETER_URL as string | undefined)?.trim().replace(/\/$/, "");
+export const FREE_SCENE_MODELS = [
+  "google/gemma-4-26b-a4b-it:free",
+  "google/gemma-4-31b-it:free",
+  "openrouter/free"
+] as const;
+export const DEFAULT_FREE_SCENE_MODEL = FREE_SCENE_MODELS[0];
 
 export function remoteInterpreterEnabled(sessionKey = "", localBridge = false): boolean {
   return Boolean(endpoint || sessionKey.trim() || localBridge);
 }
 
-export const plannerPrompt = (text: string, scene: SceneState, reusableNouns: readonly string[] = []) => `You are Tegeera's visual scene architect. Translate the teacher's meaning into a simple, lively 2D doodle blueprint. Return exactly one JSON object, with no markdown.
-
-Output shape:
-{"blueprintVersion":"1.0","mode":"replace","confidence":0.0,"objects":[{"id":"short-id","label":"short visible label","kind":"generic","color":"green","x":50,"y":50,"glyph":{"schemaVersion":"1.0.0","viewBox":"0 0 100 100","parts":[{"id":"body","d":"M10 50 C10 20 90 20 90 50 Q90 85 50 88 L10 50 Z","fill":"#84a98c","stroke":"#2f3e46"}],"anchors":{"top":[50,20],"ground":[50,88],"front":[90,50]}}}],"connections":[{"from":"short-id","to":"other-id","label":"short action"}]}
+export const plannerPrompt = (text: string, scene: SceneState, reusableNouns: readonly string[] = []) => `Translate a teacher's explanation into a small, accurate 2D visual plan. Return ONLY JSON, no markdown.
+{"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"source","label":"source","kind":"generic","x":20,"y":30},{"id":"target","label":"target","kind":"generic","x":80,"y":70}],"connections":[{"from":"source","to":"target","label":"flows to"}]}
 
 Rules:
-- Show the meaning, not every word. Use 1-8 distinct objects and 0-12 connections.
-- Include every object and relationship needed to explain the stated mechanism. A named whole does not replace its essential visible parts, inputs, outputs, or sources when the teacher's explanation depends on them. If the 8-object limit would hide essential meaning, lower confidence instead of returning a confident partial diagram.
-- mode is "replace" unless the teacher explicitly asks to extend the current scene.
-- kinds are person, teacher, student, process, cpu, car, book, desk, tree, building, generic. Use generic for anything else.
-- colors are red, orange, yellow, green, blue, purple, pink, brown, black, white, gray; omit color when unstated.
-- x and y are semantic positions from 0..100: above/below/inside direction must agree with the explanation. Tegeera will solve exact spacing.
-- Omit glyph for all objects. Tegeera paints a placeholder immediately and resolves noun artwork separately, without waiting for image generation. Focus on semantic objects, spatial positions, and relationships.
-- If you do include a glyph, it must have 1-12 coherent parts. Only uppercase M L C Q Z commands, repeated before every coordinate group, with coordinates in 0..100. No text, SVG/XML, relative commands, gradients, filters, images, or event attributes.
-- Tegeera already has validated glyphs for these exact noun labels: ${JSON.stringify(reusableNouns)}. Do not redraw them.
-- Allowed fill values: none, #2f3e46, #52796f, #84a98c, #f4a261, #e9c46a, #cad2c5. Stroke uses the same palette except none.
-- Silhouette first: make it recognizable in one glance, filling roughly 80% of the box. Then add 2-4 signature features that distinguish the noun. Parts must join into one intentional doodle, not float as unrelated shapes.
-- Anchors top, ground, and front are [x,y] points inside 0..100. They must touch the visible silhouette so arrows attach naturally.
-- Connections must reference object ids and use a short visible action label. Do not invent semantic facts.
-- Every connection endpoint must be an exact object id from this plan, or an existing scene id when extending. Never reference an omitted object; never reuse an existing id for a new object. Do not silently drop a stated relationship.
-- Labels are at most 4 words. IDs are unique. confidence below .58 when essential meaning is genuinely ambiguous.
-
+- Preserve meaning, not just nouns. Include every essential visible part, input, output, source, and stated relationship. Never invent facts. If the limit prevents a faithful plan, set confidence below 0.58.
+- 1-8 objects, 0-12 connections. Distinct objects have distinct IDs. A connection endpoint must be an exact object ID, or an existing scene ID in extend mode. Never reference an omitted object.
+- Use mode "extend" only when explicitly adding to the current scene; otherwise "replace". Never reuse an existing ID for a new object.
+- Kinds: person, teacher, student, process, cpu, car, book, desk, tree, building, generic. Use generic for every other noun.
+- Optional colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray. Omit when not stated.
+- x and y are 0..100. Preserve above/below and left/right order; Tegeera handles exact spacing. Labels are 1-4 words.
+- Do not emit glyphs, SVG, paths, pixels, explanations, or extra fields. Artwork is resolved separately while the labelled scene remains usable.
+- Existing artwork labels (do not change meaning to favor them): ${JSON.stringify(reusableNouns)}.
 Teacher: ${JSON.stringify(text)}
-Current scene, for reference only: ${JSON.stringify({ entities: scene.entities.map(({ id, kind, label, x, y }) => ({ id, kind, label, x, y })), relations: scene.relations ?? [] })}`;
+Current scene: ${JSON.stringify({ entities: scene.entities.map(({ id, kind, label, x, y }) => ({ id, kind, label, x, y })), relations: scene.relations ?? [] })}`;
 
 function parseModelJson(content: unknown): unknown {
   const text = typeof content === "string" ? content
@@ -65,17 +61,18 @@ export async function interpretRemotely(
         "x-title": "Tegeera"
       },
       body: JSON.stringify({
-        model: "openrouter/free",
+        models: FREE_SCENE_MODELS,
         messages: [{ role: "user", content: plannerPrompt(text, scene, reusableNouns) }],
         temperature: 0,
         max_tokens: 3600,
+        reasoning: { enabled: false },
         response_format: { type: "json_object" },
         provider: { allow_fallbacks: true, data_collection: "deny" }
       }),
       signal
     });
     const payload = await response.json().catch(() => null) as { error?: { message?: string }; model?: string; choices?: Array<{ finish_reason?: string; message?: { content?: unknown } }> } | null;
-    if (!response.ok) throw new Error(payload?.error?.message ?? `OpenRouter failed (${response.status}).`);
+    if (!response.ok) throw new Error(`OpenRouter scene request failed (${response.status}): ${payload?.error?.message ?? "no detail"}`);
     let candidate: unknown;
     try { candidate = parseModelJson(payload?.choices?.[0]?.message?.content); }
     catch (error) {

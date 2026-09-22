@@ -3,7 +3,7 @@ import { glyphKey, glyphSchema, type TegeeraGlyph } from "./glyph";
 const databaseName = "tegeera-glyph-cache";
 const storeName = "glyphs";
 const maxEntries = 256;
-interface StoredGlyph { noun: string; glyph: TegeeraGlyph; updatedAt: number }
+interface StoredGlyph { noun: string; glyph: TegeeraGlyph; updatedAt: number; approved: true }
 
 function openGlyphDatabase(): Promise<IDBDatabase | null> {
   if (typeof indexedDB === "undefined") return Promise.resolve(null);
@@ -33,7 +33,8 @@ export async function loadGlyphCache(): Promise<Map<string, TegeeraGlyph>> {
       request.onsuccess = () => {
         const result = new Map<string, TegeeraGlyph>();
         for (const row of request.result as StoredGlyph[]) {
-          if (typeof row?.noun !== "string" || glyphKey(row.noun) !== row.noun) continue;
+          // Rows from older releases were auto-saved without human review.
+          if (row?.approved !== true || typeof row.noun !== "string" || glyphKey(row.noun) !== row.noun) continue;
           const parsed = glyphSchema.safeParse(row.glyph);
           if (parsed.success) result.set(row.noun, parsed.data);
         }
@@ -57,12 +58,30 @@ export async function rememberGlyph(noun: string, candidate: unknown): Promise<b
     return await new Promise<boolean>((resolve) => {
       const transaction = database.transaction(storeName, "readwrite");
       const store = transaction.objectStore(storeName);
-      store.put({ noun: normalized, glyph: parsed.data, updatedAt: Date.now() } satisfies StoredGlyph);
+      store.put({ noun: normalized, glyph: parsed.data, updatedAt: Date.now(), approved: true } satisfies StoredGlyph);
       const all = store.getAll();
       all.onsuccess = () => {
         const rows = (all.result as StoredGlyph[]).sort((a, b) => b.updatedAt - a.updatedAt);
         for (const row of rows.slice(maxEntries)) store.delete(row.noun);
       };
+      transaction.oncomplete = () => resolve(true);
+      transaction.onerror = () => resolve(false);
+      transaction.onabort = () => resolve(false);
+    });
+  } catch { return false; }
+  finally { database.close(); }
+}
+
+/** Remove artwork the user rejected, including an earlier approved edit. */
+export async function forgetGlyph(noun: string): Promise<boolean> {
+  const normalized = glyphKey(noun);
+  if (!normalized || normalized.length > 48) return false;
+  const database = await openGlyphDatabase();
+  if (!database) return false;
+  try {
+    return await new Promise<boolean>((resolve) => {
+      const transaction = database.transaction(storeName, "readwrite");
+      transaction.objectStore(storeName).delete(normalized);
       transaction.oncomplete = () => resolve(true);
       transaction.onerror = () => resolve(false);
       transaction.onabort = () => resolve(false);

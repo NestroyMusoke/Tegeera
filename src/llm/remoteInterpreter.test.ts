@@ -25,10 +25,11 @@ describe("remote interpreter boundary", () => {
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     const body = JSON.parse(request.body as string);
     expect(body.response_format).toEqual({ type: "json_object" });
+    expect(body.models).toEqual(["google/gemma-4-26b-a4b-it:free", "google/gemma-4-31b-it:free", "openrouter/free"]);
+    expect(body.reasoning).toEqual({ enabled: false });
     expect(body.messages[0].content).toContain('"blueprintVersion":"1.0"');
-    expect(body.messages[0].content).toContain("Omit glyph for all objects");
-    expect(body.messages[0].content).toContain("Only uppercase M L C Q Z commands");
-    expect(body.messages[0].content).toContain("essential visible parts, inputs, outputs, or sources");
+    expect(body.messages[0].content).toContain("Do not emit glyphs");
+    expect(body.messages[0].content).toContain("essential visible part, input, output, source");
     expect(body.messages[0].content).toContain("Never reference an omitted object");
     expect(body.max_tokens).toBe(3600);
     vi.unstubAllGlobals();

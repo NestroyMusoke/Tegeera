@@ -51,20 +51,36 @@ const cleanId = (value: string, index: number) => {
 };
 
 function assignedSlots(objects: UniversalSceneBlueprint["objects"], scene: SceneState, extend: boolean) {
-  const remaining = new Set(slots.map((slot, index) => !extend || !scene.entities.some((entity) =>
-    Math.abs(entity.x - slot.x) < 18 && Math.abs(entity.y - slot.y) < 22) ? index : -1).filter((index) => index >= 0));
-  if (remaining.size < objects.length) throw new Error("The current scene has no safe room for that extension.");
-  return objects.map((object) => {
-    let chosen = -1;
-    let distance = Number.POSITIVE_INFINITY;
-    slots.forEach((slot, index) => {
-      if (!remaining.has(index)) return;
-      const candidate = Math.hypot(slot.x - object.x, slot.y - object.y);
-      if (candidate < distance) { chosen = index; distance = candidate; }
-    });
-    remaining.delete(chosen);
-    return slots[chosen];
-  });
+  const available = slots.filter((slot) => !extend || !scene.entities.some((entity) =>
+    Math.abs(entity.x - slot.x) < 18 && Math.abs(entity.y - slot.y) < 22));
+  if (available.length < objects.length) throw new Error("The current scene has no safe room for that extension.");
+  const distances = objects.map((object) => available.map((slot) =>
+    ((slot.x - object.x) ** 2 + (slot.y - object.y) ** 2) / 100));
+  const current: number[] = [];
+  let best: number[] = [];
+  let bestCost = Number.POSITIVE_INFINITY;
+  const place = (index: number, used: number, cost: number) => {
+    if (cost >= bestCost) return;
+    if (index === objects.length) { best = [...current]; bestCost = cost; return; }
+    for (let slotIndex = 0; slotIndex < available.length; slotIndex += 1) {
+      if (used & (1 << slotIndex)) continue;
+      const slot = available[slotIndex];
+      let nextCost = cost + distances[index][slotIndex];
+      for (let previous = 0; previous < index; previous += 1) {
+        const earlier = objects[previous];
+        const earlierSlot = available[current[previous]];
+        const xDifference = objects[index].x - earlier.x;
+        const yDifference = objects[index].y - earlier.y;
+        // A model-provided spatial relationship should survive slot quantization.
+        if (Math.abs(xDifference) >= 8 && Math.sign(slot.x - earlierSlot.x) !== Math.sign(xDifference)) nextCost += 250;
+        if (Math.abs(yDifference) >= 8 && Math.sign(slot.y - earlierSlot.y) !== Math.sign(yDifference)) nextCost += 250;
+      }
+      current[index] = slotIndex;
+      place(index + 1, used | (1 << slotIndex), nextCost);
+    }
+  };
+  place(0, 0, 0);
+  return best.map((index) => available[index]);
 }
 
 /** Converts untrusted high-level model output into deterministic, validator-safe DoodleScript. */

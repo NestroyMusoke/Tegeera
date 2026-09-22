@@ -1790,3 +1790,45 @@ preserving a previous drawing after a malformed plan. The full suite passes
 build, bundle budget, and Android web-asset sync pass. The strict independent
 gold result remains 3/29, with no newly approved visual cases. No APK was
 verified in this build.
+
+## 2.35 live-scene and artwork-approval release pass
+
+The generic scene compiler now assigns all objects to slots together instead
+of greedily placing one at a time. Its bounded search respects model-provided
+left/right and above/below ordering while keeping every object on a distinct
+canvas slot. The free scene planner uses a shorter semantic-only prompt and a
+declared fallback list of free OpenRouter models. The browser gives the scene
+request up to 45 seconds before a safe timeout; the hosted backend and local
+proxy use the same model policy. The output cap is 3,600 tokens because a
+1,600-token live probe returned a truncated reply. Live free-provider probes were mixed: an
+earlier route returned one validator-safe plan after 22.97 seconds, but later
+probes returned malformed/truncated plans or HTTP 429. The current fallback
+list is not yet proven reliable on real teacher language. No claim of instant
+or universal AI understanding follows from the local benchmark.
+
+Runtime model-made glyphs now remain session drafts until the user explicitly
+keeps them. Rejected runtime drafts disappear from the current drawing and
+from local IndexedDB; old cache rows that were auto-saved without review are
+ignored. The review UI presents validated glyphs and says that approval is
+local to this device, not an endorsement for the public offline pack. The
+completed glyph transitions with the correct deferred/crossfade state.
+
+The full regression suite passes 454 tests; three optional live-provider
+smoke tests were skipped. The strict independent semantic gold result is
+still **3/29**; the 60-case observational corpus is **25 drawn, 1 held, 34
+clarified**, without human visual approval. The full-suite local SVG-ready
+benchmark measured **47.28 ms p95** over 834 warmed samples and excludes
+speech, model latency, browser paint, and Android scheduling. Lint, seven
+glyph-pack pipeline tests, 47 real-component visual fixture generations,
+TypeScript, the production build, its 500 KiB per-chunk budget, and Capacitor
+Android asset sync pass. The largest JavaScript chunk is 389.34 KiB.
+
+Native APK compilation on this Windows machine still fails before source
+compilation with `Unable to establish loopback connection`. A new Linux
+GitHub Actions workflow runs tests, lint, asset sync, Android SDK setup, and
+Gradle debug assembly on a push to `main`, then uploads a checksum and debug
+APK artifact if successful. That workflow has not run for this change, so no
+APK is claimed. A debug APK is not release-signed. Physical Android latency,
+microphone, TalkBack, visual readability, teacher review, private hosted AI,
+and reliable long-tail doodle quality remain release gates. Tegeera is not
+yet finished for all arbitrary spoken explanations.

@@ -170,4 +170,44 @@ describe("universal visual scene compiler", () => {
     }, scene, "Add another dragon"))
       .toThrow(/object ID more than once/);
   });
+
+  it("keeps model-supplied left/right and above/below order when assigning safe slots", () => {
+    const horizontal = compileUniversalScene({
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "right", label: "orb", kind: "generic", x: 25, y: 30 },
+        { id: "left", label: "star", kind: "generic", x: 15, y: 30 }
+      ], connections: [{ from: "left", to: "right", label: "left of" }]
+    }, initialScene, "A star is left of an orb");
+    const horizontalScene = applyDoodleScript(initialScene, horizontal);
+    expect(horizontalScene.entities.find(({ id }) => id === "left")!.x)
+      .toBeLessThan(horizontalScene.entities.find(({ id }) => id === "right")!.x);
+    expect(validateDoodleScript(horizontal, initialScene).ok).toBe(true);
+
+    const vertical = compileUniversalScene({
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "lower", label: "orb", kind: "generic", x: 50, y: 46 },
+        { id: "upper", label: "star", kind: "generic", x: 50, y: 38 }
+      ], connections: [{ from: "upper", to: "lower", label: "above" }]
+    }, initialScene, "A star is above an orb");
+    const verticalScene = applyDoodleScript(initialScene, vertical);
+    expect(verticalScene.entities.find(({ id }) => id === "upper")!.y)
+      .toBeLessThan(verticalScene.entities.find(({ id }) => id === "lower")!.y);
+    expect(validateDoodleScript(vertical, initialScene).ok).toBe(true);
+  });
+
+  it("assigns a full eight-object blueprint deterministically", () => {
+    const full = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: Array.from({ length: 8 }, (_, index) => ({
+        id: `node-${index + 1}`, label: `node ${index + 1}`, kind: "generic",
+        x: 14 + (index % 4) * 24, y: index < 4 ? 30 : 68
+      })), connections: []
+    };
+    const first = compileUniversalScene(full, initialScene, "Eight nodes");
+    const second = compileUniversalScene(full, initialScene, "Eight nodes");
+    expect(first).toEqual(second);
+    expect(validateDoodleScript(first, initialScene).ok).toBe(true);
+  });
 });

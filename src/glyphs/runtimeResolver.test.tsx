@@ -29,7 +29,8 @@ describe("non-blocking glyph resolver", () => {
     const second: Stroke = { part: "feature", color: "#52796f", pts: [[15, 20], [20, 20], [25, 20], [30, 20]] };
     let finish!: () => void;
     const gate = new Promise<void>((resolve) => { finish = resolve; });
-    const resolver = new LiveGlyphResolver({ generator: async (_noun, _signal, publish) => {
+    const onGenerated = vi.fn();
+    const resolver = new LiveGlyphResolver({ onGenerated, generator: async (_noun, _signal, publish) => {
       publish(first);
       await gate;
       publish(second);
@@ -42,11 +43,16 @@ describe("non-blocking glyph resolver", () => {
     expect(resolver.resolve("new bird").status).toBe("placeholder");
     finish();
     await vi.waitFor(() => expect(resolver.resolve("new bird").status).toBe("final"));
+    expect(onGenerated).toHaveBeenCalledWith("new bird", expect.objectContaining({ parts: expect.any(Array) }));
     expect(resolver.hasEditableStrokes("new bird")).toBe(true);
     expect(await resolver.editGlyph("new bird", "add a line", async (_noun, current) => ({
       strokes: [...current.strokes, { part: "detail", color: "#e9c46a", pts: [[10, 30], [20, 30], [30, 30], [40, 30]] }]
     }))).toBe(true);
     expect(resolver.resolve("new bird").glyph?.parts).toHaveLength(3);
+    expect(onGenerated).toHaveBeenCalledTimes(2);
+    resolver.reject("new bird");
+    expect(resolver.resolve("new bird").status).toBe("placeholder");
+    expect(resolver.hasEditableStrokes("new bird")).toBe(false);
     expect(changed).toHaveBeenCalled();
   });
   it("paints an unseen noun in under 100ms even when generation takes eight seconds", async () => {
