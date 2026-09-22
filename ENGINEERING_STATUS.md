@@ -1749,3 +1749,23 @@ verified: Gradle 8.11.1 failed before Android compilation with
 portable Temurin 21 runtime. The portable runtime was extracted into the
 ignored `.visual-check` folder; the redundant download archive was removed.
 This is an Android build-environment blocker, not evidence that the APK works.
+
+## 2.33 latest-wins live explanations
+
+A new typed explanation or demo now cancels any older pending remote
+interpretation. A late reply is ignored even if its provider does not honor
+abort, so it cannot overwrite the newer scene. The drawing control stays
+available while AI is working; a separate Stop AI action keeps the previous
+drawing and leaves the input editable. Remote interpretation has a 20-second
+abort deadline with a clear retry message. This bounds the waiting experience,
+not the actual model response time or success rate. The pending controls also
+fit the narrow-screen layout.
+
+Real-component tests cover consecutive AI submissions with replies arriving
+out of order and stopping AI without changing the current drawing. The full
+suite passes 446 tests (three optional live-provider smoke tests skipped);
+lint, production build, bundle budget, and Capacitor Android asset sync pass.
+The independent strict gold result is still 3/29; these reliability changes
+do not constitute new evidence of visual or semantic accuracy. No new APK was
+verified in this build because the previously observed Gradle loopback
+environment failure remains unresolved.

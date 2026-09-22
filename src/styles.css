@@ -424,6 +424,15 @@ button {
   box-shadow: 0 2px 0 #214d3d;
 }
 
+.stop-ai-button {
+  padding: 0 15px;
+  color: #754639;
+  background: #f9e9df;
+  border: 1px solid #e2b6a2;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
 .mic-button {
   display: inline-flex;
   align-items: center;
@@ -791,6 +800,10 @@ button {
     grid-template-columns: 1fr 1fr;
   }
 
+  .input-row.has-stop-ai {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .input-row input {
     grid-column: 1 / -1;
   }
@@ -798,6 +811,11 @@ button {
   .draw-button {
     min-height: 44px;
     padding: 0 15px;
+  }
+
+  .stop-ai-button {
+    min-height: 44px;
+    padding: 0 8px;
   }
 
   .mic-button {

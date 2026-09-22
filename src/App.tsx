@@ -83,6 +83,8 @@ function App() {
   const [latencySamples, setLatencySamples] = useState<LatencySample[]>([]);
   const pendingLatency = useRef<PendingLatency | null>(null);
   const latencySequence = useRef(0);
+  const remoteRequest = useRef<AbortController | null>(null);
+  const remoteRequestSequence = useRef(0);
   const scene = history.at(-1) ?? initialScene;
   const visualScene = useMemo<SceneState>(() => ({
     ...scene,
@@ -133,6 +135,18 @@ function App() {
       : undefined);
   }, [openRouterKey, localAiEnabled]);
 
+  useEffect(() => () => {
+    remoteRequestSequence.current += 1;
+    remoteRequest.current?.abort();
+  }, []);
+
+  const cancelPendingRemote = () => {
+    remoteRequestSequence.current += 1;
+    remoteRequest.current?.abort();
+    remoteRequest.current = null;
+    setRemoteBusy(false);
+  };
+
   // The resolver update event triggers a rerender when a noun becomes editable.
   const editableNouns = [...new Set(scene.entities.filter((entity) => entity.label && glyphResolver.current!.hasEditableStrokes(entity.label))
     .map((entity) => entity.label!))];
@@ -157,6 +171,8 @@ function App() {
     targetScene = scene,
     replaceScene = false
   ) => {
+    // An older model response must never replace a newer explanation or demo.
+    cancelPendingRemote();
     setPendingGlyphReview([]);
     const receivedAt = speechTiming?.finalReceivedAt ?? performance.now();
     const source: InputSource = speechTiming ? "speech" : "typed";
@@ -169,13 +185,19 @@ function App() {
     const interpretation = interpretTeacherText(text, targetScene);
     if (!interpretation.ok) {
       if (remoteInterpreterEnabled(openRouterKey, localAiEnabled)) {
+        const requestId = remoteRequestSequence.current;
+        const controller = new AbortController();
+        remoteRequest.current = controller;
+        let timedOut = false;
+        const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 20_000);
         setRemoteBusy(true);
         setHoldNotice(null);
         setClarification(null);
         setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
         const reusableNouns = [...offlineGlyphCatalog.pack.keys(), ...glyphCache.current.keys()]
           .filter((noun) => text.toLowerCase().includes(noun)).slice(0, 12);
-        void interpretRemotely(text, targetScene, openRouterKey, undefined, reusableNouns, localAiEnabled).then(({ candidate, model }) => {
+        void interpretRemotely(text, targetScene, openRouterKey, controller.signal, reusableNouns, localAiEnabled).then(({ candidate, model }) => {
+          if (requestId !== remoteRequestSequence.current || controller.signal.aborted) return;
           setLastRemoteModel(model ?? "OpenRouter-selected free model");
           setAiStatus("Enabled and working");
           const compiled = compileUniversalScene(candidate, targetScene, text, {
@@ -203,11 +225,19 @@ function App() {
           setClarification(null);
           setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
         }).catch((error: unknown) => {
+          if (requestId !== remoteRequestSequence.current) return;
           setAiStatus("Enabled, but the last request failed safely");
           markDecision("clarify");
           setClarification(null);
-          setIssues([{ gate: "confidence", message: `AI understanding could not complete: ${error instanceof Error ? error.message : "unknown service error"}` }]);
-        }).finally(() => setRemoteBusy(false));
+          setIssues([{ gate: "confidence", message: timedOut
+            ? "AI understanding took too long. The previous drawing is safe; try again or shorten the explanation."
+            : `AI understanding could not complete: ${error instanceof Error ? error.message : "unknown service error"}` }]);
+        }).finally(() => {
+          clearTimeout(timer);
+          if (requestId !== remoteRequestSequence.current) return;
+          remoteRequest.current = null;
+          setRemoteBusy(false);
+        });
         return;
       }
       markDecision("clarify");
@@ -348,7 +378,7 @@ function App() {
           }}
         >
           <label htmlFor="teacher-input">Your explanation</label>
-          <div className="input-row">
+          <div className={`input-row ${remoteBusy ? "has-stop-ai" : ""}`}>
             <input
               id="teacher-input"
               value={input}
@@ -356,9 +386,14 @@ function App() {
               placeholder="Imagine three students waiting in a queue…"
               autoComplete="off"
             />
-            <button className="draw-button" disabled={remoteBusy} type="submit">
-              {remoteBusy ? "Understanding…" : "Draw it"}
+            <button className="draw-button" type="submit">
+              {remoteBusy ? "Update drawing" : "Draw it"}
             </button>
+            {remoteBusy ? <button className="stop-ai-button" type="button" onClick={() => {
+              cancelPendingRemote();
+              setIssues([]);
+              setHoldNotice("AI request stopped. The previous drawing is unchanged.");
+            }}>Stop AI</button> : null}
             <button
               aria-label={isListening ? "Stop listening" : "Start listening"}
               aria-pressed={isListening}
@@ -477,6 +512,7 @@ function App() {
             type="button"
             disabled={!openRouterKeyDraft.trim()}
             onClick={() => {
+              cancelPendingRemote();
               setOpenRouterKey(openRouterKeyDraft.trim());
               setOpenRouterKeyDraft("");
               setAiStatus("Enabled for this session");
@@ -484,7 +520,7 @@ function App() {
               setGlyphIssue("");
             }}
           >Enable AI understanding</button>
-          {openRouterKey ? <button type="button" onClick={() => { setOpenRouterKey(""); setAiStatus(localAiEnabled ? "Connected automatically (local)" : "Not enabled"); setLastRemoteModel(null); setGlyphIssue(""); }}>Forget key</button> : null}
+          {openRouterKey ? <button type="button" onClick={() => { cancelPendingRemote(); setOpenRouterKey(""); setAiStatus(localAiEnabled ? "Connected automatically (local)" : "Not enabled"); setLastRemoteModel(null); setGlyphIssue(""); }}>Forget key</button> : null}
           <div className="ai-connection-status" role="status" data-ai-enabled={Boolean(openRouterKey || localAiEnabled)}><strong>{aiStatus}</strong>{lastRemoteModel ? ` · Last scene model: ${lastRemoteModel}` : " · Scene router: openrouter/free"}{` · Doodle model: ${DEFAULT_FREE_GLYPH_MODEL}`}</div>
           {glyphIssue ? <p role="alert">{glyphIssue}</p> : null}
           <small>{localAiEnabled && !openRouterKey ? "Local development uses the private key from .env.local automatically; it never reaches the browser. " : "The pasted key stays in browser memory only and disappears when this page closes. "}Unsupported explanations use OpenRouter; familiar instructions remain local and fast.</small>
@@ -561,7 +597,7 @@ function App() {
             <details key={group.subject} open>
               <summary>{group.subject} · {group.examples.length}</summary>
               <div className="showcase-grid">
-                {group.examples.map((example) => <button key={example} disabled={remoteBusy} type="button" onClick={() => { setInput(example); submit(example, undefined, initialScene, true); }}>{example}</button>)}
+                {group.examples.map((example) => <button key={example} type="button" onClick={() => { setInput(example); submit(example, undefined, initialScene, true); }}>{example}</button>)}
               </div>
             </details>
           ))}
@@ -573,7 +609,7 @@ function App() {
             <small>Showing {Math.min(exampleLimit, filteredTestedPhrases.length)} of {filteredTestedPhrases.length} matching probes.</small>
             <div className="showcase-grid full-library">
               {filteredTestedPhrases.slice(0, exampleLimit)
-                .map(({ id, text, layout }) => <button key={id} title={`Reusable visual grammar: ${layout}`} disabled={remoteBusy} type="button" onClick={() => { setInput(text); submit(text, undefined, initialScene, true); }}><span>{text}</span><small>{layout}</small></button>)}
+                .map(({ id, text, layout }) => <button key={id} title={`Reusable visual grammar: ${layout}`} type="button" onClick={() => { setInput(text); submit(text, undefined, initialScene, true); }}><span>{text}</span><small>{layout}</small></button>)}
             </div>
             {exampleLimit < filteredTestedPhrases.length ? <button className="load-more" type="button" onClick={() => setExampleLimit((current) => current + 24)}>Show 24 more</button> : null}
           </details>

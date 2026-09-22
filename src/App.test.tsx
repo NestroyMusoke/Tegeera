@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
@@ -178,4 +178,52 @@ describe("teaching workflow", () => {
     expect(screen.getByText(/Last scene model: example\/free-visual-model/)).toBeTruthy();
     expect(screen.queryByText("Help me understand")).toBeNull();
   }, 15_000);
+  it("lets a newer AI explanation win even when the older response arrives last", async () => {
+    let finishFirst!: (response: Response) => void;
+    const first = new Promise<Response>((resolve) => { finishFirst = resolve; });
+    const responseFor = (noun: string) => new Response(JSON.stringify({
+      model: "example/free-visual-model",
+      choices: [{ message: { content: JSON.stringify({
+        blueprintVersion: "1.0", mode: "replace", confidence: 0.92,
+        objects: [{ id: noun, label: noun, kind: "generic", x: 50, y: 50 }],
+        connections: []
+      }) } }]
+    }), { status: 200, headers: { "content-type": "application/json" } });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (!init?.method) return Promise.resolve(new Response("{}", { status: 200 }));
+      return fetchMock.mock.calls.filter(([, options]) => options?.method).length === 1
+        ? first : Promise.resolve(responseFor("volcano"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<App />);
+    fireEvent.change(screen.getByLabelText("OpenRouter key for this session"), { target: { value: "session-key" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enable AI understanding" }));
+    explain("A dragon flies over a tiny village");
+    expect(screen.getByRole("button", { name: "Update drawing" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: "A volcano floats over a tiny castle" } });
+    fireEvent.click(screen.getByRole("button", { name: "Update drawing" }));
+    await waitFor(() => expect(container.querySelector('[data-entity-id="volcano"]')).not.toBeNull());
+    await act(async () => { finishFirst(responseFor("dragon")); await first; });
+    expect(screen.getByText("Revision 1")).toBeTruthy();
+    expect(container.querySelector('[data-entity-id="dragon"]')).toBeNull();
+    expect(screen.getByRole("button", { name: "Draw it" })).toBeTruthy();
+  }, 15_000);
+  it("stops AI work without changing the current drawing", async () => {
+    let finish!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => { finish = resolve; });
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
+      init?.method ? pending : Promise.resolve(new Response("{}", { status: 200 }))));
+    const { container } = render(<App />);
+    fireEvent.change(screen.getByLabelText("OpenRouter key for this session"), { target: { value: "session-key" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enable AI understanding" }));
+    explain("Draw a car");
+    const drawing = container.querySelector(".doodle-canvas")!.innerHTML;
+    explain("A dragon flies over a tiny village");
+    fireEvent.click(screen.getByRole("button", { name: "Stop AI" }));
+    expect(screen.getByText("AI request stopped. The previous drawing is unchanged.")).toBeTruthy();
+    expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(drawing);
+    await act(async () => { finish(new Response("{}", { status: 200 })); await pending; });
+    expect(screen.getByText("Revision 1")).toBeTruthy();
+    expect(container.querySelector(".doodle-canvas")!.innerHTML).toBe(drawing);
+  });
 });
