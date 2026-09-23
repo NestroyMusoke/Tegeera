@@ -15,7 +15,7 @@ import { DEFAULT_FREE_SCENE_MODEL, hostedInterpreterUrl, interpretRemotely, remo
 import { compileUniversalScene } from "./llm/universalScene";
 import { forgetGlyph, loadGlyphCache, rememberGlyph } from "./glyphs/cache";
 import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
-import { offlineGlyphCatalog } from "./glyphs/catalog";
+import { offlineArtworkAttributions, offlineGlyphCatalog } from "./glyphs/catalog";
 import { extractEmojiPreviews } from "./glyphs/emojiPreview";
 import { LiveGlyphResolver } from "./glyphs/runtimeResolver";
 import { DEFAULT_FREE_GLYPH_MODEL, editStrokeGlyphRemotely, generateStrokeGlyphRemotely, planLessonNouns } from "./llm/generateGlyph";
@@ -650,6 +650,12 @@ function App() {
             {exampleLimit < filteredTestedPhrases.length ? <button className="load-more" type="button" onClick={() => setExampleLimit((current) => current + 24)}>Show 24 more</button> : null}
           </details>
         </section>
+        {offlineArtworkAttributions.length ? <details className="latency-panel">
+          <summary>Artwork credits</summary>
+          <p>These reviewed doodles use credited third-party strokes. Tegeera normalizes their scale, colors and line rendering.</p>
+          <ul>{offlineArtworkAttributions.map(({ noun, author, license, sourceUrl }) =>
+            <li key={`${noun}-${sourceUrl}`}>{noun} — {author}, {license}. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}</ul>
+        </details> : null}
       </section>
       </DoodleCanvas>
       <p className="sr-only" aria-live="polite">

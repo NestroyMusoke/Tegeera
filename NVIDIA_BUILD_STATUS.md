@@ -14,13 +14,14 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 
 | Check | Result | Meaning |
 | --- | --- | --- |
-| Client suite | 458 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
+| Client suite | 459 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
 | Service suite | 8 passing | Mocked NVIDIA request, correction, invalid output, HTTP origin/health and key boundary. |
+| Offline artwork intake | 12 passing | Bounded Quick, Draw! sampling, SVG safety, explicit review, provenance and attribution. No candidate auto-ships. |
 | TypeScript, production bundle, Capacitor sync | Passing | Client assets compile and copy to Android. Does not compile an APK. |
 | Lint | Passing | Static source checks. |
 | Independent teacher corpus | 25/60 drawn, 1/60 held, 34/60 clarified | Drawing/clarification counts only; not visual accuracy. |
 | Strict annotated gold | 3/29 passed | Current local engine; adding an untested model does not improve this score yet. |
-| Offline approved glyph pack | 0 entries | Long-tail doodles still depend on an optional model or labelled fallback. |
+| Offline approved glyph pack | 0 entries | A no-cost Quick, Draw! candidate/review pipeline exists, but nothing has passed review into the app. Long-tail doodles still depend on an optional model or labelled fallback. |
 | Live NVIDIA calls, real-device latency, APK assemble, human visual approval | Not run | These remain required before a credible public demo. |
 
 ## Next gates, in order

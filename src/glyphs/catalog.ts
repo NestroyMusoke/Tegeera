@@ -48,6 +48,12 @@ export const glyphPackSchema = z.object({
 
 export type GlyphPack = z.infer<typeof glyphPackSchema>;
 
+export function artworkAttributions(candidate: unknown): Array<{ noun: string; author: string; license: string; sourceUrl: string }> {
+  return glyphPackSchema.parse(candidate).entries.flatMap((entry) => entry.provenance.sourceUrl
+    ? [{ noun: entry.noun, author: entry.provenance.author, license: entry.provenance.license, sourceUrl: entry.provenance.sourceUrl }]
+    : []);
+}
+
 export function createGlyphCatalog(candidate: unknown): {
   pack: ReadonlyMap<string, TegeeraGlyph>;
   synonyms: ReadonlyMap<string, string>;
@@ -64,3 +70,4 @@ export function createGlyphCatalog(candidate: unknown): {
 }
 
 export const offlineGlyphCatalog = createGlyphCatalog(offlinePackData);
+export const offlineArtworkAttributions = artworkAttributions(offlinePackData);

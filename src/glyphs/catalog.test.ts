@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createGlyphCatalog, glyphPackSchema, offlineGlyphCatalog } from "./catalog";
+import { artworkAttributions, createGlyphCatalog, glyphPackSchema, offlineGlyphCatalog } from "./catalog";
 import { resolveGlyph } from "./glyph";
 
 const glyph = {
@@ -34,6 +34,11 @@ describe("curated offline glyph catalog", () => {
         source: "licensed-third-party", author: "Someone", license: "CC BY 4.0"
       } }]
     }).success).toBe(false);
+    expect(artworkAttributions({ formatVersion: "1.0.0", entries: [{ ...entry, provenance: {
+      source: "licensed-third-party", author: "Quick, Draw! contributor", license: "CC BY 4.0",
+      sourceUrl: "https://storage.googleapis.com/quickdraw_dataset/full/simplified/house.ndjson#key_id=123"
+    } }] })).toEqual([{ noun: "teaching object", author: "Quick, Draw! contributor", license: "CC BY 4.0",
+      sourceUrl: "https://storage.googleapis.com/quickdraw_dataset/full/simplified/house.ndjson#key_id=123" }]);
   });
 
   it("rejects alias collisions and unsafe artwork before bundling", () => {

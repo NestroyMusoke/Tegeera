@@ -34,6 +34,9 @@ jobs:
       - name: Verify hosted interpreter
         run: npm test --prefix server
 
+      - name: Verify offline artwork intake
+        run: npm run test:glyph-pack
+
       - name: Check application source
         run: npm run lint
 

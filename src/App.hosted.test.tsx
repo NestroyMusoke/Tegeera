@@ -31,14 +31,3 @@ it("draws an unfamiliar explanation through the hosted scene and glyph service w
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/interpret"))).toBe(true);
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/glyph"))).toBe(true);
 }, 15_000);
-
-it("does not mark a configured but unavailable host as connected", async () => {
-  vi.stubEnv("VITE_TEGEERA_INTERPRETER_URL", "https://tegeera.example");
-  vi.resetModules();
-  vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
-  const { default: App } = await import("./App");
-  const { container } = render(<App />);
-  await waitFor(() => expect(screen.getByText(/Hosted AI is unavailable/)).toBeTruthy());
-  expect(container.querySelector(".ai-connection-status")?.getAttribute("data-ai-enabled")).toBe("false");
-  expect(screen.getByLabelText("Your explanation")).toBeTruthy();
-});

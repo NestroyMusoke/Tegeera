@@ -2,7 +2,7 @@
 
 ### Speak it. See it. Understand it.
 
-[Try the live web demo](https://nestroymusoke.github.io/Tegeera/) · [See the current NVIDIA build gates](NVIDIA_BUILD_STATUS.md) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
+[Try the live web demo](https://nestroymusoke.github.io/Tegeera/) · [See the current NVIDIA build gates](NVIDIA_BUILD_STATUS.md) · [Review the no-cost doodle intake](QUICKDRAW_INTAKE.md) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
 
 Tegeera turns supported spoken or typed explanations into simple, animated visual stories. For unfamiliar explanations, it can show unverified concept hints immediately while an optional AI planner works toward a validated scene.
 
