@@ -53,6 +53,79 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it("routes composable typed relations into the real part-whole visual grammar", () => {
+    const candidate = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.91,
+      objects: [
+        { id: "plant", label: "plant", kind: "generic", x: 78, y: 48 },
+        { id: "roots", label: "roots", kind: "generic", x: 45, y: 72 },
+        { id: "leaves", label: "leaves", kind: "generic", x: 45, y: 26 },
+        { id: "water", label: "water", kind: "generic", x: 15, y: 72 },
+        { id: "sunlight", label: "sunlight", kind: "generic", x: 15, y: 26 }
+      ],
+      connections: [
+        { from: "roots", to: "plant", label: "part of", kind: "partOf" },
+        { from: "leaves", to: "plant", label: "part of", kind: "partOf" },
+        { from: "water", to: "roots", label: "flows into", kind: "flowsInto" },
+        { from: "sunlight", to: "leaves", label: "illuminates", kind: "illuminates" }
+      ]
+    };
+    const script = compileUniversalScene(candidate, initialScene, "A plant takes in water through its roots and sunlight through its leaves.");
+    expect(script.commands.filter((command) => command.action === "relate").map((command) =>
+      command.action === "relate" ? command.relation.kind : null)).toEqual(["partOf", "partOf", "flowsInto", "illuminates"]);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
+    for (const cue of ["visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray"]) {
+      expect(html).toContain(cue);
+    }
+    expect(html).toContain('data-relation-layout="part-whole-flow"');
+
+    const other = compileUniversalScene({
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "wheel", label: "wheel", kind: "generic", x: 20, y: 45 },
+        { id: "vehicle", label: "vehicle", kind: "generic", x: 80, y: 45 }
+      ],
+      connections: [{ from: "wheel", to: "vehicle", label: "part of", kind: "partOf" }]
+    }, initialScene, "A wheel is part of a vehicle");
+    expect(validateDoodleScript(other, initialScene).ok).toBe(true);
+    expect(renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, other)} />))
+      .toContain('data-relation-layout="part-whole-flow"');
+  });
+
+  it("does not let a model relabel a typed visual meaning", () => {
+    expect(() => compileUniversalScene({ ...blueprint,
+      connections: [{ from: "flying-dragon", to: "tiny-village", label: "eats", kind: "partOf" }]
+    }, initialScene, "A dragon eats a village")).toThrow(/incomplete visual blueprint/);
+    expect(() => compileUniversalScene({ ...blueprint,
+      connections: [{ from: "flying-dragon", to: "tiny-village", label: "flies over", kind: "unsupported" }]
+    }, initialScene, "A dragon flies over a village")).toThrow(/incomplete visual blueprint/);
+  });
+
+  it("renders causal and temporal links as event flow, while rejecting a cycle", () => {
+    const events = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "spark", label: "spark", kind: "generic", x: 15, y: 35 },
+        { id: "fire", label: "fire", kind: "generic", x: 50, y: 35 },
+        { id: "smoke", label: "smoke", kind: "generic", x: 85, y: 35 }
+      ],
+      connections: [
+        { from: "spark", to: "fire", label: "causes", kind: "causes" },
+        { from: "fire", to: "smoke", label: "before", kind: "before" }
+      ]
+    };
+    const script = compileUniversalScene(events, initialScene, "A spark causes fire before smoke appears");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
+    expect(html.match(/data-relation-layout="event-graph"/g)).toHaveLength(2);
+    expect(html).toContain("event-causes");
+    const cycle = compileUniversalScene({ ...events, connections: [...events.connections,
+      { from: "smoke", to: "spark", label: "causes", kind: "causes" }]
+    }, initialScene, "A cycle");
+    expect(validateDoodleScript(cycle, initialScene).ok).toBe(false);
+  });
+
   it("compiles unfamiliar subjects from validated coherent glyphs into DoodleScript", () => {
     const script = compileUniversalScene(blueprint, initialScene, "A dragon flies over a tiny village");
     expect(script.schemaVersion).toBe("2.27.0");

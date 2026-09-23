@@ -49,6 +49,9 @@ test("scene validator rejects omitted endpoints, duplicate objects and invented 
   assert.equal(validScene({ ...complete, connections: [{ from: "water", to: "sun", label: "flows to" }] }, scene), false);
   assert.equal(validScene({ ...complete, objects: [...complete.objects, complete.objects[0]] }, scene), false);
   assert.equal(validScene({ ...complete, objects: [{ ...complete.objects[0], y: 120 }] }, scene), false);
+  assert.equal(validScene({ ...complete, connections: [{ from: "water", to: "roots", label: "flows into", kind: "flowsInto" }] }, scene), true);
+  assert.equal(validScene({ ...complete, connections: [{ from: "water", to: "roots", label: "contains", kind: "flowsInto" }] }, scene), false);
+  assert.equal(validScene({ ...complete, connections: [{ from: "water", to: "roots", label: "flows into", kind: "unknown" }] }, scene), false);
 });
 
 test("repairs malformed model JSON once, then returns a structurally complete plan", async () => {

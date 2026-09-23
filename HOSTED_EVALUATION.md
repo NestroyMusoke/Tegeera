@@ -12,6 +12,8 @@ Tegeera's local parser and hosted model must be measured separately. The existin
 
 `semantic-ready` means the available annotation matches at the blueprint level. It is **not** a strict product pass. The report always says `visuallyApproved: 0` because it sees no rendered scene or human review. This score should never be merged into Tegeera's existing local-engine 3/29 result or advertised as visual accuracy.
 
+Hosted connections can now include an optional validated `kind`: `partOf`, `flowsInto`, `illuminates`, `before`, or `causes`. These are general relationship grammars, not hard-coded teacher sentences. The label must exactly match the registered meaning; otherwise the server and client reject the plan. Older connections without `kind` remain generic arrows. The compiler spaces typed endpoints and the existing validator still rejects unreadable or contradictory geometry. More descriptive links than these five still need an honest generic rendering or a future grammar; the model cannot invent a renderer by naming a new kind.
+
 ## Run without a model key
 
 From the repository in Command Prompt:
@@ -39,4 +41,23 @@ npm run eval:hosted-gold -- --url https://YOUR-SERVICE-ORIGIN --max-cases 3
 
 The default is three cases, with at least six seconds between requests to respect the prototype service's 12-request-per-minute limit. To cover a chosen subset, add `--ids 1,2,11 --max-cases 3`. Increase `--max-cases` only after checking the provider's current free quota, pricing and service terms. Results save under the ignored `.visual-check/hosted-gold-report.json` and resume without repeating completed cases. A 429 stops safely; that case remains pending. `--fresh` starts over. Do not add an API key to the command, URL, report, app, or GitHub Actions variable.
 
-The saved report includes every candidate and its source case ID, separate concept/topology/predicate coverage, errors and latency. A future visual-review run must render and inspect each accepted scene on an actual Android device, recording observed cues and a human approval or rejection. Until then, semantic-ready and visually-approved are deliberately separate.
+The saved report includes every candidate and its source case ID, separate concept/topology/predicate coverage, errors and latency. Semantic-ready and visually-approved remain deliberately separate.
+
+## Render and review what the app actually draws
+
+After saving model responses, run:
+
+```bat
+npm run render:hosted-gold
+start "" ".visual-check\hosted-review\review.html"
+```
+
+This produces a 390-pixel HTML view for each evaluated case using the real `compileUniversalScene` and `DoodleCanvas` code, plus `manifest.json` with detected SVG cues and relation layout. Missing cues and wrong layout are failures even when the blueprint's concepts and links score perfectly. The generated review is ignored by Git; it may contain teacher statements and model output. Do not publish it without permission.
+
+The review page has six criteria per drawing. The HTML shows a frozen frame only: inspect animation and reduced-motion behavior separately in the running Android app before checking that criterion. Enter reviewer and device, decide each drawing, and export the JSON. Verify it against the exact rendered revision:
+
+```bat
+npm run render:hosted-gold -- --verify "C:\path\to\tegeera-hosted-visual-review.json"
+```
+
+`strictReady` requires a **live** model response, semantic readiness, the required SVG cues and grammar, and completed human visual review. A fixture can exercise the workflow but can never count as a live strict pass. This is a conformance gate, not a claim that machine-readable cues alone prove artistic quality. As of this build there is no configured live NVIDIA service, no live hosted report, and no human-approved hosted drawing.

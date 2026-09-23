@@ -17,6 +17,29 @@ export interface UniversalGlyphSources {
   synonyms?: ReadonlyMap<string, string>;
 }
 
+// Small, composable visual grammar shared with the hosted protocol. No lesson nouns
+// or scenario names appear here; unsupported relationships stay generic.
+export const universalConnectionLabels = {
+  partOf: "part of",
+  flowsInto: "flows into",
+  illuminates: "illuminates",
+  before: "before",
+  causes: "causes"
+} as const;
+type TypedConnectionKind = keyof typeof universalConnectionLabels;
+
+const universalConnectionSchema = z.object({
+  from: z.string().min(1).max(30),
+  to: z.string().min(1).max(30),
+  label: z.string().min(1).max(32),
+  kind: z.enum(["relatesTo", "partOf", "flowsInto", "illuminates", "before", "causes"]).optional()
+}).superRefine((connection, context) => {
+  if (connection.kind && connection.kind !== "relatesTo"
+    && connection.label.trim().toLowerCase() !== universalConnectionLabels[connection.kind as TypedConnectionKind]) {
+    context.addIssue({ code: "custom", path: ["label"], message: "A typed visual relationship needs its exact registered label." });
+  }
+});
+
 export const universalSceneBlueprintSchema = z.object({
   blueprintVersion: z.literal("1.0"),
   mode: z.enum(["replace", "extend"]).default("replace"),
@@ -32,11 +55,7 @@ export const universalSceneBlueprintSchema = z.object({
     glyphSource: z.enum(["glyph-pack", "emoji", "cache", "generated"]).optional(),
     visual: proceduralVisualSchema.optional()
   })).min(1).max(8),
-  connections: z.array(z.object({
-    from: z.string().min(1).max(30),
-    to: z.string().min(1).max(30),
-    label: z.string().min(1).max(32)
-  })).max(12).default([])
+  connections: z.array(universalConnectionSchema).max(12).default([])
 });
 
 export type UniversalSceneBlueprint = z.infer<typeof universalSceneBlueprintSchema>;
@@ -50,12 +69,13 @@ const cleanId = (value: string, index: number) => {
   return cleaned || `object-${index + 1}`;
 };
 
-function assignedSlots(objects: UniversalSceneBlueprint["objects"], scene: SceneState, extend: boolean) {
+function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections: UniversalSceneBlueprint["connections"], scene: SceneState, extend: boolean) {
   const available = slots.filter((slot) => !extend || !scene.entities.some((entity) =>
     Math.abs(entity.x - slot.x) < 18 && Math.abs(entity.y - slot.y) < 22));
   if (available.length < objects.length) throw new Error("The current scene has no safe room for that extension.");
   const distances = objects.map((object) => available.map((slot) =>
     ((slot.x - object.x) ** 2 + (slot.y - object.y) ** 2) / 100));
+  const indexById = new Map(objects.map((object, index) => [object.id, index] as const));
   const current: number[] = [];
   let best: number[] = [];
   let bestCost = Number.POSITIVE_INFINITY;
@@ -74,6 +94,18 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], scene: Scene
         // A model-provided spatial relationship should survive slot quantization.
         if (Math.abs(xDifference) >= 8 && Math.sign(slot.x - earlierSlot.x) !== Math.sign(xDifference)) nextCost += 250;
         if (Math.abs(yDifference) >= 8 && Math.sign(slot.y - earlierSlot.y) !== Math.sign(yDifference)) nextCost += 250;
+      }
+      for (const connection of connections) {
+        if (!connection.kind || connection.kind === "relatesTo") continue;
+        const from = indexById.get(connection.from); const to = indexById.get(connection.to);
+        if (from === undefined || to === undefined || Math.max(from, to) !== index) continue;
+        const fromSlot = from === index ? slot : available[current[from]];
+        const toSlot = to === index ? slot : available[current[to]];
+        if (connection.kind === "before" || connection.kind === "causes") {
+          if (fromSlot.x >= toSlot.x || (toSlot.x - fromSlot.x) < 24) nextCost += 500;
+        } else if (Math.hypot((toSlot.x - fromSlot.x) * 10, (toSlot.y - fromSlot.y) * 6.2) < 140) {
+          nextCost += 500;
+        }
       }
       current[index] = slotIndex;
       place(index + 1, used | (1 << slotIndex), nextCost);
@@ -118,7 +150,7 @@ export function compileUniversalScene(
     }
     newIds.add(object.id);
   }
-  const positions = assignedSlots(blueprint.objects, scene, blueprint.mode === "extend");
+  const positions = assignedSlots(blueprint.objects, blueprint.connections, scene, blueprint.mode === "extend");
   const sceneDensity = blueprint.objects.length + (blueprint.mode === "extend" ? scene.entities.length : 0);
   const visualScale = sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 0.72;
   const commands: DoodleCommand[] = [];
@@ -166,7 +198,7 @@ export function compileUniversalScene(
       relationId = `universal-relation-${index + 1}-${suffix++}`;
     }
     commands.push({ action: "relate", relation: {
-      id: relationId, kind: "relatesTo", sourceIds: [sourceId], targetIds: [targetId],
+      id: relationId, kind: connection.kind ?? "relatesTo", sourceIds: [sourceId], targetIds: [targetId],
       predicate: connection.label.trim()
     } });
   });

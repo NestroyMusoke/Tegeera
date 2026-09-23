@@ -6,6 +6,10 @@ export const OPENROUTER_FREE_MODELS = [
 const kinds = new Set(["person", "teacher", "student", "process", "cpu", "car", "book", "desk", "tree", "building", "generic"]);
 const colors = new Set(["red", "orange", "yellow", "green", "blue", "purple", "pink", "brown", "black", "white", "gray"]);
 const ink = new Set(["#2f3e46", "#52796f", "#84a98c", "#f4a261", "#e9c46a", "#cad2c5"]);
+const typedConnectionLabels = Object.freeze({
+  partOf: "part of", flowsInto: "flows into", illuminates: "illuminates",
+  before: "before", causes: "causes"
+});
 
 export function scenePrompt(text, scene, reusableNouns = []) {
   const prior = {
@@ -13,8 +17,9 @@ export function scenePrompt(text, scene, reusableNouns = []) {
     relations: (scene.relations || []).slice(0, 12).map(({ sourceIds, targetIds, predicate, kind }) => ({ sourceIds, targetIds, predicate, kind }))
   };
   return `Make one accurate classroom visual plan. Return only a JSON object with this shape:
-{"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"water","label":"water","kind":"generic","x":20,"y":50}],"connections":[]}
+{"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"source","label":"source","kind":"generic","x":20,"y":50},{"id":"destination","label":"destination","kind":"generic","x":80,"y":50}],"connections":[{"from":"source","to":"destination","label":"flows into","kind":"flowsInto"}]}
 Represent every essential named or implied visible part needed to explain the teacher's mechanism. Include inputs, outputs, sources, destinations, containers and part-whole relations when the statement depends on them. Do not invent unsupported facts. Use 1-8 objects, 0-12 connections. If a faithful plan needs more than eight objects or meaning is unclear, set confidence below 0.58. Object IDs must be unique and connections must point to exact object IDs, or existing IDs only in extend mode. Use extend only for an explicit addition to the current scene. Kind is one of ${[...kinds].join(", ")}; use generic for every other noun. Optional color is one of ${[...colors].join(", ")}; omit when not stated. x/y are 0..100 and must preserve above/below and left/right. Each label is 1-4 words. A connection label states the actual relationship. No glyphs, SVG, paths or explanations. Existing artwork labels are only retrieval hints: ${JSON.stringify(reusableNouns)}.
+For a connection, use an optional typed kind only when its exact meaning applies: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}. Its label must exactly match that quoted text. These are general visual grammar, not special lesson templates. For every other relationship omit kind and use a truthful short label. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
 Teacher: ${JSON.stringify(text)}
 Current scene: ${JSON.stringify(prior)}`;
 }
@@ -45,7 +50,10 @@ export function validScene(candidate, scene = { entities: [] }) {
   }
   for (const relation of candidate.connections) {
     if (!relation || !ids.has(relation.from) || !ids.has(relation.to) || relation.from === relation.to
-      || typeof relation.label !== "string" || !relation.label.trim() || relation.label.length > 32) return false;
+      || typeof relation.label !== "string" || !relation.label.trim() || relation.label.length > 32
+      || (relation.kind !== undefined && relation.kind !== "relatesTo"
+        && (!Object.hasOwn(typedConnectionLabels, relation.kind)
+          || relation.label.trim().toLowerCase() !== typedConnectionLabels[relation.kind]))) return false;
   }
   return true;
 }
