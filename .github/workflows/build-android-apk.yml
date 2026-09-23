@@ -37,6 +37,9 @@ jobs:
       - name: Verify offline artwork intake
         run: npm run test:glyph-pack
 
+      - name: Verify independent hosted-planner scoring
+        run: npm run test:hosted-eval
+
       - name: Check application source
         run: npm run lint
 

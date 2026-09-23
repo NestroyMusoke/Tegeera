@@ -17,6 +17,7 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 | Client suite | 459 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
 | Service suite | 8 passing | Mocked NVIDIA request, correction, invalid output, HTTP origin/health and key boundary. |
 | Offline artwork intake | 12 passing | Bounded Quick, Draw! sampling, SVG safety, explicit review, provenance and attribution. No candidate auto-ships. |
+| Hosted-planner gold harness | 8 passing | Independent concept, directed-link, predicate and confidence scoring; live provider accuracy not measured without a configured service. |
 | TypeScript, production bundle, Capacitor sync | Passing | Client assets compile and copy to Android. Does not compile an APK. |
 | Lint | Passing | Static source checks. |
 | Independent teacher corpus | 25/60 drawn, 1/60 held, 34/60 clarified | Drawing/clarification counts only; not visual accuracy. |
