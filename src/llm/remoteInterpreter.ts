@@ -6,7 +6,7 @@ export interface RemoteInterpretation {
   model?: string;
 }
 
-const endpoint = (import.meta.env.VITE_TEGEERA_INTERPRETER_URL as string | undefined)?.trim().replace(/\/$/, "");
+export const hostedInterpreterUrl = (import.meta.env.VITE_TEGEERA_INTERPRETER_URL as string | undefined)?.trim().replace(/\/$/, "");
 export const FREE_SCENE_MODELS = [
   "google/gemma-4-26b-a4b-it:free",
   "google/gemma-4-31b-it:free",
@@ -15,7 +15,7 @@ export const FREE_SCENE_MODELS = [
 export const DEFAULT_FREE_SCENE_MODEL = FREE_SCENE_MODELS[0];
 
 export function remoteInterpreterEnabled(sessionKey = "", localBridge = false): boolean {
-  return Boolean(endpoint || sessionKey.trim() || localBridge);
+  return Boolean(hostedInterpreterUrl || sessionKey.trim() || localBridge);
 }
 
 export const plannerPrompt = (text: string, scene: SceneState, reusableNouns: readonly string[] = []) => `Translate a teacher's explanation into a small, accurate 2D visual plan. Return ONLY JSON, no markdown.
@@ -49,8 +49,8 @@ export async function interpretRemotely(
   reusableNouns: readonly string[] = [],
   localBridge = false
 ): Promise<RemoteInterpretation> {
-  if (!endpoint && !sessionKey.trim() && !localBridge) throw new Error("Remote interpretation is not configured.");
-  if (!endpoint) {
+  if (!hostedInterpreterUrl && !sessionKey.trim() && !localBridge) throw new Error("Remote interpretation is not configured.");
+  if (!hostedInterpreterUrl) {
     const useLocalBridge = localBridge && !sessionKey.trim();
     const response = await fetch(useLocalBridge ? "/api/tegeera-ai/chat/completions" : "https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -83,7 +83,7 @@ export async function interpretRemotely(
     }
     return { candidate, provider: "openrouter", model: payload?.model };
   }
-  const response = await fetch(`${endpoint}/v1/interpret`, {
+  const response = await fetch(`${hostedInterpreterUrl}/v1/interpret`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -92,9 +92,8 @@ export async function interpretRemotely(
       scene: {
         sceneId: scene.sceneId,
         revision: scene.revision,
-        entities: scene.entities,
-        relations: scene.relations ?? [],
-        context: scene.context
+        entities: scene.entities.map(({ id, kind, label, x, y }) => ({ id, kind, label, x, y })),
+        relations: (scene.relations ?? []).map(({ sourceIds, targetIds, predicate, kind }) => ({ sourceIds, targetIds, predicate, kind }))
       }
     }),
     signal

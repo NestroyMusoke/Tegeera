@@ -2,7 +2,7 @@
 
 ### Speak it. See it. Understand it.
 
-[Try the live web demo](https://nestroymusoke.github.io/Tegeera/) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
+[Try the live web demo](https://nestroymusoke.github.io/Tegeera/) · [See the current NVIDIA build gates](NVIDIA_BUILD_STATUS.md) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
 
 Tegeera turns supported spoken or typed explanations into simple, animated visual stories. For unfamiliar explanations, it can show unverified concept hints immediately while an optional AI planner works toward a validated scene.
 
@@ -46,15 +46,17 @@ Tegeera already accepts speech or typed input and turns supported explanations i
 - forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
 - stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
 
-With **AI understanding** enabled, an OpenRouter model produces a high-level semantic blueprint. The validated scene appears after that planner returns—not instantly. Noun drawing is a separate, non-blocking step: the accepted scene can show labelled placeholders while approved offline artwork or validated cached artwork appears synchronously. For an unseen noun, a second model emits coarse-grid strokes; each complete, validated stroke can appear with write-on motion while generation continues. Tegeera smooths those points into bounded SVG paths locally. A short instruction can add, replace, or remove strokes of a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
+With a **hosted AI service** configured, NVIDIA's Nemotron 3 Super model is the preferred planner for language the local interpreter cannot handle; the existing OpenRouter path remains a fallback when only an OpenRouter key is configured. The model produces a bounded semantic blueprint, not a finished image. The validated scene appears after the planner returns—not instantly. Noun drawing is a separate, non-blocking step: the accepted scene can show labelled placeholders while approved offline artwork or validated cached artwork appears synchronously. For an unseen noun, the model can emit coarse-grid strokes; the hosted service returns the complete validated stroke set, then the client reveals it with write-on motion. Direct OpenRouter mode can stream complete strokes progressively. Tegeera smooths those points into bounded SVG paths locally. A short instruction can edit a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
 
 Validated runtime strokes remain session drafts until the user explicitly keeps
 them; shape validation alone cannot prove that they resemble the requested noun.
 Only approved drafts are saved on that device. Previously auto-saved, unreviewed
 artwork is ignored on upgrade. The shipped offline pack has a separate provenance
-and visual-approval gate and is still empty while curation begins. Streaming
+and visual-approval gate and is still empty while curation begins. Model-generated
 strokes and editing require a reachable model; the existing scene remains usable
 without one.
+
+The NVIDIA path is implemented and tested with a simulated provider, but it has **not** been tested against a live NVIDIA endpoint or deployed: no NVIDIA API key is configured. The public demo and APK do not gain hosted AI merely by merging this code. The secret must be set only on a separately hosted backend, and the public backend URL must be supplied to the client builds. See [server setup](server/README.md). NVIDIA's API Catalog free endpoint is a prototyping path, not a guaranteed free production host. Tegeera's local drawing remains available without a backend; arbitrary-speech understanding and high-quality long-tail artwork do not.
 
 Related work: [SketchAgent (CVPR 2025)](https://openaccess.thecvf.com/content/CVPR2025/html/Vinker_SketchAgent_Language-Driven_Sequential_Sketch_Generation_CVPR_2025_paper.html) demonstrates sequential, language-driven sketching and conversational refinement. Tegeera takes inspiration from that research direction but uses its own stroke schema and rendering code; no SketchAgent code or artwork is copied. Tegeera's focus is a validated, offline-first classroom scene with immediate placeholders and explicit ambiguity handling. The paper is evidence that the method is promising, not evidence that Tegeera can yet draw every requested concept accurately.
 

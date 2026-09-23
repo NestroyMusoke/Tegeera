@@ -34,6 +34,9 @@ jobs:
       - name: Run automated tests
         run: npm test
 
+      - name: Verify hosted interpreter
+        run: npm test --prefix server
+
       - name: Build static demo
         run: npm run build
         env:

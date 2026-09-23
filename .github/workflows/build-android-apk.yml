@@ -31,11 +31,16 @@ jobs:
       - name: Verify application behavior
         run: npm test
 
+      - name: Verify hosted interpreter
+        run: npm test --prefix server
+
       - name: Check application source
         run: npm run lint
 
       - name: Build and synchronize Android web assets
         run: npm run android:sync
+        env:
+          VITE_TEGEERA_INTERPRETER_URL: ${{ vars.TEGEERA_INTERPRETER_URL }}
 
       - name: Use Java 21
         uses: actions/setup-java@v6

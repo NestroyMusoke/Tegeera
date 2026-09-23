@@ -11,7 +11,7 @@ import { useSpeechSession } from "./speech/useSpeechSession";
 import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
-import { DEFAULT_FREE_SCENE_MODEL, interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
+import { DEFAULT_FREE_SCENE_MODEL, hostedInterpreterUrl, interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
 import { compileUniversalScene } from "./llm/universalScene";
 import { forgetGlyph, loadGlyphCache, rememberGlyph } from "./glyphs/cache";
 import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
@@ -57,7 +57,8 @@ function App() {
   const [openRouterKeyDraft, setOpenRouterKeyDraft] = useState("");
   const [openRouterKey, setOpenRouterKey] = useState("");
   const [localAiEnabled, setLocalAiEnabled] = useState(false);
-  const [aiStatus, setAiStatus] = useState("Not enabled");
+  const [aiStatus, setAiStatus] = useState(hostedInterpreterUrl ? "Hosted AI configured; checking connection" : "Not enabled");
+  const [hostedHealthy, setHostedHealthy] = useState(false);
   const [lastRemoteModel, setLastRemoteModel] = useState<string | null>(null);
   const [glyphIssue, setGlyphIssue] = useState("");
   const [pendingGlyphReview, setPendingGlyphReview] = useState<Array<{ noun: string; glyph: TegeeraGlyph; origin: "scene" | "runtime" }>>([]);
@@ -66,14 +67,14 @@ function App() {
   const glyphCache = useRef(new Map<string, TegeeraGlyph>());
   const glyphResolver = useRef<LiveGlyphResolver | null>(null);
   if (!glyphResolver.current) glyphResolver.current = new LiveGlyphResolver({
-    ...offlineGlyphCatalog, cache: glyphCache.current,
+    ...offlineGlyphCatalog, cache: glyphCache.current, timeoutMs: hostedInterpreterUrl ? 40_000 : 12_000,
     onGenerated: (noun, glyph) => {
       if (!sceneRef.current.entities.some((entity) => entity.kind === "generic" && glyphKey(entity.label ?? "") === noun)) return;
       setPendingGlyphReview((current) => [...current.filter((item) => item.noun !== noun), { noun, glyph, origin: "runtime" as const }].slice(-30));
     },
     onGenerationError: (noun, error) => setGlyphIssue(
-      error instanceof Error && error.message.includes("(429)")
-        ? `OpenRouter is rate-limiting doodle generation. ${noun} remains labelled; try again later.`
+      error instanceof Error && error.message.includes("429")
+        ? `The AI service is rate-limiting doodle generation. ${noun} remains labelled; try again later.`
         : `Could not finish the ${noun} doodle. Its label remains visible; you can try again later.`
     )
   });
@@ -124,6 +125,20 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!hostedInterpreterUrl) return;
+    const controller = new AbortController();
+    void fetch(`${hostedInterpreterUrl}/health`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() as Promise<{ configured?: boolean; provider?: string; model?: string }> : null)
+      .then((health) => {
+        if (controller.signal.aborted) return;
+        setHostedHealthy(Boolean(health?.configured));
+        setAiStatus(health?.configured ? `Hosted ${health.provider ?? "AI"} connected` : "Hosted AI is not configured");
+      }).catch(() => { if (!controller.signal.aborted) { setHostedHealthy(false); setAiStatus("Hosted AI is unavailable; local drawing still works"); } });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (hostedInterpreterUrl) return;
     if (!localDevelopment) return;
     const controller = new AbortController();
     void fetch("/api/tegeera-ai/health", { signal: controller.signal })
@@ -137,7 +152,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    glyphResolver.current!.setGenerator(openRouterKey
+    glyphResolver.current!.setGenerator(hostedInterpreterUrl
+      ? (noun, signal, publishStroke) => generateStrokeGlyphRemotely(noun, "", signal, publishStroke)
+      : openRouterKey
       ? (noun, signal, publishStroke) => generateStrokeGlyphRemotely(noun, openRouterKey, signal, publishStroke)
       : localAiEnabled ? (noun, signal, publishStroke) => generateStrokeGlyphRemotely(noun, "", signal, publishStroke, DEFAULT_FREE_GLYPH_MODEL, true)
       : undefined);
@@ -203,10 +220,10 @@ function App() {
         setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
         const reusableNouns = [...offlineGlyphCatalog.pack.keys(), ...glyphCache.current.keys()]
           .filter((noun) => text.toLowerCase().includes(noun)).slice(0, 12);
-        void interpretRemotely(text, targetScene, openRouterKey, controller.signal, reusableNouns, localAiEnabled).then(({ candidate, model }) => {
+        void interpretRemotely(text, targetScene, openRouterKey, controller.signal, reusableNouns, localAiEnabled).then(({ candidate, model, provider }) => {
           if (requestId !== remoteRequestSequence.current || controller.signal.aborted) return;
-          setLastRemoteModel(model ?? DEFAULT_FREE_SCENE_MODEL);
-          setAiStatus("Enabled and working");
+          setLastRemoteModel(model ?? (hostedInterpreterUrl ? "hosted model" : DEFAULT_FREE_SCENE_MODEL));
+          setAiStatus(`${provider ?? "AI"} returned a visual plan`);
           const compiled = compileUniversalScene(candidate, targetScene, text, {
             ...offlineGlyphCatalog, cache: glyphCache.current
           });
@@ -321,7 +338,7 @@ function App() {
   const speech = useSpeechSession((transcript, timing) => submit(transcript, timing));
   const liveVisualHints = useMemo(() => extractEmojiPreviews(speech.partialTranscript || input), [speech.partialTranscript, input]);
   useEffect(() => {
-    if ((!openRouterKey && !localAiEnabled) || !speech.partialTranscript.trim()) return;
+    if ((!openRouterKey && !localAiEnabled && !hostedInterpreterUrl) || !speech.partialTranscript.trim()) return;
     const timer = setTimeout(() => glyphResolver.current!.speculativePrefetch(speech.partialTranscript), 400);
     return () => clearTimeout(timer);
   }, [openRouterKey, localAiEnabled, speech.partialTranscript]);
@@ -470,7 +487,7 @@ function App() {
           <small>The evidence contains timings and device capability only—never lesson text or transcripts.</small>
         </details>
 
-        {editableNouns.length && (openRouterKey || localAiEnabled) ? <details className="latency-panel">
+        {editableNouns.length && (openRouterKey || localAiEnabled || hostedInterpreterUrl) ? <details className="latency-panel">
           <summary>Refine a doodle (optional)</summary>
           <label htmlFor="edit-glyph-noun">Drawing</label>
           <select id="edit-glyph-noun" value={editableNouns.includes(editNoun) ? editNoun : editableNouns[0]} onChange={(event) => setEditNoun(event.target.value)}>
@@ -497,7 +514,7 @@ function App() {
           <summary>Prepare a lesson (optional)</summary>
           <label htmlFor="lesson-topic">Lesson topic</label>
           <input id="lesson-topic" value={lessonTopic} onChange={(event) => setLessonTopic(event.target.value)} placeholder="For example, plant reproduction" />
-          <button type="button" disabled={(!openRouterKey && !localAiEnabled) || !lessonTopic.trim()} onClick={() => {
+          <button type="button" disabled={(!openRouterKey && !localAiEnabled && !hostedInterpreterUrl) || !lessonTopic.trim()} onClick={() => {
             setLessonPrepStatus("Planning likely drawings…");
             void glyphResolver.current!.prepareLesson(lessonTopic,
               (topic, signal) => planLessonNouns(topic, openRouterKey, signal, DEFAULT_FREE_GLYPH_MODEL, localAiEnabled)
@@ -509,32 +526,34 @@ function App() {
 
         <details className="latency-panel">
           <summary>AI understanding (optional)</summary>
-          <label htmlFor="openrouter-key">OpenRouter key for this session</label>
-          <input
-            id="openrouter-key"
-            type="password"
-            value={openRouterKeyDraft}
-            onChange={(event) => setOpenRouterKeyDraft(event.target.value)}
-            placeholder="Paste a newly generated key"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <button
-            type="button"
-            disabled={!openRouterKeyDraft.trim()}
-            onClick={() => {
-              cancelPendingRemote();
-              setOpenRouterKey(openRouterKeyDraft.trim());
-              setOpenRouterKeyDraft("");
-              setAiStatus("Enabled for this session");
-              setLastRemoteModel(null);
-              setGlyphIssue("");
-            }}
-          >Enable AI understanding</button>
-          {openRouterKey ? <button type="button" onClick={() => { cancelPendingRemote(); setOpenRouterKey(""); setAiStatus(localAiEnabled ? "Connected automatically (local)" : "Not enabled"); setLastRemoteModel(null); setGlyphIssue(""); }}>Forget key</button> : null}
-          <div className="ai-connection-status" role="status" data-ai-enabled={Boolean(openRouterKey || localAiEnabled)}><strong>{aiStatus}</strong>{` · Scene model: ${lastRemoteModel ?? `${DEFAULT_FREE_SCENE_MODEL} (free fallback enabled)`}`}{` · Doodle model: ${DEFAULT_FREE_GLYPH_MODEL}`}</div>
+          {!hostedInterpreterUrl ? <>
+            <label htmlFor="openrouter-key">OpenRouter key for this session</label>
+            <input
+              id="openrouter-key"
+              type="password"
+              value={openRouterKeyDraft}
+              onChange={(event) => setOpenRouterKeyDraft(event.target.value)}
+              placeholder="Paste a newly generated key"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              disabled={!openRouterKeyDraft.trim()}
+              onClick={() => {
+                cancelPendingRemote();
+                setOpenRouterKey(openRouterKeyDraft.trim());
+                setOpenRouterKeyDraft("");
+                setAiStatus("Enabled for this session");
+                setLastRemoteModel(null);
+                setGlyphIssue("");
+              }}
+            >Enable AI understanding</button>
+            {openRouterKey ? <button type="button" onClick={() => { cancelPendingRemote(); setOpenRouterKey(""); setAiStatus(localAiEnabled ? "Connected automatically (local)" : "Not enabled"); setLastRemoteModel(null); setGlyphIssue(""); }}>Forget key</button> : null}
+          </> : <p>The hosted AI service keeps its key on the server. You do not need to paste a key into this app.</p>}
+          <div className="ai-connection-status" role="status" data-ai-enabled={Boolean(hostedHealthy || openRouterKey || localAiEnabled)}><strong>{aiStatus}</strong>{` · Scene model: ${lastRemoteModel ?? (hostedInterpreterUrl ? "reported after first request" : `${DEFAULT_FREE_SCENE_MODEL} (free fallback enabled)`)}`}{` · Doodle model: ${hostedInterpreterUrl ? "hosted service" : DEFAULT_FREE_GLYPH_MODEL}`}</div>
           {glyphIssue ? <p role="alert">{glyphIssue}</p> : null}
-          <small>{localAiEnabled && !openRouterKey ? "Local development uses the private key from .env.local automatically; it never reaches the browser. " : "The pasted key stays in browser memory only and disappears when this page closes. "}Unsupported explanations use OpenRouter; familiar instructions remain local and fast.</small>
+          <small>{hostedInterpreterUrl ? "Unfamiliar explanations use the private hosted model; local instructions remain fast. " : localAiEnabled && !openRouterKey ? "Local development uses the private key from .env.local automatically; it never reaches the browser. " : "The pasted key stays in browser memory only and disappears when this page closes. "}{!hostedInterpreterUrl ? "Unsupported explanations use OpenRouter; familiar instructions remain local and fast." : "A generated scene appears after the model replies; noun doodles can finish later."}</small>
         </details>
 
         {pendingGlyphReview.length ? <section className="glyph-review" aria-label="Review generated doodles">

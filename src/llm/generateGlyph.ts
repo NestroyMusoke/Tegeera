@@ -1,9 +1,21 @@
 import { strokeGlyphSchema, strokeSchema, StrokeStreamParser, type Stroke, type StrokeGlyph } from "../glyphs/strokeGlyph";
 import { z } from "zod";
+import { hostedInterpreterUrl } from "./remoteInterpreter";
 
 const endpoint = "https://openrouter.ai/api/v1/chat/completions";
 const palette = "#2f3e46 #52796f #84a98c #f4a261 #e9c46a #cad2c5";
 export const DEFAULT_FREE_GLYPH_MODEL = "google/gemma-4-31b-it:free";
+
+async function hostedJson(path: string, body: object, signal: AbortSignal): Promise<unknown> {
+  const response = await fetch(`${hostedInterpreterUrl}${path}`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal
+  });
+  const payload = await response.json().catch(() => null) as { candidate?: unknown; error?: string } | null;
+  if (!response.ok || !payload || !("candidate" in payload)) {
+    throw new Error(payload?.error ?? `Hosted doodle request failed (${response.status}).`);
+  }
+  return payload.candidate;
+}
 
 async function requestJson(prompt: string, key: string, signal: AbortSignal, maxTokens: number, model = DEFAULT_FREE_GLYPH_MODEL, localBridge = false): Promise<unknown> {
   if (!key.trim() && !localBridge) throw new Error("AI glyph generation is not enabled.");
@@ -59,6 +71,11 @@ export async function generateStrokeGlyphRemotely(
   model = DEFAULT_FREE_GLYPH_MODEL,
   localBridge = false
 ): Promise<StrokeGlyph> {
+  if (hostedInterpreterUrl && !key.trim()) {
+    const strokes = strokeGlyphSchema.parse(await hostedJson("/v1/glyph", { noun }, signal));
+    for (const stroke of strokes.strokes) onStroke(stroke);
+    return strokes;
+  }
   if (!key.trim() && !localBridge) throw new Error("AI glyph generation is not enabled.");
   const response = await fetch(localBridge && !key.trim() ? "/api/tegeera-ai/chat/completions" : endpoint, {
     method: "POST", signal,
@@ -117,6 +134,9 @@ const editSchema = z.object({ ops: z.array(editOperation).min(1).max(4) }).stric
 /** A bounded semantic edit—not executable code or a raw SVG replacement. */
 export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph, instruction: string, key: string, signal: AbortSignal, model = DEFAULT_FREE_GLYPH_MODEL, localBridge = false): Promise<StrokeGlyph> {
   if (!instruction.trim() || instruction.length > 160) throw new Error("Describe one short doodle change.");
+  if (hostedInterpreterUrl && !key.trim()) {
+    return strokeGlyphSchema.parse(await hostedJson("/v1/glyph/edit", { noun, current, instruction }, signal));
+  }
   const candidate = editSchema.parse(await requestJson(
     `Edit this classroom doodle of ${JSON.stringify(noun)}. Current strokes: ${JSON.stringify(current)}. User instruction: ${JSON.stringify(instruction)}. Return ONLY JSON {"ops":[{"op":"add","stroke":{"part":"feature","color":"#2f3e46","pts":[[10,10],[11,11],[12,12],[13,13]]}}]} using 1-4 add, replace, or remove operations. For replace/remove include zero-based index. Preserve unaffected strokes; do not regenerate the whole drawing. Each stroke needs 4-14 integer points in 3..47 and a color from ${palette}.`,
     key, signal, 800, model, localBridge
@@ -132,6 +152,13 @@ export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph
 }
 
 export async function planLessonNouns(topic: string, key: string, signal: AbortSignal, model = DEFAULT_FREE_GLYPH_MODEL, localBridge = false): Promise<string[]> {
+  if (hostedInterpreterUrl && !key.trim()) {
+    const response = await hostedJson("/v1/lesson-nouns", { topic }, signal);
+    if (!response || typeof response !== "object" || !("nouns" in response) || !Array.isArray(response.nouns)) {
+      throw new Error("Invalid hosted lesson noun plan.");
+    }
+    return response.nouns.filter((noun): noun is string => typeof noun === "string").slice(0, 30);
+  }
   const result = await requestJson(
     `For a classroom lesson on ${JSON.stringify(topic)}, return only JSON {"nouns":["..."]} with exactly 30 likely concrete nouns that a teacher might need to draw. Each noun must be 2-48 characters, distinct, and no complete lesson sentences or abstract topics.`,
     key, signal, 1000, model, localBridge
