@@ -277,7 +277,7 @@ describe("teaching workflow", () => {
     explain("Illustrate a griffin with feathered wings");
     await waitFor(() => expect(screen.getByRole("region", { name: "Review generated doodles" })).toBeTruthy());
     expect(container.querySelector(".validated-glyph")).not.toBeNull();
-    expect(container.querySelector('[data-glyph-source="deferred"]')).not.toBeNull();
+    expect(container.querySelector('[data-glyph-source="streaming"]')).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Do not reuse" }));
     await waitFor(() => expect(container.querySelector(".validated-glyph")).toBeNull());
     expect(container.querySelector('[data-glyph-source="sticker"]')).not.toBeNull();

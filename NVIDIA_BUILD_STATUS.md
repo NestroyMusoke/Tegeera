@@ -10,12 +10,13 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 - The Android and Pages workflows now build with the same public `TEGEERA_INTERPRETER_URL` variable; the API key is never a client build variable.
 - Client and service validate schema, bounds, and references. On failure, the existing accepted scene remains in place. This is a safety property, **not** proof of semantic correctness or doodle quality.
 - Hosted blueprints can now carry five reusable typed relationship grammars. The compiler routes those to existing visual layouts instead of turning every link into a generic arrow; untyped and unsupported meanings remain generic or are rejected. This is not a new general-purpose drawing model.
+- Generated noun glyphs remain visible session drafts until explicitly approved. Rejected or superseded in-flight generations and edits cannot enter the reusable cache; approved artwork alone is persisted on the device.
 
 ## Verified in this checkpoint
 
 | Check | Result | Meaning |
 | --- | --- | --- |
-| Client suite | 462 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
+| Client suite | 465 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
 | Service suite | 8 passing | Mocked NVIDIA request, correction, invalid output, HTTP origin/health and key boundary. |
 | Offline artwork intake | 12 passing | Bounded Quick, Draw! sampling, SVG safety, explicit review, provenance and attribution. No candidate auto-ships. |
 | Hosted-planner gold and real-render gate | 10 passing | Saved blueprints run through the actual compiler and canvas; semantic completeness cannot count as visual success without required SVG evidence and human review. Live provider accuracy remains unmeasured. |

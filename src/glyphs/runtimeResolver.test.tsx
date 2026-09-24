@@ -30,7 +30,9 @@ describe("non-blocking glyph resolver", () => {
     let finish!: () => void;
     const gate = new Promise<void>((resolve) => { finish = resolve; });
     const onGenerated = vi.fn();
-    const resolver = new LiveGlyphResolver({ onGenerated, generator: async (_noun, _signal, publish) => {
+    const cache = new Map();
+    const persist = vi.fn(async () => true);
+    const resolver = new LiveGlyphResolver({ cache, persist, onGenerated, generator: async (_noun, _signal, publish) => {
       publish(first);
       await gate;
       publish(second);
@@ -42,7 +44,10 @@ describe("non-blocking glyph resolver", () => {
     await vi.waitFor(() => expect(resolver.resolve("new bird").glyph?.parts).toHaveLength(1));
     expect(resolver.resolve("new bird").status).toBe("placeholder");
     finish();
-    await vi.waitFor(() => expect(resolver.resolve("new bird").status).toBe("final"));
+    await vi.waitFor(() => expect(resolver.resolve("new bird").glyph?.parts).toHaveLength(2));
+    expect(resolver.resolve("new bird").status).toBe("placeholder");
+    expect(cache.has("new bird")).toBe(false);
+    expect(persist).not.toHaveBeenCalled();
     expect(onGenerated).toHaveBeenCalledWith("new bird", expect.objectContaining({ parts: expect.any(Array) }));
     expect(resolver.hasEditableStrokes("new bird")).toBe(true);
     expect(await resolver.editGlyph("new bird", "add a line", async (_noun, current) => ({
@@ -50,6 +55,11 @@ describe("non-blocking glyph resolver", () => {
     }))).toBe(true);
     expect(resolver.resolve("new bird").glyph?.parts).toHaveLength(3);
     expect(onGenerated).toHaveBeenCalledTimes(2);
+    expect(cache.has("new bird")).toBe(false);
+    expect(resolver.approve("new bird")?.parts).toHaveLength(3);
+    expect(resolver.resolve("new bird").status).toBe("final");
+    expect(cache.has("new bird")).toBe(true);
+    await vi.waitFor(() => expect(persist).toHaveBeenCalledOnce());
     resolver.reject("new bird");
     expect(resolver.resolve("new bird").status).toBe("placeholder");
     expect(resolver.hasEditableStrokes("new bird")).toBe(false);
@@ -73,6 +83,8 @@ describe("non-blocking glyph resolver", () => {
       expect(resolver.resolve("unseen creature").status).toBe("placeholder");
       await vi.advanceTimersByTimeAsync(8_000);
       expect(generator).toHaveBeenCalledTimes(1);
+      expect(resolver.resolve("unseen creature").status).toBe("placeholder");
+      expect(resolver.approve("unseen creature")).toBeDefined();
       expect(resolver.resolve("unseen creature").status).toBe("final");
     } finally { vi.useRealTimers(); }
   });
@@ -94,7 +106,61 @@ describe("non-blocking glyph resolver", () => {
       await vi.advanceTimersByTimeAsync(500);
       expect(peak).toBeLessThanOrEqual(2);
       expect(generator).toHaveBeenCalledTimes(3);
+      expect(resolver.resolve("dragon").status).toBe("placeholder");
+      expect(resolver.approve("dragon")).toBeDefined();
       expect(resolver.resolve("dragon").status).toBe("final");
     } finally { vi.useRealTimers(); }
+  });
+
+  it("cannot resurrect a rejected draft after an in-flight provider ignores cancellation", async () => {
+    let finish!: (value: unknown) => void;
+    const delayed = new Promise<unknown>((resolve) => { finish = resolve; });
+    const cache = new Map();
+    const onGenerated = vi.fn();
+    const generator = vi.fn(async () => delayed);
+    const resolver = new LiveGlyphResolver({ cache, onGenerated, generator });
+    resolver.resolve("dragon");
+    await vi.waitFor(() => expect(generator).toHaveBeenCalledOnce());
+    resolver.reject("dragon");
+    finish(glyph);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(resolver.approve("dragon")).toBeUndefined();
+    expect(cache.has("dragon")).toBe(false);
+    expect(onGenerated).not.toHaveBeenCalled();
+  });
+
+  it("does not publish an old provider's result after the generator changes", async () => {
+    let finish!: (value: unknown) => void;
+    const delayed = new Promise<unknown>((resolve) => { finish = resolve; });
+    const onGenerated = vi.fn();
+    const generator = vi.fn(async () => delayed);
+    const resolver = new LiveGlyphResolver({ onGenerated, generator });
+    resolver.resolve("dragon");
+    await vi.waitFor(() => expect(generator).toHaveBeenCalledOnce());
+    resolver.setGenerator(undefined);
+    finish(glyph);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(resolver.approve("dragon")).toBeUndefined();
+    expect(onGenerated).not.toHaveBeenCalled();
+  });
+
+  it("rejects an in-flight edit without letting the old edit become reusable", async () => {
+    const initial: Stroke = { part: "outline", color: "#2f3e46", pts: [[8, 8], [42, 8], [42, 42], [8, 8]] };
+    const resolver = new LiveGlyphResolver({ generator: async () => ({ strokes: [initial] }) });
+    resolver.resolve("griffin");
+    await vi.waitFor(() => expect(resolver.hasEditableStrokes("griffin")).toBe(true));
+    let finish!: (value: unknown) => void;
+    const delayed = new Promise<unknown>((resolve) => { finish = resolve; });
+    const editor = vi.fn(async () => delayed);
+    const editing = resolver.editGlyph("griffin", "add wings", editor);
+    await vi.waitFor(() => expect(editor).toHaveBeenCalledOnce());
+    expect(await resolver.editGlyph("griffin", "add horns", editor)).toBe(false);
+    resolver.reject("griffin");
+    finish({ strokes: [initial] });
+    expect(await editing).toBe(false);
+    expect(resolver.approve("griffin")).toBeUndefined();
+    expect(resolver.hasEditableStrokes("griffin")).toBe(false);
   });
 });

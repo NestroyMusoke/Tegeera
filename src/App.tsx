@@ -93,6 +93,17 @@ function App() {
   const remoteRequest = useRef<AbortController | null>(null);
   const remoteRequestSequence = useRef(0);
   const scene = history.at(-1) ?? initialScene;
+  useEffect(() => {
+    const arrived = scene.entities.flatMap((entity) => {
+      const noun = glyphKey(entity.label ?? "");
+      const glyph = entity.kind === "generic" ? glyphResolver.current!.draftFor(noun) : undefined;
+      return glyph ? [{ noun, glyph, origin: "runtime" as const }] : [];
+    });
+    if (arrived.length) setPendingGlyphReview((current) => {
+      const unseen = arrived.filter(({ noun }) => !current.some((item) => item.noun === noun));
+      return unseen.length ? [...current, ...unseen].slice(-30) : current;
+    });
+  }, [scene]);
   const visualScene = useMemo<SceneState>(() => ({
     ...scene,
     entities: scene.entities.map((entity) => {
@@ -565,8 +576,14 @@ function App() {
             </svg>
             <span>{noun}</span>
             <button type="button" onClick={() => {
-              glyphCache.current.set(noun, glyph);
-              void rememberGlyph(noun, glyph).then((saved) => {
+              const approved = origin === "runtime" ? glyphResolver.current!.approve(noun) : glyph;
+              if (!approved) {
+                setGlyphIssue(`The ${noun} draft is no longer available. Please generate it again.`);
+                setPendingGlyphReview((current) => current.filter((item) => item.noun !== noun));
+                return;
+              }
+              glyphCache.current.set(noun, approved);
+              void rememberGlyph(noun, approved).then((saved) => {
                 if (!saved) setGlyphIssue(`The ${noun} doodle is kept for this session, but this browser could not save it for later.`);
               });
               setPendingGlyphReview((current) => current.filter((item) => item.noun !== noun));

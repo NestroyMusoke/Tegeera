@@ -50,7 +50,10 @@ With a **hosted AI service** configured, NVIDIA's Nemotron 3 Super model is the 
 
 Validated runtime strokes remain session drafts until the user explicitly keeps
 them; shape validation alone cannot prove that they resemble the requested noun.
-Only approved drafts are saved on that device. Previously auto-saved, unreviewed
+Drafts can be previewed in the current scene but are not promoted to the reusable
+or persistent cache. Rejecting a draft cancels in-flight generation and editing,
+so an older response cannot silently restore it. Only approved drafts are saved
+on that device. Previously auto-saved, unreviewed
 artwork is ignored on upgrade. The shipped offline pack has a separate provenance
 and visual-approval gate and is still empty while curation begins. Model-generated
 strokes and editing require a reachable model; the existing scene remains usable
