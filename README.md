@@ -121,7 +121,7 @@ The current checkpoint is reproducible from this repository:
 | Formal external classroom review | **Pending**; local visual fixtures are ready |
 | Local SVG-ready benchmark | **47.28 ms p95** over 834 warmed samples in the latest full run; excludes speech, browser paint, and Android scheduling |
 | Production JavaScript | Guardrailed at **500 KiB** per chunk; largest current chunk **389.34 KiB** |
-| Visual-review output | **47 fixtures**, including a 25-scene implemented-case review station and an unseen-noun procedural scene |
+| Visual-review output | **49 fixtures**, including a 25-scene implemented-case review station, an unseen-noun procedural scene, and single-subject phone previews |
 
 The strict score is intentionally lower than the automated-ready score. Code can prove that required concepts, relationships, visual cues, and validation gates exist. It cannot declare its own drawings beautiful or classroom-ready. Formal external classroom review remains a release gate.
 

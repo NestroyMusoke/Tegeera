@@ -55,12 +55,14 @@ visual inspection remains essential.
 
 Runtime model glyphs are separate from the shipped pack. The non-blocking
 resolver returns a sticker immediately, generates at most two glyphs in parallel,
-times out after 12 seconds, streams complete validated point-strokes as they
-arrive, and caches only compiled schema-validated glyphs in IndexedDB. A short
+times out after 12 seconds, and streams complete validated point-strokes as they
+arrive. Finished model output stays a session draft until the user presses
+**Keep this doodle**; only then may it enter the reusable and IndexedDB caches.
+Rejecting a draft cancels old generation or editing requests. A short
 edit sends the current in-memory stroke list and returns bounded add/replace/
 remove operations; it never accepts executable code or unrestricted SVG.
-Those cached glyphs are **not** human-approved or shipped as part of the offline
-pack. Partial speech can speculatively prefetch nouns; Prepare a lesson asks a
+Those device-cached glyphs are user-approved for reuse on that device, but are
+**not** reviewed for the public offline pack. Partial speech can speculatively prefetch nouns; Prepare a lesson asks a
 planner for up to 30 likely nouns, then queues them. Both can incur API usage.
 No API key, transcript, or raw model response is stored in the glyph cache.
 

@@ -130,9 +130,8 @@ function Generic({ entity }: EntityRendererProps) {
     <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="65">{emoji}</text>
   </g>;
   return <g data-symbol-id="honest-sticker" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true">
-    <path className="doodle-stroke entity-color-fill" d="M-43-50 Q-3-55 39-48 Q47-10 40 39 Q3 48-40 41 Q-47 2-43-50 Z" />
-    <path className="accent-stroke" d="M-23-17 Q0-26 23-16 M-23 1 Q-3-6 18 1 M-23 18 Q-9 13 7 17" />
-    <path className="doodle-detail" d="M31-47 Q45-36 40-23 Q28-30 31-47 Z" />
+    <rect className="unknown-glyph-outline" x="-39" y="-42" width="78" height="84" rx="19" />
+    <text className="unknown-glyph-mark" x="0" y="15" textAnchor="middle" aria-hidden="true">?</text>
   </g>;
 }
 

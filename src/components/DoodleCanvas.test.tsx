@@ -36,6 +36,34 @@ describe("motion SVG rendering", () => {
   });
 });
 
+describe("phone overview framing", () => {
+  it("centers a lone subject but keeps a multi-object relationship entirely in view", () => {
+    const single = {
+      ...initialScene, revision: 1,
+      entities: [{ id: "book-1", kind: "book" as const, label: "yellow book", x: 50, y: 50,
+        scale: 1, direction: "right" as const, highlighted: false }]
+    };
+    const lone = renderToStaticMarkup(<DoodleCanvas scene={single} />);
+    expect(lone).toContain('data-overview-framing="single-subject"');
+    expect(lone).toContain('viewBox="340 228.8 320 198.4"');
+    expect(lone).toContain("yellow book");
+    const related = renderToStaticMarkup(<DoodleCanvas scene={run("A car moves toward a person")} />);
+    expect(related).toContain('data-overview-framing="full-scene"');
+    expect(related).toContain('viewBox="0 0 1000 620"');
+  });
+
+  it("clamps edge subjects inside the original board without changing their coordinates", () => {
+    for (const x of [6, 94]) {
+      const scene = { ...initialScene, revision: 1, entities: [{ id: `edge-${x}`, kind: "generic" as const,
+        label: "unknown device", x, y: 12, scale: 1, direction: "right" as const, highlighted: false }] };
+      const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+      expect(html).toContain('data-overview-framing="single-subject"');
+      expect(html).toContain(`transform="translate(${x * 10} 74.4) scale(1)"`);
+      expect(html).toContain(`viewBox="${x === 6 ? 0 : 680} 0 320 198.4"`);
+    }
+  });
+});
+
 describe("visible ownership groups", () => {
   it("renders one readable card per owner with the exact items, outside the clipped canvas", () => {
     const scene = run("Three students each have two books");

@@ -47,6 +47,15 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const inspecting = detail && scene.entities.length > 0;
   const focusedId = scene.context?.subjectIds[0];
   const focused = scene.entities.find((entity) => entity.id === focusedId) ?? scene.entities[0];
+  const singleSubject = scene.entities.length === 1 && !(scene.relations?.length)
+    && (!focused?.visualRole || focused.visualRole === "object");
+  const singleViewWidth = 320;
+  const singleViewHeight = singleViewWidth * 620 / 1000;
+  const singleViewX = focused ? Math.max(0, Math.min(1000 - singleViewWidth, focused.x * 10 - singleViewWidth / 2)) : 0;
+  const singleViewY = focused ? Math.max(0, Math.min(620 - singleViewHeight, focused.y * 6.2 + 18 - singleViewHeight / 2)) : 0;
+  const overviewViewBox = singleSubject
+    ? `${singleViewX} ${singleViewY} ${singleViewWidth} ${singleViewHeight}`
+    : "0 0 1000 620";
   const spokenEntityLabels = scene.entities.slice(0, 8).map((entity) => {
     const label = entity.label ?? entity.kind;
     return entity.color && !label.startsWith(`${entity.color} `) ? `${entity.color} ${label}` : label;
@@ -74,7 +83,8 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
       <div ref={viewport} className="canvas-viewport" tabIndex={inspecting ? 0 : undefined} role={inspecting ? "region" : undefined} aria-label={inspecting ? "Scrollable drawing detail" : undefined}>
       <svg
         className="doodle-canvas"
-        viewBox="0 0 1000 620"
+        viewBox={inspecting ? "0 0 1000 620" : overviewViewBox}
+        data-overview-framing={singleSubject ? "single-subject" : "full-scene"}
         role="img"
         aria-label={
           scene.entities.length

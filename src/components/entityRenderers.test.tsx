@@ -51,6 +51,15 @@ describe("entity renderer registry", () => {
     expect(rainfall).toContain('data-primitive="cloud"');
     expect(rainfall).toContain('data-primitive="droplet"');
     expect(rainfall).toContain("symbol-cue");
+    expect(rainfall).not.toContain("symbol-frame");
+    const plant = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic", "plant-1"), label: "plant" }} />);
+    expect(plant).toContain('data-primitive="plant"');
+    expect(plant).toContain("scale(1.05)");
+    expect(plant).not.toContain("symbol-frame");
+    const sunlight = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic", "sun-1"), label: "sunlight" }} />);
+    expect(sunlight).toContain('data-primitive="sun"');
+    expect(sunlight).toContain('data-primitive="rays"');
+    expect(sunlight).not.toContain("symbol-frame");
   });
 
   it("keeps unsupported concepts as honest neutral stickers", () => {
@@ -58,6 +67,8 @@ describe("entity renderer registry", () => {
     expect(html).toContain('data-symbol-id="honest-sticker"');
     expect(html).toContain('data-glyph-source="sticker"');
     expect(html).toContain('data-symbol-fallback="true"');
+    expect(html).toContain('class="unknown-glyph-outline"');
+    expect(html).toContain('class="unknown-glyph-mark"');
     expect(html).not.toContain(">C</text>");
   });
 

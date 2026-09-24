@@ -45,6 +45,12 @@ const result = await build({
       })) };
       return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
     }
+    export function renderSingleSubject(kind, label, color) {
+      const scene = { sceneId: 'single-subject-review', revision: 1, relations: [], entities: [
+        { id: 'subject', kind, label, color, x: 50, y: 50, scale: 1.1, direction: 'right', highlighted: false }
+      ] };
+      return renderToStaticMarkup(<DoodleCanvas scene={scene}/>);
+    }
     export function renderEmojiPreview() {
       const labels = ['dragon', 'volcano', 'cell', 'constitutional legitimacy'];
       const scene = { sceneId: 'emoji-preview', revision: 1, relations: [], entities: labels.map((label, index) => ({
@@ -88,7 +94,7 @@ const result = await build({
 });
 const bundlePath = resolve(output, "renderer.cjs");
 await writeFile(bundlePath, result.outputFiles[0].text);
-const { render, renderPerformance, renderSymbolAtlas, renderEmojiPreview, renderUniversal } = createRequire(import.meta.url)(bundlePath);
+const { render, renderPerformance, renderSymbolAtlas, renderSingleSubject, renderEmojiPreview, renderUniversal } = createRequire(import.meta.url)(bundlePath);
 const gold = JSON.parse(await readFile("evaluation/independent-scene-gold-v1.json", "utf8"));
 // Inspect the settled frame; animation timing needs separate interaction checks.
 const css = await readFile("src/styles.css", "utf8") + `
@@ -147,6 +153,8 @@ for (const [name, commands] of Object.entries(cases)) {
 }
 await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Composable performance protocol</h1>${renderPerformance()}</main></body></html>`);
 await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
+await writeFile(resolve(output, "single-book.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Single-subject original rig</h1>${renderSingleSubject('book', 'yellow book', 'yellow')}</main></body></html>`);
+await writeFile(resolve(output, "single-dragon.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Single-subject temporary preview</h1>${renderSingleSubject('generic', 'dragon')}</main></body></html>`);
 await writeFile(resolve(output, "emoji-preview.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Instant preview: emoji matches versus honest labels</h1>${renderEmojiPreview()}</main></body></html>`);
 await writeFile(resolve(output, "universal-scene.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Universal procedural scene — unseen nouns</h1>${renderUniversal()}</main></body></html>`);
 await writeFile(resolve(output, "phone.html"), '<!doctype html><html><body style="margin:0;background:#fff"><iframe title="390-pixel phone viewport" src="individual.html" style="display:block;width:390px;height:1200px;border:0"></iframe></body></html>');
@@ -173,7 +181,7 @@ function refresh(){document.getElementById('status').textContent=Object.keys(dec
 for(const card of cards){for(const button of card.querySelectorAll('[data-decision]'))button.addEventListener('click',()=>{const id=Number(card.dataset.reviewCase);const decision=button.dataset.decision;decisions[id]={decision,note:card.querySelector('textarea').value};card.classList.remove('approved','rejected');card.classList.add(decision);card.querySelector('[data-current]').textContent=decision;refresh();});}
 document.getElementById('export').addEventListener('click',()=>{for(const card of cards){const id=Number(card.dataset.reviewCase);if(decisions[id])decisions[id].note=card.querySelector('textarea').value;}const rejectedWithoutNote=Object.entries(decisions).find(([,value])=>value.decision==='rejected'&&!value.note.trim());if(rejectedWithoutNote){alert('Case '+rejectedWithoutNote[0]+' needs a rejection note.');return;}const evidence={schemaVersion:'1.0.0',fixtureRevision:${JSON.stringify(fixtureRevision)},reviewedAt:new Date().toISOString(),reviewer:document.getElementById('reviewer').value,device:document.getElementById('device').value,viewportPx:390,reducedMotionChecked:document.getElementById('reduced').checked,cases:decisions};if(!evidence.reviewer||!evidence.device||Object.keys(decisions).length!==cards.length){alert('Enter reviewer and device, and decide every case.');return;}const blob=new Blob([JSON.stringify(evidence,null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='tegeera-human-visual-review.json';link.click();URL.revokeObjectURL(link.href);});
 </script></body></html>`);
-console.log(`Rendered ${Object.keys(cases).length + 3} real-component fixtures in ${output}`);
+console.log(`Rendered ${Object.keys(cases).length + 5} real-component fixtures in ${output}`);
 
 // Exercise the real App in a browser, without adding test-only props to production.
 const appBundle = await build({

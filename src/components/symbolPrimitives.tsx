@@ -20,14 +20,6 @@ const primitiveRenderers: Readonly<Record<SymbolPrimitive, PrimitiveRenderer>> =
   water: () => <g><path className="doodle-stroke" d="M-37-6 Q-25-17-13-6 T11-6 T35-6 M-37 10 Q-25-1-13 10 T11 10 T35 10 M-30 26 Q-18 16-6 26 T18 26" /></g>
 };
 
-function categoryFrame(category: VisualCategory) {
-  if (category === "energy") return <path className="symbol-frame" d="M0-52 L12-42 L28-45 L34-30 L49-22 L43-6 L51 8 L38 20 L36 38 L18 39 L4 51 L-10 42 L-28 46 L-35 30 L-49 22 L-43 5 L-51-9 L-38-20 L-35-38 L-17-39 Z" />;
-  if (category === "nature" || category === "weather") return <path className="symbol-frame" d="M0-52 C34-55 50-28 44-3 C51 24 25 48-2 43 C-31 50-51 24-44-5 C-51-31-27-52 0-52Z" />;
-  if (category === "force") return <path className="symbol-frame" d="M0-53 L47-28 L42 28 L0 49 L-42 28 L-47-28 Z" />;
-  if (category === "state") return <path className="symbol-frame" d="M-42-44 L43-38 L38 42 L-45 37 Z" />;
-  return <rect className="symbol-frame" x="-45" y="-48" width="90" height="91" rx="19" />;
-}
-
 function CapabilityCue({ capability }: { capability: VisualCapability }) {
   if (capability === "rises") return <path className="symbol-cue" d="M-25 43 V22 M-32 29 L-25 21 L-18 29 M24 43 V17 M17 24 L24 16 L31 24" />;
   if (capability === "falls") return <path className="symbol-cue" d="M-22 20 V42 M-29 35 L-22 43 L-15 35 M23 17 V42 M16 35 L23 43 L30 35" />;
@@ -53,15 +45,14 @@ export function ComposedSymbol({
   const overlays = primitives.filter((primitive) => primitive === "rays");
   const contents = primitives.filter((primitive) => primitive !== "rays");
   const placements = contents.length === 1
-    ? [{ x: 0, y: -2, scale: 0.76 }]
+    ? [{ x: 0, y: -2, scale: 1.05 }]
     : contents.length === 2
-      ? [{ x: -17, y: -4, scale: 0.53 }, { x: 20, y: -4, scale: 0.45 }]
-      : [{ x: 0, y: -18, scale: 0.45 }, { x: -22, y: 18, scale: 0.36 }, { x: 22, y: 18, scale: 0.36 }];
+      ? [{ x: -19, y: -4, scale: 0.7 }, { x: 23, y: -4, scale: 0.58 }]
+      : [{ x: 0, y: -19, scale: 0.58 }, { x: -24, y: 20, scale: 0.46 }, { x: 24, y: 20, scale: 0.46 }];
   return <g className={`composed-symbol symbol-${category}`} transform={`rotate(${rotation})`}>
-    {categoryFrame(category)}
     {overlays.map((primitive, index) => {
       const Renderer = primitiveRenderers[primitive];
-      return <g key={`${primitive}-overlay-${index}`} data-primitive={primitive} data-primitive-role="overlay" transform="translate(0 -2) scale(.78)"><Renderer /></g>;
+      return <g key={`${primitive}-overlay-${index}`} data-primitive={primitive} data-primitive-role="overlay" transform="translate(0 -2) scale(1)"><Renderer /></g>;
     })}
     {contents.map((primitive, index) => {
       const placement = placements[index];
