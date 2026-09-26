@@ -5,7 +5,7 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 ## What is implemented
 
 - Android-first Capacitor app; local speech/text, deterministic scene compiler, SVG renderer, Undo, and accessible spoken scene summary.
-- Local supported constructions remain fast and work without network access. The latest local SVG-ready regression run measured p95 52.84 ms across 834 observations, **excluding speech recognition, browser commit/paint, and Android device scheduling**. The added multi-object guide has a measurable cost; phone hardware remains untested.
+- Local supported constructions remain fast and work without network access. An isolated local SVG-ready regression run in this checkpoint measured p95 37.59 ms across 834 observations, **excluding speech recognition, browser commit/paint, and Android device scheduling**. This varies with host load and is not a phone latency claim.
 - A separate Node 24 service is wired for NVIDIA Nemotron 3 Super **on Nebius Token Factory** for unsupported scene language, noun-stroke generation, glyph editing, and lesson-noun prefetch. Credentials stay on the service. Direct NVIDIA Catalog and OpenRouter providers remain development fallbacks, not qualifying hackathon paths by themselves.
 - The Android and Pages workflows now build with the same public `TEGEERA_INTERPRETER_URL` variable; the API key is never a client build variable.
 - Client and service validate schema, bounds, and references. On failure, the existing accepted scene remains in place. This is a safety property, **not** proof of semantic correctness or doodle quality.
@@ -13,7 +13,8 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 - Generated noun glyphs remain visible session drafts until explicitly approved. Rejected or superseded in-flight generations and edits cannot enter the reusable cache; approved artwork alone is persisted on the device.
 - Reusable symbol drawings now render without category badge frames, and lone subjects use a tighter overview on phones. The single-subject phone screenshot was inspected.
 - Multi-object scenes now keep a complete overview and offer overlapping left/middle/right phone views in a taller canvas. Three part-whole phone crops were visually inspected; cropping is explicit and never changes the semantic scene. Real-device readability is still unverified.
-- Dense hosted scenes no longer shrink every object to 72% of its normal scale, and a lightweight object-name guide stays readable outside the SVG viewport. This improves legibility without duplicating every glyph, but does not repair incomplete meaning or physically attach part-whole artwork.
+- Dense hosted scenes no longer shrink every object to 72% of its normal scale, and a lightweight object-name guide stays readable outside the SVG viewport. This improves legibility without duplicating every glyph, but does not repair incomplete meaning by itself.
+- A new reusable part-whole assembly layer places recognizable part glyphs against their whole. Complete hosted input → part → whole graphs now use the registered channel layout, so arrows no longer run across the wrong object merely because the model proposed scattered coordinates. Unknown glyphs do not acquire a pretend attachment. This is schematic composition, **not** proof of anatomical accuracy; the latest saved-response review is `.visual-check/hosted-review-v4-staged/review.html` and still needs human inspection.
 - The optional model service now rejects forged forwarded-IP rate-limit bypasses, caps concurrent work and outbound attempts per UTC day, bounds prompt hints, and cancels provider work after a client disconnect. These are per-process prototype guards, not a provider billing limit or distributed quota.
 - Hosted plans cannot bypass the blueprint boundary with direct DoodleScript. Explicitly negated claims and missing or swapped stated colours fail closed before changing a drawing. This checks only those claims; general semantic completeness and visual quality remain unproven.
 
@@ -21,7 +22,7 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 
 | Check | Result | Meaning |
 | --- | --- | --- |
-| Client suite | 473 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
+| Client suite | 474 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
 | Service suite | 17 passing | Mocked Nebius endpoint and key isolation, bounded schema correction, invalid output, HTTP origin/health, usage guards, provider throttling, and disconnect cancellation. |
 | Offline artwork intake | 12 passing | Bounded Quick, Draw! sampling, SVG safety, explicit review, provenance and attribution. No candidate auto-ships. |
 | Hosted-planner gold and real-render gate | 12 passing | Saved blueprints run through the actual compiler and canvas; semantic completeness cannot count as visual success without required SVG evidence and human review. Live provider pilot results are reported separately. |
@@ -55,7 +56,9 @@ After restarting an isolated loopback-only service with the general schema-error
 | #2 circulation | 3/4 concepts and 0/3 links; oxygen missing despite 0.9 confidence. | 7616 ms | 1 / 1964 |
 | #11 force/friction | 3/4 concepts and 1/3 links; push identity missing despite 0.9 confidence. | 22281 ms | 2 / 6164 |
 
-Thus the **second pilot is 1/3 semantic-ready, 2/3 false-confident, and 0/3 visually approved**. The renderer's machine-readable cue check succeeds for #1, but that is not an artistic pass: the root and leaf remain separate drawn objects, not attached anatomy, and the phone overview still needs human inspection. Cases #2 and #11 fail the required visual grammar. The bounded retry made #11 structurally valid at a substantial latency/token cost, without making it semantically complete. Reported token counts are provider metadata, not a billing estimate. Do not extrapolate these three examples to broad accuracy.
+Thus the **second pilot is 1/3 semantic-ready, 2/3 false-confident, and 0/3 visually approved**. At capture time, the renderer's machine-readable cue check succeeded for #1, but the root and leaf appeared only as separate objects rather than attached anatomy. Cases #2 and #11 fail the required visual grammar. The bounded retry made #11 structurally valid at a substantial latency/token cost, without making it semantically complete. Reported token counts are provider metadata, not a billing estimate. Do not extrapolate these three examples to broad accuracy.
+
+After this pilot, the general channel layout stages #1's sunlight → leaf → plant and water → root → plant paths in separate rows, and the assembly layer places small part glyphs at the plant's boundary. I inspected static PNGs of all three saved scenes: #1 is clearer, while #2 still shows unrecognized heart/blood placeholders and no return loop; #11 still shows no force diagram or credible rough floor. The original pilot scores above do not change: no new provider request or human approval was made for this compiler/renderer revision. A static PNG is not an Android screenshot or a human visual-approval record.
 
 ## Next gates, in order
 

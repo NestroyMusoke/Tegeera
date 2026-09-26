@@ -176,6 +176,37 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
             key={entity.id}
           />;
         })}
+        {scene.relations?.filter((relation) => relation.kind === "partOf").map((relation) => {
+          const part = scene.entities.find((entity) => entity.id === relation.sourceIds[0]);
+          const whole = scene.entities.find((entity) => entity.id === relation.targetIds[0]);
+          if (!part || !whole || part.visualRole || whole.visualRole) return null;
+          const recognizablePart = Boolean(part.glyph) || part.kind !== "generic"
+            || !resolveVisualSymbol(part.label ?? part.kind).fallback;
+          const recognizableWhole = Boolean(whole.glyph) || whole.kind !== "generic"
+            || !resolveVisualSymbol(whole.label ?? whole.kind).fallback;
+          if (!recognizablePart || !recognizableWhole) return null;
+          const siblings = (scene.relations ?? []).filter((other) => other.kind === "partOf"
+            && other.targetIds[0] === whole.id && scene.entities.some((entity) => entity.id === other.sourceIds[0]))
+            .sort((a, b) => {
+              const first = scene.entities.find((entity) => entity.id === a.sourceIds[0])!;
+              const second = scene.entities.find((entity) => entity.id === b.sourceIds[0])!;
+              return first.y - second.y || first.x - second.x || a.id.localeCompare(b.id);
+            });
+          const index = siblings.findIndex((other) => other.id === relation.id);
+          const side = part.x <= whole.x ? -1 : 1;
+          const offsetY = siblings.length === 1 ? Math.sign(part.y - whole.y) * 34
+            : (index - (siblings.length - 1) / 2) * 68;
+          const x = whole.x * 10 + side * 44;
+          const y = whole.y * 6.2 + offsetY;
+          return <g key={`attached-${relation.id}`} className="part-whole-assembly" aria-hidden="true"
+            data-composition="attached-part" data-part-id={part.id} data-whole-id={whole.id}
+            data-visual-cue="attached-part">
+            <path className="doodle-detail" d={`M${whole.x * 10} ${whole.y * 6.2} Q${x} ${whole.y * 6.2} ${x} ${y}`} fill="none" />
+            <g transform={`translate(${x} ${y}) scale(${Math.min(0.72, part.scale * 0.72)})`}>
+              <EntityGlyph entity={part} />
+            </g>
+          </g>;
+        })}
       </svg>
       </div>
       {!scene.entities.length && (

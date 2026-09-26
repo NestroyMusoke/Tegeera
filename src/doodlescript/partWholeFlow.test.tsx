@@ -40,9 +40,13 @@ describe("registered part-whole flow grammar", () => {
   it("renders the semantic parts, flow directions and required reusable cues", () => {
     const { scene } = run("A plant absorbs water via its roots and sunlight via its leaves.");
     const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
-    for (const cue of ["visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray"]) {
+    for (const cue of ["visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray", "attached-part"]) {
       expect(html).toContain(`data-visual-cue="${cue}"`);
     }
+    expect(html.match(/data-composition="attached-part"/g)).toHaveLength(2);
+    const id = (label: string) => scene.entities.find((entity) => entity.label === label)!.id;
+    expect(html).toContain(`data-part-id="${id("roots")}" data-whole-id="${id("plant")}"`);
+    expect(html).toContain(`data-part-id="${id("leaves")}" data-whole-id="${id("plant")}"`);
     expect(html).toContain('data-relation-layout="part-whole-flow"');
     expect(html).toContain('data-layout-topology="part-whole"');
     expect(html).toContain('aria-label="water flows into roots"');

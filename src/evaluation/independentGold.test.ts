@@ -156,7 +156,7 @@ describe("independent semantic-scene gold annotations", () => {
   it("requires explicit human approval after its real grammar and cues are observed", () => {
     const observation = observeCase(1);
     expect(new Set(observation.visualCueIds)).toEqual(new Set([
-      "visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray"
+      "visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray", "attached-part"
     ]));
     expect(observation.visualGrammarId).toBe("part-whole-flow");
     expect(evaluateIndependentGold(teacherCases, gold, { 1: observation }).results.find(({ id }) => id === 1))

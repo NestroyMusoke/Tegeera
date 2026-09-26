@@ -106,8 +106,14 @@ describe("universal visual scene compiler", () => {
     expect(script.commands.filter((command) => command.action === "relate").map((command) =>
       command.action === "relate" ? command.relation.kind : null)).toEqual(["partOf", "partOf", "flowsInto", "illuminates"]);
     expect(validateDoodleScript(script, initialScene).ok).toBe(true);
-    const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
-    for (const cue of ["visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray"]) {
+    const staged = applyDoodleScript(initialScene, script);
+    const at = (label: string) => staged.entities.find((entity) => entity.label === label)!;
+    expect(at("water").x).toBeLessThan(at("roots").x);
+    expect(at("roots").x).toBeLessThan(at("plant").x);
+    expect(at("sunlight").x).toBeLessThan(at("leaves").x);
+    expect(at("leaves").x).toBeLessThan(at("plant").x);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={staged} />);
+    for (const cue of ["visible-roots", "soil-boundary", "water-entry-arrow", "sun-symbol", "leaf-targeted-ray", "attached-part"]) {
       expect(html).toContain(cue);
     }
     expect(html).toContain('data-relation-layout="part-whole-flow"');
@@ -121,8 +127,35 @@ describe("universal visual scene compiler", () => {
       connections: [{ from: "wheel", to: "vehicle", label: "part of", kind: "partOf" }]
     }, initialScene, "A wheel is part of a vehicle");
     expect(validateDoodleScript(other, initialScene).ok).toBe(true);
-    expect(renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, other)} />))
-      .toContain('data-relation-layout="part-whole-flow"');
+    const genericHtml = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, other)} />);
+    expect(genericHtml).toContain('data-relation-layout="part-whole-flow"');
+    expect(genericHtml).not.toContain('data-composition="attached-part"');
+  });
+
+  it("stages the same complete topology for unfamiliar input, part, and whole nouns", () => {
+    const plan = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.88,
+      objects: [
+        { id: "unit", label: "machine", kind: "generic", x: 50, y: 50 },
+        { id: "port-a", label: "inlet", kind: "generic", x: 20, y: 30 },
+        { id: "port-b", label: "vent", kind: "generic", x: 80, y: 70 },
+        { id: "feed-a", label: "fuel", kind: "generic", x: 80, y: 30 },
+        { id: "feed-b", label: "air", kind: "generic", x: 20, y: 70 }
+      ],
+      connections: [
+        { from: "port-a", to: "unit", label: "part of", kind: "partOf" },
+        { from: "port-b", to: "unit", label: "part of", kind: "partOf" },
+        { from: "feed-a", to: "port-a", label: "flows into", kind: "flowsInto" },
+        { from: "feed-b", to: "port-b", label: "flows into", kind: "flowsInto" }
+      ]
+    };
+    const script = compileUniversalScene(plan, initialScene, "A machine takes in fuel through its inlet and air through its vent");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const byLabel = new Map(applyDoodleScript(initialScene, script).entities.map((entity) => [entity.label, entity]));
+    expect(byLabel.get("fuel")!.x).toBeLessThan(byLabel.get("inlet")!.x);
+    expect(byLabel.get("air")!.x).toBeLessThan(byLabel.get("vent")!.x);
+    expect(byLabel.get("inlet")!.x).toBeLessThan(byLabel.get("machine")!.x);
+    expect(byLabel.get("vent")!.x).toBeLessThan(byLabel.get("machine")!.x);
   });
 
   it("does not let a model relabel a typed visual meaning", () => {

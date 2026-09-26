@@ -8,6 +8,8 @@ import {
   type SceneState
 } from "../doodlescript/schema";
 import { glyphKey, glyphSchema, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
+import { planPartWholeFlow } from "../doodlescript/partWholeFlow";
+import { applyDoodleScript } from "../doodlescript/scene";
 
 export interface UniversalGlyphSources {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
@@ -232,9 +234,36 @@ export function compileUniversalScene(
       predicate: connection.label.trim()
     } });
   });
-  return {
+  const script: DoodleScript = {
     schemaVersion: "2.27.0", sceneId: scene.sceneId, revision: scene.revision + 1,
     confidence: blueprint.confidence, sourceText, commands,
     context: { subjectIds: createdIds.slice(0, 1), objectIds: createdIds.slice(1) }
   };
+  // A complete input → part → whole graph has a shared layout grammar. Preserve
+  // the model's entities and meanings, but stage its channels in reading order.
+  // Partial or mixed graphs keep the ordinary universal layout instead.
+  const parts = blueprint.connections.filter((connection) => connection.kind === "partOf");
+  if (blueprint.mode !== "replace" || !parts.length || parts.length > 3
+    || blueprint.connections.length !== parts.length * 2
+    || parts.some((part) => part.to !== parts[0].to)) return script;
+  const channels = parts.map((part) => {
+    const incoming = blueprint.connections.filter((connection) =>
+      (connection.kind === "flowsInto" || connection.kind === "illuminates") && connection.to === part.from);
+    return incoming.length === 1 ? { inputId: incoming[0].from, partId: part.from,
+      flowPredicate: incoming[0].kind as "flowsInto" | "illuminates" } : null;
+  });
+  if (channels.some((channel) => !channel)) return script;
+  const completeChannels = channels as { inputId: string; partId: string; flowPredicate: "flowsInto" | "illuminates" }[];
+  const references = [parts[0].to, ...completeChannels.flatMap(({ inputId, partId }) => [inputId, partId])];
+  if (new Set(references).size !== references.length || references.length !== blueprint.objects.length) return script;
+  completeChannels.sort((a, b) => blueprint.objects.find((object) => object.id === a.partId)!.y
+    - blueprint.objects.find((object) => object.id === b.partId)!.y);
+  const mapped = completeChannels.map(({ inputId, partId, flowPredicate }) => ({
+    inputId: idMap.get(inputId)!, partId: idMap.get(partId)!, flowPredicate
+  }));
+  const staged = planPartWholeFlow(applyDoodleScript(scene, script), idMap.get(parts[0].to)!, mapped, new Set(createdIds));
+  if (!staged) return script;
+  const moveById = new Map(staged.map(({ targetId, x, y }) => [targetId, { x, y }] as const));
+  return { ...script, commands: commands.map((command) => command.action === "create" && moveById.has(command.entity.id)
+    ? { ...command, entity: { ...command.entity, ...moveById.get(command.entity.id)! } } : command) };
 }

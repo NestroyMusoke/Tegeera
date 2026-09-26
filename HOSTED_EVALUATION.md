@@ -54,10 +54,18 @@ start "" ".visual-check\hosted-review\review.html"
 
 This produces a 390-pixel HTML view for each evaluated case using the real `compileUniversalScene` and `DoodleCanvas` code, plus `manifest.json` with detected SVG cues and relation layout. Missing cues and wrong layout are failures even when the blueprint's concepts and links score perfectly. The generated review is ignored by Git; it may contain teacher statements and model output. Do not publish it without permission.
 
+For a quick static SVG inspection, render any saved case to a PNG without calling the model:
+
+```bat
+node scripts/render-review-svg.mjs .visual-check\hosted-review\case-1.html .visual-check\hosted-review\case-1-svg.png
+```
+
+The PNG freezes write-on strokes so the shapes can be inspected. It is **not** an Android/browser screenshot and cannot assess animation, text sizing on a real phone, or accessibility.
+
 The review page has six criteria per drawing. The HTML shows a frozen frame only: inspect animation and reduced-motion behavior separately in the running Android app before checking that criterion. Enter reviewer and device, decide each drawing, and export the JSON. Verify it against the exact rendered revision:
 
 ```bat
 npm run render:hosted-gold -- --verify "C:\path\to\tegeera-hosted-visual-review.json"
 ```
 
-`strictReady` requires a **live** model response, semantic readiness, the required SVG cues and grammar, and completed human visual review. A fixture can exercise the workflow but can never count as a live strict pass. This is a conformance gate, not a claim that machine-readable cues alone prove artistic quality. The first local Nebius Token Factory pilot had 0/3 semantic-ready. A fresh three-case comparison after general schema-error feedback reached 1/3 semantic-ready but still 2/3 false-confident. The three new drawings await visual review; 0/3 has recorded approval. The live service has not been deployed. The saved comparison is `.visual-check/hosted-gold-v2-live-report.json`; open `.visual-check/hosted-review-v2-readable-final/review.html` to review the actual rendered scenes. Even case #1's machine-readable cue pass does not prove its parts look connected or classroom-ready.
+`strictReady` requires a **live** model response, semantic readiness, the required SVG cues and grammar, and completed human visual review. A fixture can exercise the workflow but can never count as a live strict pass. This is a conformance gate, not a claim that machine-readable cues alone prove artistic quality. The first local Nebius Token Factory pilot had 0/3 semantic-ready. A fresh three-case comparison after general schema-error feedback reached 1/3 semantic-ready but still 2/3 false-confident. The three new drawings await visual review; 0/3 has recorded approval. The live service has not been deployed. The saved comparison is `.visual-check/hosted-gold-v2-live-report.json`; the latest renderer-only review is `.visual-check/hosted-review-v4-staged/review.html`. No new provider calls were made for that layout revision. Case #1 now stages both input → part → whole channels and overlays recognizable parts on the whole, but its machine-readable cue pass still does not prove classroom-ready art.
