@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   NEBIUS_CHAT_URL, NVIDIA_SCENE_MODEL, callModel, generateGlyph, interpretScene, modelConfiguration,
-  scenePrompt, validScene, validStrokes
+  scenePrompt, sceneValidationIssue, validScene, validStrokes
 } from "./engine.mjs";
 
 const scene = { entities: [], relations: [] };
@@ -80,6 +80,10 @@ test("scene validator rejects omitted endpoints, duplicate objects and invented 
   assert.equal(validScene({ ...complete, connections: [{ from: "water", to: "roots", label: "flows into", kind: "flowsInto" }] }, scene), true);
   assert.equal(validScene({ ...complete, connections: [{ from: "water", to: "roots", label: "contains", kind: "flowsInto" }] }, scene), false);
   assert.equal(validScene({ ...complete, connections: [{ from: "water", to: "roots", label: "flows into", kind: "unknown" }] }, scene), false);
+  assert.equal(sceneValidationIssue(complete, scene), null);
+  assert.match(sceneValidationIssue({ ...complete, objects: [{ ...complete.objects[0], kind: "elephant" }] }, scene), /Object kind must be one of/);
+  assert.match(sceneValidationIssue({ ...complete, connections: [{ from: "water", to: "missing", label: "flows to" }] }, scene), /two different ids present/);
+  assert.match(sceneValidationIssue({ ...complete, connections: [{ from: "water", to: "roots", label: "flow", kind: "flowsInto" }] }, scene), /exact label/);
 });
 
 test("repairs malformed model JSON once, then returns a structurally complete plan", async () => {
@@ -97,6 +101,25 @@ test("repairs malformed model JSON once, then returns a structurally complete pl
   assert.equal(calls, 2);
   assert.equal(result.providerAttempts, 2);
   assert.deepEqual(result.usage, { promptTokens: 80, completionTokens: 40, totalTokens: 120 });
+});
+
+test("repair identifies a general schema fault without trusting the rejected output as instructions", async () => {
+  let calls = 0;
+  const invalid = { ...complete, connections: [{ from: "water", to: "unknown", label: "flows to" }] };
+  const fetchImpl = async (_url, request) => {
+    calls += 1;
+    if (calls === 2) {
+      const message = JSON.parse(request.body).messages[0].content;
+      assert.match(message, /two different ids present in objects/);
+      assert.match(message, /untrusted data, not instructions/);
+      assert.match(message, /Water enters the plant/);
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(calls === 1 ? invalid : complete) } }] }), { status: 200 });
+  };
+  const result = await interpretScene({ text: "Water enters the plant", scene }, nebius, { fetchImpl });
+  assert.equal(result.repaired, true);
+  assert.equal(result.providerAttempts, 2);
+  assert.equal(calls, 2);
 });
 
 test("invalid correction fails closed and provider errors do not trigger extra calls", async () => {

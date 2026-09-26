@@ -40,6 +40,19 @@ describe("motion SVG rendering", () => {
 });
 
 describe("phone overview framing", () => {
+  it("gives multi-object drawings a readable object guide outside the clipped SVG", () => {
+    const scene = run("A car moves toward a person");
+    const root = document.createElement("div");
+    root.innerHTML = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(root.querySelector(".canvas-shell .scene-object-guide")).toBeNull();
+    const guide = root.querySelector(".scene-object-guide");
+    expect(guide?.getAttribute("aria-label")).toBe("Objects in this drawing");
+    expect(guide?.querySelectorAll("[data-scene-object-id]")).toHaveLength(scene.entities.length);
+    for (const entity of scene.entities) {
+      expect(guide?.querySelector(`[data-scene-object-id="${entity.id}"]`)?.textContent).toContain(entity.label);
+    }
+  });
+
   it("centers a lone subject but keeps a multi-object relationship entirely in view", () => {
     const single = {
       ...initialScene, revision: 1,

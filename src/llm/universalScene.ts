@@ -180,7 +180,9 @@ export function compileUniversalScene(
   }
   const positions = assignedSlots(blueprint.objects, blueprint.connections, scene, blueprint.mode === "extend");
   const sceneDensity = blueprint.objects.length + (blueprint.mode === "extend" ? scene.entities.length : 0);
-  const visualScale = sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 0.72;
+  // Eight distinct positions already have 240 scene units between columns;
+  // shrinking every glyph further made dense phone overviews unreadable.
+  const visualScale = sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 1;
   const commands: DoodleCommand[] = [];
   if (blueprint.mode === "replace") commands.push({ action: "clear" });
 

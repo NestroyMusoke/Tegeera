@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.mjs",
-    "start:local": "node --env-file=.env.local index.mjs",
+    "start:local": "node --env-file=.env.local local.mjs",
     "smoke:local": "node smoke-local.mjs",
     "test": "node --test"
   },

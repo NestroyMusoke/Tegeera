@@ -191,6 +191,14 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
       </div>
     </section>
       {children}
+      {scene.entities.length > 1 && <section className="scene-object-guide" aria-label="Objects in this drawing">
+        <h2>Objects in this drawing</h2>
+        <ul>{scene.entities.map((entity, index) => <li key={entity.id} data-scene-object-id={entity.id}>
+          <span className="scene-object-number" aria-hidden="true">{index + 1}</span>
+          <span>{entity.color && !(entity.label ?? entity.kind).startsWith(`${entity.color} `)
+            ? `${entity.color} ${entity.label ?? entity.kind}` : entity.label ?? entity.kind}</span>
+        </li>)}</ul>
+      </section>}
       {ownership.size > 0 && (
         <section className="ownership-details" aria-label="Who owns what">
           <header><h2>Who owns what</h2><p>The same scene, grouped by owner. No extra objects.</p></header>

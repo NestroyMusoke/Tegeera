@@ -193,6 +193,12 @@ button {
   font-size: 10px;
 }
 
+.scene-object-guide { margin: 16px 0 22px; }
+.scene-object-guide h2 { margin: 0 0 10px; font: 600 17px Georgia, serif; color: #344a43; }
+.scene-object-guide ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
+.scene-object-guide li { display: flex; align-items: center; gap: 9px; min-width: 0; min-height: 56px; padding: 5px 9px; border: 1px solid #d9ddd4; border-radius: 12px; background: #fbf7ed; color: #344a43; font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+.scene-object-number { display: grid; flex: 0 0 30px; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #dfece5; color: #315747; font-size: 13px; font-weight: 800; }
+
 .relationship-key {
   margin: 12px 0 28px;
   display: grid;

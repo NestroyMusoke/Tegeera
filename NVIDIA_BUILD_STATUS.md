@@ -5,7 +5,7 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 ## What is implemented
 
 - Android-first Capacitor app; local speech/text, deterministic scene compiler, SVG renderer, Undo, and accessible spoken scene summary.
-- Local supported constructions remain fast and work without network access. The latest isolated local SVG-ready regression run measured p95 17.12 ms across 834 observations, **excluding speech recognition, browser commit/paint, and Android device scheduling**.
+- Local supported constructions remain fast and work without network access. The latest local SVG-ready regression run measured p95 52.84 ms across 834 observations, **excluding speech recognition, browser commit/paint, and Android device scheduling**. The added multi-object guide has a measurable cost; phone hardware remains untested.
 - A separate Node 24 service is wired for NVIDIA Nemotron 3 Super **on Nebius Token Factory** for unsupported scene language, noun-stroke generation, glyph editing, and lesson-noun prefetch. Credentials stay on the service. Direct NVIDIA Catalog and OpenRouter providers remain development fallbacks, not qualifying hackathon paths by themselves.
 - The Android and Pages workflows now build with the same public `TEGEERA_INTERPRETER_URL` variable; the API key is never a client build variable.
 - Client and service validate schema, bounds, and references. On failure, the existing accepted scene remains in place. This is a safety property, **not** proof of semantic correctness or doodle quality.
@@ -13,6 +13,7 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 - Generated noun glyphs remain visible session drafts until explicitly approved. Rejected or superseded in-flight generations and edits cannot enter the reusable cache; approved artwork alone is persisted on the device.
 - Reusable symbol drawings now render without category badge frames, and lone subjects use a tighter overview on phones. The single-subject phone screenshot was inspected.
 - Multi-object scenes now keep a complete overview and offer overlapping left/middle/right phone views in a taller canvas. Three part-whole phone crops were visually inspected; cropping is explicit and never changes the semantic scene. Real-device readability is still unverified.
+- Dense hosted scenes no longer shrink every object to 72% of its normal scale, and a lightweight object-name guide stays readable outside the SVG viewport. This improves legibility without duplicating every glyph, but does not repair incomplete meaning or physically attach part-whole artwork.
 - The optional model service now rejects forged forwarded-IP rate-limit bypasses, caps concurrent work and outbound attempts per UTC day, bounds prompt hints, and cancels provider work after a client disconnect. These are per-process prototype guards, not a provider billing limit or distributed quota.
 - Hosted plans cannot bypass the blueprint boundary with direct DoodleScript. Explicitly negated claims and missing or swapped stated colours fail closed before changing a drawing. This checks only those claims; general semantic completeness and visual quality remain unproven.
 
@@ -20,16 +21,16 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 
 | Check | Result | Meaning |
 | --- | --- | --- |
-| Client suite | 472 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
-| Service suite | 16 passing | Mocked Nebius endpoint and key isolation, correction, invalid output, HTTP origin/health, usage guards, provider throttling, and disconnect cancellation. |
+| Client suite | 473 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
+| Service suite | 17 passing | Mocked Nebius endpoint and key isolation, bounded schema correction, invalid output, HTTP origin/health, usage guards, provider throttling, and disconnect cancellation. |
 | Offline artwork intake | 12 passing | Bounded Quick, Draw! sampling, SVG safety, explicit review, provenance and attribution. No candidate auto-ships. |
-| Hosted-planner gold and real-render gate | 10 passing | Saved blueprints run through the actual compiler and canvas; semantic completeness cannot count as visual success without required SVG evidence and human review. Live provider accuracy remains unmeasured. |
+| Hosted-planner gold and real-render gate | 12 passing | Saved blueprints run through the actual compiler and canvas; semantic completeness cannot count as visual success without required SVG evidence and human review. Live provider pilot results are reported separately. |
 | TypeScript, production bundle, Capacitor sync | Passing | Client assets compile and copy to Android. Does not compile an APK. |
 | Lint | Passing | Static source checks. |
 | Independent teacher corpus | 25/60 drawn, 1/60 held, 34/60 clarified | Drawing/clarification counts only; not visual accuracy. |
 | Strict annotated gold | 3/29 passed | Current local engine; adding an untested model does not improve this score yet. |
 | Offline approved glyph pack | 0 entries | A no-cost Quick, Draw! candidate/review pipeline exists, but nothing has passed review into the app. Long-tail doodles still depend on an optional model or labelled fallback. |
-| Live Nebius connectivity and three-case pilot | Run locally | Nemotron on Token Factory returned one valid-book blueprint and three independent-case responses. On the three cases, 0/3 semantic-ready and 0/3 visually approved. This is not a product pass. |
+| Live Nebius connectivity and three-case comparison | Run locally | After a bounded general schema-repair change, 1/3 independent cases was semantic-ready; 2/3 remained false-confident, and 0/3 has recorded visual approval. This is not a product pass. |
 | Real-device latency, APK assemble, human visual approval | Not run | These remain required before a credible public demo. |
 
 ## First live Token Factory pilot
@@ -43,6 +44,18 @@ The private local service reported `provider: nebius` and model `nvidia/nemotron
 | #11 force/friction | The model service could not produce a valid plan. | 10687 ms | No accepted drawing; review page now handles this safely. |
 
 These timings are service request durations, not speech-to-painted-frame latency. No human visual approval has been entered. The pilot is too small to estimate broad accuracy; its role is to expose failure modes before spending more credits or claiming readiness.
+
+## Second bounded live comparison
+
+After restarting an isolated loopback-only service with the general schema-error feedback, the same independent statements #1, #2, and #11 were sent again without giving the model gold answers. The saved live report is `.visual-check/hosted-gold-v2-live-report.json`; its rendered review is `.visual-check/hosted-review-v2-readable-final/review.html`. These local files are intentionally ignored by Git. The normal app service on port 8080 was not changed by this test.
+
+| Case | Semantic result | Service latency | Model attempts / reported tokens |
+| --- | --- | ---: | ---: |
+| #1 plant intake | 5/5 concepts and 4/4 directed links; semantic-ready by the current annotation. | 7786 ms | 1 / 2010 |
+| #2 circulation | 3/4 concepts and 0/3 links; oxygen missing despite 0.9 confidence. | 7616 ms | 1 / 1964 |
+| #11 force/friction | 3/4 concepts and 1/3 links; push identity missing despite 0.9 confidence. | 22281 ms | 2 / 6164 |
+
+Thus the **second pilot is 1/3 semantic-ready, 2/3 false-confident, and 0/3 visually approved**. The renderer's machine-readable cue check succeeds for #1, but that is not an artistic pass: the root and leaf remain separate drawn objects, not attached anatomy, and the phone overview still needs human inspection. Cases #2 and #11 fail the required visual grammar. The bounded retry made #11 structurally valid at a substantial latency/token cost, without making it semantically complete. Reported token counts are provider metadata, not a billing estimate. Do not extrapolate these three examples to broad accuracy.
 
 ## Next gates, in order
 

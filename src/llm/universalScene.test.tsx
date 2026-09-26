@@ -101,6 +101,8 @@ describe("universal visual scene compiler", () => {
       ]
     };
     const script = compileUniversalScene(candidate, initialScene, "A plant takes in water through its roots and sunlight through its leaves.");
+    expect(script.commands.filter((command) => command.action === "create").every((command) =>
+      command.action === "create" && command.entity.scale === 1)).toBe(true);
     expect(script.commands.filter((command) => command.action === "relate").map((command) =>
       command.action === "relate" ? command.relation.kind : null)).toEqual(["partOf", "partOf", "flowsInto", "illuminates"]);
     expect(validateDoodleScript(script, initialScene).ok).toBe(true);
@@ -165,7 +167,9 @@ describe("universal visual scene compiler", () => {
 
     const scene = applyDoodleScript(initialScene, script);
     const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
-    expect(html.match(/class="validated-glyph"/g)).toHaveLength(2);
+    const root = document.createElement("div");
+    root.innerHTML = html;
+    expect(root.querySelectorAll(".doodle-canvas .validated-glyph")).toHaveLength(2);
     expect(html).toContain("data-glyph-parts=\"9\"");
     expect(html).toContain("data-glyph-source=\"generated\"");
     expect(html).toContain("data-visual-cue=\"semantic-connection\"");
