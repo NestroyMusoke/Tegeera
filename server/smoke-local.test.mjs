@@ -9,10 +9,10 @@ async function withMockServer(configured, run) {
   const server = createServer((request, response) => {
     response.setHeader("content-type", "application/json");
     if (request.url === "/health") {
-      response.end(JSON.stringify({ configured, provider: configured ? "nvidia" : null, model: configured ? "test-model" : null }));
+      response.end(JSON.stringify({ configured, provider: configured ? "nebius" : null, model: configured ? "nvidia/nemotron-test" : null }));
     } else {
       calls += 1;
-      response.end(JSON.stringify({ candidate: { objects: [{ id: "book" }], connections: [] } }));
+      response.end(JSON.stringify({ provider: "nebius", model: "nvidia/nemotron-test", candidate: { objects: [{ id: "book" }], connections: [] } }));
     }
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -35,15 +35,15 @@ async function withMockServer(configured, run) {
   }
 }
 
-test("local smoke check makes one request only when NVIDIA is configured", async () => {
+test("local smoke check makes one request only when Nebius Nemotron is configured", async () => {
   await withMockServer(true, (output, calls) => {
     assert.equal(output.code, 0);
-    assert.match(output.stdout, /Live interpretation: valid blueprint/);
+    assert.match(output.stdout, /Live Nebius interpretation: valid blueprint/);
     assert.equal(calls(), 1);
   });
   await withMockServer(false, (output, calls) => {
     assert.equal(output.code, 1);
-    assert.match(output.stderr, /NVIDIA is not configured/);
+    assert.match(output.stderr, /Nebius Token Factory Nemotron is not configured/);
     assert.equal(calls(), 0);
   });
 });

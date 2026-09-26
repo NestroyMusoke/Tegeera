@@ -60,4 +60,4 @@ The review page has six criteria per drawing. The HTML shows a frozen frame only
 npm run render:hosted-gold -- --verify "C:\path\to\tegeera-hosted-visual-review.json"
 ```
 
-`strictReady` requires a **live** model response, semantic readiness, the required SVG cues and grammar, and completed human visual review. A fixture can exercise the workflow but can never count as a live strict pass. This is a conformance gate, not a claim that machine-readable cues alone prove artistic quality. As of this build there is no configured live NVIDIA service, no live hosted report, and no human-approved hosted drawing.
+`strictReady` requires a **live** model response, semantic readiness, the required SVG cues and grammar, and completed human visual review. A fixture can exercise the workflow but can never count as a live strict pass. This is a conformance gate, not a claim that machine-readable cues alone prove artistic quality. As of this build there is no configured live Nebius Token Factory service, no live hosted report, and no human-approved hosted drawing.

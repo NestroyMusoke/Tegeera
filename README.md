@@ -46,7 +46,7 @@ Tegeera already accepts speech or typed input and turns supported explanations i
 - forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
 - stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
 
-With a **hosted AI service** configured, NVIDIA's Nemotron 3 Super model is the preferred planner for language the local interpreter cannot handle; the existing OpenRouter path remains a fallback when only an OpenRouter key is configured. The model produces a bounded semantic blueprint, not a finished image. The validated scene appears after the planner returns—not instantly. Noun drawing is a separate, non-blocking step: the accepted scene can show labelled placeholders while approved offline artwork or validated cached artwork appears synchronously. For an unseen noun, the model can emit coarse-grid strokes; the hosted service returns the complete validated stroke set, then the client reveals it with write-on motion. Direct OpenRouter mode can stream complete strokes progressively. Tegeera smooths those points into bounded SVG paths locally. A short instruction can edit a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
+With a **hosted AI service** configured, NVIDIA Nemotron 3 Super on **Nebius Token Factory** is the preferred planner for language the local interpreter cannot handle. The direct NVIDIA Catalog and OpenRouter paths remain development fallbacks, but neither alone meets the current Nebius x NVIDIA hackathon requirement. The model produces a bounded semantic blueprint, not a finished image. The validated scene appears after the planner returns—not instantly. Noun drawing is a separate, non-blocking step: the accepted scene can show labelled placeholders while approved offline artwork or validated cached artwork appears synchronously. For an unseen noun, the model can emit coarse-grid strokes; the hosted service returns the complete validated stroke set, then the client reveals it with write-on motion. Direct OpenRouter mode can stream complete strokes progressively. Tegeera smooths those points into bounded SVG paths locally. A short instruction can edit a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
 
 Validated runtime strokes remain session drafts until the user explicitly keeps
 them; shape validation alone cannot prove that they resemble the requested noun.
@@ -59,7 +59,7 @@ and visual-approval gate and is still empty while curation begins. Model-generat
 strokes and editing require a reachable model; the existing scene remains usable
 without one.
 
-The NVIDIA path is implemented and tested with a simulated provider, but it has **not** been tested against a live NVIDIA endpoint or deployed: no NVIDIA API key is configured. The public demo and APK do not gain hosted AI merely by merging this code. The secret must be set only on a separately hosted backend, and the public backend URL must be supplied to the client builds. See [server setup](server/README.md). NVIDIA's API Catalog free endpoint is a prototyping path, not a guaranteed free production host. Tegeera's local drawing remains available without a backend; arbitrary-speech understanding and high-quality long-tail artwork do not.
+The Nebius Token Factory path is implemented and tested with a simulated provider, but it has **not** yet passed a live Nebius request or been deployed. The public demo and APK do not gain hosted AI merely by merging this code. The secret must be set only on a separately hosted backend, and the public backend URL must be supplied to the client builds. See [server setup](server/README.md). The $25 Token Factory credit is for model inference, not a free public backend host. Tegeera's local drawing remains available without a backend; arbitrary-speech understanding and high-quality long-tail artwork do not.
 
 Related work: [SketchAgent (CVPR 2025)](https://openaccess.thecvf.com/content/CVPR2025/html/Vinker_SketchAgent_Language-Driven_Sequential_Sketch_Generation_CVPR_2025_paper.html) demonstrates sequential, language-driven sketching and conversational refinement. Tegeera takes inspiration from that research direction but uses its own stroke schema and rendering code; no SketchAgent code or artwork is copied. Tegeera's focus is a validated, offline-first classroom scene with immediate placeholders and explicit ambiguity handling. The paper is evidence that the method is promising, not evidence that Tegeera can yet draw every requested concept accurately.
 
@@ -216,11 +216,9 @@ The web application and Android assets currently build and synchronize successfu
 
 The goal is ambitious: say almost anything teachable and watch it become a clear visual explanation in real time. The current system does not claim to have reached that goal. It proves that the path can be engineered carefully, measured honestly, and expanded without turning into a collection of hard-coded demos.
 
-## Two launches, one product
+## Current hackathon focus
 
-Tegeera remains Android-first for the RevenueCat hackathon's New Gen category. Its deliverable will be a directly downloadable, release-signed APK—not a Play Store listing.
-
-The same product is presented through a hosted browser demo for the GPT-6 Astra Challenge on Product Hunt, allowing judges and early users to experience the core interaction immediately. GPT-6 Astra has served as an engineering collaborator; the lived problem, product vision, direction, decisions, and ownership belong to Nestroy Musoke.
+Tegeera remains Android-first, but the current development target is the Nebius x NVIDIA Global AI Hackathon's Best Apps and Agents track. The required NVIDIA model must run through Nebius Token Factory or Nebius AI Cloud. The earlier product work predates this submission period; the Token Factory integration and subsequent measured improvements are new work and must be distinguished clearly in the submission. A real Nebius request, a working test build, and a demonstrated end-to-end flow are still pending.
 
 ## Maker
 

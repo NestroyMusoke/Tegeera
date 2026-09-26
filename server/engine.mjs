@@ -1,4 +1,5 @@
 export const NVIDIA_SCENE_MODEL = "nvidia/nemotron-3-super-120b-a12b";
+export const NEBIUS_CHAT_URL = "https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions";
 export const OPENROUTER_FREE_MODELS = [
   "google/gemma-4-26b-a4b-it:free", "google/gemma-4-31b-it:free", "openrouter/free"
 ];
@@ -70,6 +71,11 @@ export function validStrokes(candidate) {
 }
 
 export function modelConfiguration(env = process.env) {
+  if (env.NEBIUS_API_KEY?.trim()) return {
+    provider: "nebius", key: env.NEBIUS_API_KEY.trim(),
+    model: env.NEBIUS_MODEL?.trim() || NVIDIA_SCENE_MODEL,
+    url: NEBIUS_CHAT_URL
+  };
   if (env.NVIDIA_API_KEY?.trim()) return {
     provider: "nvidia", key: env.NVIDIA_API_KEY.trim(),
     model: env.NVIDIA_MODEL?.trim() || NVIDIA_SCENE_MODEL,
@@ -85,9 +91,14 @@ export function modelConfiguration(env = process.env) {
 
 export async function callModel(prompt, config, { fetchImpl = fetch, signal, maxTokens = 3200 } = {}) {
   const nvidia = config.provider === "nvidia";
+  const nebius = config.provider === "nebius";
   const body = nvidia ? {
     model: config.model, messages: [{ role: "user", content: prompt }],
     temperature: 1, top_p: 0.95, max_tokens: maxTokens, stream: false, reasoning_effort: "low"
+  } : nebius ? {
+    // Token Factory is OpenAI-compatible; avoid NVIDIA Catalog-specific parameters.
+    model: config.model, messages: [{ role: "user", content: prompt }],
+    max_tokens: maxTokens, stream: false
   } : {
     ...(config.model === OPENROUTER_FREE_MODELS[0] ? { models: OPENROUTER_FREE_MODELS } : { model: config.model }),
     messages: [{ role: "user", content: prompt }], temperature: 0, max_tokens: maxTokens,
@@ -97,7 +108,7 @@ export async function callModel(prompt, config, { fetchImpl = fetch, signal, max
   const response = await fetchImpl(config.url, {
     method: "POST",
     headers: { authorization: `Bearer ${config.key}`, "content-type": "application/json", accept: "application/json",
-      ...(nvidia ? {} : { "http-referer": "https://nestroymusoke.github.io/Tegeera/", "x-title": "Tegeera" }) },
+      ...(nvidia || nebius ? {} : { "http-referer": "https://nestroymusoke.github.io/Tegeera/", "x-title": "Tegeera" }) },
     body: JSON.stringify(body), signal
   });
   if (!response.ok) throw new Error(`Model provider returned HTTP ${response.status}.`);

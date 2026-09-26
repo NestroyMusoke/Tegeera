@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  NVIDIA_SCENE_MODEL, callModel, generateGlyph, interpretScene, modelConfiguration,
+  NEBIUS_CHAT_URL, NVIDIA_SCENE_MODEL, callModel, generateGlyph, interpretScene, modelConfiguration,
   scenePrompt, validScene, validStrokes
 } from "./engine.mjs";
 
@@ -17,6 +17,30 @@ const complete = {
 };
 const strokes = { strokes: [{ part: "outline", color: "#2f3e46", pts: [[8, 8], [42, 8], [42, 42], [8, 8]] }] };
 const nvidia = modelConfiguration({ NVIDIA_API_KEY: "private-key" });
+const nebius = modelConfiguration({ NEBIUS_API_KEY: "nebius-test-key" });
+
+test("Nebius Token Factory takes precedence and uses its Nemotron endpoint", async () => {
+  assert.equal(modelConfiguration({ NEBIUS_API_KEY: "nebius-test-key", NVIDIA_API_KEY: "direct-key" }).provider, "nebius");
+  assert.equal(nebius.model, NVIDIA_SCENE_MODEL);
+  assert.equal(nebius.url, NEBIUS_CHAT_URL);
+  assert.equal(modelConfiguration({ NEBIUS_API_KEY: " ", NVIDIA_API_KEY: "direct-key" }).provider, "nvidia");
+  const fetchImpl = async (url, request) => {
+    assert.equal(url, "https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions");
+    assert.equal(request.headers.authorization, "Bearer nebius-test-key");
+    assert.equal(request.headers["http-referer"], undefined);
+    const body = JSON.parse(request.body);
+    assert.equal(body.model, NVIDIA_SCENE_MODEL);
+    assert.equal(body.stream, false);
+    assert.equal(body.max_tokens, 3200);
+    assert.equal(body.reasoning_effort, undefined);
+    assert.equal(body.provider, undefined);
+    return new Response(JSON.stringify({ model: NVIDIA_SCENE_MODEL, choices: [{ message: { content: JSON.stringify(complete) } }] }), { status: 200 });
+  };
+  const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nebius, { fetchImpl });
+  assert.equal(result.provider, "nebius");
+  assert.equal(result.candidate.objects.length, 3);
+  assert.ok(!JSON.stringify(result).includes("nebius-test-key"));
+});
 
 test("prefers a private NVIDIA key and never inserts it into the teacher prompt", () => {
   assert.equal(nvidia.provider, "nvidia");
