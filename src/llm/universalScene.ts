@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  doodleScriptSchema,
   entityColorSchema,
   entityKindSchema,
   proceduralVisualSchema,
@@ -59,6 +58,36 @@ export const universalSceneBlueprintSchema = z.object({
 });
 
 export type UniversalSceneBlueprint = z.infer<typeof universalSceneBlueprintSchema>;
+
+const colorWords = new Set<string>(entityColorSchema.options);
+const negatedClaim = /\b(?:not|never|no|without|neither|nor|cannot|can't|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|won't|wouldn't|couldn't|shouldn't|hasn't|haven't|hadn't)\b/i;
+
+/** High-precision claims the current positive-only scene grammar must not silently change. */
+function assertGroundedClaims(sourceText: string, blueprint: UniversalSceneBlueprint) {
+  const normalized = sourceText.toLowerCase().replace(/[’‘]/g, "'");
+  if (negatedClaim.test(normalized)) {
+    throw new Error("This explanation contains a negated claim that the drawing grammar cannot represent safely. Please rephrase the positive scene to show.");
+  }
+  const words = normalized.match(/[a-z]+/g) ?? [];
+  const mentioned = new Set(words.filter((word) => colorWords.has(word)));
+  for (const color of mentioned) {
+    if (!blueprint.objects.some((object) => object.color === color)) {
+      throw new Error(`The visual plan omitted the stated ${color} colour. The previous drawing is safe.`);
+    }
+  }
+  for (let index = 0; index < words.length - 1; index += 1) {
+    const color = words[index];
+    if (!colorWords.has(color)) continue;
+    const noun = words[index + 1].replace(/s$/, "");
+    const matching = blueprint.objects.filter((object) => {
+      const labelWords = (object.label.toLowerCase().match(/[a-z]+/g) ?? []).map((word) => word.replace(/s$/, ""));
+      return labelWords.includes(noun) || object.kind === noun;
+    });
+    if (matching.length && !matching.some((object) => object.color === color)) {
+      throw new Error(`The visual plan assigned the wrong colour to the stated ${words[index + 1]}. The previous drawing is safe.`);
+    }
+  }
+}
 
 const columns = [14, 38, 62, 86] as const;
 const rows = [30, 68] as const;
@@ -119,8 +148,6 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
 export function compileUniversalScene(
   candidate: unknown, scene: SceneState, sourceText: string, glyphSources: UniversalGlyphSources = {}
 ): DoodleScript {
-  const existing = doodleScriptSchema.safeParse(candidate);
-  if (existing.success) return existing.data;
   const hydrated = typeof candidate === "object" && candidate !== null && !Array.isArray(candidate)
     ? {
       ...candidate,
@@ -142,6 +169,7 @@ export function compileUniversalScene(
   const parsedBlueprint = universalSceneBlueprintSchema.safeParse(hydrated);
   if (!parsedBlueprint.success) throw new Error("The model returned an incomplete visual blueprint. Try again or shorten the explanation.");
   const blueprint = parsedBlueprint.data;
+  assertGroundedClaims(sourceText, blueprint);
   const existingIds = new Set(blueprint.mode === "extend" ? scene.entities.map(({ id }) => id) : []);
   const newIds = new Set<string>();
   for (const object of blueprint.objects) {

@@ -29,6 +29,7 @@ Rules:
 - Optional colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray. Omit when not stated.
 - x and y are 0..100. Preserve above/below and left/right order; Tegeera handles exact spacing. Labels are 1-4 words.
 - Do not emit glyphs, SVG, paths, pixels, explanations, or extra fields. Artwork is resolved separately while the labelled scene remains usable.
+- The current visual grammar cannot safely show negated claims. If the teacher says something does not happen, never convert it to an affirmative connection; set confidence below 0.58. Preserve every explicitly stated colour on the correct object.
 - Existing artwork labels (do not change meaning to favor them): ${JSON.stringify(reusableNouns)}.
 Teacher: ${JSON.stringify(text)}
 Current scene: ${JSON.stringify({ entities: scene.entities.map(({ id, kind, label, x, y }) => ({ id, kind, label, x, y })), relations: scene.relations ?? [] })}`;

@@ -97,7 +97,7 @@ Schema → meaning → layout → confidence safety gates
 Deterministic, style-normalized SVG scene
 ```
 
-The language model does not draw pixels directly. Every interpretation must become constrained DoodleScript and pass independent validation before it can change the lesson. Direct edits and prepared lessons can remain local and fast.
+The language model does not draw pixels directly or supply executable scene commands. Every interpretation must become a bounded blueprint, then constrained DoodleScript, and pass independent validation before it can change the lesson. The compiler refuses positive-only plans for explicitly negated statements and plans that drop or visibly misassign a stated colour. This is a conservative safety check, not proof that all other meaning is complete. Direct edits and prepared lessons can remain local and fast.
 
 This architecture gives Tegeera three properties that matter in a classroom:
 
@@ -111,7 +111,7 @@ The current checkpoint is reproducible from this repository:
 
 | Check | Current evidence |
 | --- | ---: |
-| Automated tests | **454 passing**, 3 optional live-provider tests skipped |
+| Automated tests | **472 passing**, 3 optional live-provider tests skipped |
 | Generated supported variations | **278** |
 | Incomplete, unsafe, or structurally wrong near-misses | **65 safely clarified** |
 | Independent teacher corpus | **25/60 drawn**, 1 held, 34 clarified |
@@ -119,8 +119,8 @@ The current checkpoint is reproducible from this repository:
 | False-confident gold acceptances | **0** |
 | Strict gold result | **3/29** |
 | Formal external classroom review | **Pending**; local visual fixtures are ready |
-| Local SVG-ready benchmark | **47.28 ms p95** over 834 warmed samples in the latest full run; excludes speech, browser paint, and Android scheduling |
-| Production JavaScript | Guardrailed at **500 KiB** per chunk; largest current chunk **389.34 KiB** |
+| Local SVG-ready benchmark | **17.12 ms p95** over 834 warmed samples in the latest isolated full run; excludes speech, browser paint, and Android scheduling |
+| Production JavaScript | Guardrailed at **500 KiB** per chunk; largest current chunk **394.08 KiB** |
 | Visual-review output | **52 fixtures**, including a 25-scene implemented-case review station, an unseen-noun procedural scene, single-subject phone previews, and multi-object drawing-area reviews |
 
 The strict score is intentionally lower than the automated-ready score. Code can prove that required concepts, relationships, visual cues, and validation gates exist. It cannot declare its own drawings beautiful or classroom-ready. Formal external classroom review remains a release gate.

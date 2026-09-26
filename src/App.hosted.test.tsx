@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.resetModules(); });
 
-it("draws an unfamiliar explanation through the hosted scene and glyph service without asking for a key", async () => {
+it("draws a hosted explanation but preserves it when follow-up plans lose negation or colour", async () => {
   vi.stubEnv("VITE_TEGEERA_INTERPRETER_URL", "https://tegeera.example");
   vi.resetModules();
   const strokes = { strokes: [{ part: "outline", color: "#2f3e46", pts: [[10, 10], [40, 10], [40, 40], [10, 10]] }] };
@@ -30,4 +30,18 @@ it("draws an unfamiliar explanation through the hosted scene and glyph service w
   expect(screen.getByRole("region", { name: "Review generated doodles" })).toBeTruthy();
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/interpret"))).toBe(true);
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/glyph"))).toBe(true);
-}, 15_000);
+  const original = container.querySelector(".doodle-canvas")?.getAttribute("aria-label");
+  const explain = (text: string) => {
+    fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: text } });
+    fireEvent.click(screen.getByRole("button", { name: "Draw it" }));
+  };
+  explain("A dragon does not fly over a village");
+  await waitFor(() => expect(screen.getByText(/negated claim/)).toBeTruthy());
+  expect(screen.getByText("Revision 1")).toBeTruthy();
+  expect(container.querySelector(".doodle-canvas")?.getAttribute("aria-label")).toBe(original);
+  explain("A yellow zeppelin hovers above the city");
+  await waitFor(() => expect(screen.getByText(/omitted the stated yellow colour/)).toBeTruthy());
+  expect(screen.getByText("Revision 1")).toBeTruthy();
+  expect(container.querySelector(".doodle-canvas")?.getAttribute("aria-label")).toBe(original);
+  expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/v1/interpret"))).toHaveLength(3);
+}, 20_000);

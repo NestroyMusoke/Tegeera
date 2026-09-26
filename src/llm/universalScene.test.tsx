@@ -53,6 +53,36 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it("refuses to turn a negated teacher claim into an affirmative scene", () => {
+    for (const text of ["A dragon does not fly over a village", "A dragon never flies over a village", "A dragon can't fly over a village"]) {
+      expect(() => compileUniversalScene(blueprint, initialScene, text)).toThrow(/negated claim/);
+    }
+    expect(() => compileUniversalScene(blueprint, initialScene, "A dragon flies over a village")).not.toThrow();
+  });
+
+  it("requires explicit colours to survive the model plan and catches swapped assignments", () => {
+    const book = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [{ id: "book", label: "book", kind: "book", x: 50, y: 50 }], connections: [] };
+    expect(() => compileUniversalScene(book, initialScene, "A yellow book")).toThrow(/omitted the stated yellow colour/);
+    expect(() => compileUniversalScene({ ...book, objects: [{ ...book.objects[0], color: "blue" }] }, initialScene, "A yellow book"))
+      .toThrow(/omitted the stated yellow colour/);
+    expect(() => compileUniversalScene({ ...book, objects: [{ ...book.objects[0], color: "yellow" }] }, initialScene, "A yellow book"))
+      .not.toThrow();
+
+    const swapped = { ...book, objects: [
+      { id: "ball", label: "ball", kind: "generic", x: 20, y: 50, color: "blue" },
+      { id: "box", label: "box", kind: "generic", x: 80, y: 50, color: "red" }
+    ] };
+    expect(() => compileUniversalScene(swapped, initialScene, "A red ball and a blue box"))
+      .toThrow(/wrong colour/);
+  });
+
+  it("requires a bounded blueprint instead of accepting direct model-supplied scene commands", () => {
+    const script = compileUniversalScene(blueprint, initialScene, "A dragon flies over a village");
+    expect(() => compileUniversalScene(script, initialScene, "A dragon flies over a village"))
+      .toThrow(/incomplete visual blueprint/);
+  });
+
   it("routes composable typed relations into the real part-whole visual grammar", () => {
     const candidate = {
       blueprintVersion: "1.0", mode: "replace", confidence: 0.91,
