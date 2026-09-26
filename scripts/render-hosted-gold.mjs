@@ -57,7 +57,8 @@ function casePage({ id, statement, score, markup, renderError, visual }, css) {
 function reviewPage(cases, revision, mode) {
   const cards = cases.filter((item) => item.expectedIntent === 'draw').map((item) => {
     const automated = item.renderError ? `Render rejected: ${item.renderError}`
-      : `Grammar ${item.visual.grammarMatch ? 'matched' : 'not matched'}; missing cues: ${item.visual.missingCues.join(', ') || 'none'}.`;
+      : !item.visual ? 'No valid blueprint or rendered drawing; visual criteria cannot pass.'
+        : `Grammar ${item.visual.grammarMatch ? 'matched' : 'not matched'}; missing cues: ${item.visual.missingCues.join(', ') || 'none'}.`;
     return `<article data-case="${item.id}"><h2>Case ${item.id}</h2><p>${htmlEscape(item.statement)}</p><p>${htmlEscape(item.intendedVisual)}</p><p><strong>Automated evidence:</strong> ${htmlEscape(automated)}</p><iframe title="Tegeera rendered case ${item.id}" src="case-${item.id}.html" width="390" height="800"></iframe><div class="checks">${[
       'Meaning faithful', 'All identities distinguishable', 'Relationship direction clear',
       'Legible at phone width', 'Motion and reduced motion checked in the running app', 'Useful for teaching'

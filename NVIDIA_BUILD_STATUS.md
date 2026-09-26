@@ -29,11 +29,24 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 | Independent teacher corpus | 25/60 drawn, 1/60 held, 34/60 clarified | Drawing/clarification counts only; not visual accuracy. |
 | Strict annotated gold | 3/29 passed | Current local engine; adding an untested model does not improve this score yet. |
 | Offline approved glyph pack | 0 entries | A no-cost Quick, Draw! candidate/review pipeline exists, but nothing has passed review into the app. Long-tail doodles still depend on an optional model or labelled fallback. |
-| Live Nebius calls, real-device latency, APK assemble, human visual approval | Not run | These remain required before a credible public demo. |
+| Live Nebius connectivity and three-case pilot | Run locally | Nemotron on Token Factory returned one valid-book blueprint and three independent-case responses. On the three cases, 0/3 semantic-ready and 0/3 visually approved. This is not a product pass. |
+| Real-device latency, APK assemble, human visual approval | Not run | These remain required before a credible public demo. |
+
+## First live Token Factory pilot
+
+The private local service reported `provider: nebius` and model `nvidia/nemotron-3-super-120b-a12b`. A separate user-run single-request smoke check returned a structurally valid one-object book plan in 3299 ms; recognizability was not assessed. A bounded evaluation then sent independent teacher statements #1, #2, and #11 without supplying gold answers to the model. The saved report and actual-render review are under the ignored `.visual-check` directory. These results are a **baseline from the server process already running before the subsequent general prompt-audit and token-usage changes**; those changes need a restart and a separate live comparison.
+
+| Case | Live result | Measured service latency | Render evidence |
+| --- | --- | ---: | --- |
+| #1 plant intake | 5/5 concepts and 4/4 directed links, but a sunlight-to-leaves relation was typed as material flow, so meaning remains unverified. | 7766 ms | Rendered; required leaf-targeted ray missing. |
+| #2 circulation | 3/4 concepts; oxygen omitted and 0/3 required directed links. The 0.9 confidence was false. | 7052 ms | Rendered but no circulation grammar or required cues. |
+| #11 force/friction | The model service could not produce a valid plan. | 10687 ms | No accepted drawing; review page now handles this safely. |
+
+These timings are service request durations, not speech-to-painted-frame latency. No human visual approval has been entered. The pilot is too small to estimate broad accuracy; its role is to expose failure modes before spending more credits or claiming readiness.
 
 ## Next gates, in order
 
-1. Obtain a Nebius Token Factory API key privately; never paste it into chat or commit it. Run the private local server smoke test against Nemotron on Nebius and record model ID, response errors, latency, and actual generated scenes. The $25 inference credit is not a production backend host or uptime guarantee.
+1. Inspect the saved three-case actual-render review with a human and record concrete rejection reasons. Improve general semantic completeness, relation typing, and invalid-output repair without adding statement-specific branches; rerun a bounded fresh live comparison before claiming progress. The $25 inference credit is not a production backend host or uptime guarantee.
 2. Evaluate the **same independent 60 statements** through the hosted pipeline. The new [render-and-review workflow](HOSTED_EVALUATION.md) compares saved model responses with the actual canvas and records human decisions. Measure semantic completeness, unsafe acceptance, clarification rate, service latency, and visual appearance separately. No model gets a pass merely for returning valid JSON.
 3. Curate an offline pack of recognizable, original or properly licensed doodles. Each item needs provenance and 64 px human review. Keep unapproved candidates out of the release pack. Review in-scene composition and animation on an actual phone.
 4. Run speech-to-painted-frame traces on low- and mid-range Android hardware with warm/cold network, no network, and provider errors. Set p50/p95 budgets for *the whole user-visible path*, not just the local compiler.

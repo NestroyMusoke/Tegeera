@@ -34,11 +34,14 @@ test("Nebius Token Factory takes precedence and uses its Nemotron endpoint", asy
     assert.equal(body.max_tokens, 3200);
     assert.equal(body.reasoning_effort, undefined);
     assert.equal(body.provider, undefined);
-    return new Response(JSON.stringify({ model: NVIDIA_SCENE_MODEL, choices: [{ message: { content: JSON.stringify(complete) } }] }), { status: 200 });
+    return new Response(JSON.stringify({ model: NVIDIA_SCENE_MODEL, usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+      choices: [{ message: { content: JSON.stringify(complete) } }] }), { status: 200 });
   };
   const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nebius, { fetchImpl });
   assert.equal(result.provider, "nebius");
   assert.equal(result.candidate.objects.length, 3);
+  assert.deepEqual(result.usage, { promptTokens: 100, completionTokens: 50, totalTokens: 150 });
+  assert.equal(result.providerAttempts, 1);
   assert.ok(!JSON.stringify(result).includes("nebius-test-key"));
 });
 
@@ -49,6 +52,7 @@ test("prefers a private NVIDIA key and never inserts it into the teacher prompt"
   assert.equal(modelConfiguration({}), null);
   const prompt = scenePrompt("Roots absorb water", scene);
   assert.match(prompt, /essential named or implied visible part/);
+  assert.match(prompt, /inventory explicitly named visible participants/);
   assert.ok(!prompt.includes("private-key"));
 });
 
@@ -84,12 +88,15 @@ test("repairs malformed model JSON once, then returns a structurally complete pl
     calls += 1;
     const content = calls === 1 ? '{"blueprintVersion":"1.0","objects":[]}' : JSON.stringify(complete);
     if (calls === 2) assert.match(JSON.parse(request.body).messages[0].content, /previous response did not satisfy/i);
-    return new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200 });
+    return new Response(JSON.stringify({ usage: { prompt_tokens: 40, completion_tokens: 20, total_tokens: 60 },
+      choices: [{ message: { content } }] }), { status: 200 });
   };
   const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nvidia, { fetchImpl });
   assert.equal(result.repaired, true);
   assert.equal(result.candidate.objects.length, 3);
   assert.equal(calls, 2);
+  assert.equal(result.providerAttempts, 2);
+  assert.deepEqual(result.usage, { promptTokens: 80, completionTokens: 40, totalTokens: 120 });
 });
 
 test("invalid correction fails closed and provider errors do not trigger extra calls", async () => {

@@ -88,3 +88,19 @@ test('real canvas render exposes the semantic/visual gap and fixtures never stri
     assert.equal(verifyReview(typedManifest, review(typedManifest)).strictReady, 0);
   } finally { await rm(temp, { recursive: true, force: true }); }
 });
+
+test('live report with a failed model response still renders a truthful review page', async () => {
+  const temp = await mkdtemp(join(tmpdir(), 'tegeera-hosted-failed-render-'));
+  try {
+    const reportPath = join(temp, 'report.json');
+    const corpusHash = createHash('sha256').update(JSON.stringify(gold) + '\n' + corpusMarkdown).digest('hex');
+    await writeFile(reportPath, JSON.stringify({ formatVersion: '1.0.0', corpusHash, mode: 'live',
+      responses: { 1: { error: 'Model did not return a valid plan.' } } }));
+    const manifest = await renderHostedGold({ reportPath, out: join(temp, 'review'), gold, corpusMarkdown, css });
+    assert.equal(manifest.cases[0].rendered, false);
+    assert.equal(manifest.cases[0].visual, null);
+    const page = await readFile(join(temp, 'review', 'review.html'), 'utf8');
+    assert.match(page, /No valid blueprint or rendered drawing/);
+    assert.equal(verifyReview(manifest, review(manifest, 'rejected')).strictReady, 0);
+  } finally { await rm(temp, { recursive: true, force: true }); }
+});

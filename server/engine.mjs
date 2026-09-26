@@ -20,6 +20,7 @@ export function scenePrompt(text, scene, reusableNouns = []) {
   return `Make one accurate classroom visual plan. Return only a JSON object with this shape:
 {"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"source","label":"source","kind":"generic","x":20,"y":50},{"id":"destination","label":"destination","kind":"generic","x":80,"y":50}],"connections":[{"from":"source","to":"destination","label":"flows into","kind":"flowsInto"}]}
 Represent every essential named or implied visible part needed to explain the teacher's mechanism. Include inputs, outputs, sources, destinations, containers and part-whole relations when the statement depends on them. Do not invent unsupported facts. Use 1-8 objects, 0-12 connections. If a faithful plan needs more than eight objects or meaning is unclear, set confidence below 0.58. Object IDs must be unique and connections must point to exact object IDs, or existing IDs only in extend mode. Use extend only for an explicit addition to the current scene. Kind is one of ${[...kinds].join(", ")}; use generic for every other noun. Optional color is one of ${[...colors].join(", ")}; omit when not stated. x/y are 0..100 and must preserve above/below and left/right. Each label is 1-4 words. A connection label states the actual relationship. No glyphs, SVG, paths or explanations. Existing artwork labels are only retrieval hints: ${JSON.stringify(reusableNouns)}.
+Before returning JSON, silently check every clause: inventory explicitly named visible participants, preserve each source and recipient, and check that every stated action has the correct directed relationship. Do not replace an actor-to-recipient action with only a chain through an intermediate substance. A material moving into something may flowsInto it; light reaching a target illuminates it instead. If an essential participant or relationship cannot be represented faithfully, lower confidence below 0.58. Do not output this checklist.
 For a connection, use an optional typed kind only when its exact meaning applies: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}. Its label must exactly match that quoted text. These are general visual grammar, not special lesson templates. For every other relationship omit kind and use a truthful short label. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
 Negated claims cannot be shown safely by this positive-only grammar: never turn "does not" into a positive arrow; lower confidence below 0.58. Put every explicitly stated color on the correct object.
 Teacher: ${JSON.stringify(text)}
@@ -89,6 +90,21 @@ export function modelConfiguration(env = process.env) {
   return null;
 }
 
+function boundedUsage(value) {
+  if (!value || typeof value !== "object") return null;
+  const counts = [value.prompt_tokens, value.completion_tokens, value.total_tokens];
+  if (!counts.every((count) => Number.isSafeInteger(count) && count >= 0 && count <= 10_000_000)) return null;
+  return { promptTokens: counts[0], completionTokens: counts[1], totalTokens: counts[2] };
+}
+
+function addUsage(first, second) {
+  if (!first) return second;
+  if (!second) return first;
+  return { promptTokens: first.promptTokens + second.promptTokens,
+    completionTokens: first.completionTokens + second.completionTokens,
+    totalTokens: first.totalTokens + second.totalTokens };
+}
+
 export async function callModel(prompt, config, { fetchImpl = fetch, signal, maxTokens = 3200 } = {}) {
   const nvidia = config.provider === "nvidia";
   const nebius = config.provider === "nebius";
@@ -113,20 +129,23 @@ export async function callModel(prompt, config, { fetchImpl = fetch, signal, max
   });
   if (!response.ok) throw new Error(`Model provider returned HTTP ${response.status}.`);
   const result = await response.json();
-  return { content: result?.choices?.[0]?.message?.content, model: result?.model || config.model };
+  return { content: result?.choices?.[0]?.message?.content, model: result?.model || config.model,
+    usage: boundedUsage(result?.usage) };
 }
 
 async function validatedCompletion(prompt, config, validate, options = {}) {
   const first = await callModel(prompt, config, options);
   try {
     const candidate = parseJson(first.content);
-    if (validate(candidate)) return { candidate, provider: config.provider, model: first.model, repaired: false };
+    if (validate(candidate)) return { candidate, provider: config.provider, model: first.model, repaired: false,
+      usage: first.usage, providerAttempts: 1 };
   } catch { /* A bounded correction follows once. */ }
   const correction = `The previous response did not satisfy the required JSON structure. Return ONLY corrected JSON, with every required field and valid references. Original task: ${prompt.slice(0, 6000)}\nPrevious response: ${String(first.content ?? "").slice(0, 4000)}`;
   const second = await callModel(correction, config, options);
   const candidate = parseJson(second.content);
   if (!validate(candidate)) throw new Error("The model did not return a complete, valid visual plan.");
-  return { candidate, provider: config.provider, model: second.model, repaired: true };
+  return { candidate, provider: config.provider, model: second.model, repaired: true,
+    usage: addUsage(first.usage, second.usage), providerAttempts: 2 };
 }
 
 export function interpretScene(body, config, options = {}) {

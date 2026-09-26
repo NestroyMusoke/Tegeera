@@ -36,12 +36,12 @@ The fixture file is JSON keyed by gold case ID. Each value has `candidate` conta
 Only after a backend exists and `/health` reports `configured: true`:
 
 ```bat
-npm run eval:hosted-gold -- --url https://YOUR-SERVICE-ORIGIN --max-cases 3
+npm run eval:hosted-gold -- --url https://YOUR-SERVICE-ORIGIN --require-nebius-nemotron --max-cases 3
 ```
 
 The default is three cases, with at least six seconds between requests to respect the prototype service's 12-request-per-minute limit. To cover a chosen subset, add `--ids 1,2,11 --max-cases 3`. Increase `--max-cases` only after checking the provider's current free quota, pricing and service terms. Results save under the ignored `.visual-check/hosted-gold-report.json` and resume without repeating completed cases. A 429 stops safely; that case remains pending. `--fresh` starts over. Do not add an API key to the command, URL, report, app, or GitHub Actions variable.
 
-The saved report includes every candidate and its source case ID, separate concept/topology/predicate coverage, errors and latency. Semantic-ready and visually-approved remain deliberately separate.
+The saved report includes every candidate and its source case ID, separate concept/topology/predicate coverage, errors and latency. For new live responses it also records sanitized provider token counts and the number of model attempts when the provider supplies usage. Those counts help monitor credits, but they are not a billing guarantee. Semantic-ready and visually-approved remain deliberately separate.
 
 ## Render and review what the app actually draws
 
@@ -60,4 +60,4 @@ The review page has six criteria per drawing. The HTML shows a frozen frame only
 npm run render:hosted-gold -- --verify "C:\path\to\tegeera-hosted-visual-review.json"
 ```
 
-`strictReady` requires a **live** model response, semantic readiness, the required SVG cues and grammar, and completed human visual review. A fixture can exercise the workflow but can never count as a live strict pass. This is a conformance gate, not a claim that machine-readable cues alone prove artistic quality. As of this build there is no configured live Nebius Token Factory service, no live hosted report, and no human-approved hosted drawing.
+`strictReady` requires a **live** model response, semantic readiness, the required SVG cues and grammar, and completed human visual review. A fixture can exercise the workflow but can never count as a live strict pass. This is a conformance gate, not a claim that machine-readable cues alone prove artistic quality. A local Nebius Token Factory pilot now has a saved three-case live report under `.visual-check`: 0/3 semantic-ready, 0/3 visually approved. The live server has not been deployed, and no human-approved hosted drawing has been recorded.

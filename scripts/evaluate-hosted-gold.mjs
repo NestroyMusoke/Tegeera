@@ -32,7 +32,7 @@ function safeUrl(value) {
 }
 
 export async function runEvaluation({ gold, corpusMarkdown, outputPath, endpoint, fixtures, maxCases = 3,
-  delayMs = 6000, fetchImpl = fetch, fresh = false, dryRun = false }) {
+  delayMs = 6000, fetchImpl = fetch, fresh = false, dryRun = false, requireNebiusNemotron = false }) {
   if (!Number.isInteger(maxCases) || maxCases < 1 || maxCases > 29) throw new Error('--max-cases must be 1-29.');
   if (!Number.isInteger(delayMs) || delayMs < 6000 || delayMs > 60_000) throw new Error('--delay-ms must be 6000-60000 to respect the prototype rate limit.');
   if (gold.schemaVersion !== '1.0.0' || !Array.isArray(gold.cases)) throw new Error('Invalid gold annotations.');
@@ -59,6 +59,9 @@ export async function runEvaluation({ gold, corpusMarkdown, outputPath, endpoint
     if (!health.ok) throw new Error(`Service health returned HTTP ${health.status}.`);
     const status = await health.json();
     if (!status.configured) throw new Error('Hosted model is not configured; no live inference was run.');
+    if (requireNebiusNemotron && (status.provider !== 'nebius' || !String(status.model ?? '').toLowerCase().includes('nemotron'))) {
+      throw new Error('This run requires Nebius Token Factory serving an NVIDIA Nemotron model; no inference was run.');
+    }
     provider = status.provider ?? 'unknown'; model = status.model ?? null;
     let called = 0;
     for (const id of ids) {
@@ -74,7 +77,11 @@ export async function runEvaluation({ gold, corpusMarkdown, outputPath, endpoint
         const payload = await response.json().catch(() => null);
         if (!response.ok) {
           result = { error: `HTTP ${response.status}: ${String(payload?.error ?? 'unknown').slice(0, 160)}` };
-        } else result = { candidate: payload?.candidate ?? null, provider: payload?.provider ?? provider, model: payload?.model ?? model };
+        } else if (requireNebiusNemotron && (payload?.provider !== 'nebius' || !String(payload?.model ?? '').toLowerCase().includes('nemotron'))) {
+          result = { error: 'Response provider/model did not match Nebius Nemotron.' };
+        } else result = { candidate: payload?.candidate ?? null, provider: payload?.provider ?? provider,
+          model: payload?.model ?? model, usage: payload?.usage ?? null,
+          providerAttempts: Number.isInteger(payload?.providerAttempts) ? payload.providerAttempts : null };
         if (response.status === 429) {
           // Leave this ID pending so a later run can resume it without --fresh.
           console.warn(`#${id}: rate-limited; stopping without retrying or caching this case.`);
@@ -100,7 +107,7 @@ export async function runEvaluation({ gold, corpusMarkdown, outputPath, endpoint
 
 async function main() {
   if (has('--help')) {
-    console.log('Usage: node scripts/evaluate-hosted-gold.mjs --url https://SERVICE --max-cases 3 [--ids 1,2,11] [--delay-ms 6000] [--fresh] [--out .visual-check/hosted-gold-report.json] | --responses fixtures.json');
+    console.log('Usage: node scripts/evaluate-hosted-gold.mjs --url https://SERVICE --max-cases 3 [--require-nebius-nemotron] [--ids 1,2,11] [--delay-ms 6000] [--fresh] [--out .visual-check/hosted-gold-report.json] | --responses fixtures.json');
     return;
   }
   const gold = JSON.parse(await readFile(join(ROOT, 'evaluation', 'independent-scene-gold-v1.json'), 'utf8'));
@@ -108,7 +115,8 @@ async function main() {
   const result = await runEvaluation({ gold, corpusMarkdown,
     outputPath: resolve(option('--out', join(ROOT, '.visual-check', 'hosted-gold-report.json'))),
     endpoint: option('--url'), fixtures: option('--responses'), maxCases: Number(option('--max-cases', '3')),
-    delayMs: Number(option('--delay-ms', '6000')), fresh: has('--fresh'), dryRun: has('--dry-run') });
+    delayMs: Number(option('--delay-ms', '6000')), fresh: has('--fresh'), dryRun: has('--dry-run'),
+    requireNebiusNemotron: has('--require-nebius-nemotron') });
   const { summary } = result;
   console.log(`Annotated ${summary.annotatedTotal}; evaluated ${summary.evaluated}; semantic-ready ${summary.semanticReady}; false-confident ${summary.falseConfident}; visually approved ${summary.visuallyApproved} (not assessed).`);
 }

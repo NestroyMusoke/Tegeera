@@ -118,6 +118,21 @@ test('live client sends only teacher text and an empty scene, and resumes withou
   } finally { await rm(temp, { recursive: true, force: true }); }
 });
 
+test('hackathon evaluation refuses a non-Nebius health provider before spending credits', async () => {
+  const temp = await mkdtemp(join(tmpdir(), 'tegeera-nebius-gate-'));
+  try {
+    let posts = 0;
+    await assert.rejects(runEvaluation({ gold, corpusMarkdown, outputPath: join(temp, 'report.json'),
+      endpoint: 'http://127.0.0.1:8080', maxCases: 1, requireNebiusNemotron: true,
+      fetchImpl: async (url) => {
+        if (url.endsWith('/health')) return new Response(JSON.stringify({ configured: true, provider: 'nvidia', model: 'nvidia/nemotron-3-super-120b-a12b' }), { status: 200 });
+        posts += 1;
+        return new Response('{}', { status: 200 });
+      } }), /requires Nebius Token Factory/);
+    assert.equal(posts, 0);
+  } finally { await rm(temp, { recursive: true, force: true }); }
+});
+
 test('rate limits stop the run without caching a failed case, so it can resume later', async () => {
   const temp = await mkdtemp(join(tmpdir(), 'tegeera-hosted-rate-test-'));
   try {
