@@ -40,11 +40,18 @@ interface DoodleCanvasProps {
   children?: React.ReactNode;
 }
 
+type DrawingArea = "whole" | "left" | "middle" | "right";
+
 export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const ownership = ownershipBadges(scene);
   const [detail, setDetail] = useState(false);
+  const [areaSelection, setAreaSelection] = useState<{
+    sceneId: string; revision: number; area: DrawingArea;
+  } | null>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const inspecting = detail && scene.entities.length > 0;
+  const area = areaSelection?.sceneId === scene.sceneId && areaSelection.revision === scene.revision
+    ? areaSelection.area : "whole";
   const focusedId = scene.context?.subjectIds[0];
   const focused = scene.entities.find((entity) => entity.id === focusedId) ?? scene.entities[0];
   const singleSubject = scene.entities.length === 1 && !(scene.relations?.length)
@@ -53,9 +60,9 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const singleViewHeight = singleViewWidth * 620 / 1000;
   const singleViewX = focused ? Math.max(0, Math.min(1000 - singleViewWidth, focused.x * 10 - singleViewWidth / 2)) : 0;
   const singleViewY = focused ? Math.max(0, Math.min(620 - singleViewHeight, focused.y * 6.2 + 18 - singleViewHeight / 2)) : 0;
-  const overviewViewBox = singleSubject
-    ? `${singleViewX} ${singleViewY} ${singleViewWidth} ${singleViewHeight}`
-    : "0 0 1000 620";
+  const overviewViewBox = area !== "whole"
+    ? `${{ left: 0, middle: 200, right: 400 }[area]} 0 600 620`
+    : singleSubject ? `${singleViewX} ${singleViewY} ${singleViewWidth} ${singleViewHeight}` : "0 0 1000 620";
   const spokenEntityLabels = scene.entities.slice(0, 8).map((entity) => {
     const label = entity.label ?? entity.kind;
     return entity.color && !label.startsWith(`${entity.color} `) ? `${entity.color} ${label}` : label;
@@ -72,19 +79,39 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   return (
     <div className="visual-scene">
       <div className="canvas-view-controls" aria-label="Drawing view">
-        <button type="button" aria-pressed={!inspecting} onClick={() => {
+        <button type="button" aria-pressed={!inspecting && area === "whole"} onClick={() => {
           setDetail(false);
+          setAreaSelection(null);
           if (viewport.current) { viewport.current.scrollLeft = 0; viewport.current.scrollTop = 0; }
         }}>Overview</button>
-        <button type="button" aria-pressed={inspecting} disabled={!scene.entities.length} onClick={() => setDetail(true)}>Read details</button>
-        <span>{inspecting ? "Scroll inside the drawing to explore. Overview shows everything." : "The whole scene. Use Read details for larger labels."}</span>
+        <button type="button" aria-pressed={inspecting} disabled={!scene.entities.length} onClick={() => {
+          setAreaSelection(null);
+          setDetail(true);
+        }}>Read details</button>
+        <span>{inspecting ? "Scroll inside the drawing to explore. Overview shows everything."
+          : area !== "whole" ? `Showing the ${area} area only. Choose Whole scene to see every object.`
+            : "The whole scene. Use Read details for larger labels."}</span>
       </div>
-    <section className={`canvas-shell${inspecting ? " is-detail" : ""}`} aria-label="Tegeera drawing canvas">
+      {scene.entities.length > 1 && <label className="canvas-area-control">Explore drawing area
+        <select aria-label="Explore drawing area" value={area} onChange={(event) => {
+          const next = event.target.value as DrawingArea;
+          setAreaSelection({ sceneId: scene.sceneId, revision: scene.revision, area: next });
+          setDetail(false);
+          if (viewport.current) { viewport.current.scrollLeft = 0; viewport.current.scrollTop = 0; }
+        }}>
+          <option value="whole">Whole scene</option>
+          <option value="left">Left area</option>
+          <option value="middle">Middle area</option>
+          <option value="right">Right area</option>
+        </select>
+      </label>}
+    <section className={`canvas-shell${inspecting ? " is-detail" : ""}${area !== "whole" && !inspecting ? " is-area" : ""}`} aria-label="Tegeera drawing canvas">
       <div ref={viewport} className="canvas-viewport" tabIndex={inspecting ? 0 : undefined} role={inspecting ? "region" : undefined} aria-label={inspecting ? "Scrollable drawing detail" : undefined}>
       <svg
         className="doodle-canvas"
         viewBox={inspecting ? "0 0 1000 620" : overviewViewBox}
-        data-overview-framing={singleSubject ? "single-subject" : "full-scene"}
+        data-overview-framing={inspecting ? "detail" : area !== "whole" ? "area" : singleSubject ? "single-subject" : "full-scene"}
+        data-drawing-area={inspecting ? "detail" : area}
         role="img"
         aria-label={
           scene.entities.length

@@ -1,11 +1,14 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { DoodleCanvas } from "./DoodleCanvas";
 import { interpretTeacherText } from "../doodlescript/interpret";
 import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { validateDoodleScript } from "../doodlescript/validator";
 import { motionGeometry } from "../doodlescript/motion";
 import { ownershipBadges } from "./ownership";
+
+afterEach(cleanup);
 
 function run(text: string, scene = initialScene) {
   const result = interpretTeacherText(text, scene);
@@ -61,6 +64,47 @@ describe("phone overview framing", () => {
       expect(html).toContain(`transform="translate(${x * 10} 74.4) scale(1)"`);
       expect(html).toContain(`viewBox="${x === 6 ? 0 : 680} 0 320 198.4"`);
     }
+  });
+});
+
+describe("phone drawing-area exploration", () => {
+  it("shows every multi-object scene by default and offers overlapping areas without changing the scene", () => {
+    const scene = run("A car moves toward a person");
+    const original = structuredClone(scene);
+    const { container, getByRole } = render(<DoodleCanvas scene={scene} />);
+    const canvas = () => container.querySelector(".doodle-canvas");
+    const area = getByRole("combobox", { name: "Explore drawing area" });
+    expect(canvas()?.getAttribute("viewBox")).toBe("0 0 1000 620");
+    expect(canvas()?.getAttribute("data-overview-framing")).toBe("full-scene");
+
+    for (const [choice, expected] of [
+      ["left", "0 0 600 620"], ["middle", "200 0 600 620"], ["right", "400 0 600 620"]
+    ]) {
+      fireEvent.change(area, { target: { value: choice } });
+      expect(canvas()?.getAttribute("viewBox")).toBe(expected);
+      expect(canvas()?.getAttribute("data-overview-framing")).toBe("area");
+      expect(container.querySelector(".canvas-shell")?.classList.contains("is-area")).toBe(true);
+      expect(getByRole("button", { name: "Overview" }).getAttribute("aria-pressed")).toBe("false");
+    }
+    fireEvent.click(getByRole("button", { name: "Overview" }));
+    expect(canvas()?.getAttribute("viewBox")).toBe("0 0 1000 620");
+    expect((area as HTMLSelectElement).value).toBe("whole");
+    expect(scene).toEqual(original);
+  });
+
+  it("resets a stale area when the drawing revision changes and leaves detail mode scrollable", () => {
+    const scene = run("A car moves toward a person");
+    const { container, getByRole, rerender } = render(<DoodleCanvas scene={scene} />);
+    const area = getByRole("combobox", { name: "Explore drawing area" });
+    fireEvent.change(area, { target: { value: "right" } });
+    rerender(<DoodleCanvas scene={{ ...scene, revision: scene.revision + 1 }} />);
+    expect(container.querySelector(".doodle-canvas")?.getAttribute("viewBox")).toBe("0 0 1000 620");
+    expect((area as HTMLSelectElement).value).toBe("whole");
+    fireEvent.change(area, { target: { value: "middle" } });
+    fireEvent.click(getByRole("button", { name: "Read details" }));
+    expect(container.querySelector(".canvas-shell")?.classList.contains("is-detail")).toBe(true);
+    expect(container.querySelector(".doodle-canvas")?.getAttribute("data-drawing-area")).toBe("detail");
+    expect((area as HTMLSelectElement).value).toBe("whole");
   });
 });
 

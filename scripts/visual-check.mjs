@@ -151,6 +151,17 @@ const cases = {
 for (const [name, commands] of Object.entries(cases)) {
   await writeFile(resolve(output, `${name}.html`), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>${name}</h1>${render(commands)}</main></body></html>`);
 }
+for (const [area, x] of [["left", 0], ["middle", 200], ["right", 400]]) {
+  // Artwork comes from the real component. Only the view state is set here for static screenshot QA.
+  await writeFile(resolve(output, `part-whole-${area}-area.html`), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Part-whole: ${area} area</h1>${render(cases.partWholeFlow)}</main><script>
+  document.querySelector('.canvas-area-control select').value = '${area}';
+  document.querySelector('.canvas-view-controls button').setAttribute('aria-pressed', 'false');
+  document.querySelector('.canvas-view-controls span').textContent = 'Showing the ${area} area only. Choose Whole scene to see every object.';
+  document.querySelector('.canvas-shell').classList.add('is-area');
+  document.querySelector('.doodle-canvas').setAttribute('viewBox', '${x} 0 600 620');
+  document.querySelector('.doodle-canvas').setAttribute('data-overview-framing', 'area');
+  </script></body></html>`);
+}
 await writeFile(resolve(output, "performance.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Composable performance protocol</h1>${renderPerformance()}</main></body></html>`);
 await writeFile(resolve(output, "symbol-atlas.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Compositional visual-symbol system</h1>${renderSymbolAtlas()}</main></body></html>`);
 await writeFile(resolve(output, "single-book.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main class="app"><h1>Single-subject original rig</h1>${renderSingleSubject('book', 'yellow book', 'yellow')}</main></body></html>`);
@@ -181,7 +192,7 @@ function refresh(){document.getElementById('status').textContent=Object.keys(dec
 for(const card of cards){for(const button of card.querySelectorAll('[data-decision]'))button.addEventListener('click',()=>{const id=Number(card.dataset.reviewCase);const decision=button.dataset.decision;decisions[id]={decision,note:card.querySelector('textarea').value};card.classList.remove('approved','rejected');card.classList.add(decision);card.querySelector('[data-current]').textContent=decision;refresh();});}
 document.getElementById('export').addEventListener('click',()=>{for(const card of cards){const id=Number(card.dataset.reviewCase);if(decisions[id])decisions[id].note=card.querySelector('textarea').value;}const rejectedWithoutNote=Object.entries(decisions).find(([,value])=>value.decision==='rejected'&&!value.note.trim());if(rejectedWithoutNote){alert('Case '+rejectedWithoutNote[0]+' needs a rejection note.');return;}const evidence={schemaVersion:'1.0.0',fixtureRevision:${JSON.stringify(fixtureRevision)},reviewedAt:new Date().toISOString(),reviewer:document.getElementById('reviewer').value,device:document.getElementById('device').value,viewportPx:390,reducedMotionChecked:document.getElementById('reduced').checked,cases:decisions};if(!evidence.reviewer||!evidence.device||Object.keys(decisions).length!==cards.length){alert('Enter reviewer and device, and decide every case.');return;}const blob=new Blob([JSON.stringify(evidence,null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='tegeera-human-visual-review.json';link.click();URL.revokeObjectURL(link.href);});
 </script></body></html>`);
-console.log(`Rendered ${Object.keys(cases).length + 5} real-component fixtures in ${output}`);
+console.log(`Rendered ${Object.keys(cases).length + 8} real-component fixtures in ${output}`);
 
 // Exercise the real App in a browser, without adding test-only props to production.
 const appBundle = await build({

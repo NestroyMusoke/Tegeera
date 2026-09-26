@@ -5,19 +5,20 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 ## What is implemented
 
 - Android-first Capacitor app; local speech/text, deterministic scene compiler, SVG renderer, Undo, and accessible spoken scene summary.
-- Local supported constructions remain fast and work without network access. The latest local SVG-ready regression run measured p95 41.64 ms across 834 observations, **excluding speech recognition, browser commit/paint, and Android device scheduling**.
+- Local supported constructions remain fast and work without network access. The latest local SVG-ready regression run measured p95 42.97 ms across 834 observations, **excluding speech recognition, browser commit/paint, and Android device scheduling**.
 - A separate Node 24 service can use NVIDIA Nemotron 3 Super for unsupported scene language, noun-stroke generation, glyph editing, and lesson-noun prefetch. Credentials stay on the service. An existing OpenRouter provider is available as fallback when only that provider is configured.
 - The Android and Pages workflows now build with the same public `TEGEERA_INTERPRETER_URL` variable; the API key is never a client build variable.
 - Client and service validate schema, bounds, and references. On failure, the existing accepted scene remains in place. This is a safety property, **not** proof of semantic correctness or doodle quality.
 - Hosted blueprints can now carry five reusable typed relationship grammars. The compiler routes those to existing visual layouts instead of turning every link into a generic arrow; untyped and unsupported meanings remain generic or are rejected. This is not a new general-purpose drawing model.
 - Generated noun glyphs remain visible session drafts until explicitly approved. Rejected or superseded in-flight generations and edits cannot enter the reusable cache; approved artwork alone is persisted on the device.
-- Reusable symbol drawings now render without category badge frames, and lone subjects use a tighter overview on phones. The phone screenshot was inspected; multi-object diagrams still need a separate legibility pass.
+- Reusable symbol drawings now render without category badge frames, and lone subjects use a tighter overview on phones. The single-subject phone screenshot was inspected.
+- Multi-object scenes now keep a complete overview and offer overlapping left/middle/right phone views in a taller canvas. Three part-whole phone crops were visually inspected; cropping is explicit and never changes the semantic scene. Real-device readability is still unverified.
 
 ## Verified in this checkpoint
 
 | Check | Result | Meaning |
 | --- | --- | --- |
-| Client suite | 467 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
+| Client suite | 469 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
 | Service suite | 8 passing | Mocked NVIDIA request, correction, invalid output, HTTP origin/health and key boundary. |
 | Offline artwork intake | 12 passing | Bounded Quick, Draw! sampling, SVG safety, explicit review, provenance and attribution. No candidate auto-ships. |
 | Hosted-planner gold and real-render gate | 10 passing | Saved blueprints run through the actual compiler and canvas; semantic completeness cannot count as visual success without required SVG evidence and human review. Live provider accuracy remains unmeasured. |
