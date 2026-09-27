@@ -42,7 +42,29 @@ test("Nebius Token Factory takes precedence and uses its Nemotron endpoint", asy
   assert.equal(result.candidate.objects.length, 3);
   assert.deepEqual(result.usage, { promptTokens: 100, completionTokens: 50, totalTokens: 150 });
   assert.equal(result.providerAttempts, 1);
+  assert.equal(result.providerAttemptMs.length, 1);
+  assert.ok(result.providerAttemptMs[0] >= 0);
   assert.ok(!JSON.stringify(result).includes("nebius-test-key"));
+});
+
+test("Nebius non-thinking mode is opt-in and never sent to other providers", async () => {
+  const fetchImpl = async (_url, request) => {
+    const body = JSON.parse(request.body);
+    assert.deepEqual(body.chat_template_kwargs, { enable_thinking: false });
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(complete) } }] }), { status: 200 });
+  };
+  const result = await callModel("visual plan", nebius, { fetchImpl, nebiusThinking: "off" });
+  assert.ok(result.providerMs >= 0);
+  const nvidiaFetch = async (_url, request) => {
+    assert.equal(JSON.parse(request.body).chat_template_kwargs, undefined);
+    return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
+  };
+  await callModel("visual plan", nvidia, { fetchImpl: nvidiaFetch, nebiusThinking: "off" });
+  const lowFetch = async (_url, request) => {
+    assert.deepEqual(JSON.parse(request.body).chat_template_kwargs, { enable_thinking: true, low_effort: true });
+    return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
+  };
+  await callModel("visual plan", nebius, { fetchImpl: lowFetch, nebiusThinking: "low" });
 });
 
 test("prefers a private NVIDIA key and never inserts it into the teacher prompt", () => {

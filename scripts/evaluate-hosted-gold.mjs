@@ -81,7 +81,9 @@ export async function runEvaluation({ gold, corpusMarkdown, outputPath, endpoint
           result = { error: 'Response provider/model did not match Nebius Nemotron.' };
         } else result = { candidate: payload?.candidate ?? null, provider: payload?.provider ?? provider,
           model: payload?.model ?? model, usage: payload?.usage ?? null,
-          providerAttempts: Number.isInteger(payload?.providerAttempts) ? payload.providerAttempts : null };
+          providerAttempts: Number.isInteger(payload?.providerAttempts) ? payload.providerAttempts : null,
+          providerAttemptMs: Array.isArray(payload?.providerAttemptMs)
+            ? payload.providerAttemptMs.filter((value) => Number.isInteger(value) && value >= 0).slice(0, 2) : null };
         if (response.status === 429) {
           // Leave this ID pending so a later run can resume it without --fresh.
           console.warn(`#${id}: rate-limited; stopping without retrying or caching this case.`);

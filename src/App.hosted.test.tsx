@@ -31,6 +31,13 @@ it("draws a hosted explanation but preserves it when follow-up plans lose negati
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/interpret"))).toBe(true);
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/glyph"))).toBe(true);
   const original = container.querySelector(".doodle-canvas")?.getAttribute("aria-label");
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  await waitFor(() => expect(screen.getByText("Revision 0")).toBeTruthy());
+  fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: "A dragon flies above a tiny village" } });
+  fireEvent.click(screen.getByRole("button", { name: "Draw it" }));
+  await waitFor(() => expect(screen.getByText("Revision 1")).toBeTruthy());
+  expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/v1/interpret"))).toHaveLength(1);
+  expect(screen.getByText("Reused a previously accepted visual plan")).toBeTruthy();
   const explain = (text: string) => {
     fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: text } });
     fireEvent.click(screen.getByRole("button", { name: "Draw it" }));

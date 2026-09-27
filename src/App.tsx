@@ -12,6 +12,7 @@ import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
 import { DEFAULT_FREE_SCENE_MODEL, hostedInterpreterUrl, interpretRemotely, remoteInterpreterEnabled } from "./llm/remoteInterpreter";
+import { AcceptedPlanCache } from "./llm/acceptedPlanCache";
 import { compileUniversalScene } from "./llm/universalScene";
 import { forgetGlyph, loadGlyphCache, rememberGlyph } from "./glyphs/cache";
 import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
@@ -92,6 +93,7 @@ function App() {
   const latencySequence = useRef(0);
   const remoteRequest = useRef<AbortController | null>(null);
   const remoteRequestSequence = useRef(0);
+  const acceptedPlanCache = useRef(new AcceptedPlanCache());
   const scene = history.at(-1) ?? initialScene;
   useEffect(() => {
     const arrived = scene.entities.flatMap((entity) => {
@@ -171,6 +173,8 @@ function App() {
       : undefined);
   }, [openRouterKey, localAiEnabled]);
 
+  useEffect(() => { acceptedPlanCache.current.clear(); }, [openRouterKey, localAiEnabled]);
+
   useEffect(() => () => {
     remoteRequestSequence.current += 1;
     remoteRequest.current?.abort();
@@ -223,18 +227,21 @@ function App() {
         const requestId = remoteRequestSequence.current;
         const controller = new AbortController();
         remoteRequest.current = controller;
+        const cached = acceptedPlanCache.current.get(text, targetScene);
         let timedOut = false;
-        const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 45_000);
-        setRemoteBusy(true);
+        const timer = cached ? undefined : setTimeout(() => { timedOut = true; controller.abort(); }, 45_000);
+        setRemoteBusy(!cached);
         setHoldNotice(null);
         setClarification(null);
-        setIssues([{ gate: "confidence", message: "Understanding your explanation…" }]);
+        setIssues([{ gate: "confidence", message: cached ? "Reusing the previous visual plan…" : "Understanding your explanation…" }]);
         const reusableNouns = [...offlineGlyphCatalog.pack.keys(), ...glyphCache.current.keys()]
           .filter((noun) => text.toLowerCase().includes(noun)).slice(0, 12);
-        void interpretRemotely(text, targetScene, openRouterKey, controller.signal, reusableNouns, localAiEnabled).then(({ candidate, model, provider }) => {
+        const response = cached ? Promise.resolve(cached)
+          : interpretRemotely(text, targetScene, openRouterKey, controller.signal, reusableNouns, localAiEnabled);
+        void response.then(({ candidate, model, provider }) => {
           if (requestId !== remoteRequestSequence.current || controller.signal.aborted) return;
           setLastRemoteModel(model ?? (hostedInterpreterUrl ? "hosted model" : DEFAULT_FREE_SCENE_MODEL));
-          setAiStatus(`${provider ?? "AI"} returned a visual plan`);
+          setAiStatus(cached ? "Reused a previously accepted visual plan" : `${provider ?? "AI"} returned a visual plan`);
           const compiled = compileUniversalScene(candidate, targetScene, text, {
             ...offlineGlyphCatalog, cache: glyphCache.current
           });
@@ -246,6 +253,7 @@ function App() {
             setIssues(result.issues.slice(0, 1));
             return;
           }
+          if (!cached) acceptedPlanCache.current.put(text, targetScene, { candidate, model, provider });
           const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
           const nextScene = isHold ? targetScene : applyDoodleScript(targetScene, result.script);
           markDecision(isHold ? "hold" : "draw");
