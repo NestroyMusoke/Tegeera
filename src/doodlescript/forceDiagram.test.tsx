@@ -40,6 +40,7 @@ describe("open force-diagram grammar", () => {
     ]);
     const geometry = forceDiagramGeometry(scene.relations ?? [], scene.entities);
     expect(geometry).not.toBeNull();
+    expect(geometry!.contactY - (geometry!.bodyY + 40 * geometry!.body.scale)).toBeCloseTo(3);
     expect(Math.abs(geometry!.opposingStartX - geometry!.opposingEndX))
       .toBeLessThan(Math.abs(geometry!.appliedStartX - geometry!.appliedEndX));
   });

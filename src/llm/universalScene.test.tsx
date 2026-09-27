@@ -53,6 +53,25 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it("rejects a confident plan that skips a stated passage or force topology", () => {
+    const bypassed = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: ["machine", "fuel", "inlet"].map((id, index) => ({ id, label: id, kind: "generic", x: 20 + index * 30, y: 50 })),
+      connections: [
+        { from: "fuel", to: "machine", label: "flows into", kind: "flowsInto" },
+        { from: "inlet", to: "machine", label: "part of", kind: "partOf" }
+      ]
+    };
+    expect(() => compileUniversalScene(bypassed, initialScene, "Fuel enters a machine through its inlet"))
+      .toThrow(/fuel through inlet/);
+    const force = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: ["sled", "snow", "pull", "drag"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 20, y: 50 })),
+      connections: [{ from: "pull", to: "sled", label: "pulls" }, { from: "drag", to: "sled", label: "slows" }]
+    };
+    expect(() => compileUniversalScene(force, initialScene, "Pull a sled over snow; drag opposes the motion"))
+      .toThrow(/appliedTo\/opposes\/contacts/);
+  });
   it("refuses to turn a negated teacher claim into an affirmative scene", () => {
     for (const text of ["A dragon does not fly over a village", "A dragon never flies over a village", "A dragon can't fly over a village"]) {
       expect(() => compileUniversalScene(blueprint, initialScene, text)).toThrow(/negated claim/);

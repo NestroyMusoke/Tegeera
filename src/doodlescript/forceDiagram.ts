@@ -74,9 +74,13 @@ export function forceDiagramGeometry(relations: readonly SceneRelation[], entiti
   const appliedLength = 165;
   const opposingLength = 104;
   if (surfaceY - bodyY < 120 || surfaceY - bodyY > 240) return null;
+  // The physical support line belongs at the body's visible ground anchor,
+  // not at a fixed offset from its centre. Otherwise a box appears to float.
+  const groundLocalY = body.glyph?.anchors.ground[1] !== undefined
+    ? body.glyph.anchors.ground[1] - 50 : 40;
   return {
     body, surface, appliedForce, opposingForce, direction, bodyX, bodyY, surfaceY,
-    contactY: bodyY + 61,
+    contactY: bodyY + groundLocalY * body.scale + 3,
     appliedStartX: bodyX - direction * (70 + appliedLength),
     appliedEndX: bodyX - direction * 70,
     opposingStartX: bodyX + direction * (70 + opposingLength),

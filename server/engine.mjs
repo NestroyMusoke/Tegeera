@@ -1,3 +1,5 @@
+import { sourceConstraintIssue } from "../shared/sourceConstraints.mjs";
+
 export const NVIDIA_SCENE_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 export const NEBIUS_CHAT_URL = "https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions";
 export const OPENROUTER_FREE_MODELS = [
@@ -23,7 +25,9 @@ export function scenePrompt(text, scene, reusableNouns = []) {
 {"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"source","label":"source","kind":"generic","x":20,"y":50},{"id":"destination","label":"destination","kind":"generic","x":80,"y":50}],"connections":[{"from":"source","to":"destination","label":"flows into","kind":"flowsInto"}]}
 Represent every essential named or implied visible part needed to explain the teacher's mechanism. Include inputs, outputs, sources, destinations, containers and part-whole relations when the statement depends on them. Do not invent unsupported facts. Use 1-8 objects, 0-12 connections. If a faithful plan needs more than eight objects or meaning is unclear, set confidence below 0.58. Object IDs must be unique and connections must point to exact object IDs, or existing IDs only in extend mode. Use extend only for an explicit addition to the current scene. Kind is one of ${[...kinds].join(", ")}; use generic for every other noun. Optional color is one of ${[...colors].join(", ")}; omit when not stated. x/y are 0..100 and must preserve above/below and left/right. Each label is 1-4 words. A connection label states the actual relationship. No glyphs, SVG, paths or explanations. Existing artwork labels are only retrieval hints: ${JSON.stringify(reusableNouns)}.
 Before returning JSON, silently check every clause: inventory explicitly named visible participants, preserve each source and recipient, and check that every stated action has the correct directed relationship. Do not replace an actor-to-recipient action with only a chain through an intermediate substance. A material moving into something may flowsInto it; light reaching a target illuminates it instead. If an essential participant or relationship cannot be represented faithfully, lower confidence below 0.58. Do not output this checklist.
+For each explicit "X through Y" phrase, Y must be a visible object and a directed connection must end at Y from X. A direct X→whole shortcut is wrong when Y is the named passage. If Y is part of a whole, add Y→whole partOf as a separate connection. This is a compositional rule for any source and passage, not an example to copy.
 Use structural diagram links when the explanation truly has their complete roles. A closed transport loop needs four distinct objects (source, destination, moving payload, enrichment) and exactly three links: source→destination pumpsTo via payload, destination→source returnsTo via the SAME payload, payload→enrichment carries. An opposing-force diagram needs four distinct objects (body, contact surface, applied force, opposing force) and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. The optional "via" field is the exact payload object ID and is required only on pumpsTo/returnsTo. Forces are arrows, not people. Do not use either specialist link family unless all its roles and directions are represented; a partial specialist graph is invalid. These are reusable topologies, not lesson templates.
+When an applied push or pull is explicitly opposed by friction, drag, or resistance, the applied *force* is its own object and the opposing effect is another force object. Use the complete opposing-force topology above; a person→body caption and opposing effect→body caption are not equivalent to two opposing arrows. A named human actor may be omitted only if the four-role limit prevents a faithful force diagram.
 For a connection, use an optional typed kind only when its exact meaning applies: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}. Its label must exactly match that quoted text. These are general visual grammar, not special lesson templates. For every other relationship omit kind and use a truthful short label. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
 Negated claims cannot be shown safely by this positive-only grammar: never turn "does not" into a positive arrow; lower confidence below 0.58. Put every explicitly stated color on the correct object.
 Teacher: ${JSON.stringify(text)}
@@ -39,7 +43,7 @@ function parseJson(content) {
   return JSON.parse((content.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ?? content).trim());
 }
 
-export function sceneValidationIssue(candidate, scene = { entities: [] }) {
+export function sceneValidationIssue(candidate, scene = { entities: [] }, sourceText = "") {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return "Return one JSON object.";
   if (candidate.blueprintVersion !== "1.0") return 'blueprintVersion must be "1.0".';
   if (!["replace", "extend"].includes(candidate.mode)) return 'mode must be "replace" or "extend".';
@@ -115,11 +119,11 @@ export function sceneValidationIssue(candidate, scene = { entities: [] }) {
       }
     }
   }
-  return null;
+  return sourceConstraintIssue(sourceText, candidate);
 }
 
-export function validScene(candidate, scene = { entities: [] }) {
-  return sceneValidationIssue(candidate, scene) === null;
+export function validScene(candidate, scene = { entities: [] }, sourceText = "") {
+  return sceneValidationIssue(candidate, scene, sourceText) === null;
 }
 
 export function validStrokes(candidate) {
@@ -213,8 +217,8 @@ async function validatedCompletion(prompt, config, validate, options = {}, diagn
 
 export function interpretScene(body, config, options = {}) {
   return validatedCompletion(scenePrompt(body.text.trim(), body.scene, body.reusableGlyphNouns || []),
-    config, (candidate) => validScene(candidate, body.scene), options,
-    (candidate) => sceneValidationIssue(candidate, body.scene));
+    config, (candidate) => validScene(candidate, body.scene, body.text), options,
+    (candidate) => sceneValidationIssue(candidate, body.scene, body.text));
 }
 
 export function generateGlyph(body, config, options = {}) {

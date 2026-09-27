@@ -5,7 +5,7 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 ## What is implemented
 
 - Android-first Capacitor app; local speech/text, deterministic scene compiler, SVG renderer, Undo, and accessible spoken scene summary.
-- Local supported constructions remain fast and work without network access. An isolated local SVG-ready regression run in this checkpoint measured p95 37.59 ms across 834 observations, **excluding speech recognition, browser commit/paint, and Android device scheduling**. This varies with host load and is not a phone latency claim.
+- Local supported constructions remain fast and work without network access. The latest isolated local SVG-ready regression run measured p95 18.17 ms across 834 observations with two test workers, **excluding speech recognition, browser commit/paint, and Android device scheduling**. This varies with host load and is not a phone latency claim.
 - A separate Node 24 service is wired for NVIDIA Nemotron 3 Super **on Nebius Token Factory** for unsupported scene language, noun-stroke generation, glyph editing, and lesson-noun prefetch. Credentials stay on the service. Direct NVIDIA Catalog and OpenRouter providers remain development fallbacks, not qualifying hackathon paths by themselves.
 - The Android and Pages workflows now build with the same public `TEGEERA_INTERPRETER_URL` variable; the API key is never a client build variable.
 - Client and service validate schema, bounds, and references. On failure, the existing accepted scene remains in place. This is a safety property, **not** proof of semantic correctness or doodle quality.
@@ -14,16 +14,16 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 - Reusable symbol drawings now render without category badge frames, and lone subjects use a tighter overview on phones. The single-subject phone screenshot was inspected.
 - Multi-object scenes now keep a complete overview and offer overlapping left/middle/right phone views in a taller canvas. Three part-whole phone crops were visually inspected; cropping is explicit and never changes the semantic scene. Real-device readability is still unverified.
 - Dense hosted scenes no longer shrink every object to 72% of its normal scale, and a lightweight object-name guide stays readable outside the SVG viewport. This improves legibility without duplicating every glyph, but does not repair incomplete meaning by itself.
-- A new reusable part-whole assembly layer places recognizable part glyphs against their whole. Complete hosted input → part → whole graphs now use the registered channel layout, so arrows no longer run across the wrong object merely because the model proposed scattered coordinates. Unknown glyphs do not acquire a pretend attachment. This is schematic composition, **not** proof of anatomical accuracy. The earlier staged review is `.visual-check/hosted-review-v4-staged/review.html`; the current live-response review is `.visual-check/hosted-review-v5-structural/review.html` and still needs human inspection.
+- A new reusable part-whole assembly layer places recognizable part glyphs against their whole. Complete hosted input → part → whole graphs now use the registered channel layout, so arrows no longer run across the wrong object merely because the model proposed scattered coordinates. Unknown glyphs do not acquire a pretend attachment. This is schematic composition, **not** proof of anatomical accuracy. The earlier staged review is `.visual-check/hosted-review-v4-staged/review.html`; the current live-response review is `.visual-check/hosted-review-v6-source-grounded/review.html` and still needs human phone inspection.
 - The optional model service now rejects forged forwarded-IP rate-limit bypasses, caps concurrent work and outbound attempts per UTC day, bounds prompt hints, and cancels provider work after a client disconnect. These are per-process prototype guards, not a provider billing limit or distributed quota.
-- Hosted plans cannot bypass the blueprint boundary with direct DoodleScript. Explicitly negated claims and missing or swapped stated colours fail closed before changing a drawing. This checks only those claims; general semantic completeness and visual quality remain unproven.
+- Hosted plans cannot bypass the blueprint boundary with direct DoodleScript. Explicitly negated claims and missing or swapped stated colours fail closed before changing a drawing. A shared service/browser source audit now also checks named passage-through links and applied-versus-opposing-force topology, repairing once or holding the old scene instead of drawing an incomplete graph. It is a narrow structural check; general semantic completeness and visual quality remain unproven.
 
 ## Verified in this checkpoint
 
 | Check | Result | Meaning |
 | --- | --- | --- |
-| Client suite | 479 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
-| Service suite | 18 passing | Mocked Nebius endpoint and key isolation, bounded schema correction, specialist-topology checks, invalid output, HTTP origin/health, usage guards, provider throttling, and disconnect cancellation. |
+| Client suite | 480 passing, 3 live-provider cases skipped | Regression safety with mocked hosted-service flow; no live model claim. |
+| Service suite | 20 passing | Mocked Nebius endpoint and key isolation, bounded schema/semantic correction, specialist-topology checks, invalid output, HTTP origin/health, usage guards, provider throttling, and disconnect cancellation. |
 | Offline artwork intake | 12 passing | Bounded Quick, Draw! sampling, SVG safety, explicit review, provenance and attribution. No candidate auto-ships. |
 | Hosted-planner gold and real-render gate | 13 passing | Saved blueprints run through the actual compiler and canvas; a complete structural transport plan is proven to reach the loop renderer. Human review remains separate. |
 | TypeScript, production bundle, Capacitor sync | Passing | Client assets compile and copy to Android. Does not compile an APK. |
@@ -31,7 +31,7 @@ This is a product-development checkpoint, not a claim that arbitrary speech alre
 | Independent teacher corpus | 25/60 drawn, 1/60 held, 34/60 clarified | Drawing/clarification counts only; not visual accuracy. |
 | Strict annotated gold | 3/29 passed | Current local engine; adding an untested model does not improve this score yet. |
 | Offline approved glyph pack | 0 entries | A no-cost Quick, Draw! candidate/review pipeline exists, but nothing has passed review into the app. Long-tail doodles still depend on an optional model or labelled fallback. |
-| Live Nebius connectivity and three-case comparison | Run locally | The latest bounded run is still 1/3 semantic-ready and 2/3 false-confident, but the passing case is now a complete circulation loop. No drawing has recorded visual approval. This is not a product pass. |
+| Live Nebius connectivity and three-case comparison | Run locally | The latest bounded run is 3/3 semantic-ready, with all required SVG cues and grammar detected; 0/3 recorded strict phone visual passes. One case required two model calls and 22.2 seconds. This is not a product pass or a broad accuracy estimate. |
 | Real-device latency, APK assemble, human visual approval | Not run | These remain required before a credible public demo. |
 
 ## First live Token Factory pilot
@@ -72,9 +72,21 @@ With the new general diagram protocol, an isolated local Nebius service evaluate
 
 This run is **1/3 semantic-ready, 2/3 false-confident, 0/3 recorded visual approvals**—not a broad accuracy estimate. All three responses were one provider attempt; reported total tokens were 1818, 1842, and 2231 respectively. Complete specialist diagrams are now representable and testable, but model choice and semantic self-checking remain the bottleneck. The static SVG inspection is not a browser/Android screenshot or proof of classroom usefulness.
 
+## Fourth bounded live comparison — source-grounded links
+
+The service and browser compiler now share narrow source-to-graph checks. An explicit input passing through a named part must reach that part, and an applied action opposed by a force must be represented by distinct arrows and contact. The service gives the model one bounded repair attempt; the browser holds the prior drawing if a bypass reaches it. These rules are structural and reusable across object names, not teacher-sentence branches. On the same three independent statements, without gold answers in the prompt, the final isolated local Nebius run was saved as `.visual-check/hosted-gold-v4b-prompt-report.json` and rendered at `.visual-check/hosted-review-v6-source-grounded/review.html`.
+
+| Case | Live semantic result | Service latency / attempts | Actual-render check |
+| --- | --- | ---: | --- |
+| #1 plant intake | 5/5 concepts, 4/4 directed links | 11385 ms / 1 | Part-whole-flow grammar and all required cues detected; static SVG inspected. |
+| #2 circulation | 4/4 concepts, 3/3 directed links | 11908 ms / 1 | Closed circulation-loop grammar and all required cues detected. |
+| #11 force/friction | 4/4 concepts, 3/3 directed links | 22179 ms / 2 | Force-diagram grammar and all required cues detected; static SVG inspected and floating surface alignment corrected. |
+
+This is **3/3 semantic-ready, 0/3 recorded strict visual passes** on a repeated, tiny subset. The machine cue checks do not prove artistic quality or phone readability; a static SVG is not a device screenshot. The two-call force case is much too slow for the real-time target. Reported tokens were 2447, 2204, and 6890, respectively, so retries also cost inference credit. An earlier run with the audit but without the revised planner instruction safely rejected #1 and #11; this is evidence of safer failure, not an improvement in broad acceptance by itself.
+
 ## Next gates, in order
 
-1. Inspect the latest saved three-case actual-render review with a human and record concrete rejection reasons. Improve general semantic completeness and false-confidence detection without adding statement-specific branches; the model still bypasses named intermediate parts and turns forces into actors. The $25 inference credit is not a production backend host or uptime guarantee.
+1. Inspect the latest saved three-case actual-render review on a real phone and record concrete acceptance/rejection reasons, including label readability, motion, and part composition. Improve general semantic completeness and false-confidence detection on **unseen** statements without adding statement-specific branches. The $25 inference credit is not a production backend host or uptime guarantee.
 2. Evaluate the **same independent 60 statements** through the hosted pipeline. The new [render-and-review workflow](HOSTED_EVALUATION.md) compares saved model responses with the actual canvas and records human decisions. Measure semantic completeness, unsafe acceptance, clarification rate, service latency, and visual appearance separately. No model gets a pass merely for returning valid JSON.
 3. Curate an offline pack of recognizable, original or properly licensed doodles. Each item needs provenance and 64 px human review. Keep unapproved candidates out of the release pack. Review in-scene composition and animation on an actual phone.
 4. Run speech-to-painted-frame traces on low- and mid-range Android hardware with warm/cold network, no network, and provider errors. Set p50/p95 budgets for *the whole user-visible path*, not just the local compiler.

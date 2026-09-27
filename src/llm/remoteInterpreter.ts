@@ -30,6 +30,8 @@ Rules:
 - x and y are 0..100. Preserve above/below and left/right order; Tegeera handles exact spacing. Labels are 1-4 words.
 - Do not emit glyphs, SVG, paths, pixels, explanations, or extra fields. Artwork is resolved separately while the labelled scene remains usable.
 - The current visual grammar cannot safely show negated claims. If the teacher says something does not happen, never convert it to an affirmative connection; set confidence below 0.58. Preserve every explicitly stated colour on the correct object.
+- If the teacher says an input passes through a named part, connect the input to that part, not just the larger whole. When an applied push/pull is opposed by friction, drag, or resistance, represent distinct applied and opposing force arrows and the contacted surface; do not replace this with a generic actor caption.
+- Typed visual links: partOf="part of", flowsInto="flows into", illuminates="illuminates", pumpsTo="pumps to", returnsTo="returns to", carries="carries", appliedTo="applied to", opposes="opposes", contacts="contacts". For a closed transport loop, use source→destination pumpsTo via payload, destination→source returnsTo via the same payload, and payload→enrichment carries. For applied force plus explicit opposition, use four distinct roles and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. Forces are arrows, not people. Only pumpsTo and returnsTo use a via ID.
 - Existing artwork labels (do not change meaning to favor them): ${JSON.stringify(reusableNouns)}.
 Teacher: ${JSON.stringify(text)}
 Current scene: ${JSON.stringify({ entities: scene.entities.map(({ id, kind, label, x, y }) => ({ id, kind, label, x, y })), relations: scene.relations ?? [] })}`;

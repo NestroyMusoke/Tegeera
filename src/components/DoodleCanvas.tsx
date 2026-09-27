@@ -842,7 +842,7 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
     const arrowHead = (endX: number, direction: 1 | -1, y: number) =>
       `M${endX - direction * 12} ${y - 9} L${endX} ${y} L${endX - direction * 12} ${y + 9}`;
     const appliedY = geometry.bodyY - 4;
-    const frictionY = geometry.bodyY + 52;
+    const frictionY = geometry.contactY - 10;
     return <g className="force-diagram-annotation" aria-label={`${geometry.appliedForce.label} acts on ${geometry.body.label}; ${geometry.opposingForce.label} opposes it on ${geometry.surface.label}`}>
       <g data-visual-cue="surface-line">
         <path d={`M${geometry.bodyX - 205} ${geometry.contactY} Q${geometry.bodyX} ${geometry.contactY - 6} ${geometry.bodyX + 205} ${geometry.contactY}`} fill="none" stroke="#514e47" strokeWidth="4" strokeLinecap="round" />

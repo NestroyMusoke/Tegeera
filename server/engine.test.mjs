@@ -53,6 +53,8 @@ test("prefers a private NVIDIA key and never inserts it into the teacher prompt"
   const prompt = scenePrompt("Roots absorb water", scene);
   assert.match(prompt, /essential named or implied visible part/);
   assert.match(prompt, /inventory explicitly named visible participants/);
+  assert.match(prompt, /direct X→whole shortcut is wrong/);
+  assert.match(prompt, /applied \*force\* is its own object/);
   assert.ok(!prompt.includes("private-key"));
 });
 
@@ -111,6 +113,53 @@ test("specialist links require complete, consistent diagrams rather than attract
   assert.equal(validScene(forces, scene), true);
   assert.match(sceneValidationIssue({ ...forces, connections: [forces.connections[0],
     { ...forces.connections[1], to: "body" }, forces.connections[2]] }, scene), /opposing force must oppose/);
+});
+
+test("source grounding detects omitted passage arrows and incomplete opposing forces without lesson nouns", () => {
+  const passage = {
+    blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["machine", "fuel", "inlet", "air", "vent"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 18, y: 40 })),
+    connections: [
+      { from: "inlet", to: "machine", label: "part of", kind: "partOf" },
+      { from: "vent", to: "machine", label: "part of", kind: "partOf" },
+      { from: "fuel", to: "machine", label: "flows into", kind: "flowsInto" },
+      { from: "air", to: "machine", label: "flows into", kind: "flowsInto" }
+    ]
+  };
+  const sentence = "A machine takes in fuel through its inlet and air through its vent";
+  assert.match(sceneValidationIssue(passage, scene, sentence), /fuel through inlet/);
+  const repaired = { ...passage, connections: passage.connections.map((link) =>
+    link.from === "fuel" ? { ...link, to: "inlet" } : link.from === "air" ? { ...link, to: "vent" } : link) };
+  assert.equal(sceneValidationIssue(repaired, scene, sentence), null);
+  assert.equal(sceneValidationIssue(repaired, scene, "A cloud moves through the sky"), null);
+
+  const force = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["sled", "snow", "pull", "drag"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 20, y: 50 })),
+    connections: [{ from: "pull", to: "sled", label: "pulls" }, { from: "drag", to: "sled", label: "slows" }] };
+  const forceSentence = "Pull a sled over snow; drag opposes the motion";
+  assert.match(sceneValidationIssue(force, scene, forceSentence), /complete appliedTo\/opposes\/contacts/);
+  assert.equal(sceneValidationIssue({ ...force, connections: [
+    { from: "pull", to: "sled", label: "applied to", kind: "appliedTo" },
+    { from: "drag", to: "pull", label: "opposes", kind: "opposes" },
+    { from: "sled", to: "snow", label: "contacts", kind: "contacts" }
+  ] }, scene, forceSentence), null);
+});
+
+test("a semantic omission triggers one bounded model repair with actionable feedback", async () => {
+  const first = { ...complete, connections: [{ from: "water", to: "plant", label: "flows into", kind: "flowsInto" },
+    { from: "roots", to: "plant", label: "part of", kind: "partOf" }] };
+  const corrected = { ...complete, connections: [{ from: "water", to: "roots", label: "flows into", kind: "flowsInto" },
+    { from: "roots", to: "plant", label: "part of", kind: "partOf" }] };
+  let calls = 0;
+  const fetchImpl = async (_url, request) => {
+    calls += 1;
+    if (calls === 2) assert.match(JSON.parse(request.body).messages[0].content, /water through roots/);
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(calls === 1 ? first : corrected) } }] }), { status: 200 });
+  };
+  const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nebius, { fetchImpl });
+  assert.equal(result.repaired, true);
+  assert.equal(calls, 2);
+  assert.equal(result.candidate.connections[0].to, "roots");
 });
 
 test("repairs malformed model JSON once, then returns a structurally complete plan", async () => {

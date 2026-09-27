@@ -13,6 +13,7 @@ import { applyDoodleScript } from "../doodlescript/scene";
 import { planCirculationLoop } from "../doodlescript/circulationLoop";
 import { planForceDiagram } from "../doodlescript/forceDiagram";
 import { universalEdgeGeometry } from "../doodlescript/universalEdge";
+import { sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
 
 export interface UniversalGlyphSources {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
@@ -228,6 +229,8 @@ export function compileUniversalScene(
   if (!parsedBlueprint.success) throw new Error("The model returned an incomplete visual blueprint. Try again or shorten the explanation.");
   const blueprint = parsedBlueprint.data;
   assertGroundedClaims(sourceText, blueprint);
+  const sourceIssue = sourceConstraintIssue(sourceText, blueprint);
+  if (sourceIssue) throw new Error(`The visual plan omitted a stated relationship: ${sourceIssue}`);
   const existingIds = new Set(blueprint.mode === "extend" ? scene.entities.map(({ id }) => id) : []);
   const newIds = new Set<string>();
   for (const object of blueprint.objects) {
