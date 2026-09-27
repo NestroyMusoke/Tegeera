@@ -350,4 +350,55 @@ describe("universal visual scene compiler", () => {
     expect(first).toEqual(second);
     expect(validateDoodleScript(first, initialScene).ok).toBe(true);
   });
+
+  it("compiles a complete transport topology into a closed diagram for unrelated nouns", () => {
+    const plan = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "pump", label: "pump", kind: "generic", x: 20, y: 50 },
+        { id: "filter", label: "filter", kind: "generic", x: 80, y: 50 },
+        { id: "water", label: "water", kind: "generic", x: 50, y: 30 },
+        { id: "minerals", label: "minerals", kind: "generic", x: 50, y: 70 }
+      ],
+      connections: [
+        { from: "pump", to: "filter", via: "water", label: "pumps to", kind: "pumpsTo" },
+        { from: "filter", to: "pump", via: "water", label: "returns to", kind: "returnsTo" },
+        { from: "water", to: "minerals", label: "carries", kind: "carries" }
+      ]
+    };
+    const script = compileUniversalScene(plan, initialScene, "A pump circulates water through a filter and back with minerals");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
+    expect(html).toContain('data-relation-layout="circulation-loop"');
+    expect(html).toContain('data-visual-cue="oxygenated-return-arrow closed-circulation-loop"');
+    expect(html).not.toContain('data-symbol-id="honest-sticker"');
+    expect(() => compileUniversalScene({ ...plan, connections: plan.connections.slice(0, 2) }, initialScene,
+      "A pump circulates water through a filter and back with minerals")).toThrow(/complete three-link topology/);
+  });
+
+  it("compiles an opposing-force topology into physical arrows and rejects reversed roles", () => {
+    const plan = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "sled", label: "sled", kind: "generic", x: 50, y: 40 },
+        { id: "snow", label: "packed snow", kind: "generic", x: 50, y: 70 },
+        { id: "pull", label: "pull", kind: "generic", x: 85, y: 40 },
+        { id: "drag", label: "drag", kind: "generic", x: 15, y: 40 }
+      ],
+      connections: [
+        { from: "pull", to: "sled", label: "applied to", kind: "appliedTo" },
+        { from: "drag", to: "pull", label: "opposes", kind: "opposes" },
+        { from: "sled", to: "snow", label: "contacts", kind: "contacts" }
+      ]
+    };
+    const script = compileUniversalScene(plan, initialScene, "A pull moves a sled across packed snow while drag opposes the pull");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
+    expect(html).toContain('data-relation-layout="force-diagram"');
+    expect(html).toContain('data-visual-cue="surface-line"');
+    expect(html).toContain('data-visual-cue="opposing-friction-arrow friction-arrow-smaller"');
+    expect(() => compileUniversalScene({ ...plan, connections: [plan.connections[0],
+      { ...plan.connections[1], to: "sled" }, plan.connections[2]] }, initialScene,
+    "A pull moves a sled across packed snow while drag opposes the pull")).toThrow(/roles do not connect/);
+  });
 });

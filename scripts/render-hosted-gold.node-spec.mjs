@@ -40,6 +40,35 @@ test('visual evidence checks concrete cues and layout rather than model claims',
   assert.deepEqual(evidence.missingCues, ['soil-boundary', 'water-entry-arrow', 'leaf-targeted-ray']);
 });
 
+test('a complete structural transport plan reaches the real loop renderer without a lesson template', async () => {
+  const temp = await mkdtemp(join(tmpdir(), 'tegeera-transport-render-'));
+  try {
+    const selected = { ...fullGold, cases: [fullGold.cases.find(({ id }) => id === 2)] };
+    const corpusHash = createHash('sha256').update(JSON.stringify(selected) + '\n' + corpusMarkdown).digest('hex');
+    const candidate = {
+      blueprintVersion: '1.0', mode: 'replace', confidence: 0.9,
+      objects: ['heart', 'lungs', 'blood', 'oxygen'].map((id, index) => ({
+        id, label: id, kind: 'generic', x: 20 + index * 20, y: 40
+      })),
+      connections: [
+        { from: 'heart', to: 'lungs', via: 'blood', label: 'pumps to', kind: 'pumpsTo' },
+        { from: 'lungs', to: 'heart', via: 'blood', label: 'returns to', kind: 'returnsTo' },
+        { from: 'blood', to: 'oxygen', label: 'carries', kind: 'carries' }
+      ]
+    };
+    const reportPath = join(temp, 'report.json');
+    await writeFile(reportPath, JSON.stringify({ formatVersion: '1.0.0', corpusHash,
+      mode: 'fixture', responses: { 2: { candidate } } }));
+    const manifest = await renderHostedGold({ reportPath, out: join(temp, 'review'), gold: selected, corpusMarkdown, css });
+    const item = manifest.cases[0];
+    assert.equal(item.score.semanticReady, true);
+    assert.equal(item.visual.grammarMatch, true);
+    assert.deepEqual(item.visual.missingCues, []);
+    assert.equal(item.rendered, true);
+    assert.equal(item.strictReady, undefined);
+  } finally { await rm(temp, { recursive: true, force: true }); }
+});
+
 test('real canvas render exposes the semantic/visual gap and fixtures never strictly pass', async () => {
   const temp = await mkdtemp(join(tmpdir(), 'tegeera-hosted-render-'));
   try {

@@ -10,6 +10,9 @@ import {
 import { glyphKey, glyphSchema, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
 import { planPartWholeFlow } from "../doodlescript/partWholeFlow";
 import { applyDoodleScript } from "../doodlescript/scene";
+import { planCirculationLoop } from "../doodlescript/circulationLoop";
+import { planForceDiagram } from "../doodlescript/forceDiagram";
+import { universalEdgeGeometry } from "../doodlescript/universalEdge";
 
 export interface UniversalGlyphSources {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
@@ -25,7 +28,13 @@ export const universalConnectionLabels = {
   flowsInto: "flows into",
   illuminates: "illuminates",
   before: "before",
-  causes: "causes"
+  causes: "causes",
+  pumpsTo: "pumps to",
+  returnsTo: "returns to",
+  carries: "carries",
+  appliedTo: "applied to",
+  opposes: "opposes",
+  contacts: "contacts"
 } as const;
 type TypedConnectionKind = keyof typeof universalConnectionLabels;
 
@@ -33,11 +42,15 @@ const universalConnectionSchema = z.object({
   from: z.string().min(1).max(30),
   to: z.string().min(1).max(30),
   label: z.string().min(1).max(32),
-  kind: z.enum(["relatesTo", "partOf", "flowsInto", "illuminates", "before", "causes"]).optional()
+  kind: z.enum(["relatesTo", ...Object.keys(universalConnectionLabels) as TypedConnectionKind[]]).optional(),
+  via: z.string().min(1).max(30).optional()
 }).superRefine((connection, context) => {
   if (connection.kind && connection.kind !== "relatesTo"
     && connection.label.trim().toLowerCase() !== universalConnectionLabels[connection.kind as TypedConnectionKind]) {
     context.addIssue({ code: "custom", path: ["label"], message: "A typed visual relationship needs its exact registered label." });
+  }
+  if (Boolean(connection.via) !== ["pumpsTo", "returnsTo"].includes(connection.kind ?? "")) {
+    context.addIssue({ code: "custom", path: ["via"], message: "Only transport-loop arrows need an explicit payload ID." });
   }
 });
 
@@ -60,6 +73,49 @@ export const universalSceneBlueprintSchema = z.object({
 });
 
 export type UniversalSceneBlueprint = z.infer<typeof universalSceneBlueprintSchema>;
+
+type VisualMotif =
+  | { family: "circulation-loop"; source: string; destination: string; payload: string; enrichment: string }
+  | { family: "force-diagram"; body: string; surface: string; appliedForce: string; opposingForce: string; direction: "left" | "right" };
+
+const specialistKinds = new Set(["pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"]);
+
+/** A diagram is selected by a complete, consistent graph—not a lesson noun. */
+function visualMotif(blueprint: UniversalSceneBlueprint): VisualMotif | null {
+  const edges = blueprint.connections;
+  if (!edges.some((edge) => specialistKinds.has(edge.kind ?? ""))) return null;
+  if (blueprint.mode !== "replace" || blueprint.objects.length !== 4 || edges.length !== 3) {
+    throw new Error("A specialist diagram needs four distinct roles and its complete three-link topology.");
+  }
+  const one = (kind: string) => edges.filter((edge) => edge.kind === kind);
+  const transport = ["pumpsTo", "returnsTo", "carries"];
+  if (transport.some((kind) => one(kind).length)) {
+    if (transport.some((kind) => one(kind).length !== 1)) throw new Error("A transport loop needs outbound, return, and enrichment links.");
+    const outbound = one("pumpsTo")[0]; const returning = one("returnsTo")[0]; const carry = one("carries")[0];
+    const roles = [outbound.from, outbound.to, outbound.via, carry.to];
+    if (!outbound.via || returning.via !== outbound.via || returning.from !== outbound.to
+      || returning.to !== outbound.from || carry.from !== outbound.via
+      || new Set(roles).size !== 4 || roles.some((id) => !blueprint.objects.some((object) => object.id === id))) {
+      throw new Error("The transport-loop roles or return direction do not agree.");
+    }
+    return { family: "circulation-loop", source: outbound.from, destination: outbound.to,
+      payload: outbound.via, enrichment: carry.to };
+  }
+  if (["appliedTo", "opposes", "contacts"].some((kind) => one(kind).length !== 1)) {
+    throw new Error("An opposing-force diagram needs applied, opposing, and contact links.");
+  }
+  const applied = one("appliedTo")[0]; const opposed = one("opposes")[0]; const contact = one("contacts")[0];
+  const roles = [applied.to, contact.to, applied.from, opposed.from];
+  if (opposed.to !== applied.from || contact.from !== applied.to || new Set(roles).size !== 4
+    || roles.some((id) => !blueprint.objects.some((object) => object.id === id))) {
+    throw new Error("The opposing-force roles do not connect to the same body and applied force.");
+  }
+  const force = blueprint.objects.find((object) => object.id === applied.from)!;
+  const body = blueprint.objects.find((object) => object.id === applied.to)!;
+  return { family: "force-diagram", body: applied.to, surface: contact.to,
+    appliedForce: applied.from, opposingForce: opposed.from,
+    direction: force.x > body.x ? "left" : "right" };
+}
 
 const colorWords = new Set<string>(entityColorSchema.options);
 const negatedClaim = /\b(?:not|never|no|without|neither|nor|cannot|can't|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|won't|wouldn't|couldn't|shouldn't|hasn't|haven't|hadn't)\b/i;
@@ -221,9 +277,11 @@ export function compileUniversalScene(
   };
   blueprint.connections.forEach((connection, index) => {
     const sourceId = resolveReference(connection.from); const targetId = resolveReference(connection.to);
+    const viaId = connection.via ? resolveReference(connection.via) : undefined;
     if (!sourceId || !targetId || sourceId === targetId) {
       throw new Error("A visual relationship referred to a missing or ambiguous object. Please try again.");
     }
+    if (connection.via && !viaId) throw new Error("A transport arrow referred to a missing payload object.");
     let relationId = `universal-relation-${index + 1}`; let suffix = 2;
     while ((scene.relations ?? []).some(({ id }) => id === relationId)
       || commands.some((command) => command.action === "relate" && command.relation.id === relationId)) {
@@ -231,39 +289,86 @@ export function compileUniversalScene(
     }
     commands.push({ action: "relate", relation: {
       id: relationId, kind: connection.kind ?? "relatesTo", sourceIds: [sourceId], targetIds: [targetId],
-      predicate: connection.label.trim()
+      predicate: connection.label.trim(),
+      ...(viaId ? { objectIds: [viaId] } : {})
     } });
   });
+  const motif = visualMotif(blueprint);
+  if (motif) {
+    const roleById = motif.family === "circulation-loop"
+      ? new Map([[motif.source, "circulation-source"], [motif.destination, "circulation-destination"],
+        [motif.payload, "circulation-payload"], [motif.enrichment, "circulation-enrichment"]] as const)
+      : new Map([[motif.body, "object"], [motif.surface, "surface"],
+        [motif.appliedForce, "force"], [motif.opposingForce, "force"]] as const);
+    commands.forEach((command, index) => {
+      if (command.action !== "create") return;
+      const rawId = blueprint.objects.find((object) => idMap.get(object.id) === command.entity.id)?.id;
+      const role = rawId && roleById.get(rawId);
+      if (!role) return;
+      commands[index] = { ...command, entity: { ...command.entity, visualRole: role,
+        ...(motif.family === "force-diagram" && (rawId === motif.appliedForce || rawId === motif.opposingForce)
+          ? { direction: rawId === motif.appliedForce ? motif.direction : motif.direction === "right" ? "left" : "right" }
+          : {}) } };
+    });
+  }
   const script: DoodleScript = {
     schemaVersion: "2.27.0", sceneId: scene.sceneId, revision: scene.revision + 1,
     confidence: blueprint.confidence, sourceText, commands,
     context: { subjectIds: createdIds.slice(0, 1), objectIds: createdIds.slice(1) }
   };
+  const requireVisibleConnectors = (candidateScript: DoodleScript): DoodleScript => {
+    const projected = applyDoodleScript(scene, candidateScript);
+    if ((projected.relations ?? []).some((relation) => relation.kind === "relatesTo"
+      && !universalEdgeGeometry(relation, projected.entities))) {
+      throw new Error("The visual plan has a relationship that cannot be drawn without crossing another object.");
+    }
+    return candidateScript;
+  };
+  if (motif) {
+    const staged = applyDoodleScript(scene, script);
+    const mapped = motif.family === "circulation-loop"
+      ? planCirculationLoop(staged, {
+        sourceId: idMap.get(motif.source)!, destinationId: idMap.get(motif.destination)!,
+        payloadId: idMap.get(motif.payload)!, enrichmentId: idMap.get(motif.enrichment)!
+      }, new Set(createdIds))
+      : planForceDiagram(staged, {
+        bodyId: idMap.get(motif.body)!, surfaceId: idMap.get(motif.surface)!,
+        appliedForceId: idMap.get(motif.appliedForce)!, opposingForceId: idMap.get(motif.opposingForce)!
+      }, new Set(createdIds), motif.direction);
+    if (!mapped) throw new Error("The complete diagram cannot fit safely on this canvas.");
+    const moveById = new Map(mapped.map((move) => [move.targetId, move] as const));
+    return requireVisibleConnectors({ ...script, commands: commands.map((command) => {
+      if (command.action !== "create") return command;
+      const move = moveById.get(command.entity.id);
+      if (!move) return command;
+      return { ...command, entity: { ...command.entity, x: move.x, y: move.y } };
+    }) });
+  }
   // A complete input → part → whole graph has a shared layout grammar. Preserve
   // the model's entities and meanings, but stage its channels in reading order.
   // Partial or mixed graphs keep the ordinary universal layout instead.
   const parts = blueprint.connections.filter((connection) => connection.kind === "partOf");
   if (blueprint.mode !== "replace" || !parts.length || parts.length > 3
     || blueprint.connections.length !== parts.length * 2
-    || parts.some((part) => part.to !== parts[0].to)) return script;
+    || parts.some((part) => part.to !== parts[0].to)) return requireVisibleConnectors(script);
   const channels = parts.map((part) => {
     const incoming = blueprint.connections.filter((connection) =>
       (connection.kind === "flowsInto" || connection.kind === "illuminates") && connection.to === part.from);
     return incoming.length === 1 ? { inputId: incoming[0].from, partId: part.from,
       flowPredicate: incoming[0].kind as "flowsInto" | "illuminates" } : null;
   });
-  if (channels.some((channel) => !channel)) return script;
+  if (channels.some((channel) => !channel)) return requireVisibleConnectors(script);
   const completeChannels = channels as { inputId: string; partId: string; flowPredicate: "flowsInto" | "illuminates" }[];
   const references = [parts[0].to, ...completeChannels.flatMap(({ inputId, partId }) => [inputId, partId])];
-  if (new Set(references).size !== references.length || references.length !== blueprint.objects.length) return script;
+  if (new Set(references).size !== references.length || references.length !== blueprint.objects.length) return requireVisibleConnectors(script);
   completeChannels.sort((a, b) => blueprint.objects.find((object) => object.id === a.partId)!.y
     - blueprint.objects.find((object) => object.id === b.partId)!.y);
   const mapped = completeChannels.map(({ inputId, partId, flowPredicate }) => ({
     inputId: idMap.get(inputId)!, partId: idMap.get(partId)!, flowPredicate
   }));
   const staged = planPartWholeFlow(applyDoodleScript(scene, script), idMap.get(parts[0].to)!, mapped, new Set(createdIds));
-  if (!staged) return script;
+  if (!staged) return requireVisibleConnectors(script);
   const moveById = new Map(staged.map(({ targetId, x, y }) => [targetId, { x, y }] as const));
-  return { ...script, commands: commands.map((command) => command.action === "create" && moveById.has(command.entity.id)
-    ? { ...command, entity: { ...command.entity, ...moveById.get(command.entity.id)! } } : command) };
+  return requireVisibleConnectors({ ...script, commands: commands.map((command) => command.action === "create" && moveById.has(command.entity.id)
+    ? { ...command, entity: { ...command.entity, ...moveById.get(command.entity.id)! } } : command) });
 }

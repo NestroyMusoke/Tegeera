@@ -9,7 +9,9 @@ const colors = new Set(["red", "orange", "yellow", "green", "blue", "purple", "p
 const ink = new Set(["#2f3e46", "#52796f", "#84a98c", "#f4a261", "#e9c46a", "#cad2c5"]);
 const typedConnectionLabels = Object.freeze({
   partOf: "part of", flowsInto: "flows into", illuminates: "illuminates",
-  before: "before", causes: "causes"
+  before: "before", causes: "causes",
+  pumpsTo: "pumps to", returnsTo: "returns to", carries: "carries",
+  appliedTo: "applied to", opposes: "opposes", contacts: "contacts"
 });
 
 export function scenePrompt(text, scene, reusableNouns = []) {
@@ -21,6 +23,7 @@ export function scenePrompt(text, scene, reusableNouns = []) {
 {"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"source","label":"source","kind":"generic","x":20,"y":50},{"id":"destination","label":"destination","kind":"generic","x":80,"y":50}],"connections":[{"from":"source","to":"destination","label":"flows into","kind":"flowsInto"}]}
 Represent every essential named or implied visible part needed to explain the teacher's mechanism. Include inputs, outputs, sources, destinations, containers and part-whole relations when the statement depends on them. Do not invent unsupported facts. Use 1-8 objects, 0-12 connections. If a faithful plan needs more than eight objects or meaning is unclear, set confidence below 0.58. Object IDs must be unique and connections must point to exact object IDs, or existing IDs only in extend mode. Use extend only for an explicit addition to the current scene. Kind is one of ${[...kinds].join(", ")}; use generic for every other noun. Optional color is one of ${[...colors].join(", ")}; omit when not stated. x/y are 0..100 and must preserve above/below and left/right. Each label is 1-4 words. A connection label states the actual relationship. No glyphs, SVG, paths or explanations. Existing artwork labels are only retrieval hints: ${JSON.stringify(reusableNouns)}.
 Before returning JSON, silently check every clause: inventory explicitly named visible participants, preserve each source and recipient, and check that every stated action has the correct directed relationship. Do not replace an actor-to-recipient action with only a chain through an intermediate substance. A material moving into something may flowsInto it; light reaching a target illuminates it instead. If an essential participant or relationship cannot be represented faithfully, lower confidence below 0.58. Do not output this checklist.
+Use structural diagram links when the explanation truly has their complete roles. A closed transport loop needs four distinct objects (source, destination, moving payload, enrichment) and exactly three links: source→destination pumpsTo via payload, destination→source returnsTo via the SAME payload, payload→enrichment carries. An opposing-force diagram needs four distinct objects (body, contact surface, applied force, opposing force) and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. The optional "via" field is the exact payload object ID and is required only on pumpsTo/returnsTo. Forces are arrows, not people. Do not use either specialist link family unless all its roles and directions are represented; a partial specialist graph is invalid. These are reusable topologies, not lesson templates.
 For a connection, use an optional typed kind only when its exact meaning applies: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}. Its label must exactly match that quoted text. These are general visual grammar, not special lesson templates. For every other relationship omit kind and use a truthful short label. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
 Negated claims cannot be shown safely by this positive-only grammar: never turn "does not" into a positive arrow; lower confidence below 0.58. Put every explicitly stated color on the correct object.
 Teacher: ${JSON.stringify(text)}
@@ -73,10 +76,43 @@ export function sceneValidationIssue(candidate, scene = { entities: [] }) {
     if (typeof relation.label !== "string" || !relation.label.trim() || relation.label.length > 32) {
       return "Every connection needs a non-empty label of at most 32 characters.";
     }
+    if (Boolean(relation.via) !== ["pumpsTo", "returnsTo"].includes(relation.kind ?? "")) {
+      return "Only pumpsTo and returnsTo links need a via payload ID; both must provide it.";
+    }
+    if (relation.via && (!ids.has(relation.via) || relation.via === relation.from || relation.via === relation.to)) {
+      return "A transport via ID must name a separate object in the scene.";
+    }
     if (relation.kind !== undefined && relation.kind !== "relatesTo"
       && (!Object.hasOwn(typedConnectionLabels, relation.kind)
         || relation.label.trim().toLowerCase() !== typedConnectionLabels[relation.kind])) {
       return `A typed connection must use a supported kind with its exact label: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}.`;
+    }
+  }
+  const edges = candidate.connections;
+  const one = (kind) => edges.filter((edge) => edge.kind === kind);
+  const specialist = ["pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"];
+  if (edges.some((edge) => specialist.includes(edge.kind))) {
+    if (candidate.mode !== "replace" || candidate.objects.length !== 4 || edges.length !== 3) {
+      return "A specialist diagram needs replace mode, four distinct role objects, and exactly three links.";
+    }
+    if (["pumpsTo", "returnsTo", "carries"].some((kind) => one(kind).length)) {
+      if (["pumpsTo", "returnsTo", "carries"].some((kind) => one(kind).length !== 1)) {
+        return "A transport loop needs one pumpsTo, one returnsTo, and one carries link.";
+      }
+      const out = one("pumpsTo")[0]; const back = one("returnsTo")[0]; const carry = one("carries")[0];
+      if (back.from !== out.to || back.to !== out.from || back.via !== out.via
+        || carry.from !== out.via || new Set([out.from, out.to, out.via, carry.to]).size !== 4) {
+        return "The transport loop must return to its source with the same payload and a distinct enrichment.";
+      }
+    } else {
+      if (["appliedTo", "opposes", "contacts"].some((kind) => one(kind).length !== 1)) {
+        return "An opposing-force diagram needs one appliedTo, one opposes, and one contacts link.";
+      }
+      const applied = one("appliedTo")[0]; const opposed = one("opposes")[0]; const contact = one("contacts")[0];
+      if (opposed.to !== applied.from || contact.from !== applied.to
+        || new Set([applied.from, applied.to, opposed.from, contact.to]).size !== 4) {
+        return "The opposing force must oppose the applied force, and the body must contact the surface.";
+      }
     }
   }
   return null;

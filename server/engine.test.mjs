@@ -86,6 +86,33 @@ test("scene validator rejects omitted endpoints, duplicate objects and invented 
   assert.match(sceneValidationIssue({ ...complete, connections: [{ from: "water", to: "roots", label: "flow", kind: "flowsInto" }] }, scene), /exact label/);
 });
 
+test("specialist links require complete, consistent diagrams rather than attractive partial arrows", () => {
+  const objects = ["pump", "filter", "water", "minerals"].map((id, index) => ({
+    id, label: id, kind: "generic", x: 18 + index * 20, y: 40
+  }));
+  const transport = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9, objects, connections: [
+    { from: "pump", to: "filter", via: "water", label: "pumps to", kind: "pumpsTo" },
+    { from: "filter", to: "pump", via: "water", label: "returns to", kind: "returnsTo" },
+    { from: "water", to: "minerals", label: "carries", kind: "carries" }
+  ] };
+  assert.equal(validScene(transport, scene), true);
+  assert.match(sceneValidationIssue({ ...transport, connections: transport.connections.slice(0, 2) }, scene), /exactly three links/);
+  assert.match(sceneValidationIssue({ ...transport, connections: [transport.connections[0],
+    { ...transport.connections[1], via: "minerals" }, transport.connections[2]] }, scene), /same payload/);
+  assert.match(sceneValidationIssue({ ...transport, connections: [transport.connections[0],
+    { ...transport.connections[1], from: "pump", to: "filter" }, transport.connections[2]] }, scene), /return to its source/);
+  const forces = { ...transport, objects: ["body", "surface", "applied", "opposing"].map((id, index) => ({
+    id, label: id, kind: "generic", x: 18 + index * 20, y: 40
+  })), connections: [
+    { from: "applied", to: "body", label: "applied to", kind: "appliedTo" },
+    { from: "opposing", to: "applied", label: "opposes", kind: "opposes" },
+    { from: "body", to: "surface", label: "contacts", kind: "contacts" }
+  ] };
+  assert.equal(validScene(forces, scene), true);
+  assert.match(sceneValidationIssue({ ...forces, connections: [forces.connections[0],
+    { ...forces.connections[1], to: "body" }, forces.connections[2]] }, scene), /opposing force must oppose/);
+});
+
 test("repairs malformed model JSON once, then returns a structurally complete plan", async () => {
   let calls = 0;
   const fetchImpl = async (_url, request) => {

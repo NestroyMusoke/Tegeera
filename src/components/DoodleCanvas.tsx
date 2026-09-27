@@ -33,7 +33,7 @@ import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
-import { glyphAnchor } from "../glyphs/glyph";
+import { universalEdgeGeometry } from "../doodlescript/universalEdge";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -968,29 +968,15 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
     );
   }
   if (relation.kind === "relatesTo") {
-    const source = entities.find(({ id }) => id === relation.sourceIds[0]);
-    const target = entities.find(({ id }) => id === relation.targetIds[0]);
-    if (!source || !target) return null;
-    const sourceCenter = { x: source.x * 10, y: source.y * 6.2 };
-    const targetCenter = { x: target.x * 10, y: target.y * 6.2 };
-    const nearestAnchor = (entity: SceneEntity, toward: { x: number; y: number }) => entity.glyph
-      ? (["top", "ground", "front"] as const).map((name) => glyphAnchor(entity, name))
-        .sort((a, b) => Math.hypot(a.x - toward.x, a.y - toward.y) - Math.hypot(b.x - toward.x, b.y - toward.y))[0]
-      : { x: entity.x * 10, y: entity.y * 6.2 };
-    const sourceAnchor = nearestAnchor(source, targetCenter); const targetAnchor = nearestAnchor(target, sourceCenter);
-    const sx = sourceAnchor.x; const sy = sourceAnchor.y;
-    const tx = targetAnchor.x; const ty = targetAnchor.y;
-    const length = Math.hypot(tx - sx, ty - sy) || 1;
-    const ux = (tx - sx) / length; const uy = (ty - sy) / length;
-    const startX = source.glyph ? sx : sx + ux * 52; const startY = source.glyph ? sy : sy + uy * 42;
-    const endX = target.glyph ? tx : tx - ux * 52; const endY = target.glyph ? ty : ty - uy * 42;
-    const normalX = -uy * 9; const normalY = ux * 9;
+    const geometry = universalEdgeGeometry(relation, entities);
+    if (!geometry) return null;
     const label = relation.predicate ?? "relates to";
-    return <g className="universal-relation" aria-label={`${source.label} ${label} ${target.label}`} data-visual-cue="semantic-connection">
-      <path className="universal-relation-flow" d={`M${startX} ${startY} L${endX} ${endY}`} fill="none" stroke="#49776f" strokeWidth="4" strokeDasharray="10 7" strokeLinecap="round" />
-      <path d={`M${endX - ux * 14 + normalX} ${endY - uy * 14 + normalY} L${endX} ${endY} L${endX - ux * 14 - normalX} ${endY - uy * 14 - normalY}`} fill="none" stroke="#49776f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x={(startX + endX) / 2 - Math.min(72, label.length * 4.5)} y={(startY + endY) / 2 - 23} width={Math.min(144, label.length * 9)} height="25" rx="9" fill="#fbf7ed" opacity=".94" />
-      <text x={(startX + endX) / 2} y={(startY + endY) / 2 - 6} textAnchor="middle" fill="#315f59" fontSize="14" fontWeight="800">{label}</text>
+    return <g className="universal-relation" aria-label={`${geometry.source.label} ${label} ${geometry.target.label}`}
+      data-visual-cue="semantic-connection" data-route={geometry.route}>
+      <path className="universal-relation-flow" d={geometry.path} fill="none" stroke="#49776f" strokeWidth="4" strokeDasharray="10 7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={geometry.arrow} fill="none" stroke="#49776f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x={geometry.labelX - Math.min(72, label.length * 4.5)} y={geometry.labelY - 17} width={Math.min(144, label.length * 9)} height="25" rx="9" fill="#fbf7ed" opacity=".94" />
+      <text x={geometry.labelX} y={geometry.labelY} textAnchor="middle" fill="#315f59" fontSize="14" fontWeight="800">{label}</text>
     </g>;
   }
   // Mixed-row relations remain in the explicit key until routed connectors exist.
