@@ -32,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Run automated tests
-        run: npm test
+        run: npm test -- --maxWorkers=2
 
       - name: Verify hosted interpreter
         run: npm test --prefix server

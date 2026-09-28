@@ -9,6 +9,14 @@ describe("runtime latency evidence", () => {
     });
   });
 
+  it("distinguishes hosted provider time from end-to-end paint without recording the utterance", () => {
+    const sample = makeLatencySample(2, "typed", "draw", 100, 8100, 8102, 8120, undefined,
+      { interpretationPath: "hosted", providerAttempts: 2, providerMs: 7900.125 });
+    expect(sample).toMatchObject({ decisionMs: 8000, paintMs: 8020,
+      interpretationPath: "hosted", providerAttempts: 2, providerMs: 7900.13 });
+    expect(JSON.stringify(sample)).not.toMatch(/utterance|transcript|teacher/i);
+  });
+
   it("computes stable nearest-rank p50 and p95 summaries", () => {
     const samples = Array.from({ length: 20 }, (_, index) => makeLatencySample(index, "typed", "draw", 0, index + 1, index + 2, index + 3));
     expect(summarizeLatency(samples)).toEqual({ count: 20, decisionP50Ms: 10, paintP50Ms: 12, paintP95Ms: 21 });

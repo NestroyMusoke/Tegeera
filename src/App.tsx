@@ -27,6 +27,7 @@ import {
   retainLatencyWindow,
   summarizeLatency,
   type InputSource,
+  type InterpretationPath,
   type LatencySample,
   type PipelineOutcome
 } from "./telemetry/latency";
@@ -38,6 +39,9 @@ interface PendingLatency {
   receivedAt: number;
   decisionAt: number;
   speechFinalizationMs?: number;
+  interpretationPath: InterpretationPath;
+  providerAttempts?: number;
+  providerMs?: number;
 }
 
 const suggestions = [
@@ -215,10 +219,14 @@ function App() {
     cancelPendingRemote();
     const receivedAt = speechTiming?.finalReceivedAt ?? performance.now();
     const source: InputSource = speechTiming ? "speech" : "typed";
+    let interpretationPath: InterpretationPath = "local";
+    let providerAttempts: number | undefined;
+    let providerMs: number | undefined;
     const markDecision = (outcome: PipelineOutcome) => {
       pendingLatency.current = {
         id: ++latencySequence.current, source, outcome, receivedAt,
-        decisionAt: performance.now(), speechFinalizationMs: speechTiming?.finalizationMs
+        decisionAt: performance.now(), speechFinalizationMs: speechTiming?.finalizationMs,
+        interpretationPath, providerAttempts, providerMs
       };
     };
     const interpretation = interpretTeacherText(text, targetScene);
@@ -228,6 +236,7 @@ function App() {
         const controller = new AbortController();
         remoteRequest.current = controller;
         const cached = acceptedPlanCache.current.get(text, targetScene);
+        interpretationPath = cached ? "session-replay" : "hosted";
         let timedOut = false;
         const timer = cached ? undefined : setTimeout(() => { timedOut = true; controller.abort(); }, 45_000);
         setRemoteBusy(!cached);
@@ -238,8 +247,12 @@ function App() {
           .filter((noun) => text.toLowerCase().includes(noun)).slice(0, 12);
         const response = cached ? Promise.resolve(cached)
           : interpretRemotely(text, targetScene, openRouterKey, controller.signal, reusableNouns, localAiEnabled);
-        void response.then(({ candidate, model, provider }) => {
+        void response.then(({ candidate, model, provider, providerAttempts: attempts, providerAttemptMs }) => {
           if (requestId !== remoteRequestSequence.current || controller.signal.aborted) return;
+          providerAttempts = typeof attempts === "number" && Number.isInteger(attempts) && attempts >= 0 && attempts <= 2 ? attempts : undefined;
+          providerMs = Array.isArray(providerAttemptMs) && providerAttemptMs.length <= 2
+            && providerAttemptMs.every((ms) => Number.isFinite(ms) && ms >= 0 && ms <= 120_000)
+            ? providerAttemptMs.reduce((sum, ms) => sum + ms, 0) : undefined;
           setLastRemoteModel(model ?? (hostedInterpreterUrl ? "hosted model" : DEFAULT_FREE_SCENE_MODEL));
           setAiStatus(cached ? "Reused a previously accepted visual plan" : `${provider ?? "AI"} returned a visual plan`);
           const compiled = compileUniversalScene(candidate, targetScene, text, {
@@ -329,7 +342,8 @@ function App() {
       if (cancelled) return;
       const sample = makeLatencySample(
         pending.id, pending.source, pending.outcome, pending.receivedAt,
-        pending.decisionAt, commitAt, performance.now(), pending.speechFinalizationMs
+        pending.decisionAt, commitAt, performance.now(), pending.speechFinalizationMs,
+        { interpretationPath: pending.interpretationPath, providerAttempts: pending.providerAttempts, providerMs: pending.providerMs }
       );
       setLatencySamples((current) => retainLatencyWindow(current, sample));
     };

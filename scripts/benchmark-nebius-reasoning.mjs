@@ -14,13 +14,15 @@ const option = (name, fallback) => {
 };
 const ids = option("--ids", "1,2,11").split(",").map(Number);
 const modes = option("--modes", "default,off").split(",");
+const responseFormat = option("--response-format", "default");
 if (args.includes("--help")) {
-  console.log("Usage: npm run benchmark:nebius-latency -- [--ids 1,2,11] [--modes default,low,off] [--out .visual-check/nebius-reasoning-benchmark.json]");
+  console.log("Usage: npm run benchmark:nebius-latency -- [--ids 1,2,11] [--modes default,low,off] [--response-format default|json|schema] [--out .visual-check/nebius-reasoning-benchmark.json]");
   process.exit(0);
 }
 if (!ids.length || ids.length > 3 || ids.some((id) => !Number.isInteger(id))
   || new Set(ids).size !== ids.length || modes.length < 1 || modes.length > 3
-  || modes.some((mode) => !["default", "low", "off"].includes(mode)) || new Set(modes).size !== modes.length) {
+  || modes.some((mode) => !["default", "low", "off"].includes(mode)) || new Set(modes).size !== modes.length
+  || !["default", "json", "schema"].includes(responseFormat)) {
   throw new Error("This experiment is limited to three unique gold IDs and the default/low/off thinking modes.");
 }
 const config = modelConfiguration();
@@ -41,14 +43,16 @@ for (const [index, task] of tasks.entries()) {
   let row;
   try {
     const result = await interpretScene({ text: statements.get(task.id), scene: { entities: [], relations: [] } }, config,
-      { nebiusThinking: task.mode, signal: AbortSignal.timeout(45_000) });
+      { nebiusThinking: task.mode, nebiusResponseFormat: responseFormat, signal: AbortSignal.timeout(45_000) });
     const score = scoreBlueprint(gold.cases.find((item) => item.id === task.id), result.candidate);
-    row = { id: task.id, mode: task.mode, semanticReady: score.semanticReady,
-      concepts: score.conceptCoverage, topology: score.topologyCoverage,
+    row = { id: task.id, mode: task.mode, responseFormat, semanticReady: score.semanticReady,
+      concepts: score.conceptCoverage, topology: score.topologyCoverage, predicates: score.predicateCoverage,
+      missingConcepts: score.missingConcepts, missingEdges: score.missingEdges,
+      unverifiedPredicates: score.unverifiedPredicates,
       elapsedMs: Math.round(performance.now() - started), providerAttemptMs: result.providerAttemptMs,
       providerAttempts: result.providerAttempts, usage: result.usage };
   } catch (error) {
-    row = { id: task.id, mode: task.mode, semanticReady: false,
+    row = { id: task.id, mode: task.mode, responseFormat, semanticReady: false,
       elapsedMs: Math.round(performance.now() - started),
       error: error instanceof Error ? error.message.slice(0, 160) : "Unknown provider error" };
   }

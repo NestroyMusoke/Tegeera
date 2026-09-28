@@ -4,6 +4,8 @@ export interface RemoteInterpretation {
   candidate: unknown;
   provider?: string;
   model?: string;
+  providerAttempts?: number;
+  providerAttemptMs?: number[];
 }
 
 export const hostedInterpreterUrl = (import.meta.env.VITE_TEGEERA_INTERPRETER_URL as string | undefined)?.trim().replace(/\/$/, "");

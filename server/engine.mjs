@@ -1,4 +1,5 @@
 import { sourceConstraintIssue } from "../shared/sourceConstraints.mjs";
+import { SCENE_RESPONSE_SCHEMA } from "./sceneResponseSchema.mjs";
 
 export const NVIDIA_SCENE_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 export const NEBIUS_CHAT_URL = "https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions";
@@ -137,11 +138,18 @@ export function validStrokes(candidate) {
 }
 
 export function modelConfiguration(env = process.env) {
-  if (env.NEBIUS_API_KEY?.trim()) return {
-    provider: "nebius", key: env.NEBIUS_API_KEY.trim(),
-    model: env.NEBIUS_MODEL?.trim() || NVIDIA_SCENE_MODEL,
-    url: NEBIUS_CHAT_URL
-  };
+  if (env.NEBIUS_API_KEY?.trim()) {
+    const formatOverride = env.NEBIUS_SCENE_RESPONSE_FORMAT?.trim();
+    if (formatOverride && !["default", "schema"].includes(formatOverride)) {
+      throw new Error("NEBIUS_SCENE_RESPONSE_FORMAT must be default or schema.");
+    }
+    return {
+      provider: "nebius", key: env.NEBIUS_API_KEY.trim(),
+      model: env.NEBIUS_MODEL?.trim() || NVIDIA_SCENE_MODEL,
+      sceneResponseFormat: formatOverride || ((env.NEBIUS_MODEL?.trim() || NVIDIA_SCENE_MODEL) === NVIDIA_SCENE_MODEL ? "schema" : "default"),
+      url: NEBIUS_CHAT_URL
+    };
+  }
   if (env.NVIDIA_API_KEY?.trim()) return {
     provider: "nvidia", key: env.NVIDIA_API_KEY.trim(),
     model: env.NVIDIA_MODEL?.trim() || NVIDIA_SCENE_MODEL,
@@ -170,7 +178,7 @@ function addUsage(first, second) {
     totalTokens: first.totalTokens + second.totalTokens };
 }
 
-export async function callModel(prompt, config, { fetchImpl = fetch, signal, maxTokens = 3200, nebiusThinking = "default" } = {}) {
+export async function callModel(prompt, config, { fetchImpl = fetch, signal, maxTokens = 3200, nebiusThinking = "default", nebiusResponseFormat = "default" } = {}) {
   const nvidia = config.provider === "nvidia";
   const nebius = config.provider === "nebius";
   const body = nvidia ? {
@@ -180,6 +188,8 @@ export async function callModel(prompt, config, { fetchImpl = fetch, signal, max
     // Token Factory is OpenAI-compatible; avoid NVIDIA Catalog-specific parameters.
     model: config.model, messages: [{ role: "user", content: prompt }],
     max_tokens: maxTokens, stream: false,
+    ...(nebiusResponseFormat === "schema" ? { response_format: { type: "json_schema", json_schema: SCENE_RESPONSE_SCHEMA } }
+      : nebiusResponseFormat === "json" ? { response_format: { type: "json_object" } } : {}),
     ...(nebiusThinking === "off" ? { chat_template_kwargs: { enable_thinking: false } }
       : nebiusThinking === "low" ? { chat_template_kwargs: { enable_thinking: true, low_effort: true } } : {})
   } : {
@@ -221,7 +231,8 @@ async function validatedCompletion(prompt, config, validate, options = {}, diagn
 
 export function interpretScene(body, config, options = {}) {
   return validatedCompletion(scenePrompt(body.text.trim(), body.scene, body.reusableGlyphNouns || []),
-    config, (candidate) => validScene(candidate, body.scene, body.text), options,
+    config, (candidate) => validScene(candidate, body.scene, body.text),
+    { ...options, nebiusResponseFormat: options.nebiusResponseFormat ?? config.sceneResponseFormat ?? "default" },
     (candidate) => sceneValidationIssue(candidate, body.scene, body.text));
 }
 

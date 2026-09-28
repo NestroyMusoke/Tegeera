@@ -1,5 +1,6 @@
 export type InputSource = "typed" | "speech";
 export type PipelineOutcome = "draw" | "hold" | "clarify" | "reject";
+export type InterpretationPath = "local" | "hosted" | "session-replay";
 
 export interface LatencySample {
   id: number;
@@ -9,6 +10,9 @@ export interface LatencySample {
   commitMs: number;
   paintMs: number;
   speechFinalizationMs?: number;
+  interpretationPath?: InterpretationPath;
+  providerAttempts?: number;
+  providerMs?: number;
 }
 
 export interface LatencySummary {
@@ -40,14 +44,18 @@ export function makeLatencySample(
   decisionAt: number,
   commitAt: number,
   paintAt: number,
-  speechFinalizationMs?: number
+  speechFinalizationMs?: number,
+  inference?: { interpretationPath: InterpretationPath; providerAttempts?: number; providerMs?: number }
 ): LatencySample {
   return {
     id, source, outcome,
     decisionMs: round(Math.max(0, decisionAt - receivedAt)),
     commitMs: round(Math.max(0, commitAt - receivedAt)),
     paintMs: round(Math.max(0, paintAt - receivedAt)),
-    ...(speechFinalizationMs === undefined ? {} : { speechFinalizationMs: round(Math.max(0, speechFinalizationMs)) })
+    ...(speechFinalizationMs === undefined ? {} : { speechFinalizationMs: round(Math.max(0, speechFinalizationMs)) }),
+    ...(inference ? { interpretationPath: inference.interpretationPath } : {}),
+    ...(inference?.providerAttempts === undefined ? {} : { providerAttempts: inference.providerAttempts }),
+    ...(inference?.providerMs === undefined ? {} : { providerMs: round(Math.max(0, inference.providerMs)) })
   };
 }
 

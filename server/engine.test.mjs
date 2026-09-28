@@ -22,6 +22,7 @@ const nebius = modelConfiguration({ NEBIUS_API_KEY: "nebius-test-key" });
 test("Nebius Token Factory takes precedence and uses its Nemotron endpoint", async () => {
   assert.equal(modelConfiguration({ NEBIUS_API_KEY: "nebius-test-key", NVIDIA_API_KEY: "direct-key" }).provider, "nebius");
   assert.equal(nebius.model, NVIDIA_SCENE_MODEL);
+  assert.equal(nebius.sceneResponseFormat, "schema");
   assert.equal(nebius.url, NEBIUS_CHAT_URL);
   assert.equal(modelConfiguration({ NEBIUS_API_KEY: " ", NVIDIA_API_KEY: "direct-key" }).provider, "nvidia");
   const fetchImpl = async (url, request) => {
@@ -34,6 +35,7 @@ test("Nebius Token Factory takes precedence and uses its Nemotron endpoint", asy
     assert.equal(body.max_tokens, 3200);
     assert.equal(body.reasoning_effort, undefined);
     assert.equal(body.provider, undefined);
+    assert.equal(body.response_format?.type, "json_schema");
     return new Response(JSON.stringify({ model: NVIDIA_SCENE_MODEL, usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
       choices: [{ message: { content: JSON.stringify(complete) } }] }), { status: 200 });
   };
@@ -65,6 +67,34 @@ test("Nebius non-thinking mode is opt-in and never sent to other providers", asy
     return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
   };
   await callModel("visual plan", nebius, { fetchImpl: lowFetch, nebiusThinking: "low" });
+});
+
+test("Nebius scene schema guidance can be compared or rolled back without weakening validation", async () => {
+  const fetchImpl = async (_url, request) => {
+    const body = JSON.parse(request.body);
+    assert.equal(body.response_format.type, "json_schema");
+    assert.deepEqual(body.response_format.json_schema.schema.required,
+      ["blueprintVersion", "mode", "confidence", "objects", "connections"]);
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(complete) } }] }), { status: 200 });
+  };
+  const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nebius,
+    { fetchImpl, nebiusResponseFormat: "schema" });
+  assert.equal(result.providerAttempts, 1);
+  const jsonFetch = async (_url, request) => {
+    assert.deepEqual(JSON.parse(request.body).response_format, { type: "json_object" });
+    return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
+  };
+  await callModel("visual plan", nebius, { fetchImpl: jsonFetch, nebiusResponseFormat: "json" });
+  assert.equal(modelConfiguration({ NEBIUS_API_KEY: "key", NEBIUS_SCENE_RESPONSE_FORMAT: "default" }).sceneResponseFormat, "default");
+  assert.equal(modelConfiguration({ NEBIUS_API_KEY: "key", NEBIUS_MODEL: "nvidia/another-model" }).sceneResponseFormat, "default");
+  assert.throws(() => modelConfiguration({ NEBIUS_API_KEY: "key", NEBIUS_SCENE_RESPONSE_FORMAT: "unsafe" }),
+    /must be default or schema/);
+  assert.equal(modelConfiguration({ NVIDIA_API_KEY: "key", NEBIUS_SCENE_RESPONSE_FORMAT: "unsafe" }).provider, "nvidia");
+  const glyphFetch = async (_url, request) => {
+    assert.equal(JSON.parse(request.body).response_format, undefined);
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(strokes) } }] }), { status: 200 });
+  };
+  await generateGlyph({ noun: "dragon" }, nebius, { fetchImpl: glyphFetch });
 });
 
 test("prefers a private NVIDIA key and never inserts it into the teacher prompt", () => {
