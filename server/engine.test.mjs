@@ -220,6 +220,47 @@ test("source grounding detects omitted passage arrows and incomplete opposing fo
   ] }, scene, forceSentence), null);
 });
 
+test("explicit relationship contracts reject confident generic arrows without fixing the nouns", () => {
+  const make = (names, connections, confidence = 0.9) => ({ blueprintVersion: "1.0", mode: "replace", confidence,
+    objects: names.map((label, index) => ({ id: `role-${index}`, label, kind: "generic", x: 18 + index * 27, y: 42 })),
+    connections });
+  const link = (from, to, kind, label = kind) => ({ from: `role-${from}`, to: `role-${to}`, kind, label });
+  const families = [
+    {
+      source: "A specimen jar is a labelled vessel that holds a sample.",
+      names: ["specimen jar", "sample"],
+      complete: [link(0, 1, "contains")],
+      issue: /holder.*contains relation/
+    },
+    {
+      source: "When you call a service, the application jumps to it, then comes back to where it left off.",
+      names: ["application", "service", "return point"],
+      complete: [link(0, 1, "calls"), link(1, 2, "returnsControlTo", "returnsTo")],
+      issue: /calls and returnsControlTo/
+    },
+    {
+      source: "A toy rocket launched up slows down, stops, then falls back faster and faster.",
+      names: ["toy rocket", "highest point", "gravity"],
+      complete: [link(0, 1, "risesTo"), link(0, 1, "fallsFrom"), link(2, 0, "accelerates")],
+      issue: /risesTo, fallsFrom, and accelerates/
+    }
+  ];
+  for (const { source, names, complete, issue } of families) {
+    const generic = make(names, [{ from: "role-0", to: "role-1", label: "relates to" }]);
+    assert.match(sceneValidationIssue(generic, scene, source), issue);
+    assert.equal(sceneValidationIssue(make(names, complete), scene, source), null);
+    assert.equal(sceneValidationIssue(make(names, [{ from: "role-0", to: "role-1", label: "relates to" }], 0.3), scene, source), null);
+  }
+  const wrongCaller = make(["application", "service", "return point"], [
+    link(2, 1, "calls"), link(1, 0, "returnsControlTo", "returnsTo")]);
+  assert.match(sceneValidationIssue(wrongCaller, scene, families[1].source), /application as the caller/);
+  const missingCaller = make(["operator", "service", "return point"], families[1].complete);
+  assert.match(sceneValidationIssue(missingCaller, scene, families[1].source), /application as the caller.*missing/);
+  assert.equal(sceneValidationIssue(make(["application", "service", "return point"],
+    [{ from: "role-0", to: "role-1", label: "relates to" }]), scene,
+  "The application does not call the service and return to the call site."), null);
+});
+
 test("a semantic omission triggers one bounded model repair with actionable feedback", async () => {
   const first = { ...complete, connections: [{ from: "water", to: "plant", label: "flows into", kind: "flowsInto" },
     { from: "roots", to: "plant", label: "part of", kind: "partOf" }] };

@@ -61,5 +61,41 @@ export function sourceConstraintIssue(text, candidate) {
       return "The explanation has an applied action and an opposing effect; use a complete appliedTo/opposes/contacts force diagram with distinct force arrows and a contacted surface.";
     }
   }
+  // These source contracts require an explicit multi-part relation in the
+  // teacher's words. They do not infer objects from a vocabulary: the model
+  // still chooses the nouns and can abstain when the utterance is ambiguous.
+  // A confident generic arrow is not a substitute for the described graph.
+  if (candidate.mode !== "replace" || candidate.confidence < 0.58
+    || /\b(?:not|never|without|cannot|can't|doesn't|didn't)\b/.test(utterance)) return null;
+  const has = (kind) => edges.some((edge) => edge.kind === kind);
+  const labelledHolder = /\b(?:is|acts as|behaves like)\b.{0,60}\b(?:labeled|labelled)\b.{0,35}\b(?:holds?|contains?|stores?)\b/.test(utterance);
+  if (labelledHolder && !has("contains")) {
+    return "The explanation explicitly describes a labelled holder and its content; show a distinct holder→content contains relation, not a generic arrow or caption.";
+  }
+  const callAndReturn = /\bcall(?:s|ed|ing)?\b/.test(utterance)
+    && /\b(?:comes?|returns?)\s+back\b/.test(utterance)
+    && /\b(?:where\s+it\s+left\s+off|call\s+site|return\s+point)\b/.test(utterance);
+  if (callAndReturn && (!has("calls") || !has("returnsControlTo"))) {
+    return "The explanation describes a call and return to the original point; show distinct caller, called operation, and return point with calls and returnsControlTo links.";
+  }
+  if (callAndReturn) {
+    // When the source explicitly names who transfers control, a structurally
+    // valid call graph with a different caller is still a wrong diagram.
+    const subject = utterance.match(/\bthe\s+([a-z][a-z-]*)\s+(?:jumps?|transfers?|goes?)\s+to\b/)?.[1];
+    if (subject) {
+      const caller = matchingObject(subject, objects);
+      if (!caller) return `The explanation names ${subject} as the caller, but that distinct visible role is missing.`;
+      if (!edges.some((edge) => edge.kind === "calls" && edge.from === caller.id)) {
+        return `The explanation names ${subject} as the caller; the calls link must start from that role.`;
+      }
+    }
+  }
+  const changingSpeed = /\b(?:thrown|tossed|launched|shot)\b.{0,45}\bup\b/.test(utterance)
+    && /\b(?:slows? down|decelerates?)\b/.test(utterance)
+    && /\b(?:falls?|drops?)\s+back\b/.test(utterance)
+    && /\b(?:faster|speeds? up|increasingly fast)\b/.test(utterance);
+  if (changingSpeed && (!["risesTo", "fallsFrom", "accelerates"].every(has))) {
+    return "The explanation describes ascent, a turning point, and accelerating descent; show a moving object, apex, and force with risesTo, fallsFrom, and accelerates links.";
+  }
   return null;
 }
