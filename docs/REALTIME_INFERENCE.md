@@ -41,3 +41,7 @@ The live probe shows the provider and possible repair dominate cold-request wall
 - **Consider model specialization after evidence.** A small fast model could draft or handle a validated low-risk subset, with Super as fallback, but if the draft is often wrong a serial fallback makes both cost and latency worse. A custom trained or distilled model needs a licensed corpus of teacher utterances paired with reviewed semantic graphs and held-out evaluation; it is not a free shortcut to visual correctness.
 
 The near-term product target is immediate honest feedback, then a correct scene as soon as the model finishes. “Anything perfectly doodled instantly” remains the research goal, not a shipped claim.
+
+## Next protocol increment
+
+The hosted blueprint grammar can now carry three more **complete, noun-independent** topologies already available to the local SVG renderer: container→content; caller→function→return point; and moving object↔apex with an accelerating force. Server and browser reject partial or reversed role graphs, and integration tests confirm the real container, control-flow, and changing-speed visual cues with unrelated nouns. This removes a protocol/renderer gap. It does **not** make Nemotron choose the correct graph: a fresh three-case live probe of cases 12, 21 and 22 was **0/3 semantic-ready** (case 21 was rejected after repair). Those model failures remain open and are not counted as product successes.

@@ -13,6 +13,8 @@ const ink = new Set(["#2f3e46", "#52796f", "#84a98c", "#f4a261", "#e9c46a", "#ca
 const typedConnectionLabels = Object.freeze({
   partOf: "part of", flowsInto: "flows into", illuminates: "illuminates",
   before: "before", causes: "causes",
+  contains: "contains", calls: "calls", returnsControlTo: "returnsTo",
+  risesTo: "risesTo", fallsFrom: "fallsFrom", accelerates: "accelerates",
   pumpsTo: "pumps to", returnsTo: "returns to", carries: "carries",
   appliedTo: "applied to", opposes: "opposes", contacts: "contacts"
 });
@@ -28,6 +30,7 @@ Represent every essential named or implied visible part needed to explain the te
 Before returning JSON, silently check every clause: inventory explicitly named visible participants, preserve each source and recipient, and check that every stated action has the correct directed relationship. Do not replace an actor-to-recipient action with only a chain through an intermediate substance. A material moving into something may flowsInto it; light reaching a target illuminates it instead. If an essential participant or relationship cannot be represented faithfully, lower confidence below 0.58. Do not output this checklist.
 For each explicit "X through Y" phrase, Y must be a visible object and a directed connection must end at Y from X. A direct X→whole shortcut is wrong when Y is the named passage. If Y is part of a whole, add Y→whole partOf as a separate connection. This is a compositional rule for any source and passage, not an example to copy.
 Use structural diagram links when the explanation truly has their complete roles. A closed transport loop needs four distinct objects (source, destination, moving payload, enrichment) and exactly three links: source→destination pumpsTo via payload, destination→source returnsTo via the SAME payload, payload→enrichment carries. An opposing-force diagram needs four distinct objects (body, contact surface, applied force, opposing force) and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. The optional "via" field is the exact payload object ID and is required only on pumpsTo/returnsTo. Forces are arrows, not people. Do not use either specialist link family unless all its roles and directions are represented; a partial specialist graph is invalid. These are reusable topologies, not lesson templates.
+For containment, use two objects and one container→content contains link. For a control call and return, use three objects and caller→function calls plus function→call site returnsControlTo. For ascent, apex, descent, and acceleration, use moving object→apex risesTo and fallsFrom plus force→moving object accelerates. Each is a complete reusable role graph, not a lesson-specific template; never use a partial graph.
 When an applied push or pull is explicitly opposed by friction, drag, or resistance, the applied *force* is its own object and the opposing effect is another force object. Use the complete opposing-force topology above; a person→body caption and opposing effect→body caption are not equivalent to two opposing arrows. A named human actor may be omitted only if the four-role limit prevents a faithful force diagram.
 For a connection, use an optional typed kind only when its exact meaning applies: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}. Its label must exactly match that quoted text. These are general visual grammar, not special lesson templates. For every other relationship omit kind and use a truthful short label. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
 Negated claims cannot be shown safely by this positive-only grammar: never turn "does not" into a positive arrow; lower confidence below 0.58. Put every explicitly stated color on the correct object.
@@ -89,12 +92,33 @@ export function sceneValidationIssue(candidate, scene = { entities: [] }, source
     }
     if (relation.kind !== undefined && relation.kind !== "relatesTo"
       && (!Object.hasOwn(typedConnectionLabels, relation.kind)
-        || relation.label.trim().toLowerCase() !== typedConnectionLabels[relation.kind])) {
+        || relation.label.trim().toLowerCase() !== typedConnectionLabels[relation.kind].toLowerCase())) {
       return `A typed connection must use a supported kind with its exact label: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}.`;
     }
   }
   const edges = candidate.connections;
   const one = (kind) => edges.filter((edge) => edge.kind === kind);
+  if (one("contains").length && (candidate.mode !== "replace" || candidate.objects.length !== 2
+    || edges.length !== 1 || one("contains").length !== 1)) {
+    return "A containment diagram needs a distinct container and content with exactly one contains link.";
+  }
+  if (edges.some((edge) => ["calls", "returnsControlTo"].includes(edge.kind))) {
+    const calls = one("calls")[0]; const returns = one("returnsControlTo")[0];
+    if (candidate.mode !== "replace" || candidate.objects.length !== 3 || edges.length !== 2
+      || one("calls").length !== 1 || one("returnsControlTo").length !== 1
+      || calls.to !== returns.from || new Set([calls.from, calls.to, returns.to]).size !== 3) {
+      return "A call-return diagram needs a distinct caller, function, and call site with complete calls and returnsControlTo links.";
+    }
+  }
+  if (edges.some((edge) => ["risesTo", "fallsFrom", "accelerates"].includes(edge.kind))) {
+    const rises = one("risesTo")[0]; const falls = one("fallsFrom")[0]; const force = one("accelerates")[0];
+    if (candidate.mode !== "replace" || candidate.objects.length !== 3 || edges.length !== 3
+      || ["risesTo", "fallsFrom", "accelerates"].some((kind) => one(kind).length !== 1)
+      || rises.from !== falls.from || rises.to !== falls.to || force.to !== rises.from
+      || new Set([rises.from, rises.to, force.from]).size !== 3) {
+      return "A changing-speed diagram needs a moving object, apex, and force with complete risesTo, fallsFrom, and accelerates links.";
+    }
+  }
   const specialist = ["pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"];
   if (edges.some((edge) => specialist.includes(edge.kind))) {
     if (candidate.mode !== "replace" || candidate.objects.length !== 4 || edges.length !== 3) {

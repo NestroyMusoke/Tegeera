@@ -5,6 +5,7 @@ import {
   proceduralVisualSchema,
   type DoodleCommand,
   type DoodleScript,
+  type SceneEntity,
   type SceneState
 } from "../doodlescript/schema";
 import { glyphKey, glyphSchema, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
@@ -12,6 +13,9 @@ import { planPartWholeFlow } from "../doodlescript/partWholeFlow";
 import { applyDoodleScript } from "../doodlescript/scene";
 import { planCirculationLoop } from "../doodlescript/circulationLoop";
 import { planForceDiagram } from "../doodlescript/forceDiagram";
+import { planLabelledContainer } from "../doodlescript/labelledContainer";
+import { planCallReturnFlow } from "../doodlescript/callReturnFlow";
+import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalEdgeGeometry } from "../doodlescript/universalEdge";
 import { sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
 
@@ -30,6 +34,12 @@ export const universalConnectionLabels = {
   illuminates: "illuminates",
   before: "before",
   causes: "causes",
+  contains: "contains",
+  calls: "calls",
+  returnsControlTo: "returnsTo",
+  risesTo: "risesTo",
+  fallsFrom: "fallsFrom",
+  accelerates: "accelerates",
   pumpsTo: "pumps to",
   returnsTo: "returns to",
   carries: "carries",
@@ -47,7 +57,7 @@ const universalConnectionSchema = z.object({
   via: z.string().min(1).max(30).optional()
 }).superRefine((connection, context) => {
   if (connection.kind && connection.kind !== "relatesTo"
-    && connection.label.trim().toLowerCase() !== universalConnectionLabels[connection.kind as TypedConnectionKind]) {
+    && connection.label.trim().toLowerCase() !== universalConnectionLabels[connection.kind as TypedConnectionKind].toLowerCase()) {
     context.addIssue({ code: "custom", path: ["label"], message: "A typed visual relationship needs its exact registered label." });
   }
   if (Boolean(connection.via) !== ["pumpsTo", "returnsTo"].includes(connection.kind ?? "")) {
@@ -77,18 +87,45 @@ export type UniversalSceneBlueprint = z.infer<typeof universalSceneBlueprintSche
 
 type VisualMotif =
   | { family: "circulation-loop"; source: string; destination: string; payload: string; enrichment: string }
-  | { family: "force-diagram"; body: string; surface: string; appliedForce: string; opposingForce: string; direction: "left" | "right" };
+  | { family: "force-diagram"; body: string; surface: string; appliedForce: string; opposingForce: string; direction: "left" | "right" }
+  | { family: "labelled-container"; container: string; content: string }
+  | { family: "call-return-flow"; caller: string; fn: string; callSite: string }
+  | { family: "changing-speed-motion"; moving: string; apex: string; force: string };
 
 const specialistKinds = new Set(["pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"]);
 
 /** A diagram is selected by a complete, consistent graph—not a lesson noun. */
 function visualMotif(blueprint: UniversalSceneBlueprint): VisualMotif | null {
   const edges = blueprint.connections;
+  const one = (kind: string) => edges.filter((edge) => edge.kind === kind);
+  if (one("contains").length) {
+    if (blueprint.mode !== "replace" || blueprint.objects.length !== 2 || edges.length !== 1
+      || one("contains").length !== 1) throw new Error("Containment needs one container, one content, and one link.");
+    return { family: "labelled-container", container: one("contains")[0].from, content: one("contains")[0].to };
+  }
+  if (edges.some((edge) => edge.kind === "calls" || edge.kind === "returnsControlTo")) {
+    const calls = one("calls")[0]; const returns = one("returnsControlTo")[0];
+    if (blueprint.mode !== "replace" || blueprint.objects.length !== 3 || edges.length !== 2
+      || one("calls").length !== 1 || one("returnsControlTo").length !== 1
+      || calls.to !== returns.from || new Set([calls.from, calls.to, returns.to]).size !== 3) {
+      throw new Error("Call-return needs a distinct caller, function, and return point.");
+    }
+    return { family: "call-return-flow", caller: calls.from, fn: calls.to, callSite: returns.to };
+  }
+  if (edges.some((edge) => ["risesTo", "fallsFrom", "accelerates"].includes(edge.kind ?? ""))) {
+    const rises = one("risesTo")[0]; const falls = one("fallsFrom")[0]; const force = one("accelerates")[0];
+    if (blueprint.mode !== "replace" || blueprint.objects.length !== 3 || edges.length !== 3
+      || ["risesTo", "fallsFrom", "accelerates"].some((kind) => one(kind).length !== 1)
+      || rises.from !== falls.from || rises.to !== falls.to || force.to !== rises.from
+      || new Set([rises.from, rises.to, force.from]).size !== 3) {
+      throw new Error("Changing speed needs one moving object, apex, force, and a complete motion graph.");
+    }
+    return { family: "changing-speed-motion", moving: rises.from, apex: rises.to, force: force.from };
+  }
   if (!edges.some((edge) => specialistKinds.has(edge.kind ?? ""))) return null;
   if (blueprint.mode !== "replace" || blueprint.objects.length !== 4 || edges.length !== 3) {
     throw new Error("A specialist diagram needs four distinct roles and its complete three-link topology.");
   }
-  const one = (kind: string) => edges.filter((edge) => edge.kind === kind);
   const transport = ["pumpsTo", "returnsTo", "carries"];
   if (transport.some((kind) => one(kind).length)) {
     if (transport.some((kind) => one(kind).length !== 1)) throw new Error("A transport loop needs outbound, return, and enrichment links.");
@@ -298,11 +335,22 @@ export function compileUniversalScene(
   });
   const motif = visualMotif(blueprint);
   if (motif) {
-    const roleById = motif.family === "circulation-loop"
-      ? new Map([[motif.source, "circulation-source"], [motif.destination, "circulation-destination"],
-        [motif.payload, "circulation-payload"], [motif.enrichment, "circulation-enrichment"]] as const)
-      : new Map([[motif.body, "object"], [motif.surface, "surface"],
-        [motif.appliedForce, "force"], [motif.opposingForce, "force"]] as const);
+    const roleById = new Map<string, NonNullable<SceneEntity["visualRole"]>>();
+    if (motif.family === "circulation-loop") {
+      roleById.set(motif.source, "circulation-source"); roleById.set(motif.destination, "circulation-destination");
+      roleById.set(motif.payload, "circulation-payload"); roleById.set(motif.enrichment, "circulation-enrichment");
+    } else if (motif.family === "force-diagram") {
+      roleById.set(motif.body, "object"); roleById.set(motif.surface, "surface");
+      roleById.set(motif.appliedForce, "force"); roleById.set(motif.opposingForce, "force");
+    } else if (motif.family === "labelled-container") {
+      roleById.set(motif.container, "container"); roleById.set(motif.content, "contained");
+    } else if (motif.family === "call-return-flow") {
+      roleById.set(motif.caller, "control-caller"); roleById.set(motif.fn, "control-function");
+      roleById.set(motif.callSite, "control-call-site");
+    } else {
+      roleById.set(motif.moving, "trajectory-object"); roleById.set(motif.apex, "trajectory-apex");
+      roleById.set(motif.force, "trajectory-force");
+    }
     commands.forEach((command, index) => {
       if (command.action !== "create") return;
       const rawId = blueprint.objects.find((object) => idMap.get(object.id) === command.entity.id)?.id;
@@ -334,10 +382,17 @@ export function compileUniversalScene(
         sourceId: idMap.get(motif.source)!, destinationId: idMap.get(motif.destination)!,
         payloadId: idMap.get(motif.payload)!, enrichmentId: idMap.get(motif.enrichment)!
       }, new Set(createdIds))
-      : planForceDiagram(staged, {
+      : motif.family === "force-diagram" ? planForceDiagram(staged, {
         bodyId: idMap.get(motif.body)!, surfaceId: idMap.get(motif.surface)!,
         appliedForceId: idMap.get(motif.appliedForce)!, opposingForceId: idMap.get(motif.opposingForce)!
-      }, new Set(createdIds), motif.direction);
+      }, new Set(createdIds), motif.direction)
+      : motif.family === "labelled-container"
+        ? planLabelledContainer(staged, idMap.get(motif.container)!, idMap.get(motif.content)!, new Set(createdIds))
+      : motif.family === "call-return-flow"
+        ? planCallReturnFlow(staged, { callerId: idMap.get(motif.caller)!, functionId: idMap.get(motif.fn)!,
+          callSiteId: idMap.get(motif.callSite)! }, new Set(createdIds))
+      : planChangingSpeedMotion(staged, { objectId: idMap.get(motif.moving)!, apexId: idMap.get(motif.apex)!,
+        forceId: idMap.get(motif.force)! }, new Set(createdIds));
     if (!mapped) throw new Error("The complete diagram cannot fit safely on this canvas.");
     const moveById = new Map(mapped.map((move) => [move.targetId, move] as const));
     return requireVisibleConnectors({ ...script, commands: commands.map((command) => {

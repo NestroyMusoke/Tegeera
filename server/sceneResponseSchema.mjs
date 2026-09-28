@@ -29,7 +29,7 @@ export const SCENE_RESPONSE_SCHEMA = Object.freeze({
         properties: {
           from: { type: "string" }, to: { type: "string" },
           label: { type: "string", minLength: 1, maxLength: 32 },
-          kind: { type: "string", enum: ["partOf", "flowsInto", "illuminates", "before", "causes", "pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts", "relatesTo"] },
+          kind: { type: "string", enum: ["partOf", "flowsInto", "illuminates", "before", "causes", "contains", "calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates", "pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts", "relatesTo"] },
           via: { type: "string" }
         }
       } }

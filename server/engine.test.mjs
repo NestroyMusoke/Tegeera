@@ -167,6 +167,29 @@ test("specialist links require complete, consistent diagrams rather than attract
     { ...forces.connections[1], to: "body" }, forces.connections[2]] }, scene), /opposing force must oppose/);
 });
 
+test("new hosted role grammars accept arbitrary nouns only as complete directed diagrams", () => {
+  const make = (names, links) => ({ blueprintVersion: "1.0", mode: "replace", confidence: 0.91,
+    objects: names.map((label, index) => ({ id: `role-${index}`, label, kind: "generic", x: 20 + index * 25, y: 40 })),
+    connections: links });
+  const edge = (from, to, kind, label = kind) => ({ from: `role-${from}`, to: `role-${to}`, kind, label });
+  for (const [holder, content] of [["variable", "value"], ["specimen jar", "sample"]]) {
+    const candidate = make([holder, content], [edge(0, 1, "contains")]);
+    assert.equal(validScene(candidate, scene), true);
+    assert.match(sceneValidationIssue({ ...candidate, objects: [...candidate.objects,
+      { id: "extra", label: "extra", kind: "generic", x: 80, y: 40 }] }, scene), /containment diagram/);
+  }
+  const control = make(["application", "service", "call site"], [
+    edge(0, 1, "calls"), edge(1, 2, "returnsControlTo", "returnsTo")]);
+  assert.equal(validScene(control, scene), true);
+  assert.match(sceneValidationIssue({ ...control, connections: [control.connections[0]] }, scene), /call-return diagram/);
+  assert.match(sceneValidationIssue({ ...control, connections: [control.connections[0],
+    edge(1, 0, "returnsControlTo", "returnsTo")] }, scene), /distinct caller/);
+  const motion = make(["toy rocket", "highest point", "gravity"], [
+    edge(0, 1, "risesTo"), edge(0, 1, "fallsFrom"), edge(2, 0, "accelerates")]);
+  assert.equal(validScene(motion, scene), true);
+  assert.match(sceneValidationIssue({ ...motion, connections: motion.connections.slice(0, 2) }, scene), /changing-speed diagram/);
+});
+
 test("source grounding detects omitted passage arrows and incomplete opposing forces without lesson nouns", () => {
   const passage = {
     blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
