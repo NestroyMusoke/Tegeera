@@ -13,6 +13,16 @@ function matchingObject(noun, objects) {
   return matches.length === 1 ? matches[0] : null;
 }
 
+function matchingPhrase(phrase, objects) {
+  const requested = words(phrase);
+  if (!requested.length) return null;
+  const matches = objects.filter((object) => {
+    const label = words(object.label);
+    return requested.every((part) => label.some((word) => same(word, part)));
+  });
+  return matches.length === 1 ? matches[0] : null;
+}
+
 function priorMention(prefix, objects, excludedIds) {
   let best = null;
   for (const object of objects) {
@@ -71,6 +81,16 @@ export function sourceConstraintIssue(text, candidate) {
   const labelledHolder = /\b(?:is|acts as|behaves like)\b.{0,60}\b(?:labeled|labelled)\b.{0,35}\b(?:holds?|contains?|stores?)\b/.test(utterance);
   if (labelledHolder && !has("contains")) {
     return "The explanation explicitly describes a labelled holder and its content; show a distinct holder→content contains relation, not a generic arrow or caption.";
+  }
+  if (labelledHolder) {
+    const subject = utterance.match(/^(?:an?|the)\s+([a-z][a-z -]{0,39}?)\s+(?:is|acts as|behaves like)\b/)?.[1];
+    if (subject) {
+      const holder = matchingPhrase(subject, objects);
+      if (!holder) return `The explanation names ${subject} as the labelled holder, but that visible role is missing.`;
+      if (!edges.some((edge) => edge.kind === "contains" && edge.from === holder.id)) {
+        return `The explanation names ${subject} as the holder; the contains link must start from that role.`;
+      }
+    }
   }
   const callAndReturn = /\bcall(?:s|ed|ing)?\b/.test(utterance)
     && /\b(?:comes?|returns?)\s+back\b/.test(utterance)

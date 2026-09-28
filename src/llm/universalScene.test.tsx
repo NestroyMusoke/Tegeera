@@ -72,6 +72,19 @@ describe("universal visual scene compiler", () => {
     expect(() => compileUniversalScene(force, initialScene, "Pull a sled over snow; drag opposes the motion"))
       .toThrow(/appliedTo\/opposes\/contacts/);
   });
+  it("does not draw a labelled holder under a different named subject", () => {
+    const incorrect = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "vessel", label: "vessel", kind: "generic", x: 48, y: 32 },
+        { id: "sample", label: "sample", kind: "generic", x: 48, y: 62 }
+      ],
+      connections: [{ from: "vessel", to: "sample", label: "contains", kind: "contains" }]
+    };
+    expect(() => compileUniversalScene(incorrect, initialScene,
+      "A specimen jar is a labelled vessel that holds a sample"))
+      .toThrow(/specimen jar as the labelled holder.*missing/);
+  });
   it("refuses to turn a negated teacher claim into an affirmative scene", () => {
     for (const text of ["A dragon does not fly over a village", "A dragon never flies over a village", "A dragon can't fly over a village"]) {
       expect(() => compileUniversalScene(blueprint, initialScene, text)).toThrow(/negated claim/);

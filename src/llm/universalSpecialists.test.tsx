@@ -21,14 +21,20 @@ function render(candidate: ReturnType<typeof plan>, explanation: string) {
 }
 
 describe("hosted blueprints reach existing specialist drawing grammars", () => {
-  it("draws arbitrary container/content pairs as nested objects and rejects partial containment", () => {
+  it("draws arbitrary container/content pairs with connected context but rejects orphaned objects", () => {
     for (const [container, content] of [["variable", "value"], ["specimen jar", "sample"]]) {
       const candidate = plan([container, content], [link(0, 1, "contains")]);
       const html = render(candidate, `${container} contains ${content}`);
       expect(html).toContain('data-relation-layout="labelled-container"');
       expect(html).toContain('data-visual-cue="value-inside-container"');
-      expect(() => compileUniversalScene({ ...candidate, objects: [...candidate.objects, { ...objects("extra")[0], id: "extra" }] }, initialScene,
-        `${container} contains ${content}`)).toThrow(/Containment needs/);
+      const contextual = { ...candidate, objects: [...candidate.objects,
+        { ...objects("observer")[0], id: "observer", x: 85, y: 45 }],
+      connections: [...candidate.connections, { from: "observer", to: "role-0", kind: "relatesTo", label: "observes" }] };
+      const contextualHtml = render(contextual, `${container} contains ${content}; an observer watches ${container}`);
+      expect(contextualHtml).toContain('data-relation-layout="labelled-container"');
+      expect(contextualHtml).toContain("observer");
+      expect(() => compileUniversalScene({ ...contextual, connections: candidate.connections }, initialScene,
+        `${container} contains ${content}`)).toThrow(/every extra object connected/);
     }
   });
 

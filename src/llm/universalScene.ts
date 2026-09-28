@@ -99,8 +99,14 @@ function visualMotif(blueprint: UniversalSceneBlueprint): VisualMotif | null {
   const edges = blueprint.connections;
   const one = (kind: string) => edges.filter((edge) => edge.kind === kind);
   if (one("contains").length) {
-    if (blueprint.mode !== "replace" || blueprint.objects.length !== 2 || edges.length !== 1
-      || one("contains").length !== 1) throw new Error("Containment needs one container, one content, and one link.");
+    const otherMotifs = ["calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates", ...specialistKinds];
+    if (blueprint.mode !== "replace" || one("contains").length !== 1
+      || edges.some((edge) => otherMotifs.includes(edge.kind ?? ""))) {
+      throw new Error("Containment needs one distinct holder/content subgraph without a mixed specialist layout.");
+    }
+    if (blueprint.objects.some((object) => !edges.some((edge) => edge.from === object.id || edge.to === object.id))) {
+      throw new Error("Containment needs every extra object connected to the explanation.");
+    }
     return { family: "labelled-container", container: one("contains")[0].from, content: one("contains")[0].to };
   }
   if (edges.some((edge) => edge.kind === "calls" || edge.kind === "returnsControlTo")) {
@@ -387,7 +393,8 @@ export function compileUniversalScene(
         appliedForceId: idMap.get(motif.appliedForce)!, opposingForceId: idMap.get(motif.opposingForce)!
       }, new Set(createdIds), motif.direction)
       : motif.family === "labelled-container"
-        ? planLabelledContainer(staged, idMap.get(motif.container)!, idMap.get(motif.content)!, new Set(createdIds))
+        ? planLabelledContainer(staged, idMap.get(motif.container)!, idMap.get(motif.content)!,
+          new Set([idMap.get(motif.container)!, idMap.get(motif.content)!]))
       : motif.family === "call-return-flow"
         ? planCallReturnFlow(staged, { callerId: idMap.get(motif.caller)!, functionId: idMap.get(motif.fn)!,
           callSiteId: idMap.get(motif.callSite)! }, new Set(createdIds))

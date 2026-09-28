@@ -175,8 +175,13 @@ test("new hosted role grammars accept arbitrary nouns only as complete directed 
   for (const [holder, content] of [["variable", "value"], ["specimen jar", "sample"]]) {
     const candidate = make([holder, content], [edge(0, 1, "contains")]);
     assert.equal(validScene(candidate, scene), true);
-    assert.match(sceneValidationIssue({ ...candidate, objects: [...candidate.objects,
-      { id: "extra", label: "extra", kind: "generic", x: 80, y: 40 }] }, scene), /containment diagram/);
+    const contextual = { ...candidate, objects: [...candidate.objects,
+      { id: "extra", label: "observer", kind: "generic", x: 80, y: 40 }],
+    connections: [...candidate.connections, { from: "extra", to: "role-0", label: "observes" }] };
+    assert.equal(validScene(contextual, scene), true);
+    assert.match(sceneValidationIssue({ ...contextual, connections: candidate.connections }, scene), /orphan objects/);
+    assert.match(sceneValidationIssue({ ...contextual, connections: [...contextual.connections,
+      { from: "role-1", to: "extra", kind: "calls", label: "calls" }] }, scene), /cannot mix specialist layouts/);
   }
   const control = make(["application", "service", "call site"], [
     edge(0, 1, "calls"), edge(1, 2, "returnsControlTo", "returnsTo")]);
@@ -251,6 +256,11 @@ test("explicit relationship contracts reject confident generic arrows without fi
     assert.equal(sceneValidationIssue(make(names, complete), scene, source), null);
     assert.equal(sceneValidationIssue(make(names, [{ from: "role-0", to: "role-1", label: "relates to" }], 0.3), scene, source), null);
   }
+  assert.match(sceneValidationIssue(make(["vessel", "sample"], [link(0, 1, "contains")]),
+    scene, families[0].source), /specimen jar as the labelled holder.*missing/);
+  assert.match(sceneValidationIssue(make(["specimen jar", "sample", "vessel"], [
+    link(2, 1, "contains"), { from: "role-0", to: "role-2", label: "represents" }]),
+  scene, families[0].source), /specimen jar as the holder.*must start/);
   const wrongCaller = make(["application", "service", "return point"], [
     link(2, 1, "calls"), link(1, 0, "returnsControlTo", "returnsTo")]);
   assert.match(sceneValidationIssue(wrongCaller, scene, families[1].source), /application as the caller/);
@@ -320,7 +330,12 @@ test("invalid correction fails closed and provider errors do not trigger extra c
     calls += 1;
     return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
   };
-  await assert.rejects(interpretScene({ text: "Water enters roots", scene }, nvidia, { fetchImpl: invalid }), /complete, valid visual plan/);
+  await assert.rejects(interpretScene({ text: "Water enters roots", scene }, nvidia, { fetchImpl: invalid }), (error) => {
+    assert.match(error.message, /complete, valid visual plan/);
+    assert.match(error.diagnostic, /blueprintVersion/);
+    assert.equal(error.providerAttempts, 2);
+    return true;
+  });
   assert.equal(calls, 2);
   calls = 0;
   const rateLimited = async () => { calls += 1; return new Response("{}", { status: 429 }); };

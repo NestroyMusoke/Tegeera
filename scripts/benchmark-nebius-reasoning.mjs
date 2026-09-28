@@ -46,6 +46,8 @@ for (const [index, task] of tasks.entries()) {
       { nebiusThinking: task.mode, nebiusResponseFormat: responseFormat, signal: AbortSignal.timeout(45_000) });
     const score = scoreBlueprint(gold.cases.find((item) => item.id === task.id), result.candidate);
     row = { id: task.id, mode: task.mode, responseFormat, semanticReady: score.semanticReady,
+      planMode: result.candidate.mode, planConfidence: result.candidate.confidence,
+      objectCount: result.candidate.objects.length, connectionKinds: result.candidate.connections.map((edge) => edge.kind ?? "untyped"),
       concepts: score.conceptCoverage, topology: score.topologyCoverage, predicates: score.predicateCoverage,
       missingConcepts: score.missingConcepts, missingEdges: score.missingEdges,
       unverifiedPredicates: score.unverifiedPredicates,
@@ -54,7 +56,9 @@ for (const [index, task] of tasks.entries()) {
   } catch (error) {
     row = { id: task.id, mode: task.mode, responseFormat, semanticReady: false,
       elapsedMs: Math.round(performance.now() - started),
-      error: error instanceof Error ? error.message.slice(0, 160) : "Unknown provider error" };
+      error: error instanceof Error ? error.message.slice(0, 160) : "Unknown provider error",
+      ...(error?.providerAttempts ? { providerAttempts: error.providerAttempts } : {}),
+      ...(typeof error?.diagnostic === "string" ? { diagnostic: error.diagnostic.slice(0, 240) } : {}) };
   }
   rows.push(row);
   console.log(`#${row.id} ${row.mode}: ${row.semanticReady ? "semantic-ready" : "not ready"}; ${row.elapsedMs}ms; ${row.providerAttempts ?? "?"} attempts; ${row.usage?.totalTokens ?? "?"} tokens`);
