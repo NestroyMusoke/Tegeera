@@ -69,6 +69,9 @@ describe("entity renderer registry", () => {
     expect(html).toContain('data-symbol-fallback="true"');
     expect(html).toContain('class="unknown-glyph-outline"');
     expect(html).toContain('class="unknown-glyph-mark"');
+    expect(html).toContain("constitu…");
+    expect(html).toContain("legitima…");
+    expect(html).not.toContain('>?</text>');
     expect(html).not.toContain(">C</text>");
   });
 

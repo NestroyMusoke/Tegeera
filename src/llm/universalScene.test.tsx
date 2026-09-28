@@ -53,7 +53,7 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
-  it("rejects a confident plan that skips a stated passage or force topology", () => {
+  it("completes an explicit passage locally but rejects a missing force topology", () => {
     const bypassed = {
       blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
       objects: ["machine", "fuel", "inlet"].map((id, index) => ({ id, label: id, kind: "generic", x: 20 + index * 30, y: 50 })),
@@ -62,8 +62,10 @@ describe("universal visual scene compiler", () => {
         { from: "inlet", to: "machine", label: "part of", kind: "partOf" }
       ]
     };
-    expect(() => compileUniversalScene(bypassed, initialScene, "Fuel enters a machine through its inlet"))
-      .toThrow(/fuel through inlet/);
+    const completed = compileUniversalScene(bypassed, initialScene, "Fuel enters a machine through its inlet");
+    expect(validateDoodleScript(completed, initialScene).ok).toBe(true);
+    expect(completed.commands.some((command) => command.action === "relate"
+      && command.relation.sourceIds[0] === "fuel" && command.relation.targetIds[0] === "inlet")).toBe(true);
     const force = {
       blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
       objects: ["sled", "snow", "pull", "drag"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 20, y: 50 })),
@@ -84,6 +86,32 @@ describe("universal visual scene compiler", () => {
     expect(() => compileUniversalScene(incorrect, initialScene,
       "A specimen jar is a labelled vessel that holds a sample"))
       .toThrow(/specimen jar as the labelled holder.*missing/);
+  });
+  it("rejects copied schema placeholders that the teacher did not say", () => {
+    const copied = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "source", label: "source", kind: "generic", x: 20, y: 50 },
+        { id: "destination", label: "destination", kind: "generic", x: 80, y: 50 }
+      ],
+      connections: [{ from: "source", to: "destination", label: "flows into", kind: "flowsInto" }]
+    };
+    expect(() => compileUniversalScene(copied, initialScene, "A robot carries a box across a bridge"))
+      .toThrow(/schema placeholders/);
+  });
+  it("keeps an ordinary carry action without requiring a closed circulation loop", () => {
+    const ordinary = {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: ["porter", "parcel", "market"].map((label, index) => ({
+        id: `n${index}`, label, kind: "generic", x: 15 + index * 35, y: 50
+      })),
+      connections: [{ from: "n0", to: "n1", label: "carries parcel", kind: "carries" },
+        { from: "n0", to: "n2", label: "travels to" }]
+    };
+    const script = compileUniversalScene(ordinary, initialScene, "A porter carries a parcel to a market");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    expect(script.commands.some((command) => command.action === "relate"
+      && command.relation.kind === "relatesTo" && command.relation.predicate === "carries parcel")).toBe(true);
   });
   it("refuses to turn a negated teacher claim into an affirmative scene", () => {
     for (const text of ["A dragon does not fly over a village", "A dragon never flies over a village", "A dragon can't fly over a village"]) {

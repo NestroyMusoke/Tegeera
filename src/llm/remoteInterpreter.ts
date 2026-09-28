@@ -1,4 +1,5 @@
 import type { SceneState } from "../doodlescript/schema";
+import { CORE_SCENE_RULES } from "../../shared/scenePlanningRules.mjs";
 
 export interface RemoteInterpretation {
   candidate: unknown;
@@ -20,10 +21,10 @@ export function remoteInterpreterEnabled(sessionKey = "", localBridge = false): 
   return Boolean(hostedInterpreterUrl || sessionKey.trim() || localBridge);
 }
 
-export const plannerPrompt = (text: string, scene: SceneState, reusableNouns: readonly string[] = []) => `Translate a teacher's explanation into a small, accurate 2D visual plan. Return ONLY JSON, no markdown.
-{"blueprintVersion":"1.0","mode":"replace","confidence":0.9,"objects":[{"id":"source","label":"source","kind":"generic","x":20,"y":30},{"id":"target","label":"target","kind":"generic","x":80,"y":70}],"connections":[{"from":"source","to":"target","label":"flows to"}]}
+export const plannerPrompt = (text: string, scene: SceneState, reusableNouns: readonly string[] = []) => `Translate a teacher's explanation into a small, accurate 2D visual plan. Return ONLY one JSON object, no markdown. It has blueprintVersion "1.0", mode "replace" or "extend", numeric confidence, objects array, and connections array. Each object has id, label, kind, x, y and optional color. Each connection has from, to, label and optional kind or via. Choose labels and IDs from the teacher's actual explanation; no example objects are supplied for copying.
 
 Rules:
+${CORE_SCENE_RULES}
 - Preserve meaning, not just nouns. Include every essential visible part, input, output, source, and stated relationship. Never invent facts. If the limit prevents a faithful plan, set confidence below 0.58.
 - 1-8 objects, 0-12 connections. Distinct objects have distinct IDs. A connection endpoint must be an exact object ID, or an existing scene ID in extend mode. Never reference an omitted object.
 - Use mode "extend" only when explicitly adding to the current scene; otherwise "replace". Never reuse an existing ID for a new object.
@@ -33,7 +34,7 @@ Rules:
 - Do not emit glyphs, SVG, paths, pixels, explanations, or extra fields. Artwork is resolved separately while the labelled scene remains usable.
 - The current visual grammar cannot safely show negated claims. If the teacher says something does not happen, never convert it to an affirmative connection; set confidence below 0.58. Preserve every explicitly stated colour on the correct object.
 - If the teacher says an input passes through a named part, connect the input to that part, not just the larger whole. When an applied push/pull is opposed by friction, drag, or resistance, represent distinct applied and opposing force arrows and the contacted surface; do not replace this with a generic actor caption.
-- Typed visual links: partOf="part of", flowsInto="flows into", illuminates="illuminates", contains="contains", calls="calls", returnsControlTo="returnsTo", risesTo="risesTo", fallsFrom="fallsFrom", accelerates="accelerates", pumpsTo="pumps to", returnsTo="returns to", carries="carries", appliedTo="applied to", opposes="opposes", contacts="contacts". A container with content needs exactly two objects and one contains link. A call-return needs caller→function calls and function→call site returnsControlTo with three distinct roles. An ascent/apex/descent needs moving object→apex risesTo and fallsFrom plus force→moving object accelerates, with three roles. For a closed transport loop, use source→destination pumpsTo via payload, destination→source returnsTo via the same payload, and payload→enrichment carries. For applied force plus explicit opposition, use four distinct roles and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. Forces are arrows, not people. Only pumpsTo and returnsTo use a via ID.
+- Typed visual links: partOf="part of", flowsInto="flows into", illuminates="illuminates", contains="contains", calls="calls", returnsControlTo="returnsTo", risesTo="risesTo", fallsFrom="fallsFrom", accelerates="accelerates", pumpsTo="pumps to", returnsTo="returns to", carries="carries", appliedTo="applied to", opposes="opposes", contacts="contacts". A container with content needs a distinct container→content contains link; other connected context is allowed. A call-return needs caller→function calls and function→call site returnsControlTo with three distinct roles. An ascent/apex/descent needs moving object→apex risesTo and fallsFrom plus force→moving object accelerates, with three roles. For a closed transport loop, use source→destination pumpsTo via payload, destination→source returnsTo via the same payload, and payload→enrichment carries. For applied force plus explicit opposition, use four distinct roles and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. Forces are arrows, not people. Only pumpsTo and returnsTo use a via ID.
 - Existing artwork labels (do not change meaning to favor them): ${JSON.stringify(reusableNouns)}.
 Teacher: ${JSON.stringify(text)}
 Current scene: ${JSON.stringify({ entities: scene.entities.map(({ id, kind, label, x, y }) => ({ id, kind, label, x, y })), relations: scene.relations ?? [] })}`;

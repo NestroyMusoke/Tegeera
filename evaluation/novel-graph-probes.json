@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh mixed-topic semantic probes. Gold roles and links are for local scoring only, never model prompts. Not visual approval.",
+  "cases": [
+    { "id": "a", "text": "A battery powers a motor that spins a fan.", "roles": ["battery", "motor", "fan"], "links": [["battery", "motor"], ["motor", "fan"]] },
+    { "id": "b", "text": "A librarian places a book on a shelf while a student watches.", "roles": ["librarian", "book", "shelf", "student"], "links": [["librarian", "book"], ["book", "shelf"], ["student", "librarian"]] },
+    { "id": "c", "text": "A solar panel converts sunlight into electricity for a lamp.", "roles": ["solar panel", "sunlight", "electricity", "lamp"], "links": [["sunlight", "solar panel"], ["solar panel", "electricity"], ["electricity", "lamp"]] },
+    { "id": "d", "text": "Rain flows from a roof into a barrel through a gutter.", "roles": ["rain", "roof", "barrel", "gutter"], "links": [["roof", "gutter"], ["gutter", "barrel"]] },
+    { "id": "e", "text": "A robot carries a box across a bridge to a workshop.", "roles": ["robot", "box", "bridge", "workshop"], "links": [["robot", "box"], ["robot", "bridge"], ["bridge", "workshop"]] },
+    { "id": "f", "text": "A caterpillar eats a leaf before becoming a butterfly.", "roles": ["caterpillar", "leaf", "butterfly"], "links": [["caterpillar", "leaf"], ["caterpillar", "butterfly"]] },
+    { "id": "g", "text": "A syringe pushes medicine through a tube into a patient.", "roles": ["syringe", "medicine", "tube", "patient"], "links": [["syringe", "medicine"], ["medicine", "tube"], ["tube", "patient"]] },
+    { "id": "h", "text": "A clock hand moves clockwise around a dial.", "roles": ["clock hand", "dial"], "links": [["clock hand", "dial"]] },
+    { "id": "i", "text": "A magnet pulls an iron nail toward it.", "roles": ["magnet", "iron nail"], "links": [["magnet", "iron nail"]] },
+    { "id": "j", "text": "A bee carries pollen from a flower to its hive.", "roles": ["bee", "pollen", "flower", "hive"], "links": [["flower", "bee"], ["bee", "hive"]] },
+    { "id": "k", "text": "A kite floats above a tree while its string stays attached to a child.", "roles": ["kite", "tree", "string", "child"], "links": [["kite", "tree"], ["string", "kite"], ["string", "child"]] },
+    { "id": "l", "text": "Steam rises from a cup and condenses on a cool lid.", "roles": ["steam", "cup", "lid"], "links": [["cup", "steam"], ["steam", "lid"]] }
+  ]
+}

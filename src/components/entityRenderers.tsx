@@ -129,9 +129,17 @@ function Generic({ entity }: EntityRendererProps) {
     <path className="doodle-stroke" d="M-42 0 C-42-27-20-45 4-44 C32-43 45-22 43 3 C41 30 20 44-5 43 C-31 42-44 22-42 0 Z" fill="none" opacity="0.55" />
     <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="65">{emoji}</text>
   </g>;
+  const words = (entity.label ?? entity.kind).trim().split(/\s+/).filter(Boolean);
+  const display = words.length <= 1 ? [words[0] ?? "object"]
+    : words.length === 2 ? words : [words[0], words.slice(1).join(" ")];
+  const lines = display.slice(0, 2).map((line) => line.length > 9 ? `${line.slice(0, 8)}…` : line);
+  const fontSize = Math.max(13, 20 - Math.max(...lines.map((line) => line.length)) * 0.6);
   return <g data-symbol-id="honest-sticker" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true">
-    <rect className="unknown-glyph-outline" x="-39" y="-42" width="78" height="84" rx="19" />
-    <text className="unknown-glyph-mark" x="0" y="15" textAnchor="middle" aria-hidden="true">?</text>
+    <title>{`${entity.label ?? entity.kind} — labelled while its doodle is prepared`}</title>
+    <rect className="unknown-glyph-outline" x="-48" y="-38" width="96" height="76" rx="17" />
+    {lines.map((line, index) => <text key={index} className="unknown-glyph-mark" x="0"
+      y={lines.length === 1 ? 6 : index === 0 ? -5 : 17} textAnchor="middle" fontSize={fontSize}
+      aria-hidden="true">{line}</text>)}
   </g>;
 }
 

@@ -27,10 +27,14 @@ describe("remote interpreter boundary", () => {
     expect(body.response_format).toEqual({ type: "json_object" });
     expect(body.models).toEqual(["google/gemma-4-26b-a4b-it:free", "google/gemma-4-31b-it:free", "openrouter/free"]);
     expect(body.reasoning).toEqual({ enabled: false });
-    expect(body.messages[0].content).toContain('"blueprintVersion":"1.0"');
+    expect(body.messages[0].content).toContain('blueprintVersion "1.0"');
+    expect(body.messages[0].content).not.toContain('"label":"source"');
     expect(body.messages[0].content).toContain("Do not emit glyphs");
     expect(body.messages[0].content).toContain("essential visible part, input, output, source");
     expect(body.messages[0].content).toContain("Never reference an omitted object");
+    expect(body.messages[0].content).toContain("Build a source-grounded graph");
+    expect(body.messages[0].content).toContain("Extra connected context is allowed");
+    expect(body.messages[0].content).not.toContain("exactly two objects and one contains link");
     expect(body.max_tokens).toBe(3600);
     vi.unstubAllGlobals();
   });

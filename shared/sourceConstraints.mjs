@@ -36,15 +36,12 @@ function priorMention(prefix, objects, excludedIds) {
   return best?.object ?? null;
 }
 
-/** @returns {string | null} A repairable general constraint, or no proven omission. */
-export function sourceConstraintIssue(text, candidate) {
-  if (!candidate || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return null;
-  const objects = candidate.objects;
-  const edges = candidate.connections;
-  const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");
-  // A named passage is not equivalent to a direct source-to-whole arrow.
-  // Resolve the nearest *named* source in the same clause; if either role is
-  // uncertain, avoid imposing a relation that the teacher may not have meant.
+function movingSubject(prefix, objects) {
+  const subject = prefix.match(/^\s*(?:(?:a|an|the)\s+)?([a-z][a-z -]{0,39}?)\s+(?:flows?|moves?|travels?|passes?|goes?|runs?|rises?)\b/)?.[1];
+  return subject ? matchingPhrase(subject, objects) : null;
+}
+
+function* explicitPassages(utterance, objects, edges) {
   for (const match of utterance.matchAll(/\bthrough\s+(?:(?:its|their|the|a|an|his|her)\s+)?([a-z][a-z-]*)\b/g)) {
     const passage = matchingObject(match[1], objects);
     const prefix = utterance.slice(Math.max(0, match.index - 75), match.index).split(/[,.!?;]/).at(-1) ?? "";
@@ -52,12 +49,67 @@ export function sourceConstraintIssue(text, candidate) {
     if (passage) for (const edge of edges) {
       if (edge.from === passage.id && (edge.kind === "partOf" || edge.label?.toLowerCase() === "part of")) excluded.add(edge.to);
     }
-    const source = priorMention(prefix, objects, excluded);
+    const source = movingSubject(prefix, objects) ?? priorMention(prefix, objects, excluded);
+    const remainder = utterance.slice(match.index + match[0].length);
+    const recipientName = remainder.match(/^\s+into\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/)?.[1]
+      ?? [...prefix.matchAll(/\binto\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/g)].at(-1)?.[1];
+    yield { passageName: match[1], passage, source, recipientName,
+      recipient: recipientName ? matchingObject(recipientName, objects) : null };
+  }
+}
+
+/** Add only explicit, unique, missing passage arrows between existing roles. */
+export function completeExplicitPassages(text, candidate) {
+  if (!candidate || candidate.mode !== "replace" || candidate.confidence < 0.58
+    || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return candidate;
+  const specialistKinds = new Set(["contains", "calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates",
+    "pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"]);
+  if (candidate.connections.some((edge) => specialistKinds.has(edge.kind))) return candidate;
+  const edges = [...candidate.connections];
+  const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");
+  for (const { source, passage, recipient } of explicitPassages(utterance, candidate.objects, edges)) {
+    if (source && passage && source.id !== passage.id
+      && !edges.some((edge) => edge.from === source.id && edge.to === passage.id) && edges.length < 12) {
+      edges.push({ from: source.id, to: passage.id, label: "passes through" });
+    }
+    if (passage && recipient && passage.id !== recipient.id
+      && !edges.some((edge) => edge.from === passage.id && edge.to === recipient.id) && edges.length < 12) {
+      edges.push({ from: passage.id, to: recipient.id, label: "enters" });
+    }
+  }
+  return edges.length === candidate.connections.length ? candidate : { ...candidate, connections: edges };
+}
+
+/** @returns {string | null} A repairable general constraint, or no proven omission. */
+export function sourceConstraintIssue(text, candidate) {
+  if (!candidate || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return null;
+  const objects = candidate.objects;
+  const edges = candidate.connections;
+  const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");
+  // Old planner prompts contained illustrative source/destination objects.
+  // A model can copy their labels and pass JSON validation while representing
+  // none of the teacher's nouns. IDs may be arbitrary; visible labels may not.
+  const spoken = new Set(words(utterance));
+  const copiedPlaceholder = objects.find((object) => ["source", "destination", "target"].includes(object.label?.trim().toLowerCase())
+    && !spoken.has(object.label.trim().toLowerCase()));
+  if (copiedPlaceholder && candidate.confidence >= 0.58) {
+    return `The visible label ${copiedPlaceholder.label} was not in the teacher's explanation; use grounded participants, not schema placeholders.`;
+  }
+  // A named passage is not equivalent to a direct source-to-whole arrow.
+  // Resolve the nearest *named* source in the same clause; if either role is
+  // uncertain, avoid imposing a relation that the teacher may not have meant.
+  for (const { passageName, passage, source, recipientName, recipient } of explicitPassages(utterance, objects, edges)) {
     if (!source) continue;
-    if (!passage) return `The explanation names a passage through ${match[1]}, but that visible part is missing.`;
+    if (!passage) return `The explanation names a passage through ${passageName}, but that visible part is missing.`;
     if (!edges.some((edge) => (edge.from === source.id && edge.to === passage.id)
       || (edge.to === passage.id && edge.via === source.id && edge.kind === "pumpsTo"))) {
       return `The explanation sends ${source.id} through ${passage.id}; draw a directed link to the passage, not only to the whole.`;
+    }
+    if (recipientName) {
+      if (!recipient) return `The explanation continues through ${passageName} into ${recipientName}, but the final recipient is missing.`;
+      if (!edges.some((edge) => edge.from === passage.id && edge.to === recipient.id)) {
+        return `The explanation continues through ${passage.id} into ${recipient.id}; complete the directed path to the final recipient.`;
+      }
     }
   }
   // An applied action plus an explicitly opposing physical effect needs two

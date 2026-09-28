@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { completeExplicitPassages } from "../shared/sourceConstraints.mjs";
 import {
   NEBIUS_CHAT_URL, NVIDIA_SCENE_MODEL, callModel, generateGlyph, interpretScene, modelConfiguration,
   scenePrompt, sceneValidationIssue, validScene, validStrokes
@@ -213,6 +214,23 @@ test("source grounding detects omitted passage arrows and incomplete opposing fo
   assert.equal(sceneValidationIssue(repaired, scene, sentence), null);
   assert.equal(sceneValidationIssue(repaired, scene, "A cloud moves through the sky"), null);
 
+  const twoStage = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["cargo", "chute", "warehouse"].map((id, index) => ({ id, label: id, kind: "generic", x: 15 + index * 30, y: 50 })),
+    connections: [{ from: "cargo", to: "chute", label: "flows into", kind: "flowsInto" }] };
+  const twoStageSentence = "Cargo travels through a chute into a warehouse";
+  assert.match(sceneValidationIssue(twoStage, scene, twoStageSentence), /complete the directed path to the final recipient/);
+  assert.equal(sceneValidationIssue({ ...twoStage, connections: [...twoStage.connections,
+    { from: "chute", to: "warehouse", label: "flows into", kind: "flowsInto" }] }, scene, twoStageSentence), null);
+  const detour = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["water", "roof", "barrel", "gutter"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 25, y: 45 })),
+    connections: [{ from: "water", to: "gutter", label: "flows into", kind: "flowsInto" },
+      { from: "gutter", to: "barrel", label: "flows into", kind: "flowsInto" }] };
+  assert.equal(sceneValidationIssue(detour, scene, "Water flows from a roof into a barrel through a gutter"), null);
+  const repairedDetour = completeExplicitPassages("Water flows from a roof into a barrel through a gutter",
+    { ...detour, connections: [] });
+  assert.deepEqual(repairedDetour.connections.map(({ from, to }) => [from, to]),
+    [["water", "gutter"], ["gutter", "barrel"]]);
+
   const force = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
     objects: ["sled", "snow", "pull", "drag"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 20, y: 50 })),
     connections: [{ from: "pull", to: "sled", label: "pulls" }, { from: "drag", to: "sled", label: "slows" }] };
@@ -223,6 +241,21 @@ test("source grounding detects omitted passage arrows and incomplete opposing fo
     { from: "drag", to: "pull", label: "opposes", kind: "opposes" },
     { from: "sled", to: "snow", label: "contacts", kind: "contacts" }
   ] }, scene, forceSentence), null);
+});
+
+test("an explicit passage path is completed locally without a second model call", async () => {
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["cargo", "chute", "warehouse"].map((label, index) => ({
+      id: label, label, kind: "generic", x: 20 + index * 30, y: 50
+    })), connections: [{ from: "cargo", to: "chute", label: "passes through" }] };
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify(candidate) } }]
+  }), { status: 200 }); };
+  const result = await interpretScene({ text: "Cargo travels through a chute into a warehouse", scene }, nebius, { fetchImpl });
+  assert.equal(calls, 1);
+  assert.equal(result.candidate.connections.length, 2);
+  assert.deepEqual(result.candidate.connections[1], { from: "chute", to: "warehouse", label: "enters" });
 });
 
 test("explicit relationship contracts reject confident generic arrows without fixing the nouns", () => {
@@ -271,21 +304,45 @@ test("explicit relationship contracts reject confident generic arrows without fi
   "The application does not call the service and return to the call site."), null);
 });
 
-test("a semantic omission triggers one bounded model repair with actionable feedback", async () => {
+test("a copied schema example cannot masquerade as a grounded classroom graph", () => {
+  const copied = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["source", "destination"].map((label, index) => ({ id: label, label, kind: "generic", x: 20 + index * 60, y: 50 })),
+    connections: [{ from: "source", to: "destination", kind: "flowsInto", label: "flows into" }] };
+  assert.match(sceneValidationIssue(copied, scene, "A robot carries a box across a bridge"), /schema placeholders/);
+  assert.equal(sceneValidationIssue(copied, scene, "A source flows into a destination"), null);
+  assert.doesNotMatch(scenePrompt("A robot carries a box", scene), /"label":"source"/);
+});
+
+test("ordinary carrying is a generic open relation, not a broken transport-loop specialist", async () => {
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.91,
+    objects: ["porter", "parcel", "market"].map((label, index) => ({ id: `n${index}`, label, kind: "generic", x: 20 + index * 27, y: 50 })),
+    connections: [{ from: "n0", to: "n1", label: "carries parcel", kind: "carries" },
+      { from: "n0", to: "n2", label: "travels to" }] };
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify(candidate) } }]
+  }), { status: 200 }); };
+  const result = await interpretScene({ text: "A porter carries a parcel to a market", scene }, nebius, { fetchImpl });
+  assert.equal(calls, 1);
+  assert.equal(result.candidate.connections[0].kind, undefined);
+  assert.equal(result.candidate.connections[0].label, "carries parcel");
+  const loop = { ...candidate, connections: [...candidate.connections,
+    { from: "n0", to: "n2", label: "pumps to", kind: "pumpsTo", via: "n1" }] };
+  assert.match(sceneValidationIssue(loop, scene), /typed connection|specialist|transport loop/);
+});
+
+test("an explicit passage omission is repaired deterministically before another model call", async () => {
   const first = { ...complete, connections: [{ from: "water", to: "plant", label: "flows into", kind: "flowsInto" },
     { from: "roots", to: "plant", label: "part of", kind: "partOf" }] };
-  const corrected = { ...complete, connections: [{ from: "water", to: "roots", label: "flows into", kind: "flowsInto" },
-    { from: "roots", to: "plant", label: "part of", kind: "partOf" }] };
   let calls = 0;
-  const fetchImpl = async (_url, request) => {
+  const fetchImpl = async () => {
     calls += 1;
-    if (calls === 2) assert.match(JSON.parse(request.body).messages[0].content, /water through roots/);
-    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(calls === 1 ? first : corrected) } }] }), { status: 200 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(first) } }] }), { status: 200 });
   };
   const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nebius, { fetchImpl });
-  assert.equal(result.repaired, true);
-  assert.equal(calls, 2);
-  assert.equal(result.candidate.connections[0].to, "roots");
+  assert.equal(result.repaired, false);
+  assert.equal(calls, 1);
+  assert.equal(result.candidate.connections.at(-1).to, "roots");
 });
 
 test("repairs malformed model JSON once, then returns a structurally complete plan", async () => {

@@ -328,7 +328,8 @@ button {
 
 .unknown-glyph-mark {
   fill: #566b66;
-  font: 700 42px system-ui, sans-serif;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
 }
 
 .doodle-detail {
