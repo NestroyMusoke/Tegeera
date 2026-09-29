@@ -5,6 +5,7 @@ import { interpretTeacherText } from "./interpret";
 import { parseEntityPhrase } from "./lexicon";
 import { applyDoodleScript, initialScene } from "./scene";
 import { validateDoodleScript } from "./validator";
+import { compileUniversalScene } from "../llm/universalScene";
 
 const interpret = (text: string, scene = initialScene) => {
   const result = interpretTeacherText(text, scene);
@@ -36,6 +37,23 @@ describe("composable object appearance", () => {
     expect(script.commands.filter(({ action }) => action === "create")).toHaveLength(3);
     expect(scene.entities).toHaveLength(3);
     expect(scene.entities.every(({ kind, color }) => kind === "car" && color === "blue")).toBe(true);
+  });
+
+  it("uses a validated glyph's primary fill for a stated color without recoloring every detail", () => {
+    const glyph = {
+      schemaVersion: "1.0.0" as const, viewBox: "0 0 100 100" as const,
+      parts: [
+        { id: "body", d: "M10 10 L90 10 L90 90 L10 90 Z", fill: "#cad2c5" as const, stroke: "#2f3e46" as const },
+        { id: "detail", d: "M30 30 L70 70", fill: "none" as const, stroke: "#2f3e46" as const }
+      ], anchors: { top: [50, 10], ground: [50, 90], front: [90, 50] }
+    };
+    const script = compileUniversalScene({ blueprintVersion: "1.0", mode: "replace", confidence: .9,
+      objects: [{ id: "object", label: "unknown object", kind: "generic", color: "yellow", x: 50, y: 50, glyph }], connections: []
+    }, initialScene, "An unknown yellow object.");
+    const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
+    expect(html).toContain('fill="var(--entity-color)"');
+    expect(html).toContain('data-glyph-part="detail"');
+    expect(html).toContain('fill="none"');
   });
 
   it("recolors an existing object without recreating it", () => {

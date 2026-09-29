@@ -13,6 +13,11 @@ function run(text: string, scene = initialScene): SceneState {
 }
 
 describe("explanation meaning", () => {
+  it("draws a color-qualified known noun locally without asking for AI", () => {
+    const scene = run("A yellow book");
+    expect(scene.entities).toHaveLength(1);
+    expect(scene.entities[0]).toMatchObject({ kind: "book", color: "yellow" });
+  });
   it("keeps shared books separate from an arriving student's own book", () => {
     const shared = run("Three students share two books.");
     const next = run("Another student arrives, but she already has her own book.", shared);

@@ -112,6 +112,18 @@ describe("non-blocking glyph resolver", () => {
     } finally { vi.useRealTimers(); }
   });
 
+  it("prefetches nouns rather than color adjectives while leaving full noun labels untouched", async () => {
+    const requested: string[] = [];
+    const generator = vi.fn(async (noun: string) => { requested.push(noun); return glyph; });
+    const resolver = new LiveGlyphResolver({ generator });
+    resolver.speculativePrefetch("A yellow dragon and a purple village. The blue whale swims.");
+    await vi.waitFor(() => expect(generator).toHaveBeenCalledTimes(3));
+    expect(requested).toEqual(expect.arrayContaining(["dragon", "village", "whale"]));
+    expect(requested).not.toContain("yellow");
+    expect(requested).not.toContain("purple");
+    expect(resolver.resolve("blue whale").status).toBe("placeholder");
+  });
+
   it("preempts speculative work and draws a newly visible noun before the lesson backlog", async () => {
     const started: string[] = [];
     const onGenerated = vi.fn();

@@ -1,6 +1,10 @@
 import { glyphKey, glyphSchema, resolveGlyph, type GlyphSource, type TegeeraGlyph } from "./glyph";
 import { compileStrokeGlyph, strokeGlyphSchema, strokeSchema, type Stroke, type StrokeGlyph } from "./strokeGlyph";
 
+const spokenColors = "red|orange|yellow|green|blue|purple|pink|brown|black|white|gray";
+const speculativeNounPattern = new RegExp(`\\b(?:a|an|the)\\s+(?:(?:${spokenColors})\\s+)?([a-z][a-z'-]{2,})\\b`, "g");
+const colorWords = new Set(spokenColors.split("|"));
+
 export interface LiveGlyphResolution {
   glyph?: TegeeraGlyph;
   source: GlyphSource;
@@ -189,8 +193,8 @@ export class LiveGlyphResolver {
 
   speculativePrefetch(interimTranscript: string) {
     if (interimTranscript.length > 250) return;
-    const candidates = [...interimTranscript.toLowerCase().matchAll(/\b(?:a|an|the)\s+([a-z][a-z'-]{2,})\b/g)]
-      .map((match) => match[1]).filter((word) => !["and", "then", "this", "that", "with"].includes(word));
+    const candidates = [...interimTranscript.toLowerCase().matchAll(speculativeNounPattern)]
+      .map((match) => match[1]).filter((word) => !colorWords.has(word) && !["and", "then", "this", "that", "with"].includes(word));
     for (const noun of [...new Set(candidates)].slice(0, 3)) this.prefetch(noun);
   }
 

@@ -168,13 +168,14 @@ function ProceduralDoodle({ entity }: EntityRendererProps) {
 
 function ValidatedGlyph({ entity }: EntityRendererProps) {
   const glyph = entity.glyph!;
+  const primaryFillIndex = glyph.parts.findIndex((part) => part.fill !== "none");
   return <g className="validated-glyph" data-glyph-version={glyph.schemaVersion} data-glyph-parts={glyph.parts.length} transform="translate(-50 -50)">
     {glyph.parts.map((part, index) => <path
       key={part.id}
       className="glyph-ink-path"
       data-glyph-part={part.id}
       d={part.d}
-      fill={part.fill}
+      fill={entity.color && index === primaryFillIndex ? "var(--entity-color)" : part.fill}
       stroke={part.stroke}
       strokeWidth="3"
       strokeLinecap="round"
