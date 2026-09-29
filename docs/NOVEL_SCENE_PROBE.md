@@ -14,6 +14,8 @@ On five *previously untouched* statements after the prompt and repair fixes, the
 
 The final two untouched statements—battery→motor→fan and magnet→nail—were **2/2 role-and-endpoint complete** and passed the real browser compiler/SVG renderer in one call each. They took roughly **11–12 seconds** each. This is still not real-time. The phone-width still images exposed the larger visual gap: motor, fan and nail were question-mark stickers, not recognizable doodles. The fallback now shows the actual noun instead of `?`, but a labelled placeholder is not the promised artwork.
 
+On 29 September, the rain/roof/gutter/barrel probe was rerun as a targeted regression, not a fresh holdout. The compiler now links an explicitly named origin to its passage as well as the moving material to that passage, and rejects a reversed `originates from` claim. The latest bounded Nebius run produced all four roles and the roof→gutter→barrel path in one attempt (13.5 seconds). Its rendered scene still had **three labelled placeholders out of four objects**. The probe now records `visualAudit.labelledPlaceholders` and `humanVisualReview: pending` so a complete graph cannot be mistaken for a visually approved doodle. This one rerun does not revise the original 3/5 holdout score or prove general accuracy.
+
 The runtime stroke-model probe was worse: motor yielded no valid doodle after two attempts; fan yielded four strokes after about 27 seconds but was not recognizable; the shell split `iron nail` and actually tested `iron`, whose three-stroke result was also not recognizable. Those generated drafts must not be counted as approved art. The local contact sheet is ignored by Git at `.visual-check/glyph-quality-probe/contact-sheet.html`.
 
 ## How to reproduce a bounded probe

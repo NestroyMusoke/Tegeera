@@ -45,15 +45,17 @@ function* explicitPassages(utterance, objects, edges) {
   for (const match of utterance.matchAll(/\bthrough\s+(?:(?:its|their|the|a|an|his|her)\s+)?([a-z][a-z-]*)\b/g)) {
     const passage = matchingObject(match[1], objects);
     const prefix = utterance.slice(Math.max(0, match.index - 75), match.index).split(/[,.!?;]/).at(-1) ?? "";
+    const originName = [...prefix.matchAll(/\bfrom\s+(?:(?:its|their|the|a|an|his|her)\s+)?([a-z][a-z-]*)\b/g)].at(-1)?.[1];
+    const origin = originName ? matchingObject(originName, objects) : null;
     const excluded = new Set(passage ? [passage.id] : []);
     if (passage) for (const edge of edges) {
       if (edge.from === passage.id && (edge.kind === "partOf" || edge.label?.toLowerCase() === "part of")) excluded.add(edge.to);
     }
-    const source = movingSubject(prefix, objects) ?? priorMention(prefix, objects, excluded);
+    const source = movingSubject(prefix, objects) ?? origin ?? priorMention(prefix, objects, excluded);
     const remainder = utterance.slice(match.index + match[0].length);
     const recipientName = remainder.match(/^\s+into\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/)?.[1]
       ?? [...prefix.matchAll(/\binto\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/g)].at(-1)?.[1];
-    yield { passageName: match[1], passage, source, recipientName,
+    yield { passageName: match[1], passage, source, originName, origin, recipientName,
       recipient: recipientName ? matchingObject(recipientName, objects) : null };
   }
 }
@@ -67,10 +69,14 @@ export function completeExplicitPassages(text, candidate) {
   if (candidate.connections.some((edge) => specialistKinds.has(edge.kind))) return candidate;
   const edges = [...candidate.connections];
   const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");
-  for (const { source, passage, recipient } of explicitPassages(utterance, candidate.objects, edges)) {
+  for (const { source, passage, origin, recipient } of explicitPassages(utterance, candidate.objects, edges)) {
     if (source && passage && source.id !== passage.id
       && !edges.some((edge) => edge.from === source.id && edge.to === passage.id) && edges.length < 12) {
       edges.push({ from: source.id, to: passage.id, label: "passes through" });
+    }
+    if (origin && passage && origin.id !== passage.id && origin.id !== source?.id
+      && !edges.some((edge) => edge.from === origin.id && edge.to === passage.id) && edges.length < 12) {
+      edges.push({ from: origin.id, to: passage.id, label: "leads through" });
     }
     if (passage && recipient && passage.id !== recipient.id
       && !edges.some((edge) => edge.from === passage.id && edge.to === recipient.id) && edges.length < 12) {
@@ -95,15 +101,32 @@ export function sourceConstraintIssue(text, candidate) {
   if (copiedPlaceholder && candidate.confidence >= 0.58) {
     return `The visible label ${copiedPlaceholder.label} was not in the teacher's explanation; use grounded participants, not schema placeholders.`;
   }
+  // An arrow labelled "originates from" is grammatical from the moving item
+  // back to its origin. The reverse arrow asserts the opposite fact, even if
+  // endpoint-only graph scoring would call the scene complete.
+  for (const match of utterance.matchAll(/\b(?:flows?|comes?|originates?|moves?|travels?|runs?|rises?)\s+from\s+(?:(?:a|an|the)\s+)?([a-z][a-z-]*)\b/g)) {
+    const clause = utterance.slice(0, match.index + match[0].length).split(/[,.!?;]/).at(-1) ?? "";
+    const mover = movingSubject(clause, objects);
+    const origin = matchingObject(match[1], objects);
+    if (mover && origin && mover.id !== origin.id && edges.some((edge) =>
+      edge.from === origin.id && edge.to === mover.id
+      && /\b(?:originates?|comes?|flows?)\s+from\b/i.test(edge.label ?? ""))) {
+      return `The link says ${origin.id} originates from ${mover.id}, reversing the stated source ${origin.id}.`;
+    }
+  }
   // A named passage is not equivalent to a direct source-to-whole arrow.
   // Resolve the nearest *named* source in the same clause; if either role is
   // uncertain, avoid imposing a relation that the teacher may not have meant.
-  for (const { passageName, passage, source, recipientName, recipient } of explicitPassages(utterance, objects, edges)) {
-    if (!source) continue;
+  for (const { passageName, passage, source, originName, origin, recipientName, recipient } of explicitPassages(utterance, objects, edges)) {
+    if (!source && !origin) continue;
     if (!passage) return `The explanation names a passage through ${passageName}, but that visible part is missing.`;
-    if (!edges.some((edge) => (edge.from === source.id && edge.to === passage.id)
+    if (originName && !origin) return `The explanation starts from ${originName}, but that visible origin is missing.`;
+    if (source && !edges.some((edge) => (edge.from === source.id && edge.to === passage.id)
       || (edge.to === passage.id && edge.via === source.id && edge.kind === "pumpsTo"))) {
       return `The explanation sends ${source.id} through ${passage.id}; draw a directed link to the passage, not only to the whole.`;
+    }
+    if (originName && origin && origin.id !== source?.id && !edges.some((edge) => edge.from === origin.id && edge.to === passage.id)) {
+      return `The explanation starts from ${origin.id} before passing through ${passage.id}; connect the origin to the named passage.`;
     }
     if (recipientName) {
       if (!recipient) return `The explanation continues through ${passageName} into ${recipientName}, but the final recipient is missing.`;

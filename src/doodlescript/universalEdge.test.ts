@@ -32,6 +32,16 @@ describe("source-to-target connector geometry", () => {
     expect(routed.end.x).toBeGreaterThan(800);
   });
 
+  it("places a vertical relation label beside its arrow, away from object labels", () => {
+    const entities = [entity("rain", 38, 30), entity("gutter", 38, 68)];
+    const geometry = universalEdgeGeometry({ ...edge("rain", "gutter"), predicate: "passes through" }, entities)!;
+    expect(geometry.route).toBe("direct");
+    expect(geometry.start.y).toBeGreaterThan(entities[0].y * 6.2 + 96);
+    expect(Math.abs(geometry.labelX - 380)).toBeGreaterThan(45);
+    expect(geometry.labelY).toBeGreaterThan(entities[0].y * 6.2 + 80);
+    expect(geometry.labelY).toBeLessThan(entities[1].y * 6.2 - 40);
+  });
+
   it("never invents an arrow for a missing endpoint", () => {
     expect(universalEdgeGeometry(edge("source", "missing"), [entity("source", 20, 40)])).toBeNull();
   });

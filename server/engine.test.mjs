@@ -232,11 +232,27 @@ test("source grounding detects omitted passage arrows and incomplete opposing fo
     objects: ["water", "roof", "barrel", "gutter"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 25, y: 45 })),
     connections: [{ from: "water", to: "gutter", label: "flows into", kind: "flowsInto" },
       { from: "gutter", to: "barrel", label: "flows into", kind: "flowsInto" }] };
-  assert.equal(sceneValidationIssue(detour, scene, "Water flows from a roof into a barrel through a gutter"), null);
   const repairedDetour = completeExplicitPassages("Water flows from a roof into a barrel through a gutter",
     { ...detour, connections: [] });
   assert.deepEqual(repairedDetour.connections.map(({ from, to }) => [from, to]),
-    [["water", "gutter"], ["gutter", "barrel"]]);
+    [["water", "gutter"], ["roof", "gutter"], ["gutter", "barrel"]]);
+  assert.equal(sceneValidationIssue({ ...detour, connections: [
+    { from: "water", to: "gutter", label: "flows into", kind: "flowsInto" },
+    { from: "gutter", to: "barrel", label: "flows into", kind: "flowsInto" }
+  ] }, scene, "Water flows from a roof into a barrel through a gutter")?.includes("origin to the named passage"), true);
+  assert.equal(sceneValidationIssue(repairedDetour, scene, "Water flows from a roof into a barrel through a gutter"), null);
+  assert.match(sceneValidationIssue({ ...repairedDetour, connections: [
+    ...repairedDetour.connections, { from: "roof", to: "water", label: "originates from" }
+  ] }, scene, "Water flows from a roof into a barrel through a gutter"), /reversing the stated source/);
+  const unseenDetour = { ...detour,
+    objects: ["juice", "tank", "cup", "pipe"].map((id, index) => ({
+      id, label: id, kind: "generic", x: 10 + index * 25, y: 45
+    })), connections: [] };
+  const unseenText = "Juice flows from a tank into a cup through a pipe";
+  const completedUnseen = completeExplicitPassages(unseenText, unseenDetour);
+  assert.deepEqual(completedUnseen.connections.map(({ from, to }) => [from, to]),
+    [["juice", "pipe"], ["tank", "pipe"], ["pipe", "cup"]]);
+  assert.equal(sceneValidationIssue(completedUnseen, scene, unseenText), null);
 
   const force = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
     objects: ["sled", "snow", "pull", "drag"].map((id, index) => ({ id, label: id, kind: "generic", x: 10 + index * 20, y: 50 })),
@@ -367,6 +383,31 @@ test("repairs malformed model JSON once, then returns a structurally complete pl
   assert.equal(calls, 2);
   assert.equal(result.providerAttempts, 2);
   assert.deepEqual(result.usage, { promptTokens: 80, completionTokens: 40, totalTokens: 120 });
+});
+
+test("typed-link repair teaches exact labels while retaining the teacher's ordinary verb", async () => {
+  const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["battery", "motor", "fan"].map((label, index) => ({
+      id: label, label, kind: "generic", x: 20 + index * 30, y: 50
+    })), connections: [
+      { from: "battery", to: "motor", label: "powers", kind: "flowsInto" },
+      { from: "motor", to: "fan", label: "spins" }
+    ] };
+  let calls = 0;
+  const fetchImpl = async (_url, request) => {
+    calls += 1;
+    if (calls === 2) {
+      const prompt = JSON.parse(request.body).messages[0].content;
+      assert.match(prompt, /flowsInto="flows into"/);
+      assert.match(prompt, /For any other truthful relationship label, OMIT kind/);
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(calls === 1
+      ? plan : { ...plan, connections: plan.connections.map(({ kind, ...edge }) => edge) }) } }] }), { status: 200 });
+  };
+  const result = await interpretScene({ text: "A battery powers a motor that spins a fan.", scene }, nebius, { fetchImpl });
+  assert.equal(calls, 2);
+  assert.deepEqual(result.candidate.connections.map(({ label }) => label), ["powers", "spins"]);
+  assert.match(sceneValidationIssue(plan, scene), /typed connection must use a supported kind with its exact label/);
 });
 
 test("repair identifies a general schema fault without trusting the rejected output as instructions", async () => {

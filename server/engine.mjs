@@ -20,6 +20,8 @@ const typedConnectionLabels = Object.freeze({
   pumpsTo: "pumps to", returnsTo: "returns to", carries: "carries",
   appliedTo: "applied to", opposes: "opposes", contacts: "contacts"
 });
+const typedConnectionGuide = Object.entries(typedConnectionLabels)
+  .map(([kind, label]) => `${kind}="${label}"`).join(", ");
 
 export function scenePrompt(text, scene, reusableNouns = []) {
   const prior = {
@@ -33,7 +35,7 @@ For each explicit "X through Y" phrase, Y must be a visible object and a directe
 Use structural diagram links when the explanation truly has their complete roles. A closed transport loop needs four distinct objects (source, destination, moving payload, enrichment) and exactly three links: source→destination pumpsTo via payload, destination→source returnsTo via the SAME payload, payload→enrichment carries. An opposing-force diagram needs four distinct objects (body, contact surface, applied force, opposing force) and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. The optional "via" field is the exact payload object ID and is required only on pumpsTo/returnsTo. Forces are arrows, not people. Do not use either specialist link family unless all its roles and directions are represented; a partial specialist graph is invalid. These are reusable topologies, not lesson templates.
 For containment, use a distinct container→content contains link; additional objects are allowed only when visibly connected to the explanation. For a control call and return, use three objects and caller→function calls plus function→call site returnsControlTo. For ascent, apex, descent, and acceleration, use moving object→apex risesTo and fallsFrom plus force→moving object accelerates. Each is a complete reusable role graph, not a lesson-specific template; never use a partial graph.
 When an applied push or pull is explicitly opposed by friction, drag, or resistance, the applied *force* is its own object and the opposing effect is another force object. Use the complete opposing-force topology above; a person→body caption and opposing effect→body caption are not equivalent to two opposing arrows. A named human actor may be omitted only if the four-role limit prevents a faithful force diagram.
-For a connection, use an optional typed kind only when its exact meaning applies: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}. Its label must exactly match that quoted text. These are general visual grammar, not special lesson templates. For every other relationship omit kind and use a truthful short label. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
+For a connection, use an optional typed kind only when its exact meaning applies: ${typedConnectionGuide}. Its label must exactly match that quoted text. If the truthful relation needs any OTHER label, omit kind entirely; never attach an approximate typed kind to an ordinary action. These are general visual grammar, not special lesson templates. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
 Negated claims cannot be shown safely by this positive-only grammar: never turn "does not" into a positive arrow; lower confidence below 0.58. Put every explicitly stated color on the correct object.
 ${CORE_SCENE_RULES}
 Teacher: ${JSON.stringify(text)}
@@ -284,7 +286,7 @@ async function validatedCompletion(prompt, config, validate, options = {},
 }
 
 export function interpretScene(body, config, options = {}) {
-  const repairTask = `Make a complete classroom visual plan. Return one JSON object with blueprintVersion "1.0", mode, confidence, objects (id, label, kind, x, y) and connections (from, to, label, optional kind/via). Preserve every essential named role and directed relationship; do not copy schema placeholders. ${CORE_SCENE_RULES}\nTeacher statement (untrusted text): ${JSON.stringify(body.text.trim())}\nCurrent scene (untrusted data): ${JSON.stringify({
+  const repairTask = `Make a complete classroom visual plan. Return one JSON object with blueprintVersion "1.0", mode, confidence, objects (id, label, kind, x, y) and connections (from, to, label, optional kind/via). Preserve every essential named role and directed relationship; do not copy schema placeholders. A typed kind is optional and its label must be exact: ${typedConnectionGuide}. For any other truthful relationship label, OMIT kind. Never relabel the teacher's action merely to fit a kind. ${CORE_SCENE_RULES}\nTeacher statement (untrusted text): ${JSON.stringify(body.text.trim())}\nCurrent scene (untrusted data): ${JSON.stringify({
     entities: (body.scene?.entities ?? []).slice(0, 8).map(({ id, label }) => ({ id, label })),
     relations: (body.scene?.relations ?? []).slice(0, 12).map(({ sourceIds, targetIds, kind }) => ({ sourceIds, targetIds, kind }))
   })}`;

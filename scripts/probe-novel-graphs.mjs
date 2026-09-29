@@ -6,6 +6,7 @@ import { performance } from "node:perf_hooks";
 import { interpretScene, modelConfiguration } from "../server/engine.mjs";
 import { scoreNovelGraph } from "./score-novel-graphs.mjs";
 import { renderNovelScene } from "./render-novel-scene.mjs";
+import { auditRenderedScene } from "./visual-probe-audit.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const args = process.argv.slice(2);
@@ -53,6 +54,7 @@ for (const [index, item] of selected.entries()) {
       const file = await renderNovelScene(renderDirectory, item, result.candidate, score);
       row.rendered = true;
       row.reviewFile = file;
+      row.visualAudit = auditRenderedScene(await readFile(file, "utf8"));
     } catch (error) {
       row.rendered = false;
       row.renderError = error instanceof Error ? error.message.slice(0, 200) : "Unknown render error";
@@ -65,9 +67,9 @@ for (const [index, item] of selected.entries()) {
       ...(error?.candidateSummary ? { candidateSummary: error.candidateSummary } : {}) };
   }
   rows.push(row);
-  console.log(`${item.id}: ${row.graphComplete ? "graph complete" : "not complete"}; ${row.elapsedMs}ms; ${row.attempts ?? "?"} attempt(s)`);
+  console.log(`${item.id}: ${row.graphComplete ? "graph complete" : "not complete"}; ${row.visualAudit?.labelledPlaceholders ?? "?"} labelled placeholders; ${row.elapsedMs}ms; ${row.attempts ?? "?"} attempt(s)`);
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify({ schemaVersion: "1.0.0", seed, selectedIds: selected.map(({ id }) => id),
-    scoringLimit: "Roles and directed endpoints only; no predicate or visual approval", rows }, null, 2)}\n`);
+    scoringLimit: "Roles and directed endpoints only. Placeholder count is automatic; visual quality requires human review.", rows }, null, 2)}\n`);
 }
 console.log(`Graph-complete ${rows.filter((row) => row.graphComplete).length}/${rows.length}. Saved bounded local report to ${output}.`);

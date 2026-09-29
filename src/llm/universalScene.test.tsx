@@ -74,6 +74,19 @@ describe("universal visual scene compiler", () => {
     expect(() => compileUniversalScene(force, initialScene, "Pull a sled over snow; drag opposes the motion"))
       .toThrow(/appliedTo\/opposes\/contacts/);
   });
+  it("keeps an unseen origin-passage-recipient graph while rejecting a reversed origin claim", () => {
+    const text = "Juice flows from a tank into a cup through a pipe";
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: ["juice", "tank", "cup", "pipe"].map((id, index) => ({
+        id, label: id, kind: "generic", x: 15 + index * 20, y: 50
+      })), connections: [] };
+    const completed = compileUniversalScene(plan, initialScene, text);
+    expect(validateDoodleScript(completed, initialScene).ok).toBe(true);
+    expect(completed.commands.filter((command) => command.action === "relate")).toHaveLength(3);
+    expect(() => compileUniversalScene({ ...plan, connections: [
+      { from: "tank", to: "juice", label: "originates from" }
+    ] }, initialScene, text)).toThrow(/reversing the stated source/);
+  });
   it("does not draw a labelled holder under a different named subject", () => {
     const incorrect = {
       blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
