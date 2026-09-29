@@ -11,7 +11,7 @@ import { eventFlowGeometry, isEventRelation } from "../doodlescript/eventRelatio
 import { isVisualAction, visualPhraseGeometry } from "../doodlescript/visualPhrase";
 import { RELATION_REGISTRY_VERSION, relationForKind } from "../doodlescript/relationRegistry";
 import { LAYOUT_FAMILY_REGISTRY_VERSION, layoutFamilyFor } from "../doodlescript/layoutFamilyRegistry";
-import { isPartWholeFlowRelation, partWholeFlowGeometry } from "../doodlescript/partWholeFlow";
+import { isPartWholeFlowRelation, partWholeAttachmentGeometry, partWholeFlowGeometry } from "../doodlescript/partWholeFlow";
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiagram";
 import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
@@ -179,30 +179,16 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
         {scene.relations?.filter((relation) => relation.kind === "partOf").map((relation) => {
           const part = scene.entities.find((entity) => entity.id === relation.sourceIds[0]);
           const whole = scene.entities.find((entity) => entity.id === relation.targetIds[0]);
-          if (!part || !whole || part.visualRole || whole.visualRole) return null;
-          const recognizablePart = Boolean(part.glyph) || part.kind !== "generic"
-            || !resolveVisualSymbol(part.label ?? part.kind).fallback;
-          const recognizableWhole = Boolean(whole.glyph) || whole.kind !== "generic"
-            || !resolveVisualSymbol(whole.label ?? whole.kind).fallback;
-          if (!recognizablePart || !recognizableWhole) return null;
-          const siblings = (scene.relations ?? []).filter((other) => other.kind === "partOf"
-            && other.targetIds[0] === whole.id && scene.entities.some((entity) => entity.id === other.sourceIds[0]))
-            .sort((a, b) => {
-              const first = scene.entities.find((entity) => entity.id === a.sourceIds[0])!;
-              const second = scene.entities.find((entity) => entity.id === b.sourceIds[0])!;
-              return first.y - second.y || first.x - second.x || a.id.localeCompare(b.id);
-            });
-          const index = siblings.findIndex((other) => other.id === relation.id);
-          const side = part.x <= whole.x ? -1 : 1;
-          const offsetY = siblings.length === 1 ? Math.sign(part.y - whole.y) * 34
-            : (index - (siblings.length - 1) / 2) * 68;
-          const x = whole.x * 10 + side * 44;
-          const y = whole.y * 6.2 + offsetY;
+          const dock = partWholeAttachmentGeometry(relation, scene.relations ?? [], scene.entities);
+          if (!part || !whole || !dock) return null;
           return <g key={`attached-${relation.id}`} className="part-whole-assembly" aria-hidden="true"
             data-composition="attached-part" data-part-id={part.id} data-whole-id={whole.id}
-            data-visual-cue="attached-part">
-            <path className="doodle-detail" d={`M${whole.x * 10} ${whole.y * 6.2} Q${x} ${whole.y * 6.2} ${x} ${y}`} fill="none" />
-            <g transform={`translate(${x} ${y}) scale(${Math.min(0.72, part.scale * 0.72)})`}>
+            data-attachment-x={dock.x} data-attachment-y={dock.y} data-visual-cue="attached-part">
+            <path className="doodle-detail" d={`M${whole.x * 10} ${whole.y * 6.2} L${dock.x} ${dock.y}`} fill="none" />
+            {resolveVisualSymbol(part.label ?? part.kind).visualCues.includes("visible-roots") &&
+              <path className="doodle-detail" data-soil-for-whole={whole.id}
+                d={`M${whole.x * 10 - 55} ${whole.y * 6.2 + 41} Q${whole.x * 10} ${whole.y * 6.2 + 35} ${whole.x * 10 + 55} ${whole.y * 6.2 + 41}`} fill="none" />}
+            <g transform={`translate(${dock.x} ${dock.y}) scale(${dock.scale})`}>
               <EntityGlyph entity={part} />
             </g>
           </g>;
@@ -915,6 +901,9 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
     const geometry = partWholeFlowGeometry(relation, entities);
     if (!geometry) return null;
     const isPart = relation.kind === "partOf";
+    const dock = isPart ? partWholeAttachmentGeometry(relation, relations, entities) : null;
+    const endX = dock ? dock.x : geometry.endX;
+    const endY = dock ? dock.y : geometry.endY;
     const color = isPart ? "#66715a" : relation.kind === "illuminates" ? "#c58a20" : "#28745a";
     const arrow = !isPart;
     const arrowX = geometry.endX - geometry.unitX * 11;
@@ -927,11 +916,11 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
       aria-label={`${geometry.source.label} ${relationLabel(relation)} ${geometry.target.label}`}>
       {isPart && sourceCues.includes("visible-roots") && <path data-visual-cue="soil-boundary" className="doodle-detail" d={`M${geometry.source.x * 10 - 65} ${geometry.source.y * 6.2 + 48} Q${geometry.source.x * 10} ${geometry.source.y * 6.2 + 40} ${geometry.source.x * 10 + 65} ${geometry.source.y * 6.2 + 48}`} />}
       <path className={relation.kind === "illuminates" ? "accent-stroke" : "visual-action-flow"}
-        d={`M${geometry.startX} ${geometry.startY} L${geometry.endX} ${geometry.endY}`}
+        d={`M${geometry.startX} ${geometry.startY} L${endX} ${endY}`}
         fill="none" stroke={color} strokeWidth={isPart ? 2 : 3} strokeDasharray={isPart ? "7 6" : undefined} />
       {arrow && <path d={`M${arrowX + normalX} ${arrowY + normalY} L${geometry.endX} ${geometry.endY} L${arrowX - normalX} ${arrowY - normalY}`}
         fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />}
-      <text x={(geometry.startX + geometry.endX) / 2} y={(geometry.startY + geometry.endY) / 2 - 10}
+      <text x={(geometry.startX + endX) / 2} y={(geometry.startY + endY) / 2 - 10}
         textAnchor="middle" fill={color} fontSize="14">{relationLabel(relation)}</text>
     </g>;
   }

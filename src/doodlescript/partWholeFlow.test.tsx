@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DoodleCanvas } from "../components/DoodleCanvas";
 import { interpretTeacherText } from "./interpret";
-import { matchPartWholeFlow, partWholeFlowGeometry } from "./partWholeFlow";
+import { matchPartWholeFlow, partWholeAttachmentGeometry, partWholeFlowGeometry } from "./partWholeFlow";
 import { applyDoodleScript, initialScene } from "./scene";
 import { validateDoodleScript } from "./validator";
 
@@ -51,6 +51,25 @@ describe("registered part-whole flow grammar", () => {
     expect(html).toContain('data-layout-topology="part-whole"');
     expect(html).toContain('aria-label="water flows into roots"');
     expect(html).toContain('aria-label="sunlight illuminates leaves"');
+  });
+
+  it("docks known parts on one whole and routes each callout to its visible copy", () => {
+    const { scene } = run("A plant takes in water through its roots and sunlight through its leaves.");
+    const whole = scene.entities.find(({ label }) => label === "plant")!;
+    const relationFor = (label: string) => scene.relations!.find((relation) => relation.kind === "partOf"
+      && scene.entities.find(({ id }) => id === relation.sourceIds[0])?.label === label)!;
+    const roots = partWholeAttachmentGeometry(relationFor("roots"), scene.relations!, scene.entities)!;
+    const leaves = partWholeAttachmentGeometry(relationFor("leaves"), scene.relations!, scene.entities)!;
+    expect(roots.x).toBe(whole.x * 10);
+    expect(leaves.x).toBe(whole.x * 10);
+    expect(leaves.y).toBeLessThan(whole.y * 6.2);
+    expect(roots.y).toBeGreaterThan(whole.y * 6.2);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html).toContain(`data-attachment-x="${roots.x}" data-attachment-y="${roots.y}"`);
+    expect(html).toContain(`data-attachment-x="${leaves.x}" data-attachment-y="${leaves.y}"`);
+    expect(html).toContain(`data-soil-for-whole="${whole.id}"`);
+    expect(html).toContain(`L${roots.x} ${roots.y}`);
+    expect(html).toContain(`L${leaves.x} ${leaves.y}`);
   });
 
   it("rejects pre-v2 scripts while leaving ordinary unrouted intake available", () => {

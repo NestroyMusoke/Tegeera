@@ -46,6 +46,8 @@ interface SymbolDefinition {
   anchor: SymbolPrimitive;
   capabilities: readonly VisualCapability[];
   visualCues?: readonly string[];
+  /** Intrinsic glyph affordance, not a lesson-specific placement rule. */
+  attachmentZone?: "top" | "bottom" | "left" | "right";
 }
 
 export interface VisualSymbolPlan {
@@ -72,9 +74,9 @@ export const symbolOntology: readonly SymbolDefinition[] = [
   { id: "cloud", aliases: ["cloud", "clouds"], tags: ["weather", "sky"], category: "weather", anchor: "cloud", capabilities: [] },
   { id: "condensation", aliases: ["condensation", "dew"], tags: ["condense", "vapor", "gas", "liquid"], category: "process", anchor: "cloud", capabilities: ["falls"] },
   { id: "evaporation", aliases: ["evaporation", "vaporization"], tags: ["evaporate", "vapor", "liquid", "gas"], category: "process", anchor: "water", capabilities: ["rises"] },
-  { id: "plant", aliases: ["plant", "vegetation", "crop"], tags: ["botany", "green"], category: "nature", anchor: "plant", capabilities: ["spreads"] },
-  { id: "roots", aliases: ["root", "roots"], tags: ["plant root", "underground"], category: "nature", anchor: "roots", capabilities: [], visualCues: ["visible-roots"] },
-  { id: "leaf", aliases: ["leaf", "leaves"], tags: ["plant leaf", "foliage"], category: "nature", anchor: "leaf", capabilities: [] },
+  { id: "plant", aliases: ["plant", "vegetation", "crop"], tags: ["botany", "green"], category: "nature", anchor: "plant", capabilities: [] },
+  { id: "roots", aliases: ["root", "roots"], tags: ["plant root", "underground"], category: "nature", anchor: "roots", capabilities: [], visualCues: ["visible-roots"], attachmentZone: "bottom" },
+  { id: "leaf", aliases: ["leaf", "leaves"], tags: ["plant leaf", "foliage"], category: "nature", anchor: "leaf", capabilities: [], attachmentZone: "top" },
   { id: "photosynthesis", aliases: ["photosynthesis"], tags: ["plant", "sunlight", "energy", "chlorophyll"], category: "process", anchor: "leaf", capabilities: ["cycles", "radiates"] },
   { id: "soil-erosion", aliases: ["soil erosion", "erosion"], tags: ["soil", "earth", "land", "weathering"], category: "process", anchor: "ground", capabilities: ["flows", "breaks"] },
   { id: "pressure", aliases: ["pressure", "compression"], tags: ["compress", "force", "stress"], category: "force", anchor: "gear", capabilities: ["compresses"] },
@@ -176,6 +178,11 @@ export function resolveVisualSymbol(label: string): VisualSymbolPlan {
     confidence: best.score === 100 ? 1 : Math.min(0.9, 0.5 + best.score / 100),
     fallback: false
   };
+}
+
+export function preferredAttachmentZone(label: string): SymbolDefinition["attachmentZone"] {
+  const plan = resolveVisualSymbol(label);
+  return plan.fallback ? undefined : symbolOntology.find(({ id }) => id === plan.symbolId)?.attachmentZone;
 }
 
 export function validateSymbolOntology(): string[] {

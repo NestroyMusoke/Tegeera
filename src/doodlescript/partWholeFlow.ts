@@ -1,7 +1,7 @@
 import { entityVisualGeometry } from "./entityGeometry";
 import { selectLayoutCandidate } from "./layoutPlanner";
 import type { SceneEntity, SceneRelation, SceneState } from "./schema";
-import { resolveVisualSymbol, type VisualCapability } from "./symbolOntology";
+import { preferredAttachmentZone, resolveVisualSymbol, type VisualCapability } from "./symbolOntology";
 import { visualActionRegistry } from "./visualActionRegistry";
 
 export const PART_WHOLE_FLOW_VERSION = "1.0.0";
@@ -46,6 +46,46 @@ export function matchPartWholeFlow(text: string): PartWholeFlowMatch | null {
 
 export const isPartWholeFlowRelation = (relation: SceneRelation): boolean =>
   ["partOf", "flowsInto", "illuminates"].includes(relation.kind);
+
+/** A visible, identity-preserving copy of a known part docks on its whole.
+ * The original part remains a callout so incoming flows still have a distinct target.
+ * Unknown glyphs never receive an invented silhouette. */
+export function partWholeAttachmentGeometry(
+  relation: SceneRelation, relations: readonly SceneRelation[], entities: readonly SceneEntity[]
+): { x: number; y: number; scale: number } | null {
+  if (relation.kind !== "partOf" || relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) return null;
+  const part = entities.find(({ id }) => id === relation.sourceIds[0]);
+  const whole = entities.find(({ id }) => id === relation.targetIds[0]);
+  if (!part || !whole || part.id === whole.id || part.visualRole || whole.visualRole) return null;
+  const known = (entity: SceneEntity) => Boolean(entity.glyph) || entity.kind !== "generic"
+    || !resolveVisualSymbol(entity.label ?? entity.kind).fallback;
+  if (!known(part) || !known(whole)) return null;
+  const siblings = relations.filter((other) => other.kind === "partOf" && other.targetIds[0] === whole.id
+    && entities.some(({ id }) => id === other.sourceIds[0])).sort((a, b) => {
+      const first = entities.find(({ id }) => id === a.sourceIds[0])!;
+      const second = entities.find(({ id }) => id === b.sourceIds[0])!;
+      const priority = (entity: SceneEntity) => ({ top: -1, left: 0, right: 0, bottom: 1 })[preferredAttachmentZone(entity.label ?? entity.kind) ?? "left"];
+      return priority(first) - priority(second) || first.y - second.y || first.x - second.x || a.id.localeCompare(b.id);
+    });
+  const index = siblings.findIndex(({ id }) => id === relation.id);
+  if (index < 0) return null;
+  const x = whole.x * 10, y = whole.y * 6.2;
+  const scale = Math.min(0.72, part.scale * 0.72, whole.scale * 0.72);
+  if (siblings.length === 1) {
+    const preferred = preferredAttachmentZone(part.label ?? part.kind);
+    if (preferred) return { x: x + (preferred === "left" ? -52 : preferred === "right" ? 52 : 0) * whole.scale,
+      y: y + (preferred === "top" ? -55 : preferred === "bottom" ? 55 : 0) * whole.scale, scale };
+    const dx = part.x * 10 - x, dy = part.y * 6.2 - y;
+    return Math.abs(dx) >= Math.abs(dy)
+      ? { x: x + Math.sign(dx || -1) * 52 * whole.scale, y, scale }
+      : { x, y: y + Math.sign(dy || 1) * 55 * whole.scale, scale };
+  }
+  // Vertical docking keeps the crown/body/base readable for two or three parts.
+  // More complex assemblies need reviewed artwork rather than overlapping copies.
+  if (siblings.length > 3) return null;
+  return { x, y: y + (index - (siblings.length - 1) / 2) * (siblings.length === 2 ? 110 : 56) * whole.scale,
+    scale: siblings.length === 3 ? Math.min(scale, 0.5) : scale };
+}
 
 export function partWholeFlowGeometry(relation: SceneRelation, entities: readonly SceneEntity[]) {
   if (!isPartWholeFlowRelation(relation) || relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) return null;
