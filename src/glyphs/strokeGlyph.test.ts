@@ -20,6 +20,8 @@ describe("validated stroke glyph", () => {
     expect(strokeGlyphSchema.safeParse({ strokes: [{ ...house.strokes[0], color: "red" }] }).success).toBe(false);
     expect(strokeGlyphSchema.safeParse({ strokes: [{ ...house.strokes[0], pts: [[0, 0], [4, 4], [5, 5], [6, 6]] }] }).success).toBe(false);
     expect(strokeGlyphSchema.safeParse({ strokes: [{ ...house.strokes[0], pts: Array.from({ length: 15 }, () => [10, 10]) }] }).success).toBe(false);
+    expect(strokeGlyphSchema.safeParse({ strokes: [{ ...house.strokes[0], pts: [[10, 10], [10, 10]] }] }).success).toBe(false);
+    expect(compileStrokeGlyph({ strokes: [{ ...house.strokes[0], pts: [[10, 10], [40, 40]] }] }).parts[0].d).toContain("C");
   });
 
   it("emits only completed and validated strokes across partial chunks", () => {

@@ -112,6 +112,32 @@ describe("non-blocking glyph resolver", () => {
     } finally { vi.useRealTimers(); }
   });
 
+  it("preempts speculative work and draws a newly visible noun before the lesson backlog", async () => {
+    const started: string[] = [];
+    const onGenerated = vi.fn();
+    const generator = vi.fn(async (noun: string) => {
+      started.push(noun);
+      if (noun === "old topic" && started.filter((item) => item === noun).length === 1) {
+        // Simulates a provider that ignores AbortSignal. The resolver still frees its slot.
+        return new Promise<unknown>(() => undefined);
+      }
+      return glyph;
+    });
+    const resolver = new LiveGlyphResolver({ generator, maxConcurrent: 1, onGenerated });
+    resolver.prefetch("old topic");
+    resolver.prefetch("later topic");
+    resolver.prefetch("current object");
+    await vi.waitFor(() => expect(started).toEqual(["old topic"]));
+    expect(resolver.resolve("current object").status).toBe("placeholder");
+    await vi.waitFor(() => expect(started.slice(0, 2)).toEqual(["old topic", "current object"]));
+    await vi.waitFor(() => expect(resolver.draftFor("current object")).toBeDefined());
+    expect(resolver.approve("current object")).toBeDefined();
+    expect(resolver.resolve("current object").status).toBe("final");
+    expect(onGenerated).toHaveBeenCalledWith("current object", expect.any(Object));
+    expect(started.indexOf("current object")).toBeLessThan(started.indexOf("later topic"));
+    resolver.setGenerator(undefined);
+  });
+
   it("cannot resurrect a rejected draft after an in-flight provider ignores cancellation", async () => {
     let finish!: (value: unknown) => void;
     const delayed = new Promise<unknown>((resolve) => { finish = resolve; });

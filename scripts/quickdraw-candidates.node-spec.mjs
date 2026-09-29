@@ -39,6 +39,8 @@ test('normalizes vectors without SVG executable content and ranks deterministica
   assert.ok(!candidate.svg.includes('<script'));
   assert.ok(candidate.glyph.parts.every((part) => part.d.length <= 800));
   assert.match(reviewHtml(chosen), /Recognizable without label/);
+  assert.match(reviewHtml(chosen), /Make a blind guess first/);
+  assert.match(reviewHtml(chosen), /width:64px;height:64px/);
   assert.match(overviewSvg(chosen), /12345/);
 });
 

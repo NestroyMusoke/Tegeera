@@ -37,7 +37,10 @@ export class LiveGlyphResolver {
   private readonly timeoutMs: number;
   private readonly listeners = new Set<() => void>();
   private readonly queued = new Set<string>();
+  private readonly queuedVisible = new Set<string>();
   private readonly inFlight = new Set<string>();
+  private readonly inFlightVisible = new Set<string>();
+  private readonly preempted = new Set<string>();
   private readonly controllers = new Map<string, AbortController>();
   private readonly editControllers = new Map<string, AbortController>();
   private readonly failedUntil = new Map<string, number>();
@@ -145,12 +148,22 @@ export class LiveGlyphResolver {
   }
 
   resolve(noun: string): LiveGlyphResolution {
+    return this.resolveWithPriority(noun, true);
+  }
+
+  private resolveWithPriority(noun: string, visible: boolean): LiveGlyphResolution {
     const key = glyphKey(noun);
     const resolved = resolveGlyph({
       noun: key, kind: "generic", pack: this.pack, emoji: this.emoji,
       cache: this.cache, synonyms: this.synonyms
     });
     if (resolved.glyph) return { ...resolved, status: "final" };
+    if (visible && this.inFlight.has(key)) this.inFlightVisible.add(key);
+    if (visible && this.queued.has(key) && !this.queuedVisible.has(key)) {
+      this.queue.splice(this.queue.indexOf(key), 1);
+      this.queue.unshift(key);
+      this.queuedVisible.add(key);
+    }
     const draft = this.drafts.get(key);
     if (draft) return { glyph: draft, source: "generated", status: "placeholder" };
     const preview = this.previews.get(key);
@@ -158,13 +171,21 @@ export class LiveGlyphResolver {
     if (key && this.generator && (this.failedUntil.get(key) ?? 0) <= Date.now()
       && !this.queued.has(key) && !this.inFlight.has(key)) {
       this.queued.add(key);
-      this.queue.push(key);
+      if (visible) { this.queue.unshift(key); this.queuedVisible.add(key); }
+      else this.queue.push(key);
       queueMicrotask(() => this.drain());
+    }
+    if (visible && this.queuedVisible.size && this.active >= this.maxConcurrent) {
+      const speculative = [...this.inFlight].find((item) => !this.inFlightVisible.has(item) && !this.preempted.has(item));
+      if (speculative) {
+        this.preempted.add(speculative);
+        this.controllers.get(speculative)?.abort();
+      }
     }
     return { glyph: undefined, source: "sticker", status: "placeholder" };
   }
 
-  prefetch(noun: string) { this.resolve(noun); }
+  prefetch(noun: string) { this.resolveWithPriority(noun, false); }
 
   speculativePrefetch(interimTranscript: string) {
     if (interimTranscript.length > 250) return;
@@ -191,9 +212,11 @@ export class LiveGlyphResolver {
     while (this.generator && this.active < this.maxConcurrent && this.queue.length) {
       const noun = this.queue.shift()!;
       this.queued.delete(noun);
+      const visible = this.queuedVisible.delete(noun);
       if (this.inFlight.has(noun) || this.cache.has(noun) || this.drafts.has(noun)
         || (this.failedUntil.get(noun) ?? 0) > Date.now()) continue;
       this.inFlight.add(noun);
+      if (visible) this.inFlightVisible.add(noun);
       this.active += 1;
       const controller = new AbortController();
       const generator = this.generator;
@@ -213,10 +236,13 @@ export class LiveGlyphResolver {
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => { controller.abort(); reject(new Error("Glyph generation timed out")); }, this.timeoutMs);
       });
+      const cancellation = new Promise<never>((_, reject) => {
+        controller.signal.addEventListener("abort", () => reject(new Error("Glyph generation cancelled")), { once: true });
+      });
       void Promise.race([Promise.resolve().then(() => {
         if (controller.signal.aborted) throw new Error("Glyph generation cancelled");
         return generator(noun, controller.signal, publishStroke);
-      }), timeout]).then((candidate) => {
+      }), timeout, cancellation]).then((candidate) => {
         if (controller.signal.aborted || epoch !== (this.epochs.get(noun) ?? 0)) return;
         const strokes = strokeGlyphSchema.safeParse(candidate);
         const glyph = strokes.success ? compileStrokeGlyph(strokes.data) : glyphSchema.parse(candidate);
@@ -235,7 +261,13 @@ export class LiveGlyphResolver {
         if (timer) clearTimeout(timer);
         if (this.controllers.get(noun) === controller) this.controllers.delete(noun);
         this.inFlight.delete(noun);
+        this.inFlightVisible.delete(noun);
         this.active -= 1;
+        if (this.preempted.delete(noun) && this.generator && !this.queued.has(noun)
+          && !this.cache.has(noun) && !this.drafts.has(noun)) {
+          this.queued.add(noun);
+          this.queue.push(noun);
+        }
         this.drain();
       });
     }

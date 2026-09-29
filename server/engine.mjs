@@ -165,9 +165,10 @@ export function validStrokes(candidate) {
     || candidate.strokes.length < 1 || candidate.strokes.length > 10) return false;
   return candidate.strokes.every((stroke) => stroke && typeof stroke.part === "string"
     && /^[a-z][a-z0-9-]{0,23}$/.test(stroke.part) && ink.has(stroke.color)
-    && Array.isArray(stroke.pts) && stroke.pts.length >= 4 && stroke.pts.length <= 14
+    && Array.isArray(stroke.pts) && stroke.pts.length >= 2 && stroke.pts.length <= 14
     && stroke.pts.every((point) => Array.isArray(point) && point.length === 2
-      && point.every((coordinate) => Number.isInteger(coordinate) && coordinate >= 3 && coordinate <= 47)));
+      && point.every((coordinate) => Number.isInteger(coordinate) && coordinate >= 3 && coordinate <= 47))
+    && stroke.pts.some(([x, y]) => x !== stroke.pts[0][0] || y !== stroke.pts[0][1]));
 }
 
 export function modelConfiguration(env = process.env) {
@@ -296,11 +297,13 @@ export function interpretScene(body, config, options = {}) {
 
 export function generateGlyph(body, config, options = {}) {
   return validatedCompletion(strokePrompt(body.noun.trim()), config, validStrokes,
-    { ...options, maxTokens: 2200 });
+    { ...options, maxTokens: 2200,
+      nebiusThinking: options.nebiusThinking ?? (config.provider === "nebius" ? "off" : "default"),
+      nebiusResponseFormat: options.nebiusResponseFormat ?? (config.provider === "nebius" ? "json" : "default") });
 }
 
 export function editGlyph(body, config, options = {}) {
-  const prompt = `Edit this classroom marker doodle of ${JSON.stringify(body.noun)} according to ${JSON.stringify(body.instruction)}. Current strokes: ${JSON.stringify(body.current)}. Return only the complete revised JSON {"strokes":[...]}, preserving unaffected strokes. Every stroke needs a short part name, color from ${[...ink].join(", ")}, and 4-14 integer [x,y] points within 3..47. Use 1-10 strokes. No text or SVG.`;
+  const prompt = `Edit this classroom marker doodle of ${JSON.stringify(body.noun)} according to ${JSON.stringify(body.instruction)}. Current strokes: ${JSON.stringify(body.current)}. Return only the complete revised JSON {"strokes":[...]}, preserving unaffected strokes. Every stroke needs a short part name, color from ${[...ink].join(", ")}, and 2-14 integer [x,y] points within 3..47. Use 1-10 strokes. No text or SVG.`;
   return validatedCompletion(prompt, config, validStrokes, { ...options, maxTokens: 2200 });
 }
 

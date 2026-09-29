@@ -5,7 +5,9 @@ const point = z.tuple([z.number().int().min(3).max(47), z.number().int().min(3).
 export const strokeSchema = z.object({
   part: z.string().regex(/^[a-z][a-z0-9-]{0,29}$/),
   color: z.enum(TEGEERA_GLYPH_PALETTE),
-  pts: z.array(point).min(4).max(14)
+  pts: z.array(point).min(2).max(14).refine((points) =>
+    points.some(([x, y]) => x !== points[0][0] || y !== points[0][1]),
+  "A visible stroke needs at least two distinct points")
 }).strict();
 export const strokeGlyphSchema = z.object({ strokes: z.array(strokeSchema).min(1).max(10) }).strict();
 export type StrokeGlyph = z.infer<typeof strokeGlyphSchema>;

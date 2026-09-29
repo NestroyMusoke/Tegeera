@@ -92,10 +92,17 @@ test("Nebius scene schema guidance can be compared or rolled back without weaken
     /must be default or schema/);
   assert.equal(modelConfiguration({ NVIDIA_API_KEY: "key", NEBIUS_SCENE_RESPONSE_FORMAT: "unsafe" }).provider, "nvidia");
   const glyphFetch = async (_url, request) => {
-    assert.equal(JSON.parse(request.body).response_format, undefined);
+    const body = JSON.parse(request.body);
+    assert.deepEqual(body.response_format, { type: "json_object" });
+    assert.deepEqual(body.chat_template_kwargs, { enable_thinking: false });
     return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(strokes) } }] }), { status: 200 });
   };
   await generateGlyph({ noun: "dragon" }, nebius, { fetchImpl: glyphFetch });
+  const sceneFetch = async (_url, request) => {
+    assert.equal(JSON.parse(request.body).chat_template_kwargs, undefined);
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(complete) } }] }), { status: 200 });
+  };
+  await interpretScene({ text: "Water enters the plant through roots", scene }, nebius, { fetchImpl: sceneFetch });
 });
 
 test("prefers a private NVIDIA key and never inserts it into the teacher prompt", () => {
@@ -404,6 +411,8 @@ test("glyph path accepts bounded strokes and rejects unsafe or out-of-grid outpu
   assert.equal(validStrokes(strokes), true);
   assert.equal(validStrokes({ strokes: [{ ...strokes.strokes[0], pts: [[1, 1], [2, 2], [3, 3], [4, 4]] }] }), false);
   assert.equal(validStrokes({ strokes: [{ ...strokes.strokes[0], color: "url(javascript:alert(1))" }] }), false);
+  assert.equal(validStrokes({ strokes: [{ ...strokes.strokes[0], pts: [[10, 10], [20, 20]] }] }), true);
+  assert.equal(validStrokes({ strokes: [{ ...strokes.strokes[0], pts: [[10, 10], [10, 10]] }] }), false);
   const fetchImpl = async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(strokes) } }] }), { status: 200 });
   const result = await generateGlyph({ noun: "dragon" }, nvidia, { fetchImpl });
   assert.deepEqual(result.candidate, strokes);

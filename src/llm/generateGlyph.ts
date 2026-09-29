@@ -138,7 +138,7 @@ export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph
     return strokeGlyphSchema.parse(await hostedJson("/v1/glyph/edit", { noun, current, instruction }, signal));
   }
   const candidate = editSchema.parse(await requestJson(
-    `Edit this classroom doodle of ${JSON.stringify(noun)}. Current strokes: ${JSON.stringify(current)}. User instruction: ${JSON.stringify(instruction)}. Return ONLY JSON {"ops":[{"op":"add","stroke":{"part":"feature","color":"#2f3e46","pts":[[10,10],[11,11],[12,12],[13,13]]}}]} using 1-4 add, replace, or remove operations. For replace/remove include zero-based index. Preserve unaffected strokes; do not regenerate the whole drawing. Each stroke needs 4-14 integer points in 3..47 and a color from ${palette}.`,
+    `Edit this classroom doodle of ${JSON.stringify(noun)}. Current strokes: ${JSON.stringify(current)}. User instruction: ${JSON.stringify(instruction)}. Return ONLY JSON {"ops":[{"op":"add","stroke":{"part":"feature","color":"#2f3e46","pts":[[10,10],[13,13]]}}]} using 1-4 add, replace, or remove operations. For replace/remove include zero-based index. Preserve unaffected strokes; do not regenerate the whole drawing. Each stroke needs 2-14 integer points in 3..47 and a color from ${palette}.`,
     key, signal, 800, model, localBridge
   ));
   const strokes: Stroke[] = [...current.strokes];
