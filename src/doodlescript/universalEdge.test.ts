@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SceneEntity, SceneRelation } from "./schema";
+import { entityVisualGeometry } from "./entityGeometry";
 import { universalEdgeGeometry } from "./universalEdge";
 
 const entity = (id: string, x: number, y: number): SceneEntity => ({
@@ -44,5 +45,39 @@ describe("source-to-target connector geometry", () => {
 
   it("never invents an arrow for a missing endpoint", () => {
     expect(universalEdgeGeometry(edge("source", "missing"), [entity("source", 20, 40)])).toBeNull();
+  });
+
+  it("never reverses a short vertical arrow to squeeze it between captions", () => {
+    const entities = [entity("upper", 38, 30), entity("lower", 38, 52)];
+    const geometry = universalEdgeGeometry(edge("upper", "lower"), entities);
+    expect(geometry).not.toBeNull();
+    expect(geometry!.route).not.toBe("direct");
+    expect(geometry!.end.y).toBeGreaterThan(geometry!.start.y);
+  });
+
+  it("keeps relation captions clear of every object and sizes the pill for longer labels", () => {
+    let checked = 0;
+    for (let seed = 1; seed <= 250; seed++) {
+      const random = (offset: number) => ((seed * (offset * 173 + 37)) % 79) + 11;
+      const entities = [entity("source", random(1), random(2)),
+        entity("target", random(3), random(4)), entity("other", random(5), random(6))];
+      const relation = { ...edge("source", "target"), predicate: "transfers useful energy to" };
+      const geometry = universalEdgeGeometry(relation, entities);
+      if (!geometry) continue;
+      checked++;
+      expect(geometry.labelWidth).toBeGreaterThan(144);
+      const label = { left: geometry.labelX - geometry.labelWidth / 2,
+        right: geometry.labelX + geometry.labelWidth / 2,
+        top: geometry.labelY - 18, bottom: geometry.labelY + 10 };
+      for (const item of entities) {
+        const rx = (entityVisualGeometry[item.kind].contact.halfWidth + 13) * item.scale;
+        const object = { left: item.x * 10 - rx - 9, right: item.x * 10 + rx + 9,
+          top: item.y * 6.2 - 55 * item.scale - 9,
+          bottom: item.y * 6.2 + 84 * item.scale + 9 };
+        expect(label.right < object.left || label.left > object.right
+          || label.bottom < object.top || label.top > object.bottom).toBe(true);
+      }
+    }
+    expect(checked).toBeGreaterThan(20);
   });
 });

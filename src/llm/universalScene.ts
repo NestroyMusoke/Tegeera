@@ -379,7 +379,7 @@ export function compileUniversalScene(
     const projected = applyDoodleScript(scene, candidateScript);
     if ((projected.relations ?? []).some((relation) => relation.kind === "relatesTo"
       && !universalEdgeGeometry(relation, projected.entities))) {
-      throw new Error("The visual plan has a relationship that cannot be drawn without crossing another object.");
+      throw new Error("The visual plan has a relationship whose arrow or caption cannot be placed clearly.");
     }
     return candidateScript;
   };

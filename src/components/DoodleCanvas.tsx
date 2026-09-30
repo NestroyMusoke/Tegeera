@@ -987,7 +987,7 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
       data-visual-cue="semantic-connection" data-route={geometry.route}>
       <path className="universal-relation-flow" d={geometry.path} fill="none" stroke="#49776f" strokeWidth="4" strokeDasharray="10 7" strokeLinecap="round" strokeLinejoin="round" />
       <path d={geometry.arrow} fill="none" stroke="#49776f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x={geometry.labelX - Math.min(72, label.length * 4.5)} y={geometry.labelY - 17} width={Math.min(144, label.length * 9)} height="25" rx="9" fill="#fbf7ed" opacity=".94" />
+      <rect x={geometry.labelX - geometry.labelWidth / 2} y={geometry.labelY - 17} width={geometry.labelWidth} height="25" rx="9" fill="#fbf7ed" opacity=".94" />
       <text x={geometry.labelX} y={geometry.labelY} textAnchor="middle" fill="#315f59" fontSize="14" fontWeight="800">{label}</text>
     </g>;
   }
