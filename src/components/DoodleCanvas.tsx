@@ -34,7 +34,7 @@ import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescr
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
 import { universalEdgeGeometry } from "../doodlescript/universalEdge";
-import { forceOverviewFrame, overviewFrame } from "./overviewFraming";
+import { forceOverviewFrame, measuredArtFrame, overviewFrame } from "./overviewFraming";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -50,6 +50,8 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
     sceneId: string; revision: number; area: DrawingArea;
   } | null>(null);
   const viewport = useRef<HTMLDivElement>(null);
+  const artwork = useRef<SVGGElement>(null);
+  const [measured, setMeasured] = useState<{ scene: SceneState; frame: string | null } | null>(null);
   const inspecting = detail && scene.entities.length > 0;
   const area = areaSelection?.sceneId === scene.sceneId && areaSelection.revision === scene.revision
     ? areaSelection.area : "whole";
@@ -63,10 +65,22 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const singleViewY = focused ? Math.max(0, Math.min(620 - singleViewHeight, focused.y * 6.2 + 18 - singleViewHeight / 2)) : 0;
   const ordinaryFrame = overviewFrame(scene);
   const specialistFrame = ordinaryFrame ? null : forceOverviewFrame(scene);
+  const artFrame = measured?.scene === scene ? measured.frame : null;
+  const needsArtMeasurement = !ordinaryFrame && !specialistFrame
+    && scene.entities.some((entity) => Boolean(entity.visualRole));
+  useLayoutEffect(() => {
+    if (!needsArtMeasurement || !artwork.current || typeof artwork.current.getBBox !== "function") return;
+    try {
+      const frame = measuredArtFrame(artwork.current.getBBox());
+      setMeasured((current) => current?.scene === scene && current.frame === frame ? current : { scene, frame });
+    } catch {
+      // Older WebViews and detached SVGs may not support measurement. Full view is safe.
+    }
+  }, [needsArtMeasurement, scene]);
   const overviewViewBox = area !== "whole"
     ? `${{ left: 0, middle: 200, right: 400 }[area]} 0 600 620`
     : singleSubject ? `${singleViewX} ${singleViewY} ${singleViewWidth} ${singleViewHeight}`
-      : ordinaryFrame ?? specialistFrame ?? "0 0 1000 620";
+      : ordinaryFrame ?? specialistFrame ?? artFrame ?? "0 0 1000 620";
   const spokenEntityLabels = scene.entities.slice(0, 8).map((entity) => {
     const label = entity.label ?? entity.kind;
     return entity.color && !label.startsWith(`${entity.color} `) ? `${entity.color} ${label}` : label;
@@ -114,7 +128,8 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
       <svg
         className="doodle-canvas"
         viewBox={inspecting ? "0 0 1000 620" : overviewViewBox}
-        data-overview-framing={inspecting ? "detail" : area !== "whole" ? "area" : singleSubject ? "single-subject" : specialistFrame ? "specialist-fit" : "full-scene"}
+        data-overview-framing={inspecting ? "detail" : area !== "whole" ? "area" : singleSubject ? "single-subject" : specialistFrame ? "specialist-fit" : artFrame ? "measured-fit" : "full-scene"}
+        data-auto-measure={needsArtMeasurement || undefined}
         data-drawing-area={inspecting ? "detail" : area}
         role="img"
         aria-label={
@@ -136,6 +151,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
         </defs>
         <rect width="1000" height="620" fill="#fbf7ed" />
         <rect width="1000" height="620" filter="url(#paper-grain)" opacity=".5" />
+        <g ref={artwork} data-scene-art="true">
         {scene.relations?.map((relation) => {
           const definition = relationForKind(relation.kind);
           const layout = layoutFamilyFor(definition.layout);
@@ -197,6 +213,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
             </g>
           </g>;
         })}
+        </g>
       </svg>
       </div>
       {!scene.entities.length && (

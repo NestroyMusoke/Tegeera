@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { initialScene } from "../doodlescript/scene";
 import type { SceneEntity, SceneRelation } from "../doodlescript/schema";
-import { forceOverviewFrame, overviewFrame } from "./overviewFraming";
+import { forceOverviewFrame, measuredArtFrame, overviewFrame } from "./overviewFraming";
 
 const entity = (id: string, x: number, y: number, visualRole?: SceneEntity["visualRole"]): SceneEntity => ({
   id, kind: "generic", label: id, x, y, scale: 1, direction: "right", highlighted: false, visualRole
@@ -54,5 +54,17 @@ describe("complete force-diagram framing", () => {
   it("falls back for incomplete diagrams and unrelated content", () => {
     expect(forceOverviewFrame({ ...initialScene, entities, relations: relations.slice(0, 2) })).toBeNull();
     expect(forceOverviewFrame({ ...initialScene, entities: [...entities, entity("extra", 50, 15)], relations })).toBeNull();
+  });
+});
+
+describe("measured specialist artwork framing", () => {
+  it("fits visible SVG bounds with room for labels and small motion", () => {
+    expect(measuredArtFrame({ x: 200, y: 150, width: 500, height: 260 })).toBe("140 87.8 620 384.4");
+  });
+
+  it("refuses empty, invalid and off-board measurements", () => {
+    expect(measuredArtFrame({ x: 20, y: 20, width: 0, height: 30 })).toBeNull();
+    expect(measuredArtFrame({ x: NaN, y: 20, width: 30, height: 30 })).toBeNull();
+    expect(measuredArtFrame({ x: 900, y: 20, width: 120, height: 30 })).toBeNull();
   });
 });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { renderReviewPng } from './render-review-svg.mjs';
+import { estimateArtworkFrame, renderReviewPng } from './render-review-svg.mjs';
 import { auditScenePng, parseVisualVerdict, runAuditCli } from './nebius-visual-audit.mjs';
 
 const html = '<style>.doodle-canvas{background:#fff}.doodle-stroke{stroke:#123}</style><svg class="doodle-canvas" viewBox="0 0 1000 620"><circle cx="200" cy="200" r="80"/></svg>';
@@ -12,6 +12,13 @@ const png = renderReviewPng(html, 400);
 test('static review render produces PNG and rejects missing canvas', () => {
   assert.equal(png.subarray(1, 4).toString(), 'PNG');
   assert.throws(() => renderReviewPng('<svg></svg>'), /styled drawing canvas/);
+});
+
+test('static review approximates the browser artwork camera only when requested by the saved SVG', () => {
+  const art = '<svg class="doodle-canvas" data-auto-measure="true" viewBox="0 0 1000 620"><g data-scene-art="true"><rect x="200" y="150" width="500" height="260"/></g></svg>';
+  assert.equal(estimateArtworkFrame(art, ''), '140 87.8 620 384.4');
+  assert.equal(estimateArtworkFrame(art.replace('data-auto-measure="true"', ''), ''), null);
+  assert.equal(renderReviewPng(`<style>.x{fill:none}</style>${art}`, 390).subarray(1, 4).toString(), 'PNG');
 });
 
 test('vision request sends image and bounded statement without exposing key in result', async () => {

@@ -42,3 +42,12 @@ export function forceOverviewFrame(scene: SceneState): string | null {
   if (minX < 0 || maxX > BOARD_WIDTH || minY < 0 || maxY > BOARD_HEIGHT) return null;
   return fitBounds(minX, minY, maxX, maxY, 500);
 }
+
+/** Browser-measured SVG artwork, excluding the paper/background. The generous
+ * margin covers strokes and small motion; ambiguous or off-board bounds stay full. */
+export function measuredArtFrame(bounds: { x: number; y: number; width: number; height: number }): string | null {
+  const { x, y, width, height } = bounds;
+  if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0
+    || x < 0 || y < 0 || x + width > BOARD_WIDTH || y + height > BOARD_HEIGHT) return null;
+  return fitBounds(x - 48, y - 48, x + width + 48, y + height + 48, 620);
+}

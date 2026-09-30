@@ -7,7 +7,7 @@ import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { validateDoodleScript } from "../doodlescript/validator";
 import { motionGeometry } from "../doodlescript/motion";
 import { ownershipBadges } from "./ownership";
-import { overviewFrame } from "./overviewFraming";
+import { measuredArtFrame, overviewFrame } from "./overviewFraming";
 
 afterEach(cleanup);
 
@@ -119,6 +119,39 @@ describe("phone drawing-area exploration", () => {
     expect(container.querySelector(".canvas-shell")?.classList.contains("is-detail")).toBe(true);
     expect(container.querySelector(".doodle-canvas")?.getAttribute("data-drawing-area")).toBe("detail");
     expect((area as HTMLSelectElement).value).toBe("whole");
+  });
+});
+
+describe("specialist artwork camera fallback", () => {
+  it("fits measured artwork while leaving scene data untouched", () => {
+    const previous = Object.getOwnPropertyDescriptor(SVGElement.prototype, "getBBox");
+    let bounds = { x: 200, y: 150, width: 500, height: 260 };
+    Object.defineProperty(SVGElement.prototype, "getBBox", { configurable: true,
+      value: () => bounds });
+    try {
+      const scene = { ...initialScene, revision: 1, entities: [
+        { id: "a", kind: "generic" as const, label: "a", x: 30, y: 40, scale: 1,
+          direction: "right" as const, highlighted: false, visualRole: "geometry" as const },
+        { id: "b", kind: "generic" as const, label: "b", x: 70, y: 40, scale: 1,
+          direction: "right" as const, highlighted: false, visualRole: "geometry" as const }
+      ] };
+      const saved = structuredClone(scene);
+      const { container, getByRole, rerender } = render(<DoodleCanvas scene={scene} />);
+      const canvas = container.querySelector(".doodle-canvas");
+      expect(canvas?.getAttribute("viewBox")).toBe("140 87.8 620 384.4");
+      expect(canvas?.getAttribute("data-overview-framing")).toBe("measured-fit");
+      fireEvent.click(getByRole("button", { name: "Read details" }));
+      expect(canvas?.getAttribute("viewBox")).toBe("0 0 1000 620");
+      fireEvent.click(getByRole("button", { name: "Overview" }));
+      expect(canvas?.getAttribute("viewBox")).toBe("140 87.8 620 384.4");
+      bounds = { x: 280, y: 180, width: 420, height: 220 };
+      rerender(<DoodleCanvas scene={{ ...scene, revision: 2 }} />);
+      expect(canvas?.getAttribute("viewBox")).toBe(measuredArtFrame(bounds));
+      expect(scene).toEqual(saved);
+    } finally {
+      if (previous) Object.defineProperty(SVGElement.prototype, "getBBox", previous);
+      else Reflect.deleteProperty(SVGElement.prototype, "getBBox");
+    }
   });
 });
 
