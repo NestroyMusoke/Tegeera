@@ -1,7 +1,7 @@
 import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
 import { isMotion, motionGeometry, relationLabel } from "../doodlescript/motion";
 import { ownershipBadges, type OwnershipBadge } from "./ownership";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isQueue, queueGeometry } from "../doodlescript/queue";
 import { EntityGlyph } from "./entityRenderers";
 import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
@@ -33,7 +33,7 @@ import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
-import { universalEdgeGeometry } from "../doodlescript/universalEdge";
+import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { forceOverviewFrame, measuredArtFrame, overviewFrame } from "./overviewFraming";
 
 interface DoodleCanvasProps {
@@ -45,6 +45,7 @@ type DrawingArea = "whole" | "left" | "middle" | "right";
 
 export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const ownership = ownershipBadges(scene);
+  const genericEdges = useMemo(() => universalSceneEdges(scene.relations ?? [], scene.entities), [scene]);
   const [detail, setDetail] = useState(false);
   const [areaSelection, setAreaSelection] = useState<{
     sceneId: string; revision: number; area: DrawingArea;
@@ -163,7 +164,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
             data-relation-registry-version={RELATION_REGISTRY_VERSION}
             data-layout-topology={layout.topology}
             data-layout-registry-version={LAYOUT_FAMILY_REGISTRY_VERSION}>
-            <Relationship relation={relation} relations={scene.relations ?? []} entities={scene.entities} />
+            <Relationship relation={relation} relations={scene.relations ?? []} entities={scene.entities} genericEdges={genericEdges} />
           </g>;
         })}
         {scene.entities.map((entity, index) => {
@@ -276,7 +277,8 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   );
 }
 
-function Relationship({ relation, relations, entities }: { relation: SceneRelation; relations: SceneRelation[]; entities: SceneEntity[] }) {
+function Relationship({ relation, relations, entities, genericEdges }: { relation: SceneRelation; relations: SceneRelation[];
+  entities: SceneEntity[]; genericEdges: ReturnType<typeof universalSceneEdges> }) {
   if (isConsumptionChainRelation(relation)) {
     const chainRelations = relations.filter(isConsumptionChainRelation);
     if (relation.id !== chainRelations.find(({ kind }) => kind === "chainStartsWith")?.id) return null;
@@ -980,7 +982,7 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
     );
   }
   if (relation.kind === "relatesTo") {
-    const geometry = universalEdgeGeometry(relation, entities);
+    const geometry = genericEdges.get(relation.id);
     if (!geometry) return null;
     const label = relation.predicate ?? "relates to";
     return <g className="universal-relation" aria-label={`${geometry.source.label} ${label} ${geometry.target.label}`}

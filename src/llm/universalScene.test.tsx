@@ -53,6 +53,21 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it("rejects a plan whose directed arrows necessarily cross instead of claiming a complete diagram", () => {
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "northwest", label: "northwest", kind: "generic", x: 20, y: 18 },
+        { id: "northeast", label: "northeast", kind: "generic", x: 80, y: 18 },
+        { id: "southwest", label: "southwest", kind: "generic", x: 20, y: 75 },
+        { id: "southeast", label: "southeast", kind: "generic", x: 80, y: 75 }
+      ], connections: [
+        { from: "northwest", to: "southeast", label: "points to" },
+        { from: "northeast", to: "southwest", label: "points to" }
+      ] };
+    expect(() => compileUniversalScene(plan, initialScene, "Connect the opposite corners"))
+      .toThrow(/cannot be placed clearly/);
+  });
+
   it("completes an explicit passage locally but rejects a missing force topology", () => {
     const bypassed = {
       blueprintVersion: "1.0", mode: "replace", confidence: 0.9,

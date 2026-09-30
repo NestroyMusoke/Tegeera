@@ -16,7 +16,7 @@ import { planForceDiagram } from "../doodlescript/forceDiagram";
 import { planLabelledContainer } from "../doodlescript/labelledContainer";
 import { planCallReturnFlow } from "../doodlescript/callReturnFlow";
 import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
-import { universalEdgeGeometry } from "../doodlescript/universalEdge";
+import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { completeExplicitPassages, sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
 import { normalizeOrdinaryCarry } from "../../shared/normalizeBlueprint.mjs";
 
@@ -377,8 +377,7 @@ export function compileUniversalScene(
   };
   const requireVisibleConnectors = (candidateScript: DoodleScript): DoodleScript => {
     const projected = applyDoodleScript(scene, candidateScript);
-    if ((projected.relations ?? []).some((relation) => relation.kind === "relatesTo"
-      && !universalEdgeGeometry(relation, projected.entities))) {
+    if ([...universalSceneEdges(projected.relations ?? [], projected.entities).values()].some((geometry) => !geometry)) {
       throw new Error("The visual plan has a relationship whose arrow or caption cannot be placed clearly.");
     }
     return candidateScript;

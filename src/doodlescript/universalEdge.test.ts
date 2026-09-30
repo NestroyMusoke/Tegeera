@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SceneEntity, SceneRelation } from "./schema";
 import { entityVisualGeometry } from "./entityGeometry";
-import { universalEdgeGeometry } from "./universalEdge";
+import { universalEdgeGeometry, universalSceneEdges } from "./universalEdge";
 
 const entity = (id: string, x: number, y: number): SceneEntity => ({
   id, label: id, kind: "generic", x, y, scale: 1, direction: "right", highlighted: false
@@ -29,7 +29,7 @@ describe("source-to-target connector geometry", () => {
     const routed = universalEdgeGeometry(edge("source", "target"), entities)!;
     expect(routed).not.toBeNull();
     expect(routed.route).not.toBe("direct");
-    expect(routed.path).toMatch(/\b(?:72|548)\b/);
+    expect(["above", "below"]).toContain(routed.route);
     expect(routed.end.x).toBeGreaterThan(800);
   });
 
@@ -79,5 +79,32 @@ describe("source-to-target connector geometry", () => {
       }
     }
     expect(checked).toBeGreaterThan(20);
+  });
+
+  it("holds an impossible alternating-endpoint graph instead of painting crossed arrows", () => {
+    const entities = [entity("northwest", 20, 18), entity("northeast", 80, 18),
+      entity("southwest", 20, 75), entity("southeast", 80, 75)];
+    const routed = universalSceneEdges([edge("northwest", "southeast"),
+      edge("northeast", "southwest")], entities);
+    const first = routed.get("northwest-southeast")!;
+    const second = routed.get("northeast-southwest")!;
+    expect(first).not.toBeNull();
+    expect(second).toBeNull();
+  });
+
+  it("separates two routable arrows and their captions", () => {
+    const entities = [entity("source", 20, 45), entity("upper", 75, 25), entity("lower", 75, 70)];
+    const routed = universalSceneEdges([edge("source", "upper"), edge("source", "lower")], entities);
+    const first = routed.get("source-upper")!;
+    const second = routed.get("source-lower")!;
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    const a = { left: first!.labelX - first!.labelWidth / 2,
+      right: first!.labelX + first!.labelWidth / 2,
+      top: first!.labelY - 18, bottom: first!.labelY + 10 };
+    const b = { left: second!.labelX - second!.labelWidth / 2,
+      right: second!.labelX + second!.labelWidth / 2,
+      top: second!.labelY - 18, bottom: second!.labelY + 10 };
+    expect(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom).toBe(true);
   });
 });

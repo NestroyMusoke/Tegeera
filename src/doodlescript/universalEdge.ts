@@ -54,10 +54,39 @@ export interface UniversalEdgeGeometry {
   route: "direct" | "above" | "below" | "left" | "right";
   start: Point;
   end: Point;
+  points: readonly Point[];
+}
+
+const labelBox = ({ labelX, labelY, labelWidth }: UniversalEdgeGeometry): Box => ({
+  left: labelX - labelWidth / 2, right: labelX + labelWidth / 2,
+  top: labelY - 18, bottom: labelY + 10
+});
+
+function crossing(a: Point, b: Point, c: Point, d: Point): { point: Point; overlap: boolean } | null {
+  const dx = b.x - a.x; const dy = b.y - a.y;
+  const ex = d.x - c.x; const ey = d.y - c.y;
+  const determinant = dx * ey - dy * ex;
+  if (Math.abs(determinant) < 0.001) {
+    const segmentLength = length(a, b);
+    if (segmentLength < 0.001 || Math.abs((c.x - a.x) * dy - (c.y - a.y) * dx) > segmentLength) return null;
+    const first = ((c.x - a.x) * dx + (c.y - a.y) * dy) / (segmentLength * segmentLength);
+    const last = ((d.x - a.x) * dx + (d.y - a.y) * dy) / (segmentLength * segmentLength);
+    const low = Math.max(0, Math.min(first, last));
+    const high = Math.min(1, Math.max(first, last));
+    if (high < low) return null;
+    const middle = (low + high) / 2;
+    return { point: { x: a.x + middle * dx, y: a.y + middle * dy },
+      overlap: (high - low) * segmentLength > 4 };
+  }
+  const t = ((c.x - a.x) * ey - (c.y - a.y) * ex) / determinant;
+  const u = ((c.x - a.x) * dy - (c.y - a.y) * dx) / determinant;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1
+    ? { point: { x: a.x + t * dx, y: a.y + t * dy }, overlap: false } : null;
 }
 
 /** Clip both ends to visible silhouettes; route around third-party symbols and labels. */
-export function universalEdgeGeometry(relation: SceneRelation, entities: readonly SceneEntity[]): UniversalEdgeGeometry | null {
+export function universalEdgeGeometry(relation: SceneRelation, entities: readonly SceneEntity[],
+  reserved: readonly UniversalEdgeGeometry[] = []): UniversalEdgeGeometry | null {
   if (relation.kind !== "relatesTo" || relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) return null;
   const source = entities.find((entity) => entity.id === relation.sourceIds[0]);
   const target = entities.find((entity) => entity.id === relation.targetIds[0]);
@@ -67,10 +96,10 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
   const blockers = entities.filter((entity) => entity.id !== source.id && entity.id !== target.id).map(obstacle);
   const candidates: { route: UniversalEdgeGeometry["route"]; via: Point[] }[] = [
     { route: "direct", via: [] },
-    { route: "above", via: [{ x: startCenter.x, y: 72 }, { x: endCenter.x, y: 72 }] },
-    { route: "below", via: [{ x: startCenter.x, y: 548 }, { x: endCenter.x, y: 548 }] },
-    { route: "left", via: [{ x: 70, y: startCenter.y }, { x: 70, y: endCenter.y }] },
-    { route: "right", via: [{ x: 930, y: startCenter.y }, { x: 930, y: endCenter.y }] }
+    ...[72, 96, 120].map((y) => ({ route: "above" as const, via: [{ x: startCenter.x, y }, { x: endCenter.x, y }] })),
+    ...[548, 524, 500].map((y) => ({ route: "below" as const, via: [{ x: startCenter.x, y }, { x: endCenter.x, y }] })),
+    ...[70, 94, 118].map((x) => ({ route: "left" as const, via: [{ x, y: startCenter.y }, { x, y: endCenter.y }] })),
+    ...[930, 906, 882].map((x) => ({ route: "right" as const, via: [{ x, y: startCenter.y }, { x, y: endCenter.y }] }))
   ];
   let best: { route: UniversalEdgeGeometry["route"]; points: Point[]; label: Point;
     labelWidth: number; cost: number } | null = null;
@@ -87,6 +116,17 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
     // a different object's caption while still passing the blocker check.
     if (segments.some(([a, b], index) => (index !== 0 && intersects(a, b, sourceBox))
       || (index !== segments.length - 1 && intersects(a, b, targetBox)))) continue;
+    if (segments.some(([a, b]) => reserved.some((edge) => {
+      if (intersects(a, b, labelBox(edge))) return true;
+      return edge.points.slice(1).some((point, index) => {
+        const previous = edge.points[index];
+        const hit = crossing(a, b, previous, point);
+        if (!hit) return false;
+        if (hit.overlap) return true;
+        const shared = [source.id, target.id].filter((id) => id === edge.source.id || id === edge.target.id);
+        return !shared.some((id) => length(hit.point, id === source.id ? startCenter : endCenter) < 95);
+      });
+    }))) continue;
     const start = points[0]; const end = points.at(-1)!;
     const afterStart = points[1]; const beforeEnd = points.at(-2)!;
     if ((afterStart.x - start.x) * (start.x - startCenter.x) + (afterStart.y - start.y) * (start.y - startCenter.y) <= 0
@@ -109,6 +149,12 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
           return box.left >= 12 && box.right <= 988 && box.top >= 12 && box.bottom <= 608
             && occupied.every((item) => box.right < item.left || box.left > item.right
               || box.bottom < item.top || box.top > item.bottom)
+            && reserved.every((edge) => {
+              const prior = labelBox(edge);
+              return (box.right < prior.left || box.left > prior.right
+                || box.bottom < prior.top || box.top > prior.bottom)
+                && edge.points.slice(1).every((point, index) => !intersects(edge.points[index], point, box));
+            })
             && segments.every(([c, d]) => (c === a && d === b) || !intersects(c, d, box));
         });
         if (label) break;
@@ -130,5 +176,20 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
   const arrow = `M${end.x - ux * 14 + normal.x} ${end.y - uy * 14 + normal.y} L${end.x} ${end.y} L${end.x - ux * 14 - normal.x} ${end.y - uy * 14 - normal.y}`;
   return { source, target, path: points.map((point, index) => `${index ? "L" : "M"}${point.x} ${point.y}`).join(" "),
     arrow, labelX: best.label.x, labelY: best.label.y, labelWidth: best.labelWidth,
-    route: best.route, start: points[0], end };
+    route: best.route, start: points[0], end, points };
+}
+
+/** The planner and canvas use the same reservations, so accepted plans cannot
+ * silently paint a different set of generic arrows from the one validated. */
+export function universalSceneEdges(relations: readonly SceneRelation[], entities: readonly SceneEntity[]):
+  ReadonlyMap<string, UniversalEdgeGeometry | null> {
+  const result = new Map<string, UniversalEdgeGeometry | null>();
+  const reserved: UniversalEdgeGeometry[] = [];
+  for (const relation of relations) {
+    if (relation.kind !== "relatesTo") continue;
+    const geometry = universalEdgeGeometry(relation, entities, reserved);
+    result.set(relation.id, geometry);
+    if (geometry) reserved.push(geometry);
+  }
+  return result;
 }
