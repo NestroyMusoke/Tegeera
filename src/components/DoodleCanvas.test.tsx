@@ -7,6 +7,7 @@ import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { validateDoodleScript } from "../doodlescript/validator";
 import { motionGeometry } from "../doodlescript/motion";
 import { ownershipBadges } from "./ownership";
+import { overviewFrame } from "./overviewFraming";
 
 afterEach(cleanup);
 
@@ -65,7 +66,7 @@ describe("phone overview framing", () => {
     expect(lone).toContain("yellow book");
     const related = renderToStaticMarkup(<DoodleCanvas scene={run("A car moves toward a person")} />);
     expect(related).toContain('data-overview-framing="full-scene"');
-    expect(related).toContain('viewBox="0 0 1000 620"');
+    expect(related).toContain(`viewBox="${overviewFrame(run("A car moves toward a person"))}"`);
   });
 
   it("clamps edge subjects inside the original board without changing their coordinates", () => {
@@ -87,7 +88,7 @@ describe("phone drawing-area exploration", () => {
     const { container, getByRole } = render(<DoodleCanvas scene={scene} />);
     const canvas = () => container.querySelector(".doodle-canvas");
     const area = getByRole("combobox", { name: "Explore drawing area" });
-    expect(canvas()?.getAttribute("viewBox")).toBe("0 0 1000 620");
+    expect(canvas()?.getAttribute("viewBox")).toBe(overviewFrame(scene));
     expect(canvas()?.getAttribute("data-overview-framing")).toBe("full-scene");
 
     for (const [choice, expected] of [
@@ -100,7 +101,7 @@ describe("phone drawing-area exploration", () => {
       expect(getByRole("button", { name: "Overview" }).getAttribute("aria-pressed")).toBe("false");
     }
     fireEvent.click(getByRole("button", { name: "Overview" }));
-    expect(canvas()?.getAttribute("viewBox")).toBe("0 0 1000 620");
+    expect(canvas()?.getAttribute("viewBox")).toBe(overviewFrame(scene));
     expect((area as HTMLSelectElement).value).toBe("whole");
     expect(scene).toEqual(original);
   });
@@ -111,7 +112,7 @@ describe("phone drawing-area exploration", () => {
     const area = getByRole("combobox", { name: "Explore drawing area" });
     fireEvent.change(area, { target: { value: "right" } });
     rerender(<DoodleCanvas scene={{ ...scene, revision: scene.revision + 1 }} />);
-    expect(container.querySelector(".doodle-canvas")?.getAttribute("viewBox")).toBe("0 0 1000 620");
+    expect(container.querySelector(".doodle-canvas")?.getAttribute("viewBox")).toBe(overviewFrame(scene));
     expect((area as HTMLSelectElement).value).toBe("whole");
     fireEvent.change(area, { target: { value: "middle" } });
     fireEvent.click(getByRole("button", { name: "Read details" }));

@@ -19,9 +19,9 @@ export function renderReviewPng(html, width = 1000) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const [input, output] = process.argv.slice(2);
-  if (!input || !output) throw new Error('Usage: node scripts/render-review-svg.mjs <saved-case.html> <output.png>');
-  const png = renderReviewPng(await readFile(input, 'utf8'));
+  const [input, output, requestedWidth] = process.argv.slice(2);
+  if (!input || !output) throw new Error('Usage: node scripts/render-review-svg.mjs <saved-case.html> <output.png> [width: 320..1200]');
+  const png = renderReviewPng(await readFile(input, 'utf8'), requestedWidth === undefined ? 1000 : Number(requestedWidth));
   await writeFile(output, png);
   console.log(`Saved static SVG preview to ${output}`);
 }

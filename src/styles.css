@@ -354,7 +354,10 @@ button {
 
 .entity-label {
   fill: #4c473e;
-  font: 600 13px "Segoe UI", sans-serif;
+  font: 700 22px "Segoe UI", sans-serif;
+  stroke: #fbf7ed;
+  stroke-width: 4px;
+  paint-order: stroke;
   animation: label-in 300ms ease forwards;
   animation-delay: calc(var(--draw-delay) + 350ms);
   opacity: 0;

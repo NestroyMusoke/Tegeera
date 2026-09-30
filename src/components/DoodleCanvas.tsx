@@ -34,6 +34,7 @@ import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescr
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
 import { universalEdgeGeometry } from "../doodlescript/universalEdge";
+import { overviewFrame } from "./overviewFraming";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -60,9 +61,11 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const singleViewHeight = singleViewWidth * 620 / 1000;
   const singleViewX = focused ? Math.max(0, Math.min(1000 - singleViewWidth, focused.x * 10 - singleViewWidth / 2)) : 0;
   const singleViewY = focused ? Math.max(0, Math.min(620 - singleViewHeight, focused.y * 6.2 + 18 - singleViewHeight / 2)) : 0;
+  const ordinaryFrame = overviewFrame(scene);
   const overviewViewBox = area !== "whole"
     ? `${{ left: 0, middle: 200, right: 400 }[area]} 0 600 620`
-    : singleSubject ? `${singleViewX} ${singleViewY} ${singleViewWidth} ${singleViewHeight}` : "0 0 1000 620";
+    : singleSubject ? `${singleViewX} ${singleViewY} ${singleViewWidth} ${singleViewHeight}`
+      : ordinaryFrame ?? "0 0 1000 620";
   const spokenEntityLabels = scene.entities.slice(0, 8).map((entity) => {
     const label = entity.label ?? entity.kind;
     return entity.color && !label.startsWith(`${entity.color} `) ? `${entity.color} ${label}` : label;
@@ -920,8 +923,9 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
         fill="none" stroke={color} strokeWidth={isPart ? 2 : 3} strokeDasharray={isPart ? "7 6" : undefined} />
       {arrow && <path d={`M${arrowX + normalX} ${arrowY + normalY} L${geometry.endX} ${geometry.endY} L${arrowX - normalX} ${arrowY - normalY}`}
         fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />}
-      <text x={(geometry.startX + endX) / 2} y={(geometry.startY + endY) / 2 - 10}
-        textAnchor="middle" fill={color} fontSize="14">{relationLabel(relation)}</text>
+      <text x={(geometry.startX + endX) / 2} y={(geometry.startY + endY) / 2 - 12}
+        textAnchor="middle" fill={color} fontSize="22" fontWeight="700"
+        stroke="#fbf7ed" strokeWidth="4" paintOrder="stroke">{relationLabel(relation)}</text>
     </g>;
   }
   if (isQueue(relation)) {
