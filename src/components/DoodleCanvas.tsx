@@ -34,7 +34,7 @@ import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescr
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
 import { universalEdgeGeometry } from "../doodlescript/universalEdge";
-import { overviewFrame } from "./overviewFraming";
+import { forceOverviewFrame, overviewFrame } from "./overviewFraming";
 
 interface DoodleCanvasProps {
   scene: SceneState;
@@ -62,10 +62,11 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const singleViewX = focused ? Math.max(0, Math.min(1000 - singleViewWidth, focused.x * 10 - singleViewWidth / 2)) : 0;
   const singleViewY = focused ? Math.max(0, Math.min(620 - singleViewHeight, focused.y * 6.2 + 18 - singleViewHeight / 2)) : 0;
   const ordinaryFrame = overviewFrame(scene);
+  const specialistFrame = ordinaryFrame ? null : forceOverviewFrame(scene);
   const overviewViewBox = area !== "whole"
     ? `${{ left: 0, middle: 200, right: 400 }[area]} 0 600 620`
     : singleSubject ? `${singleViewX} ${singleViewY} ${singleViewWidth} ${singleViewHeight}`
-      : ordinaryFrame ?? "0 0 1000 620";
+      : ordinaryFrame ?? specialistFrame ?? "0 0 1000 620";
   const spokenEntityLabels = scene.entities.slice(0, 8).map((entity) => {
     const label = entity.label ?? entity.kind;
     return entity.color && !label.startsWith(`${entity.color} `) ? `${entity.color} ${label}` : label;
@@ -113,7 +114,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
       <svg
         className="doodle-canvas"
         viewBox={inspecting ? "0 0 1000 620" : overviewViewBox}
-        data-overview-framing={inspecting ? "detail" : area !== "whole" ? "area" : singleSubject ? "single-subject" : "full-scene"}
+        data-overview-framing={inspecting ? "detail" : area !== "whole" ? "area" : singleSubject ? "single-subject" : specialistFrame ? "specialist-fit" : "full-scene"}
         data-drawing-area={inspecting ? "detail" : area}
         role="img"
         aria-label={
@@ -836,7 +837,8 @@ function Relationship({ relation, relations, entities }: { relation: SceneRelati
       <g data-visual-cue="surface-line">
         <path d={`M${geometry.bodyX - 205} ${geometry.contactY} Q${geometry.bodyX} ${geometry.contactY - 6} ${geometry.bodyX + 205} ${geometry.contactY}`} fill="none" stroke="#514e47" strokeWidth="4" strokeLinecap="round" />
         <path d={`M${geometry.bodyX - 190} ${geometry.contactY + 13} l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9 m10 9 l18 -9`} fill="none" stroke="#8b8173" strokeWidth="2" />
-        <text x={geometry.bodyX} y={geometry.contactY + 31} textAnchor="middle" fill="#514e47" fontSize="15">{geometry.surface.label}</text>
+        <text x={geometry.bodyX} y={geometry.contactY + 34} textAnchor="middle" fill="#514e47"
+          fontSize="20" fontWeight="700" stroke="#fbf7ed" strokeWidth="4" paintOrder="stroke">{geometry.surface.label}</text>
       </g>
       <g data-visual-cue="forward-force-arrow" className="force-applied">
         <path d={`M${geometry.appliedStartX} ${appliedY} H${geometry.appliedEndX}`} fill="none" stroke="#2e6f91" strokeWidth="5" strokeLinecap="round" />
@@ -1027,7 +1029,8 @@ function DoodleEntity({
       <g className={attachment ? `attached-object motion-${attachment.loop}` : undefined} style={attachmentStyle}>
         <EntityGlyph entity={entity} moving={moving} />
       </g>
-      <text className="entity-label" x="0" y={forceBody ? -68 : 84} textAnchor="middle">
+      <text className="entity-label" x="0" y={forceBody ? -68 : 84} textAnchor="middle"
+        style={forceBody ? { fontSize: 22 } : undefined}>
         {entity.label ?? entity.kind}
       </text>
       {badges.map((badge, index) => (

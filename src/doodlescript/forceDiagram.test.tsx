@@ -6,6 +6,7 @@ import { interpretTeacherText } from "./interpret";
 import { applyDoodleScript, initialScene } from "./scene";
 import { validateDoodleScript } from "./validator";
 import { forceDiagramGeometry, matchForceDiagram } from "./forceDiagram";
+import { forceOverviewFrame } from "../components/overviewFraming";
 
 function build(text: string) {
   const interpreted = interpretTeacherText(text, initialScene);
@@ -57,6 +58,8 @@ describe("open force-diagram grammar", () => {
     const { scene } = build("If you push a box on a rough floor, friction slows it down.");
     const html = renderToStaticMarkup(createElement(DoodleCanvas, { scene }));
     expect(html).toContain('data-relation-layout="force-diagram"');
+    expect(html).toContain('data-overview-framing="specialist-fit"');
+    expect(html).toContain(`viewBox="${forceOverviewFrame(scene)}"`);
     expect(html).toContain('data-layout-topology="force-body"');
     expect(html).toContain('data-visual-cue="surface-line"');
     expect(html).toContain('data-visual-cue="forward-force-arrow"');
