@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { JSDOM } from 'jsdom';
 import {
   attributionMarkdown, fetchSample, importApproved, makeCandidate, overviewSvg,
   parseCandidates, reviewHtml, selectCandidates, validateNoun
@@ -40,8 +41,52 @@ test('normalizes vectors without SVG executable content and ranks deterministica
   assert.ok(candidate.glyph.parts.every((part) => part.d.length <= 800));
   assert.match(reviewHtml(chosen), /Recognizable without label/);
   assert.match(reviewHtml(chosen), /Make a blind guess first/);
+  assert.match(reviewHtml(chosen), /My locked guess matched the subject/);
   assert.match(reviewHtml(chosen), /width:64px;height:64px/);
   assert.match(overviewSvg(chosen), /12345/);
+});
+
+test('peer-shape agreement improves review order without claiming art approval', () => {
+  const peers = [0, 2, 4].map((shift, index) => ({ keyId: String(index + 1), drawing: sample.drawing.map(
+    (stroke) => [stroke[0].map((x) => x + shift), stroke[1].map((y) => y + shift)]
+  ) }));
+  const odd = { keyId: '9', drawing: [
+    [[10, 190, 10, 190, 10], [10, 10, 190, 190, 10]],
+    [[190, 10, 190, 10], [10, 190, 190, 10]],
+    [[15, 185, 15, 185], [185, 15, 15, 185]]
+  ] };
+  const first = selectCandidates([odd, ...peers], 'house', 4);
+  const again = selectCandidates([odd, ...peers], 'house', 4);
+  assert.equal(first.length, 4);
+  assert.deepEqual(first.map(({ id }) => id), again.map(({ id }) => id));
+  assert.notEqual(first[0].keyId, odd.keyId);
+  assert.ok(first.every(({ consensus }) => consensus >= 0 && consensus <= 1));
+});
+
+test('the actual review page locks a blind guess and refuses premature approval', () => {
+  const candidate = makeCandidate('house', { keyId: '12345', drawing: sample.drawing });
+  const browser = new JSDOM(reviewHtml([candidate]), { runScripts: 'dangerously' });
+  try {
+    const { document } = browser.window;
+    browser.window.alert = () => undefined;
+    const card = document.querySelector('[data-id="house-12345"]');
+    const guess = card.querySelector('.guess');
+    const [reveal, approve] = [...card.querySelectorAll('button')];
+    approve.click();
+    assert.equal(card.classList.contains('approved'), false);
+    reveal.click();
+    assert.equal(card.querySelector('h3').hidden, true);
+    guess.value = 'house';
+    reveal.click();
+    assert.equal(guess.disabled, true);
+    assert.equal(card.querySelector('h3').hidden, false);
+    card.querySelectorAll('.checks input').forEach((box) => { box.checked = true; });
+    approve.click();
+    assert.equal(card.classList.contains('approved'), false);
+    card.querySelector('label > input').checked = true;
+    approve.click();
+    assert.equal(card.classList.contains('approved'), true);
+  } finally { browser.window.close(); }
 });
 
 test('sample fetch uses a byte range and refuses a full-file download', async () => {
@@ -60,9 +105,14 @@ test('import requires four human checks, one noun, valid provenance and a safe r
   const candidate = makeCandidate('house', parseCandidates(ndjson([sample]), 'house')[0]);
   const manifest = { formatVersion: '1.0.0', entries: [candidate] };
   const empty = { formatVersion: '1.0.0', entries: [] };
-  const decision = { formatVersion: '1.0.0', decisions: { [candidate.id]: { decision: 'approve', checks: [true, true, true, true] } } };
+  const decision = { formatVersion: '1.0.0', decisions: { [candidate.id]: { decision: 'approve',
+    checks: [true, true, true, true], blindGuess: 'house', blindGuessMatched: true } } };
   assert.throws(() => importApproved(manifest, decision, empty, ''), /reviewer/);
   assert.throws(() => importApproved(manifest, { ...decision, decisions: { [candidate.id]: { decision: 'approve' } } }, empty, 'Nestroy Musoke'), /Incomplete visual review/);
+  assert.throws(() => importApproved(manifest, { ...decision, decisions: { [candidate.id]: {
+    ...decision.decisions[candidate.id], blindGuess: '' } } }, empty, 'Nestroy Musoke'), /locked, matching blind guess/);
+  assert.throws(() => importApproved(manifest, { ...decision, decisions: { [candidate.id]: {
+    ...decision.decisions[candidate.id], blindGuessMatched: false } } }, empty, 'Nestroy Musoke'), /locked, matching blind guess/);
   const pack = importApproved(manifest, decision, empty, 'Nestroy Musoke');
   assert.equal(pack.entries.length, 1);
   assert.equal(pack.entries[0].provenance.license, 'CC BY 4.0');

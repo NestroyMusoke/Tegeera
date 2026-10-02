@@ -16,6 +16,8 @@ Nebius glyph requests now use non-thinking JSON mode by default, while **scene u
 
 Visible scene nouns now outrank queued lesson-preparation and interim-speech prefetch jobs. If all generation slots are occupied by speculative work, one speculative job is cancelled and rescheduled after the visible noun. The scene render path still never waits for glyph generation. This is a scheduling guarantee, not a guarantee of provider latency or artistic quality.
 
+The Quick, Draw! intake now orders candidates by a blend of stroke economy and similarity to other human sketches of the same category, then prioritizes visually different examples before filling the review sheet. This is a mechanical shortlist, **not** a recognition score. A fresh bounded fan sample put several clearer fan silhouettes near the top, but none was added to the shipped pack. The blind-review form locks the guess before revealing the noun and import refuses an approval without the recorded guess, a match attestation, and all four visual checks. A reviewer can still be mistaken; this does not replace testing with teachers or students.
+
 ## Practical next quality gate
 
 Build a small licensed/offline pack through blind 64 px review, starting with nouns from real lessons rather than a hardcoded diagram list. Import only artwork a human can name without its label and that survives the existing four checks. Measure recognition with teachers and students, then use those failures to refine style, retrieval, or model choice. The 345-category Quick, Draw! collection is useful candidate material, not a universal vocabulary and not automatically safe artwork.

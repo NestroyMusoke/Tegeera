@@ -71,13 +71,71 @@ export function makeCandidate(noun, sample) {
     sourceUrl: `${datasetUrl(noun)}#key_id=${sample.keyId}` };
 }
 
+// A coarse ink occupancy signature. Similar human sketches reinforce a candidate,
+// but this is only a review-order hint: agreement is not recognizability.
+function inkSignature(sample) {
+  const points = sample.drawing.flatMap((stroke) => stroke[0].map((x, index) => [x, stroke[1][index]]));
+  const minX = Math.min(...points.map(([x]) => x)), maxX = Math.max(...points.map(([x]) => x));
+  const minY = Math.min(...points.map(([, y]) => y)), maxY = Math.max(...points.map(([, y]) => y));
+  const ink = new Float32Array(12 * 12);
+  const plot = (x, y) => {
+    const column = Math.min(11, Math.max(0, Math.floor((x - minX) / Math.max(1, maxX - minX) * 11)));
+    const row = Math.min(11, Math.max(0, Math.floor((y - minY) / Math.max(1, maxY - minY) * 11)));
+    ink[row * 12 + column] = 1;
+  };
+  for (const stroke of sample.drawing) {
+    for (let index = 1; index < stroke[0].length; index += 1) {
+      const x0 = stroke[0][index - 1], y0 = stroke[1][index - 1];
+      const x1 = stroke[0][index], y1 = stroke[1][index];
+      const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 5));
+      for (let step = 0; step <= steps; step += 1) plot(x0 + (x1 - x0) * step / steps, y0 + (y1 - y0) * step / steps);
+    }
+  }
+  // Blur by one cell so a small drawing shift does not destroy similarity.
+  return ink.map((_, index) => {
+    const x = index % 12, y = Math.floor(index / 12);
+    let value = 0;
+    for (let oy = -1; oy <= 1; oy += 1) for (let ox = -1; ox <= 1; ox += 1) {
+      if (x + ox >= 0 && x + ox < 12 && y + oy >= 0 && y + oy < 12) {
+        value += ink[(y + oy) * 12 + x + ox] * (ox === 0 && oy === 0 ? 3 : 1);
+      }
+    }
+    return value;
+  });
+}
+
+function inkSimilarity(a, b) {
+  let dot = 0, aa = 0, bb = 0;
+  for (let index = 0; index < a.length; index += 1) {
+    dot += a[index] * b[index]; aa += a[index] ** 2; bb += b[index] ** 2;
+  }
+  return aa && bb ? dot / Math.sqrt(aa * bb) : 0;
+}
+
 export function selectCandidates(samples, noun, limit = 16) {
   const seen = new Set();
-  return samples.flatMap((sample) => {
+  const candidates = samples.flatMap((sample) => {
     if (seen.has(sample.keyId)) return [];
     seen.add(sample.keyId);
-    try { return [makeCandidate(noun, sample)]; } catch { return []; }
-  }).sort((a, b) => b.score - a.score || a.keyId.localeCompare(b.keyId)).slice(0, limit);
+    try { return [{ ...makeCandidate(noun, sample), signature: inkSignature(sample) }]; } catch { return []; }
+  });
+  const ranked = candidates.map((candidate, index) => {
+    const peers = candidates.flatMap((other, otherIndex) => otherIndex === index ? []
+      : [inkSimilarity(candidate.signature, other.signature)]).sort((a, b) => b - a);
+    const consensus = peers.length ? peers.slice(0, 5).reduce((sum, value) => sum + value, 0) / Math.min(5, peers.length) : 0;
+    return { ...candidate, consensus, reviewOrder: candidate.score + 5 * consensus };
+  }).sort((a, b) => b.reviewOrder - a.reviewOrder || a.keyId.localeCompare(b.keyId));
+  const selected = [];
+  const similar = [];
+  for (const candidate of ranked) {
+    if (selected.length >= limit) break;
+    if (selected.some((prior) => inkSimilarity(prior.signature, candidate.signature) > 0.98)) {
+      similar.push(candidate); continue;
+    }
+    selected.push(candidate);
+  }
+  selected.push(...similar.slice(0, Math.max(0, limit - selected.length)));
+  return selected.map(({ signature, reviewOrder, ...candidate }) => candidate);
 }
 
 export async function fetchSample(noun, byteLimit = 500_000, fetchImpl = fetch) {
@@ -94,8 +152,55 @@ export function reviewHtml(entries) {
   const data = JSON.stringify(entries.map(({ id, noun, keyId, svg }) => ({ id, noun, keyId, svg }))).replace(/</g, '\\u003c');
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tegeera Quick Draw review</title>
 <style>body{font:16px system-ui;background:#f4f1e9;color:#27342f;margin:24px}header{max-width:850px;margin:auto}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.card{background:white;border:2px solid #d1d8d1;border-radius:14px;padding:12px}.card.approved{border-color:#26845f}.card.rejected{opacity:.45}.samples{display:flex;align-items:center;gap:12px;height:132px}.samples img{display:block;object-fit:contain}.small{width:64px;height:64px}.large{width:120px;height:120px}.checks{font-size:13px;display:grid;gap:3px}button{min-height:40px;margin:8px 6px 0 0}small{word-break:break-all}input.guess{width:95%;min-height:30px}</style>
-<header><h1>Candidate doodles — not shipped</h1><p>Quick, Draw! strokes are CC BY 4.0. First guess what each 64 px drawing depicts, then reveal the category. A larger preview is provided to inspect defects. Approval requires all four checks; reject unrecognizable, unsafe, inconsistent, or misleading drawings. Approve at most one per noun. Attribution and source IDs are retained on import.</p><button id="export">Download decisions.json</button></header><div class="grid" id="grid"></div>
-<script>const entries=${data},choices={},grid=document.getElementById('grid');for(const e of entries){const card=document.createElement('article');card.className='card';card.dataset.id=e.id;const samples=document.createElement('div');samples.className='samples';for(const [size,label] of [['small','64-pixel candidate'],['large','larger candidate']]){const img=document.createElement('img');img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(e.svg);img.alt=label;img.className=size;samples.append(img)}card.append(samples);const guess=document.createElement('input');guess.className='guess';guess.placeholder='What does it look like?';guess.setAttribute('aria-label','Your guess before revealing the target');card.append(guess);const reveal=document.createElement('button');reveal.textContent='Reveal target';const title=document.createElement('h3');title.textContent=e.noun;title.hidden=true;const id=document.createElement('small');id.textContent=e.keyId;id.hidden=true;reveal.onclick=()=>{if(!guess.value.trim()){alert('Make a blind guess first.');return}title.hidden=false;id.hidden=false;reveal.disabled=true};card.append(reveal,title,id);const checks=document.createElement('div');checks.className='checks';for(const label of ['Recognizable without label','Readable at 64 px','No inappropriate or misleading content','Fits Tegeera visual style']){const row=document.createElement('label'),box=document.createElement('input');box.type='checkbox';row.append(box,document.createTextNode(' '+label));checks.append(row)}card.append(checks);const yes=document.createElement('button');yes.textContent='Approve';yes.onclick=()=>{if(title.hidden||[...checks.querySelectorAll('input')].some(x=>!x.checked)){alert('Reveal the target and check all four review criteria first.');return}for(const other of entries.filter(x=>x.noun===e.noun&&x.id!==e.id)){delete choices[other.id];document.querySelector('[data-id="'+other.id+'"]')?.classList.remove('approved')}choices[e.id]={decision:'approve',checks:[true,true,true,true],blindGuess:guess.value.trim().slice(0,80)};card.className='card approved'};const no=document.createElement('button');no.textContent='Reject';no.onclick=()=>{choices[e.id]={decision:'reject'};card.className='card rejected'};card.append(yes,no);grid.append(card)}document.getElementById('export').onclick=()=>{const blob=new Blob([JSON.stringify({formatVersion:'1.0.0',decisions:choices},null,2)],{type:'application/json'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='quickdraw-decisions.json';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000)}</script></html>`;
+<header><h1>Candidate doodles — not shipped</h1><p>Quick, Draw! strokes are CC BY 4.0. Guess what each 64 px drawing depicts before revealing its category. Lock in your guess, then confirm it matched. Approval also requires four visual checks; reject unrecognizable, unsafe, inconsistent, or misleading drawings. Approve at most one per noun. Attribution and source IDs are retained on import.</p><button id="export">Download decisions.json</button></header><div class="grid" id="grid"></div>
+<script>
+const entries=${data},choices={},grid=document.getElementById('grid');
+for(const e of entries){
+  const card=document.createElement('article');card.className='card';card.dataset.id=e.id;
+  const samples=document.createElement('div');samples.className='samples';
+  for(const [size,label] of [['small','64-pixel candidate'],['large','larger candidate']]){
+    const img=document.createElement('img');img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(e.svg);
+    img.alt=label;img.className=size;samples.append(img)
+  }
+  card.append(samples);
+  const guess=document.createElement('input');guess.className='guess';guess.placeholder='What does it look like?';
+  guess.setAttribute('aria-label','Your guess before revealing the target');card.append(guess);
+  const reveal=document.createElement('button');reveal.textContent='Reveal target';
+  const title=document.createElement('h3');title.textContent=e.noun;title.hidden=true;
+  const id=document.createElement('small');id.textContent=e.keyId;id.hidden=true;
+  const matched=document.createElement('label');matched.hidden=true;
+  const matchBox=document.createElement('input');matchBox.type='checkbox';
+  matched.append(matchBox,document.createTextNode(' My locked guess matched the subject'));
+  reveal.onclick=()=>{if(!guess.value.trim()){alert('Make a blind guess first.');return}
+    guess.disabled=true;title.hidden=false;id.hidden=false;matched.hidden=false;reveal.disabled=true};
+  card.append(reveal,title,id,matched);
+  const checks=document.createElement('div');checks.className='checks';
+  for(const label of ['Recognizable without label','Readable at 64 px','No inappropriate or misleading content','Fits Tegeera visual style']){
+    const row=document.createElement('label'),box=document.createElement('input');box.type='checkbox';
+    row.append(box,document.createTextNode(' '+label));checks.append(row)
+  }
+  card.append(checks);
+  const yes=document.createElement('button');yes.textContent='Approve';
+  yes.onclick=()=>{
+    if(title.hidden||!matchBox.checked||[...checks.querySelectorAll('input')].some(x=>!x.checked)){
+      alert('Approve only when your locked guess matched and all four review checks pass.');return
+    }
+    for(const other of entries.filter(x=>x.noun===e.noun&&x.id!==e.id)){
+      delete choices[other.id];document.querySelector('[data-id="'+other.id+'"]')?.classList.remove('approved')
+    }
+    choices[e.id]={decision:'approve',checks:[true,true,true,true],blindGuess:guess.value.trim().slice(0,80),blindGuessMatched:true};
+    card.className='card approved'
+  };
+  const no=document.createElement('button');no.textContent='Reject';
+  no.onclick=()=>{choices[e.id]={decision:'reject'};card.className='card rejected'};
+  card.append(yes,no);grid.append(card)
+}
+document.getElementById('export').onclick=()=>{
+  const blob=new Blob([JSON.stringify({formatVersion:'1.0.0',decisions:choices},null,2)],{type:'application/json'}),
+    link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='quickdraw-decisions.json';
+  link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000)
+}
+</script></html>`;
 }
 
 export function overviewSvg(entries) {
@@ -122,6 +227,10 @@ export function importApproved(manifest, decisions, existing, reviewer) {
     if (!byId.has(id)) throw new Error(`Unknown candidate ID: ${id}`);
     if (decision?.decision !== 'approve') continue;
     if (JSON.stringify(decision.checks) !== '[true,true,true,true]') throw new Error(`Incomplete visual review: ${id}`);
+    if (typeof decision.blindGuess !== 'string' || decision.blindGuess.trim().length < 2
+      || decision.blindGuess.length > 80 || decision.blindGuessMatched !== true) {
+      throw new Error(`A locked, matching blind guess is required: ${id}`);
+    }
     approved.push(byId.get(id));
   }
   const nouns = new Set(existing.entries.map((entry) => entry.noun.toLowerCase()));
