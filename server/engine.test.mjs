@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { completeExplicitPassages } from "../shared/sourceConstraints.mjs";
 import {
-  NEBIUS_CHAT_URL, NVIDIA_SCENE_MODEL, callModel, generateGlyph, interpretScene, modelConfiguration,
-  scenePrompt, sceneValidationIssue, validScene, validStrokes
+  NEBIUS_CHAT_URL, NVIDIA_SCENE_MODEL, callModel, editGlyph, generateGlyph, interpretScene, modelConfiguration,
+  scenePrompt, sceneValidationIssue, strokeStructuralIssue, validScene, validStrokes
 } from "./engine.mjs";
 
 const scene = { entities: [], relations: [] };
@@ -456,5 +456,53 @@ test("glyph path accepts bounded strokes and rejects unsafe or out-of-grid outpu
   assert.equal(validStrokes({ strokes: [{ ...strokes.strokes[0], pts: [[10, 10], [10, 10]] }] }), false);
   const fetchImpl = async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(strokes) } }] }), { status: 200 });
   const result = await generateGlyph({ noun: "dragon" }, nvidia, { fetchImpl });
+  assert.deepEqual(result.candidate, strokes);
+  assert.equal(result.providerAttempts, 1);
+  assert.equal(strokeStructuralIssue(strokes), null);
+});
+
+test("a schema-valid but unusable glyph gets one diagnosed repair, never an unbounded loop", async () => {
+  const tiny = { strokes: [{ part: "mark", color: "#2f3e46", pts: [[20, 20], [24, 20], [24, 24], [20, 20]] }] };
+  const line = { strokes: [{ part: "line", color: "#2f3e46", pts: [[5, 5], [15, 15], [30, 30], [45, 45]] }] };
+  assert.equal(validStrokes(tiny), true);
+  assert.match(strokeStructuralIssue(tiny), /too little/);
+  assert.match(strokeStructuralIssue(line), /straight line/);
+  let calls = 0;
+  const fetchImpl = async (_url, request) => {
+    calls += 1;
+    const prompt = JSON.parse(request.body).messages[0].content;
+    if (calls === 2) {
+      assert.match(prompt, /occupies too little/);
+      assert.match(prompt, /dragon/);
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(calls === 1 ? tiny : strokes) } }] }), { status: 200 });
+  };
+  const repaired = await generateGlyph({ noun: "dragon" }, nebius, { fetchImpl });
+  assert.equal(calls, 2);
+  assert.equal(repaired.repaired, true);
+  assert.equal(repaired.providerAttempts, 2);
+  assert.deepEqual(repaired.candidate, strokes);
+  calls = 0;
+  await assert.rejects(generateGlyph({ noun: "dragon" }, nebius, { fetchImpl: async () => {
+    calls += 1;
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(tiny) } }] }), { status: 200 });
+  } }), (error) => {
+    assert.equal(error.providerAttempts, 2);
+    assert.match(error.diagnostic, /too little/);
+    return true;
+  });
+  assert.equal(calls, 2);
+});
+
+test("glyph edits use the same structural repair without changing a valid first result", async () => {
+  const tiny = { strokes: [{ part: "mark", color: "#2f3e46", pts: [[20, 20], [24, 20], [24, 24], [20, 20]] }] };
+  let calls = 0;
+  const result = await editGlyph({ noun: "dragon", instruction: "add wings", current: strokes }, nebius, {
+    fetchImpl: async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(calls === 1 ? tiny : strokes) } }] }), { status: 200 });
+    }
+  });
+  assert.equal(calls, 2);
   assert.deepEqual(result.candidate, strokes);
 });

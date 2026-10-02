@@ -119,6 +119,23 @@ test("daily budget counts correction attempts and fails closed before a third pr
   });
 });
 
+test("a poor but schema-valid doodle cannot bypass the provider-call budget for its repair", async () => {
+  const configuration = modelConfiguration({ NEBIUS_API_KEY: "private-test-key" });
+  const tiny = { strokes: [{ part: "mark", color: "#2f3e46", pts: [[20, 20], [24, 20], [24, 24], [20, 20]] }] };
+  let providerCalls = 0;
+  await withServer({ configuration, limits: { perClientPerMinute: 20, maxConcurrentRequests: 2, maxProviderCallsPerDay: 1 },
+    modelFetch: async () => {
+      providerCalls += 1;
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(tiny) } }] }), { status: 200 });
+    } }, async (url) => {
+    const response = await fetch(`${url}/v1/glyph`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ noun: "dragon" }) });
+    assert.equal(response.status, 429);
+    assert.match((await response.json()).error, /daily model-request allowance/);
+    assert.equal(providerCalls, 1);
+  });
+});
+
 test("provider throttling reaches the client as a safe 429 without retrying the model", async () => {
   const configuration = modelConfiguration({ NVIDIA_API_KEY: "private-test-key" });
   let providerCalls = 0;
