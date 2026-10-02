@@ -13,6 +13,32 @@ const glyph = {
 };
 
 describe("non-blocking glyph resolver", () => {
+  it("keeps the labeled fallback when a schema-valid generated doodle is structurally unusable", async () => {
+    const onGenerationError = vi.fn();
+    const resolver = new LiveGlyphResolver({ onGenerationError, generator: async () => ({ strokes: [
+      { part: "tiny", color: "#2f3e46", pts: [[20, 20], [24, 20], [24, 24], [20, 20]] }
+    ] }) });
+    expect(resolver.resolve("griffin").status).toBe("placeholder");
+    await vi.waitFor(() => expect(onGenerationError).toHaveBeenCalledWith("griffin", expect.any(Error)));
+    expect(resolver.draftFor("griffin")).toBeUndefined();
+    expect(resolver.approve("griffin")).toBeUndefined();
+    expect(resolver.resolve("griffin")).toMatchObject({ source: "sticker", status: "placeholder" });
+  });
+
+  it("keeps a usable draft when an edit collapses it into an unusable mark", async () => {
+    const outline: Stroke = { part: "outline", color: "#2f3e46",
+      pts: [[8, 8], [42, 8], [42, 42], [8, 8]] };
+    const resolver = new LiveGlyphResolver({ generator: async () => ({ strokes: [outline] }) });
+    resolver.resolve("griffin");
+    await vi.waitFor(() => expect(resolver.draftFor("griffin")).toBeDefined());
+    const before = resolver.draftFor("griffin");
+    expect(await resolver.editGlyph("griffin", "make it tiny", async () => ({ strokes: [
+      { part: "mark", color: "#2f3e46", pts: [[20, 20], [24, 20], [24, 24], [20, 20]] }
+    ] }))).toBe(false);
+    expect(resolver.draftFor("griffin")).toEqual(before);
+    expect(resolver.approve("griffin")).toEqual(before);
+  });
+
   it("keeps a labelled placeholder and reports a rate-limited provider", async () => {
     const onGenerationError = vi.fn();
     const resolver = new LiveGlyphResolver({

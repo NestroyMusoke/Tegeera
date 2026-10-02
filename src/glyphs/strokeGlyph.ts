@@ -13,6 +13,28 @@ export const strokeGlyphSchema = z.object({ strokes: z.array(strokeSchema).min(1
 export type StrokeGlyph = z.infer<typeof strokeGlyphSchema>;
 export type Stroke = z.infer<typeof strokeSchema>;
 
+/** Reject obviously unusable model strokes without claiming to measure recognizability.
+ * This runs only on completed drafts, never on progressive stroke previews. */
+export function strokeGlyphStructuralIssue(candidate: StrokeGlyph): string | null {
+  const points = candidate.strokes.flatMap((stroke) => stroke.pts);
+  const xs = points.map(([x]) => x), ys = points.map(([, y]) => y);
+  if (Math.max(...xs) - Math.min(...xs) < 14 || Math.max(...ys) - Math.min(...ys) < 14) {
+    return "The doodle occupies too little of the drawing grid.";
+  }
+  const unique = [...new Set(points.map(([x, y]) => `${x},${y}`))];
+  if (unique.length < 3) return "The doodle has too few distinct points.";
+  const [originX, originY] = unique[0].split(",").map(Number);
+  const [secondX, secondY] = unique[1].split(",").map(Number);
+  if (unique.every((value) => {
+    const [x, y] = value.split(",").map(Number);
+    return Math.abs((secondX - originX) * (y - originY) - (secondY - originY) * (x - originX)) < 2;
+  })) return "The doodle is only a straight line.";
+  if (new Set(candidate.strokes.map((stroke) => JSON.stringify(stroke.pts))).size <= candidate.strokes.length / 2) {
+    return "The doodle repeats the same strokes.";
+  }
+  return null;
+}
+
 const round = (value: number) => Math.max(0, Math.min(100, Math.round(value * 100) / 100));
 const isClosed = (points: Stroke["pts"]) => points[0][0] === points.at(-1)![0] && points[0][1] === points.at(-1)![1];
 

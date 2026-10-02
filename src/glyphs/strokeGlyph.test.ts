@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compileStrokeGlyph, strokeGlyphSchema, StrokeStreamParser } from "./strokeGlyph";
+import { compileStrokeGlyph, strokeGlyphSchema, strokeGlyphStructuralIssue, StrokeStreamParser } from "./strokeGlyph";
 
 const house = { strokes: [
   { part: "walls", color: "#2f3e46", pts: [[10, 25], [10, 42], [40, 42], [40, 25], [10, 25]] },
@@ -22,6 +22,17 @@ describe("validated stroke glyph", () => {
     expect(strokeGlyphSchema.safeParse({ strokes: [{ ...house.strokes[0], pts: Array.from({ length: 15 }, () => [10, 10]) }] }).success).toBe(false);
     expect(strokeGlyphSchema.safeParse({ strokes: [{ ...house.strokes[0], pts: [[10, 10], [10, 10]] }] }).success).toBe(false);
     expect(compileStrokeGlyph({ strokes: [{ ...house.strokes[0], pts: [[10, 10], [40, 40]] }] }).parts[0].d).toContain("C");
+  });
+
+  it("flags tiny, linear, and repeated completed drafts without rejecting a composed icon", () => {
+    expect(strokeGlyphStructuralIssue(strokeGlyphSchema.parse(house))).toBeNull();
+    const tiny = { strokes: [{ part: "mark", color: "#2f3e46", pts: [[20, 20], [24, 20], [24, 24], [20, 20]] }] };
+    expect(strokeGlyphStructuralIssue(strokeGlyphSchema.parse(tiny))).toMatch(/too little/);
+    const line = { strokes: [{ part: "line", color: "#2f3e46", pts: [[5, 5], [15, 15], [30, 30], [45, 45]] }] };
+    expect(strokeGlyphStructuralIssue(strokeGlyphSchema.parse(line))).toMatch(/straight line/);
+    const repeated = { strokes: [0, 1, 2, 3].map((index) => ({ part: `part-${index}`,
+      color: "#2f3e46", pts: [[5, 5], [40, 5], [40, 40], [5, 40], [5, 5]] })) };
+    expect(strokeGlyphStructuralIssue(strokeGlyphSchema.parse(repeated))).toMatch(/repeats/);
   });
 
   it("emits only completed and validated strokes across partial chunks", () => {

@@ -1,5 +1,5 @@
 import { glyphKey, glyphSchema, resolveGlyph, type GlyphSource, type TegeeraGlyph } from "./glyph";
-import { compileStrokeGlyph, strokeGlyphSchema, strokeSchema, type Stroke, type StrokeGlyph } from "./strokeGlyph";
+import { compileStrokeGlyph, strokeGlyphSchema, strokeSchema, strokeGlyphStructuralIssue, type Stroke, type StrokeGlyph } from "./strokeGlyph";
 
 const spokenColors = "red|orange|yellow|green|blue|purple|pink|brown|black|white|gray";
 const speculativeNounPattern = new RegExp(`\\b(?:a|an|the)\\s+(?:(?:${spokenColors})\\s+)?([a-z][a-z'-]{2,})\\b`, "g");
@@ -138,6 +138,8 @@ export class LiveGlyphResolver {
       const result = await Promise.race([editor(key, current, instruction.trim(), controller.signal), timeout]);
       if (controller.signal.aborted || epoch !== (this.epochs.get(key) ?? 0)) return false;
       const strokes = strokeGlyphSchema.parse(result);
+      const issue = strokeGlyphStructuralIssue(strokes);
+      if (issue) throw new Error(issue);
       const glyph = compileStrokeGlyph(strokes);
       this.editable.set(key, strokes);
       this.drafts.set(key, glyph);
@@ -249,6 +251,10 @@ export class LiveGlyphResolver {
       }), timeout, cancellation]).then((candidate) => {
         if (controller.signal.aborted || epoch !== (this.epochs.get(noun) ?? 0)) return;
         const strokes = strokeGlyphSchema.safeParse(candidate);
+        if (strokes.success) {
+          const issue = strokeGlyphStructuralIssue(strokes.data);
+          if (issue) throw new Error(issue);
+        }
         const glyph = strokes.success ? compileStrokeGlyph(strokes.data) : glyphSchema.parse(candidate);
         if (strokes.success) this.editable.set(noun, strokes.data);
         this.drafts.set(noun, glyph);
