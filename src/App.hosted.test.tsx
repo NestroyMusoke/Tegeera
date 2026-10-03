@@ -26,8 +26,9 @@ it("draws a hosted explanation but preserves it when follow-up plans lose negati
   fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: "A dragon flies above a tiny village" } });
   fireEvent.click(screen.getByRole("button", { name: "Draw it" }));
   await waitFor(() => expect(screen.getByText("Revision 1")).toBeTruthy());
-  await waitFor(() => expect(container.querySelectorAll(".validated-glyph").length).toBeGreaterThan(0));
-  expect(screen.getByRole("region", { name: "Review generated doodles" })).toBeTruthy();
+  await waitFor(() => expect(screen.getByRole("region", { name: "Review generated doodles" })).toBeTruthy());
+  expect(container.querySelectorAll(".validated-glyph")).toHaveLength(0);
+  expect(container.querySelector('[data-symbol-id="emoji-preview"]')).not.toBeNull();
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/interpret"))).toBe(true);
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/glyph"))).toBe(true);
   const original = container.querySelector(".doodle-canvas")?.getAttribute("aria-label");

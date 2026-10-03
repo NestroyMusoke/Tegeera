@@ -13,6 +13,18 @@ const glyph = {
 };
 
 describe("non-blocking glyph resolver", () => {
+  it("stages a scene-supplied glyph for review without starting another request", async () => {
+    const generator = vi.fn(async () => glyph);
+    const resolver = new LiveGlyphResolver({ generator });
+    expect(resolver.stageDraft("dragon", glyph)).toBe(true);
+    expect(resolver.resolve("dragon")).toMatchObject({ status: "placeholder", source: "generated" });
+    await Promise.resolve();
+    expect(generator).not.toHaveBeenCalled();
+    expect(resolver.approve("dragon")).toEqual(glyph);
+    expect(resolver.resolve("dragon").status).toBe("final");
+    expect(resolver.stageDraft("dragon", glyph)).toBe(false);
+  });
+
   it("keeps the labeled fallback when a schema-valid generated doodle is structurally unusable", async () => {
     const onGenerationError = vi.fn();
     const resolver = new LiveGlyphResolver({ onGenerationError, generator: async () => ({ strokes: [

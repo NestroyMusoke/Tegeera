@@ -115,9 +115,10 @@ function App() {
     entities: scene.entities.map((entity) => {
       if (entity.kind !== "generic" || entity.glyph || !entity.label) return entity;
       const resolution = glyphResolver.current!.resolve(entity.label);
-      return resolution.glyph ? { ...entity, glyph: resolution.glyph,
-        glyphSource: resolution.status === "placeholder" ? "streaming"
-          : resolution.source === "cache" || resolution.source === "generated" ? "deferred"
+      // A stream is only a draft. Keep the instant emoji/label in the lesson
+      // until the teacher explicitly accepts the artwork in the review tray.
+      return resolution.glyph && resolution.status === "final" ? { ...entity, glyph: resolution.glyph,
+        glyphSource: resolution.source === "cache" || resolution.source === "generated" ? "deferred"
           : resolution.source === "glyph-pack" ? "glyph-pack" : "emoji" } : entity;
     })
   // The service emits only after a validated glyph replaces a placeholder.
@@ -258,7 +259,19 @@ function App() {
           const compiled = compileUniversalScene(candidate, targetScene, text, {
             ...offlineGlyphCatalog, cache: glyphCache.current
           });
-          const result = validateDoodleScript(compiled, targetScene);
+          const newDrafts = compiled.commands.flatMap((command) =>
+            command.action === "create" && command.entity.glyphSource === "generated"
+              && command.entity.glyph && command.entity.label
+              ? [{ noun: glyphKey(command.entity.label), glyph: command.entity.glyph, origin: "runtime" as const }] : []
+          );
+          // The model may attach a schema-valid but unrecognizable SVG. Retain
+          // it for review, not as trusted classroom artwork or scene geometry.
+          const presentationScript = { ...compiled, commands: compiled.commands.map((command) =>
+            command.action === "create" && command.entity.glyphSource === "generated"
+              ? { ...command, entity: { ...command.entity, glyph: undefined, glyphSource: undefined } }
+              : command
+          ) };
+          const result = validateDoodleScript(presentationScript, targetScene);
           if (!result.ok) {
             markDecision("reject");
             setAiStatus("Enabled, but the last visual plan was rejected safely");
@@ -270,11 +283,7 @@ function App() {
           const isHold = result.script.commands.length === 1 && result.script.commands[0].action === "hold";
           const nextScene = isHold ? targetScene : applyDoodleScript(targetScene, result.script);
           markDecision(isHold ? "hold" : "draw");
-          const newDrafts = result.script.commands.flatMap((command) =>
-            command.action === "create" && command.entity.glyphSource === "generated"
-              && command.entity.glyph && command.entity.label
-              ? [{ noun: glyphKey(command.entity.label), glyph: command.entity.glyph, origin: "scene" as const }] : []
-          );
+          if (!isHold) for (const { noun, glyph } of newDrafts) glyphResolver.current!.stageDraft(noun, glyph);
           setPendingGlyphReview((current) => [
             ...current.filter((item) => !newDrafts.some((draft) => draft.noun === item.noun)),
             ...newDrafts
@@ -605,6 +614,7 @@ function App() {
                 return;
               }
               glyphCache.current.set(noun, approved);
+              glyphResolver.current!.seedCache(new Map([[noun, approved]]));
               void rememberGlyph(noun, approved).then((saved) => {
                 if (!saved) setGlyphIssue(`The ${noun} doodle is kept for this session, but this browser could not save it for later.`);
               });

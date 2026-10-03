@@ -110,6 +110,24 @@ export class LiveGlyphResolver {
 
   draftFor(noun: string): TegeeraGlyph | undefined { return this.drafts.get(glyphKey(noun)); }
 
+  /** Stage artwork supplied with a scene for review without generating it twice. */
+  stageDraft(noun: string, candidate: unknown): boolean {
+    const key = glyphKey(noun);
+    const parsed = glyphSchema.safeParse(candidate);
+    if (!key || !parsed.success || this.cache.has(key) || this.pack?.has(key)) return false;
+    this.epochs.set(key, (this.epochs.get(key) ?? 0) + 1);
+    this.controllers.get(key)?.abort();
+    this.queued.delete(key);
+    this.queuedVisible.delete(key);
+    const queuedAt = this.queue.indexOf(key);
+    if (queuedAt >= 0) this.queue.splice(queuedAt, 1);
+    this.previews.delete(key);
+    this.editable.delete(key);
+    this.drafts.set(key, parsed.data);
+    this.emit();
+    return true;
+  }
+
   /** Human approval is the only path from a model draft into reusable cache. */
   approve(noun: string): TegeeraGlyph | undefined {
     const key = glyphKey(noun);
