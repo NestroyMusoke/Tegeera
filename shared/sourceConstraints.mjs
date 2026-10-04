@@ -64,11 +64,13 @@ function* explicitPassages(utterance, objects, edges) {
     }
     const subjectName = movingSubjectName(prefix);
     const subject = subjectName ? matchingPhrase(subjectName, objects) : null;
-    const source = subject ?? origin ?? priorMention(prefix, objects, excluded);
+    const payloadName = [...prefix.matchAll(/\b(?:pours?|sends?|pushes?|draws?|carries?|moves?|transports?)\s+(?:(?:a|an|the)\s+)?([a-z][a-z-]*)\s+from\b/g)].at(-1)?.[1];
+    const payload = payloadName ? matchingObject(payloadName, objects) : null;
+    const source = subject ?? payload ?? origin ?? priorMention(prefix, objects, excluded);
     const remainder = utterance.slice(match.index + match[0].length);
     const recipientName = remainder.match(/^\s+into\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/)?.[1]
       ?? [...prefix.matchAll(/\binto\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/g)].at(-1)?.[1];
-    yield { passageName: match[1], passage, source, subjectName, subject, originName, origin, recipientName,
+    yield { passageName: match[1], passage, source, subjectName, subject, payloadName, payload, originName, origin, recipientName,
       recipient: recipientName ? matchingObject(recipientName, objects) : null };
   }
 }
@@ -77,7 +79,7 @@ function* explicitPassages(utterance, objects, edges) {
 export function completeExplicitPassages(text, candidate) {
   if (!candidate || candidate.mode !== "replace" || candidate.confidence < 0.58
     || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return candidate;
-  const specialistKinds = new Set(["contains", "calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates",
+  const specialistKinds = new Set(["calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates",
     "pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"]);
   if (candidate.connections.some((edge) => specialistKinds.has(edge.kind))) return candidate;
   const edges = [...candidate.connections];
@@ -164,9 +166,12 @@ export function sourceConstraintIssue(text, candidate) {
   // A named passage is not equivalent to a direct source-to-whole arrow.
   // Resolve the nearest *named* source in the same clause; if either role is
   // uncertain, avoid imposing a relation that the teacher may not have meant.
-  for (const { passageName, passage, source, subjectName, subject, originName, origin, recipientName, recipient } of explicitPassages(utterance, objects, edges)) {
+  for (const { passageName, passage, source, subjectName, subject, payloadName, payload, originName, origin, recipientName, recipient } of explicitPassages(utterance, objects, edges)) {
     if (subjectName && !subject && candidate.confidence >= 0.58) {
       return `The explanation names ${subjectName} as the moving subject, but that visible role is missing.`;
+    }
+    if (payloadName && !payload && candidate.confidence >= 0.58) {
+      return `The explanation names ${payloadName} as the moving payload, but that visible role is missing.`;
     }
     if (!source && !origin) continue;
     if (!passage) return `The explanation names a passage through ${passageName}, but that visible part is missing.`;

@@ -109,6 +109,7 @@ function visualMotif(blueprint: UniversalSceneBlueprint): VisualMotif | null {
     if (blueprint.objects.some((object) => !edges.some((edge) => edge.from === object.id || edge.to === object.id))) {
       throw new Error("Containment needs every extra object connected to the explanation.");
     }
+    if (blueprint.objects.length > 3 || edges.length > 2) return null;
     return { family: "labelled-container", container: one("contains")[0].from, content: one("contains")[0].to };
   }
   if (edges.some((edge) => edge.kind === "calls" || edge.kind === "returnsControlTo")) {
@@ -202,7 +203,9 @@ const cleanId = (value: string, index: number) => {
   return cleaned || `object-${index + 1}`;
 };
 
-function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections: UniversalSceneBlueprint["connections"], scene: SceneState, extend: boolean) {
+function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections: UniversalSceneBlueprint["connections"], scene: SceneState, extend: boolean,
+  routeable?: (positions: readonly { x: number; y: number }[]) => boolean,
+  orderable?: (positions: readonly { x: number; y: number }[]) => boolean) {
   // An extension may need to add something above an existing top-row object.
   // The shallow third row is reserved for extensions so ordinary dense scenes
   // keep the proven two-row overview grid.
@@ -219,12 +222,20 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
     const matches = scene.entities.filter((entity) => glyphKey(entity.label ?? "") === glyphKey(reference));
     return matches.length === 1 ? matches[0] : undefined;
   };
-  const current: number[] = [];
-  let best: number[] = [];
-  let bestCost = Number.POSITIVE_INFINITY;
-  const place = (index: number, used: number, cost: number) => {
-    if (cost >= bestCost) return;
-    if (index === objects.length) { best = [...current]; bestCost = cost; return; }
+  const collect = (candidateLimit: number) => {
+    const current: number[] = [];
+    const choices: { assignment: number[]; cost: number }[] = [];
+    let worstCost = Number.POSITIVE_INFINITY;
+    const place = (index: number, used: number, cost: number) => {
+    if (cost >= worstCost) return;
+    if (index === objects.length) {
+      if (orderable && !orderable(current.map((slotIndex) => available[slotIndex]))) return;
+      choices.push({ assignment: [...current], cost });
+      choices.sort((left, right) => left.cost - right.cost);
+      if (choices.length > candidateLimit) choices.pop();
+      if (choices.length === candidateLimit) worstCost = choices.at(-1)!.cost;
+      return;
+    }
     for (let slotIndex = 0; slotIndex < available.length; slotIndex += 1) {
       if (used & (1 << slotIndex)) continue;
       const slot = available[slotIndex];
@@ -259,10 +270,18 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
       current[index] = slotIndex;
       place(index + 1, used | (1 << slotIndex), nextCost);
     }
+    };
+    place(0, 0, 0);
+    return choices;
   };
-  place(0, 0, 0);
-  if (best.length !== objects.length) throw new Error("The spatial relationships cannot fit clearly on this canvas.");
-  return best.map((index) => available[index]);
+  const first = collect(1)[0];
+  if (first && (!routeable || routeable(first.assignment.map((index) => available[index])))) {
+    return first.assignment.map((index) => available[index]);
+  }
+  const best = routeable && first ? collect(128).find(({ assignment }) =>
+    routeable(assignment.map((index) => available[index]))) : undefined;
+  if (!best) throw new Error("The spatial relationships cannot fit; an arrow or caption cannot be placed clearly on this canvas.");
+  return best.assignment.map((index) => available[index]);
 }
 
 /** Converts untrusted high-level model output into deterministic, validator-safe DoodleScript. */
@@ -302,11 +321,63 @@ export function compileUniversalScene(
     }
     newIds.add(object.id);
   }
-  const positions = assignedSlots(blueprint.objects, blueprint.connections, scene, blueprint.mode === "extend");
+  const earlyObjects = [...(blueprint.mode === "extend" ? scene.entities : []), ...blueprint.objects];
+  const resolveEarly = (reference: string) => earlyObjects.find(({ id }) => id === reference)?.id
+    ?? (() => {
+      const matches = earlyObjects.filter(({ label }) => glyphKey(label ?? "") === glyphKey(reference));
+      return matches.length === 1 ? matches[0].id : undefined;
+    })();
+  for (const connection of blueprint.connections) {
+    const from = resolveEarly(connection.from); const to = resolveEarly(connection.to);
+    if (!from || !to || from === to) {
+      throw new Error("A visual relationship referred to a missing or ambiguous object. Please try again.");
+    }
+  }
   const sceneDensity = blueprint.objects.length + (blueprint.mode === "extend" ? scene.entities.length : 0);
   // Eight distinct positions already have 240 scene units between columns;
   // shrinking every glyph further made dense phone overviews unreadable.
   const visualScale = sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 1;
+  const mixedContainment = (blueprint.objects.length > 3 || blueprint.connections.length > 2)
+    && blueprint.connections.some((edge) => edge.kind === "contains");
+  const isGenericLink = (edge: UniversalSceneBlueprint["connections"][number]) =>
+    !edge.kind || edge.kind === "relatesTo" || (mixedContainment && edge.kind === "contains");
+  const hasGenericLinks = blueprint.mode === "replace" && blueprint.connections.some(isGenericLink);
+  // Four canvas columns can preserve a small diagram's model-provided order.
+  // Denser graphs must wrap; explicit spatial predicates remain hard constraints.
+  const orderable = hasGenericLinks && blueprint.objects.length <= columns.length
+    ? (positions: readonly { x: number; y: number }[]) => {
+      for (let first = 0; first < blueprint.objects.length; first += 1) {
+        for (let second = first + 1; second < blueprint.objects.length; second += 1) {
+          for (const axis of ["x", "y"] as const) {
+            const original = blueprint.objects[first][axis] - blueprint.objects[second][axis];
+            const explicitlyOrdered = blueprint.connections.some((edge) => spatialOrder(edge.label)?.axis === axis
+              && [edge.from, edge.to].some((id) => id === blueprint.objects[first].id || id === blueprint.objects[second].id));
+            if (explicitlyOrdered) continue;
+            if (Math.abs(original) < 8) {
+              if (positions[first][axis] !== positions[second][axis]) return false;
+              continue;
+            }
+            if (Math.sign(positions[first][axis] - positions[second][axis]) !== Math.sign(original)) return false;
+          }
+        }
+      }
+      return true;
+    } : undefined;
+  const routeable = hasGenericLinks
+    ? (positions: readonly { x: number; y: number }[]) => {
+      const stagedEntities: SceneEntity[] = blueprint.objects.map((object, index) => ({
+        id: object.id, label: object.label, kind: object.kind, ...positions[index], scale: visualScale,
+        direction: "right", highlighted: false
+      }));
+      const stagedRelations = blueprint.connections.filter(isGenericLink)
+        .map((edge, index) => ({ id: `staged-${index}`, kind: "relatesTo" as const,
+          sourceIds: [edge.from], targetIds: [edge.to], predicate: edge.label }));
+      if (stagedRelations.some((edge) => edge.sourceIds[0] === edge.targetIds[0]
+        || !stagedEntities.some(({ id }) => id === edge.sourceIds[0])
+        || !stagedEntities.some(({ id }) => id === edge.targetIds[0]))) return true;
+      return [...universalSceneEdges(stagedRelations, stagedEntities).values()].every(Boolean);
+    } : undefined;
+  const positions = assignedSlots(blueprint.objects, blueprint.connections, scene, blueprint.mode === "extend", routeable, orderable);
   const commands: DoodleCommand[] = [];
   if (blueprint.mode === "replace") commands.push({ action: "clear" });
 
@@ -354,7 +425,8 @@ export function compileUniversalScene(
       relationId = `universal-relation-${index + 1}-${suffix++}`;
     }
     commands.push({ action: "relate", relation: {
-      id: relationId, kind: connection.kind ?? "relatesTo", sourceIds: [sourceId], targetIds: [targetId],
+      id: relationId, kind: mixedContainment && connection.kind === "contains" ? "relatesTo" : connection.kind ?? "relatesTo",
+      sourceIds: [sourceId], targetIds: [targetId],
       predicate: connection.label.trim(),
       ...(viaId ? { objectIds: [viaId] } : {})
     } });

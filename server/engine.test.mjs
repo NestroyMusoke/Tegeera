@@ -304,6 +304,29 @@ test("an explicit passage path is completed locally without a second model call"
   assert.deepEqual(result.candidate.connections[1], { from: "chute", to: "warehouse", label: "enters" });
 });
 
+test("a carried payload can pass through a named part while its origin contains it", async () => {
+  const labels = ["teacher", "sack", "flour", "sieve", "bowl", "gauge"];
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: labels.map((label, index) => ({ id: `n${index}`, label, kind: "generic", x: 10 + index * 15, y: 50 })),
+    connections: [
+      { from: "n1", to: "n2", label: "contains", kind: "contains" },
+      { from: "n0", to: "n2", label: "pours" },
+      { from: "n2", to: "n3", label: "through" },
+      { from: "n3", to: "n4", label: "into" },
+      { from: "n5", to: "n4", label: "measures" }
+    ] };
+  const text = "A teacher pours flour from a sack through a sieve into a bowl while a gauge measures the bowl.";
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify(candidate) } }]
+  }), { status: 200 }); };
+  const result = await interpretScene({ text, scene }, nebius, { fetchImpl });
+  assert.equal(calls, 1);
+  assert.equal(result.candidate.connections.some(({ from, to }) => from === "n1" && to === "n3"), true);
+  assert.equal(result.candidate.connections.some(({ from, to }) => from === "n2" && to === "n3"), true);
+  assert.equal(sceneValidationIssue(result.candidate, scene, text), null);
+});
+
 test("explicit relationship contracts reject confident generic arrows without fixing the nouns", () => {
   const make = (names, connections, confidence = 0.9) => ({ blueprintVersion: "1.0", mode: "replace", confidence,
     objects: names.map((label, index) => ({ id: `role-${index}`, label, kind: "generic", x: 18 + index * 27, y: 42 })),

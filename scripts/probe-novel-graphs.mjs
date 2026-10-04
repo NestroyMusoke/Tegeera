@@ -16,6 +16,7 @@ const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name)
 const count = Number(option("--count", "4"));
 const seed = Number(option("--seed", "20260928"));
 const specificId = option("--id", "");
+const corpusFile = option("--corpus", join(root, "evaluation", "novel-graph-probes.json"));
 const replayCandidate = option("--replay-candidate", "");
 const excluded = new Set(option("--exclude", "").split(",").filter(Boolean));
 if (!Number.isInteger(count) || count < 1 || count > 5 || !Number.isInteger(seed)) {
@@ -26,7 +27,7 @@ if (replayCandidate && (!specificId || count !== 1)) {
 }
 const configuration = replayCandidate ? null : modelConfiguration();
 if (!replayCandidate && configuration?.provider !== "nebius") throw new Error("This probe requires an ignored private Nebius key; no call was made.");
-const corpus = JSON.parse(await readFile(join(root, "evaluation", "novel-graph-probes.json"), "utf8"));
+const corpus = JSON.parse(await readFile(resolve(corpusFile), "utf8"));
 const shuffled = [...corpus.cases];
 let state = seed >>> 0;
 for (let index = shuffled.length - 1; index > 0; index -= 1) {

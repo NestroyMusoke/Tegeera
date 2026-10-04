@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh multi-clause holdouts. Gold roles and links are local scoring data, never model prompts. Directed endpoints do not certify visual fidelity.",
+  "cases": [
+    { "id": "c1", "text": "A pump draws water from a tank through a filter into a greenhouse, while a sensor measures the tank level.", "roles": ["pump", "water", "tank", "filter", "greenhouse", "sensor"], "links": [["tank", "water"], ["water", "filter"], ["filter", "greenhouse"], ["sensor", "tank"]] },
+    { "id": "c2", "text": "A bicycle chain transfers motion from the pedals to the rear wheel while a brake presses against the wheel to slow it.", "roles": ["chain", "pedals", "rear wheel", "brake"], "links": [["pedals", "chain"], ["chain", "rear wheel"], ["brake", "rear wheel"]] },
+    { "id": "c3", "text": "A student pours sand from a bucket through a funnel into a jar while a scale measures the jar's mass.", "roles": ["student", "sand", "bucket", "funnel", "jar", "scale"], "links": [["student", "sand"], ["bucket", "funnel"], ["sand", "funnel"], ["funnel", "jar"], ["scale", "jar"]] },
+    { "id": "c4", "text": "As a comet approaches the sun, its icy surface releases gas that forms a tail pointing away from the sun.", "roles": ["comet", "sun", "surface", "gas", "tail"], "links": [["comet", "sun"], ["surface", "gas"], ["gas", "tail"]] },
+    { "id": "c5", "text": "A river passes beneath a bridge, turns around a hill, then empties into a lake beside a village.", "roles": ["river", "bridge", "hill", "lake", "village"], "links": [["river", "bridge"], ["river", "hill"], ["river", "lake"]] },
+    { "id": "c6", "text": "A bee collects nectar from a flower, carries it to a hive, and a second bee guards the hive entrance.", "roles": ["bee", "nectar", "flower", "hive", "entrance"], "links": [["flower", "nectar"], ["bee", "nectar"], ["bee", "hive"]] }
+  ]
+}

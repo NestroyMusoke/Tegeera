@@ -73,6 +73,49 @@ describe("universal visual scene compiler", () => {
     expect(html).toContain('aria-label="stone beneath mushroom"');
   });
 
+  it("searches another safe slot arrangement when a dense five-role route blocks captions", () => {
+    const labels = ["stream", "arch", "mound", "pool", "hut"];
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: labels.map((label, index) => ({ id: `n${index}`, label, kind: "generic",
+        x: [20, 20, 60, 80, 100][index], y: [40, 80, 40, 20, 20][index] })),
+      connections: [
+        { from: "n0", to: "n1", label: "passes beneath" },
+        { from: "n0", to: "n2", label: "turns around" },
+        { from: "n0", to: "n3", label: "empties into" },
+        { from: "n3", to: "n4", label: "beside" }
+      ] };
+    const script = compileUniversalScene(plan, initialScene,
+      "A stream passes beneath an arch, turns around a mound, then empties into a pool beside a hut.");
+    const scene = applyDoodleScript(initialScene, script);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    expect(scene.entities.find(({ label }) => label === "stream")!.y)
+      .toBeGreaterThan(scene.entities.find(({ label }) => label === "arch")!.y);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html.match(/data-visual-cue="semantic-connection"/g)).toHaveLength(4);
+    expect(html).toContain('aria-label="pool beside hut"');
+    expect(html).toContain('class="universal-relation-spatial"');
+  });
+
+  it("keeps a moving payload and named passage in a six-role containment explanation", () => {
+    const labels = ["teacher", "sack", "flour", "sieve", "bowl", "gauge"];
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: labels.map((label, index) => ({ id: `n${index}`, label, kind: "generic",
+        x: [10, 25, 40, 55, 70, 85][index], y: 50 })),
+      connections: [
+        { from: "n1", to: "n2", label: "contains", kind: "contains" },
+        { from: "n0", to: "n2", label: "pours" },
+        { from: "n2", to: "n3", label: "through" },
+        { from: "n3", to: "n4", label: "into" },
+        { from: "n5", to: "n4", label: "measures" }
+      ] };
+    const text = "A teacher pours flour from a sack through a sieve into a bowl while a gauge measures the bowl.";
+    const script = compileUniversalScene(plan, initialScene, text);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    expect(scene.relations?.some(({ sourceIds, targetIds }) => sourceIds[0] === "n1" && targetIds[0] === "n3")).toBe(true);
+    expect(scene.relations?.some(({ sourceIds, targetIds }) => sourceIds[0] === "n2" && targetIds[0] === "n3")).toBe(true);
+  });
+
   it("does not silently draw mutually contradictory directional relationships", () => {
     const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
       objects: [
