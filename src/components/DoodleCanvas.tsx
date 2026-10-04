@@ -33,7 +33,7 @@ import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
-import { universalSceneEdges } from "../doodlescript/universalEdge";
+import { readableRelationLabel, universalSceneEdges } from "../doodlescript/universalEdge";
 import { spatialOrder } from "../doodlescript/spatialOrder";
 import { forceOverviewFrame, measuredArtFrame, overviewFrame } from "./overviewFraming";
 
@@ -985,7 +985,7 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
   if (relation.kind === "relatesTo") {
     const geometry = genericEdges.get(relation.id);
     if (!geometry) return null;
-    const label = relation.predicate ?? "relates to";
+    const label = readableRelationLabel(relation.predicate);
     return <g className="universal-relation" aria-label={`${geometry.source.label} ${label} ${geometry.target.label}`}
       data-visual-cue="semantic-connection" data-route={geometry.route}>
       <path className={spatialOrder(label) ? "universal-relation-spatial" : "universal-relation-flow"}

@@ -42,6 +42,16 @@ function movingSubject(prefix, objects) {
   return subject ? matchingPhrase(subject, objects) : null;
 }
 
+function explicitTravelRoute(utterance, objects) {
+  const match = utterance.match(/^\s*(?:(?:a|an|the)\s+)?([a-z][a-z -]{0,39}?)\s+(?:carries|transports|brings|takes|moves|pushes|pulls)\b.{1,65}?\bacross\s+(?:(?:a|an|the)\s+)?([a-z][a-z-]*)\b.{0,45}?\bto\s+(?:(?:a|an|the)\s+)?([a-z][a-z-]*)\b/);
+  if (!match) return null;
+  const actor = matchingPhrase(match[1], objects);
+  const passage = matchingObject(match[2], objects);
+  const destination = matchingObject(match[3], objects);
+  return actor && passage && destination && new Set([actor.id, passage.id, destination.id]).size === 3
+    ? { actor, passage, destination } : null;
+}
+
 function* explicitPassages(utterance, objects, edges) {
   for (const match of utterance.matchAll(/\bthrough\s+(?:(?:its|their|the|a|an|his|her)\s+)?([a-z][a-z-]*)\b/g)) {
     const passage = matchingObject(match[1], objects);
@@ -73,6 +83,21 @@ export function completeExplicitPassages(text, candidate) {
   const edges = [...candidate.connections];
   let changed = false;
   const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");
+  const route = explicitTravelRoute(utterance, candidate.objects);
+  if (route && edges.some((edge) => edge.from === route.actor.id && edge.to === route.passage.id)
+    && edges.some((edge) => edge.from === route.passage.id && edge.to === route.destination.id)) {
+    // A complete actor -> passage -> destination path already communicates
+    // arrival. A direct shortcut is redundant and often collides with the
+    // two essential arrows, so compact only this explicitly grounded route.
+    for (let index = edges.length - 1; index >= 0; index -= 1) {
+      const edge = edges[index];
+      if (edge.from === route.actor.id && edge.to === route.destination.id
+        && (!edge.kind || edge.kind === "relatesTo")
+        && /^(?:reaches|arrives? at|goes to|travels to)$/i.test(edge.label?.trim() ?? "")) {
+        edges.splice(index, 1); changed = true;
+      }
+    }
+  }
   for (const { source, passage, origin, recipient } of explicitPassages(utterance, candidate.objects, edges)) {
     // "Rain from roof" names the moving thing's starting location. A model
     // sometimes invents roof→rain "feeds", or emits a bare "from" arrow.
@@ -177,6 +202,20 @@ export function sourceConstraintIssue(text, candidate) {
   // A confident generic arrow is not a substitute for the described graph.
   if (candidate.mode !== "replace" || candidate.confidence < 0.58
     || /\b(?:not|never|without|cannot|can't|doesn't|didn't)\b/.test(utterance)) return null;
+  // With an explicit agent and route, a carried/transported object's own
+  // movement does not replace the named agent's path. Resolve only unique
+  // visible noun phrases; ambiguous clauses remain for the model to judge.
+  const route = explicitTravelRoute(utterance, objects);
+  if (route) {
+    const { actor, passage, destination } = route;
+      if (!edges.some((edge) => edge.from === actor.id && edge.to === passage.id)) {
+        return `The named actor ${actor.id} travels across ${passage.id}; the carried object alone cannot replace its route.`;
+      }
+      if (!edges.some((edge) => edge.to === destination.id
+        && (edge.from === actor.id || edge.from === passage.id))) {
+        return `The named actor ${actor.id} goes to ${destination.id}; show its destination either directly or through the named passage.`;
+      }
+  }
   const has = (kind) => edges.some((edge) => edge.kind === kind);
   const labelledHolder = /\b(?:is|acts as|behaves like)\b.{0,60}\b(?:labeled|labelled)\b.{0,35}\b(?:holds?|contains?|stores?)\b/.test(utterance);
   if (labelledHolder && !has("contains")) {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SceneEntity, SceneRelation } from "./schema";
 import { entityVisualGeometry } from "./entityGeometry";
-import { universalEdgeGeometry, universalSceneEdges } from "./universalEdge";
+import { attractionMotion, readableRelationLabel, universalEdgeGeometry, universalSceneEdges } from "./universalEdge";
 
 const entity = (id: string, x: number, y: number): SceneEntity => ({
   id, label: id, kind: "generic", x, y, scale: 1, direction: "right", highlighted: false
@@ -11,6 +11,24 @@ const edge = (from: string, to: string): SceneRelation => ({
 });
 
 describe("source-to-target connector geometry", () => {
+  it("renders model camelCase relation labels as readable captions", () => {
+    expect(readableRelationLabel("passesThrough")).toBe("passes through");
+    expect(readableRelationLabel("leadsTo")).toBe("leads to");
+  });
+  it("shows a pulled or attracted object's motion toward the actor without reversing graph semantics", () => {
+    const magnet = entity("magnet", 70, 50);
+    const nail = entity("nail", 30, 50);
+    for (const predicate of ["pulls", "attracts"]) {
+      const geometry = universalEdgeGeometry({ ...edge("magnet", "nail"), predicate }, [magnet, nail])!;
+      expect(geometry.source.id).toBe("magnet");
+      expect(geometry.target.id).toBe("nail");
+      expect(geometry.start.x).toBeLessThan(geometry.end.x);
+      expect(geometry.end.x).toBeLessThan(magnet.x * 10);
+    }
+    expect(attractionMotion("pushes")).toBe(false);
+    const push = universalEdgeGeometry({ ...edge("magnet", "nail"), predicate: "pushes" }, [magnet, nail])!;
+    expect(push.start.x).toBeGreaterThan(push.end.x);
+  });
   it("clips the arrow to the target silhouette in either direction", () => {
     const entities = [entity("left", 20, 40), entity("right", 80, 40)];
     const forward = universalEdgeGeometry(edge("left", "right"), entities)!;

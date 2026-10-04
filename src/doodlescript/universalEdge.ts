@@ -43,6 +43,17 @@ function intersects(a: Point, b: Point, box: Box): boolean {
 
 const length = (a: Point, b: Point) => Math.hypot(b.x - a.x, b.y - a.y);
 
+/** A relation's grammatical actor is not always the moving object. An
+ * attraction moves the patient toward the actor, so its motion cue runs back
+ * toward the actor while the graph retains actor -> patient semantics. */
+export const attractionMotion = (predicate?: string): boolean =>
+  /^(?:pull|pulls|pulling|attract|attracts|attracting)\b/i.test(predicate?.trim() ?? "");
+
+/** Model relation IDs occasionally arrive as camelCase; captions are prose. */
+export const readableRelationLabel = (predicate?: string): string =>
+  (predicate ?? "relates to").replace(/([a-z])([A-Z])/g, (_, first: string, second: string) =>
+    `${first} ${second.toLowerCase()}`).trim();
+
 export interface UniversalEdgeGeometry {
   source: SceneEntity;
   target: SceneEntity;
@@ -88,9 +99,12 @@ function crossing(a: Point, b: Point, c: Point, d: Point): { point: Point; overl
 export function universalEdgeGeometry(relation: SceneRelation, entities: readonly SceneEntity[],
   reserved: readonly UniversalEdgeGeometry[] = []): UniversalEdgeGeometry | null {
   if (relation.kind !== "relatesTo" || relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) return null;
-  const source = entities.find((entity) => entity.id === relation.sourceIds[0]);
-  const target = entities.find((entity) => entity.id === relation.targetIds[0]);
-  if (!source || !target || source.id === target.id) return null;
+  const actor = entities.find((entity) => entity.id === relation.sourceIds[0]);
+  const patient = entities.find((entity) => entity.id === relation.targetIds[0]);
+  if (!actor || !patient || actor.id === patient.id) return null;
+  const reversedMotion = attractionMotion(relation.predicate);
+  const source = reversedMotion ? patient : actor;
+  const target = reversedMotion ? actor : patient;
   const startCenter = center(source); const endCenter = center(target);
   const sourceBox = obstacle(source); const targetBox = obstacle(target);
   const blockers = entities.filter((entity) => entity.id !== source.id && entity.id !== target.id).map(obstacle);
@@ -132,7 +146,7 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
     if ((afterStart.x - start.x) * (start.x - startCenter.x) + (afterStart.y - start.y) * (start.y - startCenter.y) <= 0
       || (end.x - beforeEnd.x) * (endCenter.x - end.x) + (end.y - beforeEnd.y) * (endCenter.y - end.y) <= 0
       || length(beforeEnd, end) < 18) continue;
-    const labelWidth = Math.max(56, (relation.predicate ?? "relates to").length * 8 + 16);
+    const labelWidth = Math.max(56, readableRelationLabel(relation.predicate).length * 8 + 16);
     const halfWidth = labelWidth / 2;
     const occupied = [sourceBox, targetBox, ...blockers];
     let label: Point | undefined;
@@ -174,7 +188,7 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
   const uy = (end.y - beforeEnd.y) / segmentLength;
   const normal = { x: -uy * 9, y: ux * 9 };
   const arrow = `M${end.x - ux * 14 + normal.x} ${end.y - uy * 14 + normal.y} L${end.x} ${end.y} L${end.x - ux * 14 - normal.x} ${end.y - uy * 14 - normal.y}`;
-  return { source, target, path: points.map((point, index) => `${index ? "L" : "M"}${point.x} ${point.y}`).join(" "),
+  return { source: actor, target: patient, path: points.map((point, index) => `${index ? "L" : "M"}${point.x} ${point.y}`).join(" "),
     arrow, labelX: best.label.x, labelY: best.label.y, labelWidth: best.labelWidth,
     route: best.route, start: points[0], end, points };
 }

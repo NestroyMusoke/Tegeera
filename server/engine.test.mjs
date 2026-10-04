@@ -377,6 +377,31 @@ test("ordinary carrying is a generic open relation, not a broken transport-loop 
   assert.match(sceneValidationIssue(loop, scene), /typed connection|specialist|transport loop/);
 });
 
+test("an explicit carrier stays the traveler across a route and to its destination", () => {
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+    objects: ["robot", "box", "bridge", "workshop"].map((label, index) => ({
+      id: `n${index}`, label, kind: "generic", x: 10 + index * 25, y: 50
+    })),
+    connections: [{ from: "n0", to: "n1", label: "carries" },
+      { from: "n1", to: "n2", label: "crosses" }, { from: "n1", to: "n3", label: "arrives at" }] };
+  const text = "A robot carries a box across a bridge to a workshop.";
+  assert.match(sceneValidationIssue(candidate, scene, text), /actor.*travels across/);
+  const passageCorrected = { ...candidate, connections: [...candidate.connections,
+    { from: "n0", to: "n2", label: "crosses" }] };
+  assert.match(sceneValidationIssue(passageCorrected, scene, text), /actor.*goes to/);
+  const chained = { ...passageCorrected, connections: [...passageCorrected.connections,
+    { from: "n2", to: "n3", label: "leads to" }] };
+  assert.equal(sceneValidationIssue(chained, scene, text), null);
+  const corrected = { ...passageCorrected, connections: [...passageCorrected.connections,
+    { from: "n0", to: "n3", label: "travels to" }] };
+  assert.equal(sceneValidationIssue(corrected, scene, text), null);
+  const compacted = completeExplicitPassages(text, { ...chained, connections: [...chained.connections,
+    { from: "n0", to: "n3", label: "reaches" }] });
+  assert.equal(compacted.connections.some((edge) => edge.from === "n0" && edge.to === "n3"), false);
+  assert.equal(compacted.connections.length, chained.connections.length);
+  assert.equal(sceneValidationIssue(candidate, scene, "A robot carries a box."), null);
+});
+
 test("an explicit passage omission is repaired deterministically before another model call", async () => {
   const first = { ...complete, connections: [{ from: "water", to: "plant", label: "flows into", kind: "flowsInto" },
     { from: "roots", to: "plant", label: "part of", kind: "partOf" }] };
