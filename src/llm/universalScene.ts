@@ -19,7 +19,7 @@ import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { spatialOrder } from "../doodlescript/spatialOrder";
 import { completeExplicitPassages, sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
-import { normalizeOrdinaryCarry } from "../../shared/normalizeBlueprint.mjs";
+import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry } from "../../shared/normalizeBlueprint.mjs";
 
 export interface UniversalGlyphSources {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
@@ -269,7 +269,7 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
 export function compileUniversalScene(
   candidate: unknown, scene: SceneState, sourceText: string, glyphSources: UniversalGlyphSources = {}
 ): DoodleScript {
-  candidate = completeExplicitPassages(sourceText, normalizeOrdinaryCarry(candidate));
+  candidate = completeExplicitPassages(sourceText, normalizeOrdinaryCarry(normalizeOptionalTypedKinds(candidate)));
   const hydrated = typeof candidate === "object" && candidate !== null && !Array.isArray(candidate)
     ? {
       ...candidate,

@@ -134,6 +134,50 @@ describe("universal visual scene compiler", () => {
       { from: "tank", to: "juice", label: "originates from" }
     ] }, initialScene, text)).toThrow(/reversing the stated source/);
   });
+  it("does not turn a bare from edge into a false process arrow in a complete passage graph", () => {
+    const text = "Ink flows from a bottle into a cup through a nozzle";
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.91,
+      objects: ["bottle", "ink", "nozzle", "cup"].map((id, index) => ({
+        id, label: id, kind: "generic", x: 15 + index * 22, y: 50
+      })), connections: [
+        { from: "bottle", to: "ink", label: "from" },
+        { from: "ink", to: "nozzle", label: "through" },
+        { from: "nozzle", to: "cup", label: "into" },
+        { from: "bottle", to: "nozzle", label: "leads through" }
+      ] };
+    const script = compileUniversalScene(plan, initialScene, text);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const relations = applyDoodleScript(initialScene, script).relations ?? [];
+    expect(relations.some((relation) => relation.predicate === "from")).toBe(false);
+    expect(relations).toHaveLength(3);
+    expect(relations.some((relation) => relation.sourceIds[0] === "bottle"
+      && relation.targetIds[0] === "nozzle")).toBe(true);
+  });
+  it("rejects a confident passage plan that silently drops the named moving subject", () => {
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.91,
+      objects: ["bottle", "nozzle", "cup"].map((id, index) => ({
+        id, label: id, kind: "generic", x: 20 + index * 30, y: 50
+      })), connections: [
+        { from: "bottle", to: "nozzle", label: "leads through" },
+        { from: "nozzle", to: "cup", label: "enters" }
+      ] };
+    expect(() => compileUniversalScene(plan, initialScene,
+      "Ink flows from a bottle into a cup through a nozzle"))
+      .toThrow(/ink as the moving subject.*missing/);
+  });
+  it("preserves an ordinary verb when the model attaches an incompatible optional link type", () => {
+    const script = compileUniversalScene({
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "a", label: "rotor", kind: "generic", x: 20, y: 50 },
+        { id: "b", label: "blade", kind: "generic", x: 80, y: 50 }
+      ], connections: [{ from: "a", to: "b", label: "spins", kind: "flowsInto" }]
+    }, initialScene, "A rotor spins a blade");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    expect(applyDoodleScript(initialScene, script).relations?.[0]).toMatchObject({
+      kind: "relatesTo", predicate: "spins"
+    });
+  });
   it("does not draw a labelled holder under a different named subject", () => {
     const incorrect = {
       blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
@@ -278,10 +322,13 @@ describe("universal visual scene compiler", () => {
     expect(byLabel.get("vent")!.x).toBeLessThan(byLabel.get("machine")!.x);
   });
 
-  it("does not let a model relabel a typed visual meaning", () => {
-    expect(() => compileUniversalScene({ ...blueprint,
+  it("never paints an unsupported typed meaning over the model's ordinary verb", () => {
+    const ordinary = compileUniversalScene({ ...blueprint,
       connections: [{ from: "flying-dragon", to: "tiny-village", label: "eats", kind: "partOf" }]
-    }, initialScene, "A dragon eats a village")).toThrow(/incomplete visual blueprint/);
+    }, initialScene, "A dragon eats a village");
+    expect(applyDoodleScript(initialScene, ordinary).relations?.[0]).toMatchObject({
+      kind: "relatesTo", predicate: "eats"
+    });
     expect(() => compileUniversalScene({ ...blueprint,
       connections: [{ from: "flying-dragon", to: "tiny-village", label: "flies over", kind: "unsupported" }]
     }, initialScene, "A dragon flies over a village")).toThrow(/incomplete visual blueprint/);

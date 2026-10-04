@@ -12,3 +12,28 @@ export function normalizeOrdinaryCarry(candidate) {
     return ordinaryEdge;
   }) };
 }
+
+const typedLabels = Object.freeze({
+  partOf: "part of", flowsInto: "flows into", illuminates: "illuminates",
+  before: "before", causes: "causes", contains: "contains", calls: "calls",
+  returnsControlTo: "returnsTo", risesTo: "risesTo", fallsFrom: "fallsFrom",
+  accelerates: "accelerates", pumpsTo: "pumps to", returnsTo: "returns to",
+  carries: "carries", appliedTo: "applied to", opposes: "opposes", contacts: "contacts"
+});
+
+/** Optional type claims never override the model's more specific relationship.
+ * Unknown kinds and transport links with a payload still fail validation. */
+export function normalizeOptionalTypedKinds(candidate) {
+  if (!candidate || typeof candidate !== "object" || !Array.isArray(candidate.connections)) return candidate;
+  let changed = false;
+  const connections = candidate.connections.map((edge) => {
+    if (!edge || typeof edge !== "object" || !Object.hasOwn(typedLabels, edge.kind)
+      || edge.via !== undefined || typeof edge.label !== "string"
+      || edge.label.trim().toLowerCase() === typedLabels[edge.kind].toLowerCase()) return edge;
+    changed = true;
+    const truthfulEdge = { ...edge };
+    delete truthfulEdge.kind;
+    return truthfulEdge;
+  });
+  return changed ? { ...candidate, connections } : candidate;
+}

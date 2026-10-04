@@ -10,7 +10,7 @@
     "test": "vitest run --exclude src/evaluation/runtimeEnvelope.test.tsx --no-file-parallelism",
     "test:performance": "vitest run src/evaluation/runtimeEnvelope.test.tsx --maxWorkers=1",
     "test:glyph-pack": "node --test scripts/build-glyph-pack.node-spec.mjs scripts/quickdraw-candidates.node-spec.mjs scripts/quickdraw-batch.node-spec.mjs scripts/quickdraw-vision-triage.node-spec.mjs",
-    "test:hosted-eval": "node --test scripts/score-blueprint-gold.node-spec.mjs scripts/render-hosted-gold.node-spec.mjs scripts/score-novel-graphs.node-spec.mjs scripts/visual-probe-audit.node-spec.mjs scripts/nebius-visual-audit.node-spec.mjs",
+    "test:hosted-eval": "node --test scripts/score-blueprint-gold.node-spec.mjs scripts/render-hosted-gold.node-spec.mjs scripts/score-novel-graphs.node-spec.mjs scripts/visual-probe-audit.node-spec.mjs scripts/nebius-visual-audit.node-spec.mjs scripts/probe-novel-graphs.node-spec.mjs",
     "audit:visual": "node scripts/nebius-visual-audit.mjs",
     "eval:hosted-gold": "node scripts/evaluate-hosted-gold.mjs",
     "benchmark:nebius-latency": "node --env-file=server/.env.local scripts/benchmark-nebius-reasoning.mjs",

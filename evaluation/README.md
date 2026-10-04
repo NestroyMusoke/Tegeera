@@ -1,5 +1,11 @@
 # Language evaluation
 
+## Live test → exact replay
+
+Run one bounded live novel-graph probe with `node --env-file=server/.env.local scripts/probe-novel-graphs.mjs --count 1 --seed <integer> --out .visual-check/live-probe.json`. It saves the provider's validated blueprint as `.visual-check/live-probe-render/<id>-candidate.json` and renders the real canvas. The ignored output contains no API key, but can contain teacher text; do not commit it. Record role/link coverage, visual placeholders, actual image quality, and provider time separately.
+
+After a code change, rerun **the exact captured response without a model call**: `node scripts/probe-novel-graphs.mjs --id <id> --count 1 --replay-candidate .visual-check/live-probe-render/<id>-candidate.json --out .visual-check/replay.json`. The replay report distinguishes zero provider attempts from live latency and lists the effective links used by the renderer. A complete graph or a valid SVG is not a human visual approval. Inspect the rendered image before claiming improvement.
+
 `synthetic-language-holdout.json` is a versioned conformance corpus kept outside the production grammar. It checks accepted meanings, expected predicates, valid DoodleScript output, safe clarification, and false-confident acceptance.
 
 It is deliberately labelled **synthetic**. Passing it proves regression behavior for its declared examples; it does not estimate accuracy for real classrooms. A credible accuracy number requires consented, de-identified utterances from teachers who did not author the grammar, frozen before scoring.

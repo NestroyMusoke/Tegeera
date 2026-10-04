@@ -219,7 +219,8 @@ test("source grounding detects omitted passage arrows and incomplete opposing fo
   const repaired = { ...passage, connections: passage.connections.map((link) =>
     link.from === "fuel" ? { ...link, to: "inlet" } : link.from === "air" ? { ...link, to: "vent" } : link) };
   assert.equal(sceneValidationIssue(repaired, scene, sentence), null);
-  assert.equal(sceneValidationIssue(repaired, scene, "A cloud moves through the sky"), null);
+  assert.match(sceneValidationIssue(repaired, scene, "A cloud moves through the sky"),
+    /cloud as the moving subject.*missing/);
 
   const twoStage = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
     objects: ["cargo", "chute", "warehouse"].map((id, index) => ({ id, label: id, kind: "generic", x: 15 + index * 30, y: 50 })),
@@ -241,6 +242,28 @@ test("source grounding detects omitted passage arrows and incomplete opposing fo
     { from: "gutter", to: "barrel", label: "flows into", kind: "flowsInto" }
   ] }, scene, "Water flows from a roof into a barrel through a gutter")?.includes("origin to the named passage"), true);
   assert.equal(sceneValidationIssue(repairedDetour, scene, "Water flows from a roof into a barrel through a gutter"), null);
+  const modelDetour = { ...detour, connections: [
+    { from: "roof", to: "water", label: "from" },
+    { from: "water", to: "gutter", label: "through" },
+    { from: "gutter", to: "barrel", label: "into" },
+    { from: "roof", to: "gutter", label: "leads through" }
+  ] };
+  const normalizedDetour = completeExplicitPassages("Water flows from a roof into a barrel through a gutter", modelDetour);
+  assert.deepEqual(normalizedDetour.connections.map(({ from, to }) => [from, to]), [
+    ["water", "gutter"], ["gutter", "barrel"], ["roof", "gutter"]
+  ]);
+  const inventedFeed = completeExplicitPassages("Water flows from a roof into a barrel through a gutter",
+    { ...modelDetour, connections: modelDetour.connections.map((edge) => edge.label === "from"
+      ? { ...edge, label: "feeds" } : edge) });
+  assert.deepEqual(inventedFeed.connections.map(({ from, to }) => [from, to]), [
+    ["water", "gutter"], ["gutter", "barrel"], ["roof", "gutter"]
+  ]);
+  assert.equal(sceneValidationIssue(normalizedDetour, scene, "Water flows from a roof into a barrel through a gutter"), null);
+  assert.match(sceneValidationIssue({ ...normalizedDetour, objects: normalizedDetour.objects.filter(({ id }) => id !== "water"),
+    connections: normalizedDetour.connections.filter((edge) => edge.from !== "water" && edge.to !== "water") },
+  scene, "Water flows from a roof into a barrel through a gutter"), /water as the moving subject.*missing/);
+  assert.equal(completeExplicitPassages("A roof supplies water through a gutter",
+    { ...modelDetour, connections: [{ from: "roof", to: "water", label: "supplies" }] }).connections[0].label, "supplies");
   assert.match(sceneValidationIssue({ ...repairedDetour, connections: [
     ...repairedDetour.connections, { from: "roof", to: "water", label: "originates from" }
   ] }, scene, "Water flows from a roof into a barrel through a gutter"), /reversing the stated source/);
@@ -385,7 +408,7 @@ test("repairs malformed model JSON once, then returns a structurally complete pl
   assert.deepEqual(result.usage, { promptTokens: 80, completionTokens: 40, totalTokens: 120 });
 });
 
-test("typed-link repair teaches exact labels while retaining the teacher's ordinary verb", async () => {
+test("unsupported optional link type is dropped locally while retaining the teacher's ordinary verb", async () => {
   const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
     objects: ["battery", "motor", "fan"].map((label, index) => ({
       id: label, label, kind: "generic", x: 20 + index * 30, y: 50
@@ -394,18 +417,13 @@ test("typed-link repair teaches exact labels while retaining the teacher's ordin
       { from: "motor", to: "fan", label: "spins" }
     ] };
   let calls = 0;
-  const fetchImpl = async (_url, request) => {
+  const fetchImpl = async () => {
     calls += 1;
-    if (calls === 2) {
-      const prompt = JSON.parse(request.body).messages[0].content;
-      assert.match(prompt, /flowsInto="flows into"/);
-      assert.match(prompt, /For any other truthful relationship label, OMIT kind/);
-    }
-    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(calls === 1
-      ? plan : { ...plan, connections: plan.connections.map(({ kind, ...edge }) => edge) }) } }] }), { status: 200 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(plan) } }] }), { status: 200 });
   };
   const result = await interpretScene({ text: "A battery powers a motor that spins a fan.", scene }, nebius, { fetchImpl });
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
+  assert.equal(result.candidate.connections[0].kind, undefined);
   assert.deepEqual(result.candidate.connections.map(({ label }) => label), ["powers", "spins"]);
   assert.match(sceneValidationIssue(plan, scene), /typed connection must use a supported kind with its exact label/);
 });

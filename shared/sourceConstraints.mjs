@@ -36,8 +36,9 @@ function priorMention(prefix, objects, excludedIds) {
   return best?.object ?? null;
 }
 
+const movingSubjectName = (prefix) => prefix.match(/^\s*(?:(?:a|an|the)\s+)?([a-z][a-z -]{0,39}?)\s+(?:flows?|moves?|travels?|passes?|goes?|runs?|rises?)\b/)?.[1] ?? null;
 function movingSubject(prefix, objects) {
-  const subject = prefix.match(/^\s*(?:(?:a|an|the)\s+)?([a-z][a-z -]{0,39}?)\s+(?:flows?|moves?|travels?|passes?|goes?|runs?|rises?)\b/)?.[1];
+  const subject = movingSubjectName(prefix);
   return subject ? matchingPhrase(subject, objects) : null;
 }
 
@@ -51,11 +52,13 @@ function* explicitPassages(utterance, objects, edges) {
     if (passage) for (const edge of edges) {
       if (edge.from === passage.id && (edge.kind === "partOf" || edge.label?.toLowerCase() === "part of")) excluded.add(edge.to);
     }
-    const source = movingSubject(prefix, objects) ?? origin ?? priorMention(prefix, objects, excluded);
+    const subjectName = movingSubjectName(prefix);
+    const subject = subjectName ? matchingPhrase(subjectName, objects) : null;
+    const source = subject ?? origin ?? priorMention(prefix, objects, excluded);
     const remainder = utterance.slice(match.index + match[0].length);
     const recipientName = remainder.match(/^\s+into\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/)?.[1]
       ?? [...prefix.matchAll(/\binto\s+(?:(?:its|their|the|a|an)\s+)?([a-z][a-z-]*)\b/g)].at(-1)?.[1];
-    yield { passageName: match[1], passage, source, originName, origin, recipientName,
+    yield { passageName: match[1], passage, source, subjectName, subject, originName, origin, recipientName,
       recipient: recipientName ? matchingObject(recipientName, objects) : null };
   }
 }
@@ -68,22 +71,41 @@ export function completeExplicitPassages(text, candidate) {
     "pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"]);
   if (candidate.connections.some((edge) => specialistKinds.has(edge.kind))) return candidate;
   const edges = [...candidate.connections];
+  let changed = false;
   const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");
   for (const { source, passage, origin, recipient } of explicitPassages(utterance, candidate.objects, edges)) {
+    // "Rain from roof" names the moving thing's starting location. A model
+    // sometimes invents roof→rain "feeds", or emits a bare "from" arrow.
+    // Neither is licensed by that clause; the explicit roof→passage path below
+    // carries the location. Keep a specific origin→subject action only when
+    // its predicate appears in the teacher's own words.
+    if (source && origin && passage && source.id !== origin.id) {
+      const spoken = words(utterance);
+      for (let index = edges.length - 1; index >= 0; index -= 1) {
+        const edge = edges[index];
+        if (edge.from !== origin.id || edge.to !== source.id
+          || (edge.kind && edge.kind !== "relatesTo") || typeof edge.label !== "string"
+          || /\b(?:comes?|originates?|flows?)\s+from\b/i.test(edge.label)) continue;
+        const labelWords = words(edge.label);
+        const unsupported = edge.label.trim().toLowerCase() === "from"
+          || !labelWords.some((word) => spoken.some((said) => same(word, said)));
+        if (unsupported) { edges.splice(index, 1); changed = true; }
+      }
+    }
     if (source && passage && source.id !== passage.id
       && !edges.some((edge) => edge.from === source.id && edge.to === passage.id) && edges.length < 12) {
-      edges.push({ from: source.id, to: passage.id, label: "passes through" });
+      edges.push({ from: source.id, to: passage.id, label: "passes through" }); changed = true;
     }
     if (origin && passage && origin.id !== passage.id && origin.id !== source?.id
       && !edges.some((edge) => edge.from === origin.id && edge.to === passage.id) && edges.length < 12) {
-      edges.push({ from: origin.id, to: passage.id, label: "leads through" });
+      edges.push({ from: origin.id, to: passage.id, label: "leads through" }); changed = true;
     }
     if (passage && recipient && passage.id !== recipient.id
       && !edges.some((edge) => edge.from === passage.id && edge.to === recipient.id) && edges.length < 12) {
-      edges.push({ from: passage.id, to: recipient.id, label: "enters" });
+      edges.push({ from: passage.id, to: recipient.id, label: "enters" }); changed = true;
     }
   }
-  return edges.length === candidate.connections.length ? candidate : { ...candidate, connections: edges };
+  return changed ? { ...candidate, connections: edges } : candidate;
 }
 
 /** @returns {string | null} A repairable general constraint, or no proven omission. */
@@ -117,7 +139,10 @@ export function sourceConstraintIssue(text, candidate) {
   // A named passage is not equivalent to a direct source-to-whole arrow.
   // Resolve the nearest *named* source in the same clause; if either role is
   // uncertain, avoid imposing a relation that the teacher may not have meant.
-  for (const { passageName, passage, source, originName, origin, recipientName, recipient } of explicitPassages(utterance, objects, edges)) {
+  for (const { passageName, passage, source, subjectName, subject, originName, origin, recipientName, recipient } of explicitPassages(utterance, objects, edges)) {
+    if (subjectName && !subject && candidate.confidence >= 0.58) {
+      return `The explanation names ${subjectName} as the moving subject, but that visible role is missing.`;
+    }
     if (!source && !origin) continue;
     if (!passage) return `The explanation names a passage through ${passageName}, but that visible part is missing.`;
     if (originName && !origin) return `The explanation starts from ${originName}, but that visible origin is missing.`;

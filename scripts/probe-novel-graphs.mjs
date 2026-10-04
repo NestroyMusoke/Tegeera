@@ -7,6 +7,8 @@ import { interpretScene, modelConfiguration } from "../server/engine.mjs";
 import { scoreNovelGraph } from "./score-novel-graphs.mjs";
 import { renderNovelScene } from "./render-novel-scene.mjs";
 import { auditRenderedScene } from "./visual-probe-audit.mjs";
+import { completeExplicitPassages } from "../shared/sourceConstraints.mjs";
+import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry } from "../shared/normalizeBlueprint.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const args = process.argv.slice(2);
@@ -14,12 +16,16 @@ const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name)
 const count = Number(option("--count", "4"));
 const seed = Number(option("--seed", "20260928"));
 const specificId = option("--id", "");
+const replayCandidate = option("--replay-candidate", "");
 const excluded = new Set(option("--exclude", "").split(",").filter(Boolean));
 if (!Number.isInteger(count) || count < 1 || count > 5 || !Number.isInteger(seed)) {
   throw new Error("Use --count 1..5 and an integer --seed. Each selected case may make two paid model calls.");
 }
-const configuration = modelConfiguration();
-if (configuration?.provider !== "nebius") throw new Error("This probe requires an ignored private Nebius key; no call was made.");
+if (replayCandidate && (!specificId || count !== 1)) {
+  throw new Error("Replay requires --id and --count 1; no model call was made.");
+}
+const configuration = replayCandidate ? null : modelConfiguration();
+if (!replayCandidate && configuration?.provider !== "nebius") throw new Error("This probe requires an ignored private Nebius key; no call was made.");
 const corpus = JSON.parse(await readFile(join(root, "evaluation", "novel-graph-probes.json"), "utf8"));
 const shuffled = [...corpus.cases];
 let state = seed >>> 0;
@@ -35,23 +41,32 @@ const output = resolve(option("--out", join(root, ".visual-check", "novel-graph-
 const renderDirectory = output.replace(/\.json$/i, "-render");
 const rows = [];
 for (const [index, item] of selected.entries()) {
-  if (index) await new Promise((done) => setTimeout(done, 6000));
+  if (index && !replayCandidate) await new Promise((done) => setTimeout(done, 6000));
   const started = performance.now();
   let row;
   try {
-    const result = await interpretScene({ text: item.text, scene: { entities: [], relations: [] } }, configuration,
-      { signal: AbortSignal.timeout(42_000) });
-    const score = scoreNovelGraph(item, result.candidate);
-    row = { id: item.id, ...score, accepted: result.candidate.confidence >= 0.58,
-      confidence: result.candidate.confidence, attempts: result.providerAttempts,
-      elapsedMs: Math.round(performance.now() - started), objectCount: result.candidate.objects.length,
-      connectionCount: result.candidate.connections.length,
+    const result = replayCandidate
+      ? { candidate: JSON.parse(await readFile(resolve(replayCandidate), "utf8")), providerAttempts: 0 }
+      : await interpretScene({ text: item.text, scene: { entities: [], relations: [] } }, configuration,
+        { signal: AbortSignal.timeout(42_000) });
+    if (!replayCandidate) {
+      await mkdir(renderDirectory, { recursive: true });
+      await writeFile(join(renderDirectory, `${item.id}-candidate.json`), `${JSON.stringify(result.candidate, null, 2)}\n`);
+    }
+    const effective = completeExplicitPassages(item.text,
+      normalizeOrdinaryCarry(normalizeOptionalTypedKinds(result.candidate)));
+    const score = scoreNovelGraph(item, effective);
+    row = { id: item.id, replay: Boolean(replayCandidate), ...score, accepted: effective.confidence >= 0.58,
+      confidence: effective.confidence, attempts: result.providerAttempts,
+      elapsedMs: Math.round(performance.now() - started), objectCount: effective.objects.length,
+      connectionCount: effective.connections.length,
+      candidateFile: replayCandidate ? resolve(replayCandidate) : join(renderDirectory, `${item.id}-candidate.json`),
       // These probes are public synthetic sentences; labels are saved only in
       // the ignored local report to diagnose abstraction/copying failures.
-      objectLabels: result.candidate.objects.map((object) => object.label.slice(0, 32)),
-      links: result.candidate.connections.map((edge) => `${edge.from}->${edge.to}:${edge.kind ?? edge.label}`.slice(0, 96)) };
+      objectLabels: effective.objects.map((object) => object.label.slice(0, 32)),
+      links: effective.connections.map((edge) => `${edge.from}->${edge.to}:${edge.kind ?? edge.label}`.slice(0, 96)) };
     try {
-      const file = await renderNovelScene(renderDirectory, item, result.candidate, score);
+      const file = await renderNovelScene(renderDirectory, item, effective, score);
       row.rendered = true;
       row.reviewFile = file;
       row.visualAudit = auditRenderedScene(await readFile(file, "utf8"));
