@@ -148,8 +148,9 @@ export async function fetchSample(noun, byteLimit = 500_000, fetchImpl = fetch) 
   return data;
 }
 
-export function reviewHtml(entries) {
-  const data = JSON.stringify(entries.map(({ id, noun, keyId, svg }) => ({ id, noun, keyId, svg }))).replace(/</g, '\\u003c');
+export function reviewHtml(entries, modelGuesses = {}) {
+  const data = JSON.stringify(entries.map(({ id, noun, keyId, svg }) => ({ id, noun, keyId, svg,
+    modelGuess: typeof modelGuesses[id] === 'string' ? modelGuesses[id].slice(0, 120) : null }))).replace(/</g, '\\u003c');
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tegeera Quick Draw review</title>
 <style>body{font:16px system-ui;background:#f4f1e9;color:#27342f;margin:24px}header{max-width:850px;margin:auto}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.card{background:white;border:2px solid #d1d8d1;border-radius:14px;padding:12px}.card.approved{border-color:#26845f}.card.rejected{opacity:.45}.samples{display:flex;align-items:center;gap:12px;height:132px}.samples img{display:block;object-fit:contain}.small{width:64px;height:64px}.large{width:120px;height:120px}.checks{font-size:13px;display:grid;gap:3px}button{min-height:40px;margin:8px 6px 0 0}small{word-break:break-all}input.guess{width:95%;min-height:30px}</style>
 <header><h1>Candidate doodles — not shipped</h1><p>Quick, Draw! strokes are CC BY 4.0. Guess what each 64 px drawing depicts before revealing its category. Lock in your guess, then confirm it matched. Approval also requires four visual checks; reject unrecognizable, unsafe, inconsistent, or misleading drawings. Approve at most one per noun. Attribution and source IDs are retained on import.</p><button id="export">Download decisions.json</button></header><div class="grid" id="grid"></div>
@@ -181,6 +182,8 @@ for(const e of entries){
   }
   card.append(checks);
   const yes=document.createElement('button');yes.textContent='Approve';
+  const modelNote=document.createElement('p');modelNote.hidden=true;modelNote.className='model-note';
+  modelNote.textContent=e.modelGuess?'Model blind guess: '+e.modelGuess:'No model guess recorded';
   yes.onclick=()=>{
     if(title.hidden||!matchBox.checked||[...checks.querySelectorAll('input')].some(x=>!x.checked)){
       alert('Approve only when your locked guess matched and all four review checks pass.');return
@@ -189,11 +192,11 @@ for(const e of entries){
       delete choices[other.id];document.querySelector('[data-id="'+other.id+'"]')?.classList.remove('approved')
     }
     choices[e.id]={decision:'approve',checks:[true,true,true,true],blindGuess:guess.value.trim().slice(0,80),blindGuessMatched:true};
-    card.className='card approved'
+    card.className='card approved';modelNote.hidden=false
   };
   const no=document.createElement('button');no.textContent='Reject';
-  no.onclick=()=>{choices[e.id]={decision:'reject'};card.className='card rejected'};
-  card.append(yes,no);grid.append(card)
+  no.onclick=()=>{choices[e.id]={decision:'reject'};card.className='card rejected';modelNote.hidden=false};
+  card.append(yes,no,modelNote);grid.append(card)
 }
 document.getElementById('export').onclick=()=>{
   const blob=new Blob([JSON.stringify({formatVersion:'1.0.0',decisions:choices},null,2)],{type:'application/json'}),

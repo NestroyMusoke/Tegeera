@@ -65,12 +65,14 @@ test('peer-shape agreement improves review order without claiming art approval',
 
 test('the actual review page locks a blind guess and refuses premature approval', () => {
   const candidate = makeCandidate('house', { keyId: '12345', drawing: sample.drawing });
-  const browser = new JSDOM(reviewHtml([candidate]), { runScripts: 'dangerously' });
+  const browser = new JSDOM(reviewHtml([candidate], { [candidate.id]: 'a crooked building' }), { runScripts: 'dangerously' });
   try {
     const { document } = browser.window;
     browser.window.alert = () => undefined;
     const card = document.querySelector('[data-id="house-12345"]');
     const guess = card.querySelector('.guess');
+    const modelNote = card.querySelector('.model-note');
+    assert.equal(modelNote.hidden, true);
     const [reveal, approve] = [...card.querySelectorAll('button')];
     approve.click();
     assert.equal(card.classList.contains('approved'), false);
@@ -80,12 +82,15 @@ test('the actual review page locks a blind guess and refuses premature approval'
     reveal.click();
     assert.equal(guess.disabled, true);
     assert.equal(card.querySelector('h3').hidden, false);
+    assert.equal(modelNote.hidden, true);
     card.querySelectorAll('.checks input').forEach((box) => { box.checked = true; });
     approve.click();
     assert.equal(card.classList.contains('approved'), false);
     card.querySelector('label > input').checked = true;
     approve.click();
     assert.equal(card.classList.contains('approved'), true);
+    assert.equal(modelNote.hidden, false);
+    assert.match(modelNote.textContent, /crooked building/);
   } finally { browser.window.close(); }
 });
 

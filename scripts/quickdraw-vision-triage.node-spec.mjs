@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { blindVisionGuess, candidateFingerprint, roundRobinCandidates, runVisionTriage, visionReportHtml } from './quickdraw-vision-triage.mjs';
+import { blindGuessMatches, blindVisionGuess, candidateFingerprint, prioritizedReview, roundRobinCandidates, runVisionTriage, visionReportHtml } from './quickdraw-vision-triage.mjs';
 
 const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10 10 L90 10 L90 90 L10 90 Z" fill="none" stroke="#2f3e46"/></svg>';
 const entries = [
@@ -46,6 +46,8 @@ test('triage is dry-run by default, balanced across nouns and resumable', async 
     assert.equal(JSON.parse(report).items['sun-1'].status, 'guessed');
     assert.match(await readFile(join(dir, 'vision-report.html'), 'utf8'), /Blind model guesses — not approvals/);
     assert.doesNotMatch(await readFile(join(dir, 'vision-report.html'), 'utf8'), /test-private-key/);
+    assert.match(await readFile(join(dir, 'vision-prioritized-review.html'), 'utf8'), /Download decisions.json/);
+    assert.match(await readFile(join(dir, 'vision-shortlist-review.html'), 'utf8'), /Download decisions.json/);
     const dryWithResults = await runVisionTriage({ outDir: dir, maxCandidates: 2, fetchImpl });
     assert.equal(dryWithResults.attempted, 0);
     assert.equal(calls, 2);
@@ -54,7 +56,25 @@ test('triage is dry-run by default, balanced across nouns and resumable', async 
     assert.equal(calls, 3);
     const third = await runVisionTriage({ outDir: dir, maxCandidates: 2, execute: true, key: 'test-private-key', fetchImpl });
     assert.equal(third.attempted, 0);
+    assert.equal((await runVisionTriage({ outDir: dir, maxCandidates: 2, onlyNouns: ['sun'], fetchImpl })).pending, 0);
+    await assert.rejects(runVisionTriage({ outDir: dir, onlyNouns: ['SUN'] }), /lowercase category names/);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('ranking is a conservative review hint, not an approval decision', () => {
+  assert.equal(blindGuessMatches('mountain', 'mountains'), true);
+  assert.equal(blindGuessMatches('dragon', 'bending bird'), false);
+  assert.equal(blindGuessMatches('sun', 'not a sun'), false);
+  assert.equal(blindGuessMatches('leaf', 'unclear leaf-like line'), false);
+  const report = { items: {
+    'dragon-1': { status: 'guessed', fingerprint: candidateFingerprint(entries[0]), blindGuess: 'bird' },
+    'dragon-2': { status: 'guessed', fingerprint: candidateFingerprint(entries[1]), blindGuess: 'dragon' },
+    'sun-1': { status: 'guessed', fingerprint: 'stale', blindGuess: 'sun' }
+  } };
+  const ordered = prioritizedReview(entries, report);
+  assert.deepEqual(ordered.entries.map((entry) => entry.id), ['dragon-2', 'dragon-1', 'sun-1']);
+  assert.equal(ordered.hints['sun-1'], undefined);
+  assert.equal(ordered.hints['dragon-1'], 'bird');
 });
 
 test('report escapes untrusted model guesses and candidate names', () => {

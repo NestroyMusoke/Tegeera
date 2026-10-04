@@ -5,6 +5,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
 import { extractSafePaths } from './build-glyph-pack.mjs';
+import { reviewHtml } from './quickdraw-candidates.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const ENDPOINT = 'https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions';
@@ -46,6 +47,43 @@ export function candidateFingerprint(entry) {
   return createHash('sha256').update(`${entry.id}\n${entry.svg}`).digest('hex').slice(0, 20);
 }
 
+function singular(word) {
+  if (word.endsWith('ies') && word.length > 4) return `${word.slice(0, -3)}y`;
+  if (/(?:ch|sh|x|z|ss)es$/.test(word)) return word.slice(0, -2);
+  if (word.endsWith('s') && word.length > 3) return word.slice(0, -1);
+  return word;
+}
+
+/** Conservative ordering hint only, never a quality or approval decision. */
+export function blindGuessMatches(noun, answer) {
+  if (typeof answer !== 'string' || /\b(?:unclear|unrecognizable|unknown|not|no|maybe)\b/i.test(answer)) return false;
+  const subject = String(noun).toLowerCase().match(/[a-z]+/g)?.map(singular) ?? [];
+  const guess = answer.toLowerCase().match(/[a-z]+/g)?.map(singular) ?? [];
+  return subject.length > 0 && guess.some((_, start) => subject.every((word, offset) => guess[start + offset] === word));
+}
+
+export function prioritizedReview(entries, report) {
+  const hints = {};
+  const rank = (entry) => {
+    const item = report.items[entry.id];
+    if (!item || item.status !== 'guessed' || item.fingerprint !== candidateFingerprint(entry)
+      || typeof item.blindGuess !== 'string') return 1;
+    hints[entry.id] = item.blindGuess;
+    return blindGuessMatches(entry.noun, item.blindGuess) ? 0 : 2;
+  };
+  const ranked = entries.map((entry, index) => ({ entry, index, rank: rank(entry) }));
+  ranked.sort((a, b) => a.entry.noun.localeCompare(b.entry.noun) || a.rank - b.rank || a.index - b.index);
+  return { entries: ranked.map(({ entry }) => entry), hints };
+}
+
+async function writeReports(outDir, entries, report) {
+  await writeFile(join(outDir, 'vision-report.html'), visionReportHtml(entries, report));
+  const review = prioritizedReview(entries, report);
+  await writeFile(join(outDir, 'vision-prioritized-review.html'), reviewHtml(review.entries, review.hints));
+  const shortlist = review.entries.filter((entry) => blindGuessMatches(entry.noun, review.hints[entry.id]));
+  await writeFile(join(outDir, 'vision-shortlist-review.html'), reviewHtml(shortlist, review.hints));
+}
+
 export async function blindVisionGuess(entry, { key, model = VISION_MODEL, fetchImpl = fetch }) {
   if (!key?.trim()) throw new Error('NEBIUS_API_KEY is required for vision triage.');
   if (!entry?.svg || typeof entry.svg !== 'string' || entry.svg.length > 30_000) throw new Error('Invalid bounded candidate SVG.');
@@ -69,8 +107,11 @@ export async function blindVisionGuess(entry, { key, model = VISION_MODEL, fetch
 }
 
 export async function runVisionTriage({ outDir, key, model = VISION_MODEL, maxCandidates = 5,
-  execute = false, fetchImpl = fetch }) {
+  execute = false, onlyNouns = [], fetchImpl = fetch }) {
   if (!Number.isInteger(maxCandidates) || maxCandidates < 1 || maxCandidates > 40) throw new Error('Max candidates must be 1–40.');
+  if (!Array.isArray(onlyNouns) || onlyNouns.some((noun) => typeof noun !== 'string' || !/^[a-z][a-z ]{1,46}[a-z]$/.test(noun))) {
+    throw new Error('Only nouns must be lowercase category names.');
+  }
   const manifest = JSON.parse(await readFile(join(outDir, 'candidates.json'), 'utf8'));
   if (manifest.formatVersion !== '1.0.0' || !Array.isArray(manifest.entries)) throw new Error('Invalid candidate manifest.');
   const path = join(outDir, 'vision-triage.json');
@@ -81,11 +122,13 @@ export async function runVisionTriage({ outDir, key, model = VISION_MODEL, maxCa
   }
   if (report.formatVersion !== '1.0.0' || !report.items || Array.isArray(report.items)
     || typeof report.items !== 'object') throw new Error('Invalid vision triage state.');
+  const selectedNouns = new Set(onlyNouns);
   const pending = roundRobinCandidates(manifest.entries).filter((entry) =>
+    (!selectedNouns.size || selectedNouns.has(entry.noun)) && (
     report.items[entry.id]?.fingerprint !== candidateFingerprint(entry)
-    || report.items[entry.id]?.model !== model || report.items[entry.id]?.status !== 'guessed').slice(0, maxCandidates);
+    || report.items[entry.id]?.model !== model || report.items[entry.id]?.status !== 'guessed')).slice(0, maxCandidates);
   if (!execute) {
-    if (Object.keys(report.items).length) await writeFile(join(outDir, 'vision-report.html'), visionReportHtml(manifest.entries, report));
+    if (Object.keys(report.items).length) await writeReports(outDir, manifest.entries, report);
     return { attempted: 0, pending: pending.length, total: manifest.entries.length, path };
   }
   if (!key?.trim()) throw new Error('NEBIUS_API_KEY is required. Use the ignored server/.env.local, never the repo or browser.');
@@ -107,18 +150,19 @@ export async function runVisionTriage({ outDir, key, model = VISION_MODEL, maxCa
     attempted += 1;
     await saveJson(path, report);
   }
-  await writeFile(join(outDir, 'vision-report.html'), visionReportHtml(manifest.entries, report));
+  await writeReports(outDir, manifest.entries, report);
   return { attempted, pending: pending.length, total: manifest.entries.length, path };
 }
 
 async function main() {
   if (has('--help')) {
-    console.log('Usage: node --env-file=server/.env.local scripts/quickdraw-vision-triage.mjs [--out-dir .visual-check/quickdraw-batch] [--execute --max-candidates 5]');
+    console.log('Usage: node --env-file=server/.env.local scripts/quickdraw-vision-triage.mjs [--out-dir .visual-check/quickdraw-batch] [--execute --max-candidates 5] [--only-nouns sun,leaf]');
     return;
   }
   const result = await runVisionTriage({ outDir: resolve(option('--out-dir', join(ROOT, '.visual-check', 'quickdraw-batch'))),
     key: process.env.NEBIUS_API_KEY, model: option('--model', VISION_MODEL),
-    maxCandidates: Number(option('--max-candidates', '5')), execute: has('--execute') });
+    maxCandidates: Number(option('--max-candidates', '5')), execute: has('--execute'),
+    onlyNouns: option('--only-nouns', '').split(',').map((noun) => noun.trim()).filter(Boolean) });
   console.log(result.attempted ? `Saved ${result.attempted} blind model guesses to ${result.path}. Human review is still required.`
     : `Dry run: ${result.pending} of ${result.total} candidates would be triaged. Add --execute to use Nebius credits.`);
 }
