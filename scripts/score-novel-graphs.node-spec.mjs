@@ -14,3 +14,17 @@ test("novel graph score requires every role and directed endpoint, without claim
   assert.deepEqual(scoreNovelGraph(gold, { ...complete, objects: complete.objects.slice(1) }).missingRoles, ["battery"]);
   assert.equal(scoreNovelGraph(gold, { ...complete, confidence: 0.3 }).graphComplete, false);
 });
+
+test("exact roles beat qualified siblings while ambiguous partial roles remain unscored", () => {
+  const candidate = { confidence: 0.95,
+    objects: ["bee", "second bee", "hive", "hive entrance", "flower", "nectar"]
+      .map((label, index) => ({ id: `n${index}`, label })),
+    connections: [{ from: "n4", to: "n5" }, { from: "n0", to: "n5" }, { from: "n0", to: "n2" }] };
+  const expected = { roles: ["bee", "hive", "entrance", "flower", "nectar"],
+    links: [["flower", "nectar"], ["bee", "nectar"], ["bee", "hive"]] };
+  assert.equal(scoreNovelGraph(expected, candidate).graphComplete, true);
+  assert.deepEqual(scoreNovelGraph({ roles: ["bee"], links: [] }, {
+    ...candidate, objects: [...candidate.objects.filter(({ label }) => label !== "bee"),
+      { id: "n6", label: "third bee" }]
+  }).missingRoles, ["bee"]);
+});

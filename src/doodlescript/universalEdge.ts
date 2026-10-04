@@ -49,6 +49,11 @@ const length = (a: Point, b: Point) => Math.hypot(b.x - a.x, b.y - a.y);
 export const attractionMotion = (predicate?: string): boolean =>
   /^(?:pull|pulls|pulling|attract|attracts|attracting)\b/i.test(predicate?.trim() ?? "");
 
+/** The subject of "points away from X" is semantically linked to X, but the
+ * visible direction cue starts at X and points outward toward the subject. */
+export const awayFromMotion = (predicate?: string): boolean =>
+  /\b(?:points?|faces?|extends?|moves?|travels?|flows?)\s+away\s+from\b/i.test(predicate?.trim() ?? "");
+
 /** Model relation IDs occasionally arrive as camelCase; captions are prose. */
 export const readableRelationLabel = (predicate?: string): string =>
   (predicate ?? "relates to").replace(/([a-z])([A-Z])/g, (_, first: string, second: string) =>
@@ -102,7 +107,7 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
   const actor = entities.find((entity) => entity.id === relation.sourceIds[0]);
   const patient = entities.find((entity) => entity.id === relation.targetIds[0]);
   if (!actor || !patient || actor.id === patient.id) return null;
-  const reversedMotion = attractionMotion(relation.predicate);
+  const reversedMotion = attractionMotion(relation.predicate) || awayFromMotion(relation.predicate);
   const source = reversedMotion ? patient : actor;
   const target = reversedMotion ? actor : patient;
   const startCenter = center(source); const endCenter = center(target);

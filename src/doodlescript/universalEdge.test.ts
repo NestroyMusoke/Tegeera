@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SceneEntity, SceneRelation } from "./schema";
 import { entityVisualGeometry } from "./entityGeometry";
-import { attractionMotion, readableRelationLabel, universalEdgeGeometry, universalSceneEdges } from "./universalEdge";
+import { attractionMotion, awayFromMotion, readableRelationLabel, universalEdgeGeometry, universalSceneEdges } from "./universalEdge";
 
 const entity = (id: string, x: number, y: number): SceneEntity => ({
   id, label: id, kind: "generic", x, y, scale: 1, direction: "right", highlighted: false
@@ -28,6 +28,17 @@ describe("source-to-target connector geometry", () => {
     expect(attractionMotion("pushes")).toBe(false);
     const push = universalEdgeGeometry({ ...edge("magnet", "nail"), predicate: "pushes" }, [magnet, nail])!;
     expect(push.start.x).toBeGreaterThan(push.end.x);
+  });
+  it("points the visual cue away from the reference while retaining the semantic endpoint order", () => {
+    const sun = entity("sun", 65, 50);
+    const tail = entity("tail", 85, 50);
+    const relation = { ...edge("tail", "sun"), predicate: "points away from" };
+    const geometry = universalEdgeGeometry(relation, [sun, tail])!;
+    expect(awayFromMotion(relation.predicate)).toBe(true);
+    expect(awayFromMotion("moves toward")).toBe(false);
+    expect(geometry.source.id).toBe("tail");
+    expect(geometry.target.id).toBe("sun");
+    expect(geometry.end.x).toBeGreaterThan(geometry.start.x);
   });
   it("clips the arrow to the target silhouette in either direction", () => {
     const entities = [entity("left", 20, 40), entity("right", 80, 40)];

@@ -50,6 +50,12 @@ test("Nebius Token Factory takes precedence and uses its Nemotron endpoint", asy
   assert.ok(!JSON.stringify(result).includes("nebius-test-key"));
 });
 
+test("scene prompt reserves stick-person kinds for human roles, not arbitrary animals", () => {
+  const prompt = scenePrompt("An animal visits a plant", scene);
+  assert.match(prompt, /person, teacher and student are human figures only, never animals/);
+  assert.match(prompt, /an animal must not become a stick person/);
+});
+
 test("Nebius non-thinking mode is opt-in and never sent to other providers", async () => {
   const fetchImpl = async (_url, request) => {
     const body = JSON.parse(request.body);
@@ -325,6 +331,51 @@ test("a carried payload can pass through a named part while its origin contains 
   assert.equal(result.candidate.connections.some(({ from, to }) => from === "n1" && to === "n3"), true);
   assert.equal(result.candidate.connections.some(({ from, to }) => from === "n2" && to === "n3"), true);
   assert.equal(sceneValidationIssue(result.candidate, scene, text), null);
+});
+
+test("a named material keeps its explicit origin even when an actor and passage are also drawn", () => {
+  const labels = ["pump", "water", "tank", "filter", "greenhouse", "sensor"];
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.92,
+    objects: labels.map((label, index) => ({ id: `n${index}`, label, kind: "generic", x: 12 + index * 15, y: 50 })),
+    connections: [
+      { from: "n0", to: "n1", label: "draws" },
+      { from: "n1", to: "n3", label: "passes through" },
+      { from: "n3", to: "n4", label: "flows into" },
+      { from: "n5", to: "n2", label: "measures" }
+    ] };
+  const corrected = completeExplicitPassages(
+    "A pump draws water from a tank through a filter into a greenhouse, while a sensor measures the tank level.", candidate);
+  assert.equal(corrected.connections.some(({ from, to, label }) =>
+    from === "n2" && to === "n1" && label === "source of"), true);
+  assert.equal(corrected.connections.some(({ from, to }) => from === "n2" && to === "n3"), true);
+  assert.equal(completeExplicitPassages("A pump draws water through a filter", candidate).connections
+    .some(({ from, to }) => from === "n2" && to === "n1"), false);
+});
+
+test("a material collected from an origin keeps provenance without a passage or guessed actor", () => {
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.92,
+    objects: ["bee", "nectar", "flower", "hive", "second bee", "hive entrance"].map((label, index) => ({
+      id: `n${index}`, label, kind: "generic", x: 10 + index * 15, y: 50
+    })),
+    connections: [{ from: "n0", to: "n1", label: "collects" },
+      { from: "n0", to: "n3", label: "carries to" },
+      { from: "n4", to: "n5", label: "guards" },
+      { from: "n5", to: "n3", label: "part of", kind: "partOf" }] };
+  const corrected = completeExplicitPassages(
+    "A bee collects nectar from a flower, carries it to a hive, and a second bee guards the hive entrance.", candidate);
+  assert.equal(corrected.connections.some(({ from, to }) => from === "n2" && to === "n1"), true);
+  const unrelated = completeExplicitPassages("A bee protects a child from a wolf.", candidate);
+  assert.equal(unrelated.connections.length, candidate.connections.length);
+});
+
+test("a containment repair identifies the unconnected role instead of a generic failure", () => {
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: ["bee", "flower", "nectar", "hive"].map((label, index) => ({
+      id: `n${index}`, label, kind: "generic", x: 15 + index * 22, y: 50
+    })),
+    connections: [{ from: "n0", to: "n1", label: "visits" },
+      { from: "n3", to: "n0", label: "contains", kind: "contains" }] };
+  assert.match(sceneValidationIssue(candidate, scene), /nectar \(n2\) is orphaned/);
 });
 
 test("explicit relationship contracts reject confident generic arrows without fixing the nouns", () => {

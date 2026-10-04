@@ -7,8 +7,13 @@ export function scoreNovelGraph(gold, candidate) {
   const used = new Set();
   for (const role of gold.roles) {
     const target = tokens(role).map(singular);
-    const matches = candidate.objects.filter((object) => !used.has(object.id)
-      && target.every((word) => tokens(object.label).map(singular).includes(word)));
+    const available = candidate.objects.filter((object) => !used.has(object.id));
+    // Prefer an exact visible role over a qualified sibling ("bee" versus
+    // "second bee", "hive" versus "hive entrance"). Partial matching is
+    // only safe when exactly one candidate remains.
+    const exact = available.filter((object) => tokens(object.label).map(singular).join(" ") === target.join(" "));
+    const matches = exact.length ? exact : available.filter((object) =>
+      target.every((word) => tokens(object.label).map(singular).includes(word)));
     if (matches.length === 1) { roles.set(role, matches[0].id); used.add(matches[0].id); }
   }
   const missingRoles = gold.roles.filter((role) => !roles.has(role));

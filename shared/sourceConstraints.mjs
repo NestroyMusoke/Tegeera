@@ -52,6 +52,16 @@ function explicitTravelRoute(utterance, objects) {
     ? { actor, passage, destination } : null;
 }
 
+/** Only explicit transfer-of-material phrasing licenses an origin→material
+ * edge. "Protects a child from a wolf" is deliberately not a transfer. */
+function* explicitMaterialOrigins(utterance, objects) {
+  for (const match of utterance.matchAll(/\b(?:collects?|gathers?|draws?|pours?|extracts?|fetches?|takes?)\s+(?:(?:some|the|a|an)\s+)?([a-z][a-z-]*)\s+from\s+(?:(?:the|a|an|its|their)\s+)?([a-z][a-z-]*)\b/g)) {
+    const payload = matchingObject(match[1], objects);
+    const origin = matchingObject(match[2], objects);
+    if (payload && origin && payload.id !== origin.id) yield { payload, origin };
+  }
+}
+
 function* explicitPassages(utterance, objects, edges) {
   for (const match of utterance.matchAll(/\bthrough\s+(?:(?:its|their|the|a|an|his|her)\s+)?([a-z][a-z-]*)\b/g)) {
     const passage = matchingObject(match[1], objects);
@@ -85,6 +95,11 @@ export function completeExplicitPassages(text, candidate) {
   const edges = [...candidate.connections];
   let changed = false;
   const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");
+  for (const { payload, origin } of explicitMaterialOrigins(utterance, candidate.objects)) {
+    if (!edges.some((edge) => edge.from === origin.id && edge.to === payload.id) && edges.length < 12) {
+      edges.push({ from: origin.id, to: payload.id, label: "source of" }); changed = true;
+    }
+  }
   const route = explicitTravelRoute(utterance, candidate.objects);
   if (route && edges.some((edge) => edge.from === route.actor.id && edge.to === route.passage.id)
     && edges.some((edge) => edge.from === route.passage.id && edge.to === route.destination.id)) {
@@ -100,7 +115,7 @@ export function completeExplicitPassages(text, candidate) {
       }
     }
   }
-  for (const { source, passage, origin, recipient } of explicitPassages(utterance, candidate.objects, edges)) {
+  for (const { source, payload, passage, origin, recipient } of explicitPassages(utterance, candidate.objects, edges)) {
     // "Rain from roof" names the moving thing's starting location. A model
     // sometimes invents roof→rain "feeds", or emits a bare "from" arrow.
     // Neither is licensed by that clause; the explicit roof→passage path below
@@ -118,6 +133,13 @@ export function completeExplicitPassages(text, candidate) {
           || !labelWords.some((word) => spoken.some((said) => same(word, said)));
         if (unsupported) { edges.splice(index, 1); changed = true; }
       }
+    }
+    // A named material drawn from a named origin remains part of the visual
+    // explanation even when a separate actor moves it through the passage.
+    // Only add this provenance link when both phrases resolve uniquely.
+    if (payload && origin && payload.id !== origin.id
+      && !edges.some((edge) => edge.from === origin.id && edge.to === payload.id) && edges.length < 12) {
+      edges.push({ from: origin.id, to: payload.id, label: "source of" }); changed = true;
     }
     if (source && passage && source.id !== passage.id
       && !edges.some((edge) => edge.from === source.id && edge.to === passage.id) && edges.length < 12) {
