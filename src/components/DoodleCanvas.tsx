@@ -34,6 +34,7 @@ import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescr
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
+import { spatialOrder } from "../doodlescript/spatialOrder";
 import { forceOverviewFrame, measuredArtFrame, overviewFrame } from "./overviewFraming";
 
 interface DoodleCanvasProps {
@@ -987,8 +988,10 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
     const label = relation.predicate ?? "relates to";
     return <g className="universal-relation" aria-label={`${geometry.source.label} ${label} ${geometry.target.label}`}
       data-visual-cue="semantic-connection" data-route={geometry.route}>
-      <path className="universal-relation-flow" d={geometry.path} fill="none" stroke="#49776f" strokeWidth="4" strokeDasharray="10 7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d={geometry.arrow} fill="none" stroke="#49776f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path className={spatialOrder(label) ? "universal-relation-spatial" : "universal-relation-flow"}
+        d={geometry.path} fill="none" stroke="#49776f" strokeWidth={spatialOrder(label) ? "2.5" : "4"}
+        strokeDasharray={spatialOrder(label) ? undefined : "10 7"} strokeLinecap="round" strokeLinejoin="round" />
+      {!spatialOrder(label) && <path d={geometry.arrow} fill="none" stroke="#49776f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />}
       <rect x={geometry.labelX - geometry.labelWidth / 2} y={geometry.labelY - 17} width={geometry.labelWidth} height="25" rx="9" fill="#fbf7ed" opacity=".94" />
       <text x={geometry.labelX} y={geometry.labelY} textAnchor="middle" fill="#315f59" fontSize="14" fontWeight="800">{label}</text>
     </g>;

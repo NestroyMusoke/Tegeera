@@ -17,6 +17,7 @@ import { planLabelledContainer } from "../doodlescript/labelledContainer";
 import { planCallReturnFlow } from "../doodlescript/callReturnFlow";
 import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
+import { spatialOrder } from "../doodlescript/spatialOrder";
 import { completeExplicitPassages, sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
 import { normalizeOrdinaryCarry } from "../../shared/normalizeBlueprint.mjs";
 
@@ -202,12 +203,22 @@ const cleanId = (value: string, index: number) => {
 };
 
 function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections: UniversalSceneBlueprint["connections"], scene: SceneState, extend: boolean) {
-  const available = slots.filter((slot) => !extend || !scene.entities.some((entity) =>
+  // An extension may need to add something above an existing top-row object.
+  // The shallow third row is reserved for extensions so ordinary dense scenes
+  // keep the proven two-row overview grid.
+  const candidates = extend ? [...columns.map((x) => ({ x, y: 15 })), ...slots] : slots;
+  const available = candidates.filter((slot) => !extend || !scene.entities.some((entity) =>
     Math.abs(entity.x - slot.x) < 18 && Math.abs(entity.y - slot.y) < 22));
   if (available.length < objects.length) throw new Error("The current scene has no safe room for that extension.");
   const distances = objects.map((object) => available.map((slot) =>
     ((slot.x - object.x) ** 2 + (slot.y - object.y) ** 2) / 100));
   const indexById = new Map(objects.map((object, index) => [object.id, index] as const));
+  const existingPosition = (reference: string) => {
+    const byId = scene.entities.find((entity) => entity.id === reference);
+    if (byId) return byId;
+    const matches = scene.entities.filter((entity) => glyphKey(entity.label ?? "") === glyphKey(reference));
+    return matches.length === 1 ? matches[0] : undefined;
+  };
   const current: number[] = [];
   let best: number[] = [];
   let bestCost = Number.POSITIVE_INFINITY;
@@ -228,11 +239,17 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
         if (Math.abs(yDifference) >= 8 && Math.sign(slot.y - earlierSlot.y) !== Math.sign(yDifference)) nextCost += 250;
       }
       for (const connection of connections) {
-        if (!connection.kind || connection.kind === "relatesTo") continue;
         const from = indexById.get(connection.from); const to = indexById.get(connection.to);
-        if (from === undefined || to === undefined || Math.max(from, to) !== index) continue;
-        const fromSlot = from === index ? slot : available[current[from]];
-        const toSlot = to === index ? slot : available[current[to]];
+        if ((from === undefined && to === undefined) || Math.max(from ?? -1, to ?? -1) !== index) continue;
+        const fromSlot = from === undefined ? existingPosition(connection.from) : from === index ? slot : available[current[from]];
+        const toSlot = to === undefined ? existingPosition(connection.to) : to === index ? slot : available[current[to]];
+        if (!fromSlot || !toSlot) continue;
+        const order = spatialOrder(connection.label);
+        if (order && Math.sign(fromSlot[order.axis] - toSlot[order.axis]) !== order.sign) {
+          nextCost = Number.POSITIVE_INFINITY;
+          break;
+        }
+        if (!connection.kind || connection.kind === "relatesTo") continue;
         if (connection.kind === "before" || connection.kind === "causes") {
           if (fromSlot.x >= toSlot.x || (toSlot.x - fromSlot.x) < 24) nextCost += 500;
         } else if (Math.hypot((toSlot.x - fromSlot.x) * 10, (toSlot.y - fromSlot.y) * 6.2) < 140) {
@@ -244,6 +261,7 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
     }
   };
   place(0, 0, 0);
+  if (best.length !== objects.length) throw new Error("The spatial relationships cannot fit clearly on this canvas.");
   return best.map((index) => available[index]);
 }
 
@@ -377,6 +395,15 @@ export function compileUniversalScene(
   };
   const requireVisibleConnectors = (candidateScript: DoodleScript): DoodleScript => {
     const projected = applyDoodleScript(scene, candidateScript);
+    for (const relation of projected.relations ?? []) {
+      const order = relation.predicate && spatialOrder(relation.predicate);
+      if (!order || relation.kind !== "relatesTo") continue;
+      const from = projected.entities.find((entity) => entity.id === relation.sourceIds[0]);
+      const to = projected.entities.find((entity) => entity.id === relation.targetIds[0]);
+      if (from && to && Math.sign(from[order.axis] - to[order.axis]) !== order.sign) {
+        throw new Error("The spatial relationships cannot fit clearly on this canvas.");
+      }
+    }
     if ([...universalSceneEdges(projected.relations ?? [], projected.entities).values()].some((geometry) => !geometry)) {
       throw new Error("The visual plan has a relationship whose arrow or caption cannot be placed clearly.");
     }

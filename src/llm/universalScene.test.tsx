@@ -53,6 +53,38 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it("honours explicit spatial relations even when model coordinates say the opposite", () => {
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: [
+        { id: "s1", label: "snail", kind: "generic", x: 30, y: 50 },
+        { id: "st1", label: "stone", kind: "generic", x: 50, y: 50 },
+        { id: "m1", label: "mushroom", kind: "generic", x: 50, y: 80 }
+      ], connections: [
+        { from: "s1", to: "st1", label: "crosses" },
+        { from: "st1", to: "m1", label: "beneath" }
+      ] };
+    const script = compileUniversalScene(plan, initialScene, "A snail crosses a wet stone beneath a mushroom.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const entities = applyDoodleScript(initialScene, script).entities;
+    expect(entities.find((entity) => entity.label === "stone")!.y)
+      .toBeGreaterThan(entities.find((entity) => entity.label === "mushroom")!.y);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
+    expect(html).toContain('class="universal-relation-spatial"');
+    expect(html).toContain('aria-label="stone beneath mushroom"');
+  });
+
+  it("does not silently draw mutually contradictory directional relationships", () => {
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "a", label: "object A", kind: "generic", x: 20, y: 50 },
+        { id: "b", label: "object B", kind: "generic", x: 80, y: 50 }
+      ], connections: [
+        { from: "a", to: "b", label: "above" },
+        { from: "a", to: "b", label: "below" }
+      ] };
+    expect(() => compileUniversalScene(plan, initialScene, "Object A is above and below object B"))
+      .toThrow(/spatial relationships cannot fit/);
+  });
   it("rejects a plan whose directed arrows necessarily cross instead of claiming a complete diagram", () => {
     const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
       objects: [
@@ -308,6 +340,9 @@ describe("universal visual scene compiler", () => {
     expect(extension.commands.some(({ action }) => action === "clear")).toBe(false);
     expect(validateDoodleScript(extension, scene)).toMatchObject({ ok: true });
     expect(applyDoodleScript(scene, extension).entities).toHaveLength(3);
+    const extended = applyDoodleScript(scene, extension).entities;
+    expect(extended.find((entity) => entity.id === "storm-cloud")!.y)
+      .toBeLessThan(extended.find((entity) => entity.id === "flying-dragon")!.y);
   });
 
   it("rejects unsafe vector instructions before they reach SVG", () => {
