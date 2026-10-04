@@ -159,9 +159,15 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
       const vertical = Math.abs(b.y - a.y) > Math.abs(b.x - a.x);
       for (const fraction of [0.5, 0.25, 0.75]) {
         const midpoint = { x: a.x + (b.x - a.x) * fraction, y: a.y + (b.y - a.y) * fraction };
+        // Vertical captions must clear the *silhouettes and noun captions* of
+        // both endpoints. A fixed half-width offset made short stacked links
+        // unroutable and forced a long U-shaped detour around the whole scene.
+        const verticalOffset = Math.max(sourceBox.right - startCenter.x,
+          startCenter.x - sourceBox.left, targetBox.right - endCenter.x,
+          endCenter.x - targetBox.left) + halfWidth + 12;
         const positions = vertical
-          ? [{ x: midpoint.x + halfWidth + 20, y: midpoint.y + 5 },
-            { x: midpoint.x - halfWidth - 20, y: midpoint.y + 5 }]
+          ? [{ x: midpoint.x + verticalOffset, y: midpoint.y + 5 },
+            { x: midpoint.x - verticalOffset, y: midpoint.y + 5 }]
           : [{ x: midpoint.x, y: midpoint.y - 14 }, { x: midpoint.x, y: midpoint.y + 31 }];
         label = positions.find(({ x, y }) => {
           const box = { left: x - halfWidth, right: x + halfWidth, top: y - 18, bottom: y + 10 };

@@ -209,7 +209,15 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
   // An extension may need to add something above an existing top-row object.
   // The shallow third row is reserved for extensions so ordinary dense scenes
   // keep the proven two-row overview grid.
-  const candidates = extend ? [...columns.map((x) => ({ x, y: 15 })), ...slots] : slots;
+  // A vertical three-step explanation cannot fit into the ordinary two-row
+  // overview without reversing or collapsing a stated above/below order.
+  // Give only small, explicitly stacked scenes a third row; dense scenes keep
+  // the established two-row grid and its readable glyph size.
+  const verticalStack = !extend && objects.length >= 3 && objects.length <= 4
+    && Math.max(...objects.map((object) => object.x)) - Math.min(...objects.map((object) => object.x)) <= 24
+    && new Set(objects.map((object) => Math.round(object.y / 8))).size >= 3;
+  const candidates = extend ? [...columns.map((x) => ({ x, y: 15 })), ...slots]
+    : verticalStack ? [20, 50, 80].flatMap((y) => columns.map((x) => ({ x, y }))) : slots;
   const available = candidates.filter((slot) => !extend || !scene.entities.some((entity) =>
     Math.abs(entity.x - slot.x) < 18 && Math.abs(entity.y - slot.y) < 22));
   if (available.length < objects.length) throw new Error("The current scene has no safe room for that extension.");

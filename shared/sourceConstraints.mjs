@@ -172,6 +172,31 @@ export function sourceConstraintIssue(text, candidate) {
   if (copiedPlaceholder && candidate.confidence >= 0.58) {
     return `The visible label ${copiedPlaceholder.label} was not in the teacher's explanation; use grounded participants, not schema placeholders.`;
   }
+  // A possessive part cannot float in a disconnected subscene while a
+  // confident planner claims the whole explanation is represented. Do not
+  // guess which earlier noun "its" refers to: ask the model to resolve that
+  // link, or to lower confidence if the owner is genuinely ambiguous.
+  if (candidate.mode === "replace" && candidate.confidence >= 0.58
+    && /\b(?:its|their|his|her)\s+[a-z][a-z-]*\b/.test(utterance) && objects.length > 1) {
+    const adjacency = new Map(objects.map((object) => [object.id, new Set()]));
+    for (const edge of edges) {
+      if (adjacency.has(edge.from) && adjacency.has(edge.to)) {
+        adjacency.get(edge.from).add(edge.to);
+        adjacency.get(edge.to).add(edge.from);
+      }
+    }
+    const seen = new Set();
+    const visit = (id) => {
+      if (seen.has(id)) return;
+      seen.add(id);
+      for (const neighbor of adjacency.get(id) ?? []) visit(neighbor);
+    };
+    visit(objects[0].id);
+    if (seen.size !== objects.length) {
+      const detached = objects.find((object) => !seen.has(object.id));
+      return `The possessive part is not connected to the rest of the explanation; ${detached.label} is in a detached subscene. Resolve the stated owner and part relationship, or lower confidence if the pronoun is ambiguous.`;
+    }
+  }
   // An arrow labelled "originates from" is grammatical from the moving item
   // back to its origin. The reverse arrow asserts the opposite fact, even if
   // endpoint-only graph scoring would call the scene complete.

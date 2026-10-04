@@ -550,6 +550,49 @@ describe("universal visual scene compiler", () => {
     expect(validateDoodleScript(vertical, initialScene).ok).toBe(true);
   });
 
+  it("renders a three-level source, material, destination without flattening or a U-turn", () => {
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: [
+        { id: "lower", label: "vessel", kind: "generic", x: 30, y: 70 },
+        { id: "middle", label: "vapor", kind: "generic", x: 30, y: 40 },
+        { id: "upper", label: "cover", kind: "generic", x: 30, y: 10 }
+      ], connections: [
+        { from: "lower", to: "middle", label: "releases" },
+        { from: "middle", to: "upper", label: "collects on" }
+      ] };
+    const script = compileUniversalScene(plan, initialScene,
+      "Vapor rises from a vessel and collects on a cover.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    const byId = new Map(scene.entities.map((entity) => [entity.id, entity]));
+    expect(byId.get("upper")!.y).toBeLessThan(byId.get("middle")!.y);
+    expect(byId.get("middle")!.y).toBeLessThan(byId.get("lower")!.y);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html).toContain("collects on");
+    expect(html).toContain("releases");
+  });
+
+  it("fits a four-role vertical attachment graph without discarding its stated height order", () => {
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: [
+        { id: "floating", label: "balloon", kind: "generic", x: 50, y: 30 },
+        { id: "landmark", label: "tower", kind: "building", x: 50, y: 50 },
+        { id: "part", label: "tether", kind: "generic", x: 50, y: 40 },
+        { id: "holder", label: "operator", kind: "person", x: 30, y: 50 }
+      ], connections: [
+        { from: "part", to: "floating", label: "part of", kind: "partOf" },
+        { from: "part", to: "holder", label: "attachedTo" },
+        { from: "floating", to: "landmark", label: "floatsAbove" }
+      ] };
+    const script = compileUniversalScene(plan, initialScene,
+      "A balloon floats above a tower while its tether stays attached to an operator.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    const byId = new Map(scene.entities.map((entity) => [entity.id, entity]));
+    expect(byId.get("floating")!.y).toBeLessThan(byId.get("landmark")!.y);
+    expect(byId.get("floating")!.y).toBeLessThan(byId.get("part")!.y);
+  });
+
   it("assigns a full eight-object blueprint deterministically", () => {
     const full = {
       blueprintVersion: "1.0", mode: "replace", confidence: 0.9,

@@ -378,6 +378,21 @@ test("a containment repair identifies the unconnected role instead of a generic 
   assert.match(sceneValidationIssue(candidate, scene), /nectar \(n2\) is orphaned/);
 });
 
+test("a confident possessive scene cannot leave its part in a detached subgraph", () => {
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+    objects: ["kite", "tree", "string", "child"].map((label, index) => ({
+      id: `n${index}`, label, kind: "generic", x: 12 + index * 24, y: 50
+    })),
+    connections: [{ from: "n0", to: "n1", label: "floats above" },
+      { from: "n2", to: "n3", label: "attached to" }] };
+  const text = "A kite floats above a tree while its string stays attached to a child.";
+  assert.match(sceneValidationIssue(candidate, scene, text), /possessive part.*detached subscene/);
+  const linked = { ...candidate, connections: [...candidate.connections,
+    { from: "n2", to: "n0", label: "attached to" }] };
+  assert.equal(sceneValidationIssue(linked, scene, text), null);
+  assert.equal(sceneValidationIssue(candidate, scene, "A kite floats above a tree while a child holds a string."), null);
+});
+
 test("explicit relationship contracts reject confident generic arrows without fixing the nouns", () => {
   const make = (names, connections, confidence = 0.9) => ({ blueprintVersion: "1.0", mode: "replace", confidence,
     objects: names.map((label, index) => ({ id: `role-${index}`, label, kind: "generic", x: 18 + index * 27, y: 42 })),

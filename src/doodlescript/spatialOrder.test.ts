@@ -6,6 +6,8 @@ describe("embedded spatial predicates", () => {
     expect(spatialOrder("passes beneath")).toEqual({ axis: "y", sign: 1 });
     expect(spatialOrder("flows under")).toEqual({ axis: "y", sign: 1 });
     expect(spatialOrder("flies above")).toEqual({ axis: "y", sign: -1 });
+    expect(spatialOrder("floatsAbove")).toEqual({ axis: "y", sign: -1 });
+    expect(isPositionalRelation("floatsAbove")).toBe(true);
   });
 
   it("does not invent a positional rule for route or causal verbs", () => {

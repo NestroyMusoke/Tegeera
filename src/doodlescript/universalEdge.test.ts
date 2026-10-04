@@ -71,6 +71,16 @@ describe("source-to-target connector geometry", () => {
     expect(geometry.labelY).toBeGreaterThan(entities[0].y * 6.2 + 80);
     expect(geometry.labelY).toBeLessThan(entities[1].y * 6.2 - 40);
   });
+  it("keeps stacked three-step links direct with captions outside both silhouettes", () => {
+    const entities = [entity("lower", 38, 80), entity("middle", 38, 50), entity("upper", 38, 20)];
+    const first = { ...edge("lower", "middle"), predicate: "from" };
+    const second = { ...edge("middle", "upper"), predicate: "condenses on" };
+    const routed = universalSceneEdges([first, second], entities);
+    expect(routed.get(first.id)?.route).toBe("direct");
+    expect(routed.get(second.id)?.route).toBe("direct");
+    expect(routed.get(first.id)?.end.y).toBeLessThan(routed.get(first.id)!.start.y);
+    expect(routed.get(second.id)?.end.y).toBeLessThan(routed.get(second.id)!.start.y);
+  });
 
   it("never invents an arrow for a missing endpoint", () => {
     expect(universalEdgeGeometry(edge("source", "missing"), [entity("source", 20, 40)])).toBeNull();
