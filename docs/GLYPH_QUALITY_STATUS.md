@@ -2,6 +2,16 @@
 
 This is a development record, not a launch claim. Tegeera's approved offline glyph pack is still empty. Runtime unknown nouns are labelled, emoji-previewed when an exact CLDR match exists, or shown as unapproved generated drafts. A validated SVG or stroke sequence is **not** proof that a person can recognize the object.
 
+## 5 October 2026 follow-up
+
+A fresh bounded Nebius non-thinking probe tested `bee`, `cup`, and `steam`. Bee failed the stroke schema after its bounded repair; cup and steam returned strokes in about 1–2 seconds, but neither was recognizable at the app's actual 64 px size. Removing the prompt's box-shaped example did not solve this and was rolled back. The glyph probe now saves its validated stroke JSON and 64 px PNGs so future prompt/model changes can be compared with visible evidence rather than JSON validity. No generated draft was approved.
+
+The renderer now uses exact CLDR Animals & Nature labels or globally unique tags to stop a model-typed animal from appearing as a stick person. For example, a `person`-typed bee gets a clearly marked temporary bee emoji preview. This is a recognizability fallback, **not** an original doodle or a corrected semantic model kind. Ambiguous keywords still do not get an emoji guess.
+
+A free, bounded Quick, Draw! intake for `bee`, `cup`, `flower`, `hive`, `lid`, and `steam` produced 24 candidate human-stroke doodles across the first three categories; the other three categories were unavailable in that dataset. They are in ignored `.visual-check/quickdraw-priority/contact-sheet.html` and are **not shipped**. The human blind 64 px review and explicit import remain necessary. Several bee and cup candidates look materially more recognizable in the labelled overview than Nemotron's strokes, but labelled inspection is not the blind recognition gate.
+
+A bounded 12-image Nebius vision triage (four candidates per available category) guessed bee on 4/4, flower on 3/4, and described two cup candidates as a cup or hot drink; one cup was unclear and one was misread as a T-shirt. These are **model guesses, not independent human approvals**. The ignored `vision-shortlist-review.html` prioritizes likely candidates without shipping them or revealing labels before the reviewer locks a blind guess.
+
 ## Measured experiments
 
 - On `motor`, `fan`, and `iron nail`, Nemotron's previous thinking-mode stroke path took roughly 18–27 seconds per noun and yielded no usable motor and unrecognizable fan/iron drafts (see `NOVEL_SCENE_PROBE.md`).

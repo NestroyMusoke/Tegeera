@@ -1,18 +1,29 @@
 import emojiIndex from "./emojiIndex.json";
+import natureEmojiIndex from "./emojiNatureIndex.json";
 import { glyphKey } from "./glyph";
 
 const index = emojiIndex as Record<string, string>;
+const natureIndex = natureEmojiIndex as Record<string, string>;
+
+function exactOrSingular(label: string, entries: Record<string, string>): string | undefined {
+  const noun = glyphKey(label).replace(/^(?:a|an|the) /, "");
+  if (!noun) return undefined;
+  const direct = entries[noun];
+  if (direct) return direct;
+  if (noun.endsWith("ies")) return entries[`${noun.slice(0, -3)}y`];
+  if (noun.endsWith("es") && entries[noun.slice(0, -2)]) return entries[noun.slice(0, -2)];
+  if (noun.endsWith("s") && !noun.endsWith("ss")) return entries[noun.slice(0, -1)];
+  return undefined;
+}
+
+/** Only CLDR Animals & Nature labels or globally unique tags qualify. */
+export function natureEmojiPreviewFor(label: string): string | undefined {
+  return exactOrSingular(label, natureIndex);
+}
 
 /** Exact CLDR label retrieval only. No fuzzy keyword guessing for teaching diagrams. */
 export function emojiPreviewFor(label: string): string | undefined {
-  const noun = glyphKey(label).replace(/^(?:a|an|the) /, "");
-  if (!noun) return undefined;
-  const direct = index[noun];
-  if (direct) return direct;
-  if (noun.endsWith("ies")) return index[`${noun.slice(0, -3)}y`];
-  if (noun.endsWith("es") && index[noun.slice(0, -2)]) return index[noun.slice(0, -2)];
-  if (noun.endsWith("s") && !noun.endsWith("ss")) return index[noun.slice(0, -1)];
-  return undefined;
+  return exactOrSingular(label, index) ?? natureEmojiPreviewFor(label);
 }
 
 export function extractEmojiPreviews(text: string, limit = 4): Array<{ label: string; emoji: string }> {

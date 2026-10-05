@@ -5,7 +5,7 @@ import { characterPoseFor, type LimbPose } from "./characterPerformance";
 import { ComposedSymbol } from "./symbolPrimitives";
 import { CONCEPT_REGISTRY_VERSION, conceptForKind } from "../doodlescript/conceptRegistry";
 import { resolveGlyph } from "../glyphs/glyph";
-import { emojiPreviewFor } from "../glyphs/emojiPreview";
+import { emojiPreviewFor, natureEmojiPreviewFor } from "../glyphs/emojiPreview";
 
 export interface EntityRendererProps {
   entity: SceneEntity;
@@ -126,8 +126,7 @@ function Generic({ entity }: EntityRendererProps) {
   const emoji = emojiPreviewFor(entity.label ?? "");
   if (emoji) return <g data-symbol-id="emoji-preview" data-symbol-version="cldr-17" data-symbol-category="temporary-preview" data-symbol-confidence="0.7" data-symbol-fallback="true">
     <title>{`${entity.label} — temporary emoji preview while the doodle is prepared`}</title>
-    <path className="doodle-stroke" d="M-42 0 C-42-27-20-45 4-44 C32-43 45-22 43 3 C41 30 20 44-5 43 C-31 42-44 22-42 0 Z" fill="none" opacity="0.55" />
-    <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="65">{emoji}</text>
+    <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="76" style={{ filter: "grayscale(1) contrast(1.5)" }}>{emoji}</text>
   </g>;
   const words = (entity.label ?? entity.kind).trim().split(/\s+/).filter(Boolean);
   const display = words.length <= 1 ? [words[0] ?? "object"]
@@ -201,9 +200,14 @@ const entityRendererRegistry: Record<EntityKind, ComponentType<EntityRendererPro
 };
 
 export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
-  const concept = conceptForKind(entity.kind);
+  // A model can incorrectly type an animal as "person". An exact/unique CLDR
+  // nature match is enough to reject the stick-person visual, but does not
+  // authorize inventing a permanent doodle or changing the semantic graph.
+  const visualKind = entity.kind === "person" && natureEmojiPreviewFor(entity.label ?? "") ? "generic" : entity.kind;
+  const visualEntity = visualKind === entity.kind ? entity : { ...entity, kind: visualKind };
+  const concept = conceptForKind(visualKind);
   const Renderer = entityRendererRegistry[concept.glyphKey] ?? Generic;
-  const glyph = resolveGlyph({ noun: entity.label ?? entity.kind, kind: entity.kind, generated: entity.glyph });
+  const glyph = resolveGlyph({ noun: entity.label ?? entity.kind, kind: visualKind, generated: entity.glyph });
   return <g
     data-concept-id={concept.id}
     data-concept-category={concept.category}
@@ -213,8 +217,8 @@ export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
     style={entity.color ? { "--entity-color": entityColors[entity.color] } as CSSProperties : undefined}
     data-glyph-source={entity.glyphSource ?? glyph.source}
   >{glyph.glyph ? entity.glyphSource === "deferred"
-    ? <g className="glyph-crossfade"><g className="glyph-crossfade-placeholder"><Generic entity={entity} /></g><g className="glyph-crossfade-final"><ValidatedGlyph entity={entity} moving={moving} /></g></g>
-    : <ValidatedGlyph entity={entity} moving={moving} />
+    ? <g className="glyph-crossfade"><g className="glyph-crossfade-placeholder"><Generic entity={visualEntity} /></g><g className="glyph-crossfade-final"><ValidatedGlyph entity={visualEntity} moving={moving} /></g></g>
+    : <ValidatedGlyph entity={visualEntity} moving={moving} />
     : entity.visual ? <ProceduralDoodle entity={entity} moving={moving} />
-      : <Renderer entity={entity} moving={moving} />}</g>;
+      : <Renderer entity={visualEntity} moving={moving} />}</g>;
 }

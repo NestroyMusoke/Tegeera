@@ -27,6 +27,8 @@ if (args.includes("--render-existing")) {
     const preview = svg.replace('<svg viewBox="0 0 100 100"', '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 100 100"');
     await writeFile(join(directory, `${fast ? "fast-" : ""}${noun.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`),
       new Resvg(preview).render().asPng());
+    await writeFile(join(directory, `${fast ? "fast-" : ""}${noun.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-64.png`),
+      new Resvg(preview, { fitTo: { mode: "width", value: 64 } }).render().asPng());
   }
   console.log(`Rendered ${cards.length} existing candidates without a model call.`);
   process.exit(0);
@@ -45,6 +47,8 @@ for (const noun of nouns) {
     const result = await generateGlyph({ noun }, configuration, { signal: AbortSignal.timeout(42_000),
       ...(fast ? { nebiusThinking: "off", nebiusResponseFormat: "json" } : {}) });
     const glyph = compileStrokeGlyph(result.candidate);
+    await writeFile(join(directory, `${fast ? "fast-" : ""}${noun.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-strokes.json`),
+      `${JSON.stringify(result.candidate, null, 2)}\n`);
     const svg = `<svg viewBox="0 0 100 100" role="img" aria-label="Generated ${escape(noun)} doodle">${glyph.parts.map((part) =>
       `<path d="${escape(part.d)}" fill="none" stroke="${escape(part.stroke)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`).join("")}</svg>`;
     rows.push({ noun, ok: true, svg, strokes: glyph.parts.length,
@@ -52,6 +56,8 @@ for (const noun of nouns) {
     const preview = svg.replace('<svg viewBox="0 0 100 100"', '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 100 100"');
     await writeFile(join(directory, `${fast ? "fast-" : ""}${noun.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`),
       new Resvg(preview).render().asPng());
+    await writeFile(join(directory, `${fast ? "fast-" : ""}${noun.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-64.png`),
+      new Resvg(preview, { fitTo: { mode: "width", value: 64 } }).render().asPng());
   } catch (error) {
     rows.push({ noun, ok: false, error: error instanceof Error ? error.message.slice(0, 160) : "Unknown error",
       diagnostic: typeof error?.diagnostic === "string" ? error.diagnostic.slice(0, 160) : undefined,
@@ -59,8 +65,8 @@ for (const noun of nouns) {
   }
   console.log(`${noun}: ${rows.at(-1).ok ? `${rows.at(-1).strokes} strokes` : "not usable"}; ${rows.at(-1).elapsedMs}ms`);
 }
-const cards = rows.map((row) => `<article><h2>${escape(row.noun)}</h2>${row.ok ? row.svg : `<p>${escape(row.error)}</p>`}<p>${row.ok ? `${row.strokes} validated strokes` : "No validated doodle"} · ${row.elapsedMs} ms · ${row.attempts ?? "?"} attempt(s)</p></article>`).join("");
-const page = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tegeera runtime glyph review</title><style>body{font:16px system-ui;color:#293730;background:#f4f1e9;margin:20px}main{max-width:900px;margin:auto}section{background:white;padding:16px;border-radius:12px;margin-bottom:18px}article{display:inline-block;vertical-align:top;background:white;border:1px solid #cad2c5;border-radius:16px;padding:12px;margin:8px;width:220px}svg{display:block;width:200px;height:200px;background:#fffdf7}h2{margin:0 0 8px}</style><main><section><h1>Runtime doodle quality probe</h1><p>Generated synthetic nouns; inspect recognizability and style manually. Structural validation is not art approval.</p></section>${cards}</main></html>`;
+const cards = rows.map((row) => `<article><h2>${escape(row.noun)}</h2>${row.ok ? `${row.svg}<div class="phone-size">Actual 64px: <span>${row.svg}</span></div>` : `<p>${escape(row.error)}</p>`}<p>${row.ok ? `${row.strokes} validated strokes` : "No validated doodle"} · ${row.elapsedMs} ms · ${row.attempts ?? "?"} attempt(s)</p></article>`).join("");
+const page = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tegeera runtime glyph review</title><style>body{font:16px system-ui;color:#293730;background:#f4f1e9;margin:20px}main{max-width:900px;margin:auto}section{background:white;padding:16px;border-radius:12px;margin-bottom:18px}article{display:inline-block;vertical-align:top;background:white;border:1px solid #cad2c5;border-radius:16px;padding:12px;margin:8px;width:220px}article>svg{display:block;width:200px;height:200px;background:#fffdf7}.phone-size{display:flex;align-items:center;gap:12px;font-size:13px}.phone-size svg{width:64px;height:64px;background:#fffdf7}h2{margin:0 0 8px}</style><main><section><h1>Runtime doodle quality probe</h1><p>Generated synthetic nouns; inspect recognizability at actual 64px. Structural validation is not art approval.</p></section>${cards}</main></html>`;
 const file = join(directory, fast ? "contact-sheet-fast.html" : "contact-sheet.html");
 await writeFile(file, page);
 await writeFile(join(directory, fast ? "report-fast.json" : "report.json"), `${JSON.stringify({ nouns, fast, rows: rows.map((row) => ({

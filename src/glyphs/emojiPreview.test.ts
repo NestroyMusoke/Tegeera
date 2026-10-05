@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emojiPreviewFor, extractEmojiPreviews } from "./emojiPreview";
+import { emojiPreviewFor, extractEmojiPreviews, natureEmojiPreviewFor } from "./emojiPreview";
 
 describe("offline emoji previews", () => {
   it("retrieves exact labels and safe plurals without guessing ambiguous concepts", () => {
@@ -7,6 +7,14 @@ describe("offline emoji previews", () => {
     expect(emojiPreviewFor("volcanoes")).toBe("🌋");
     expect(emojiPreviewFor("cell")).toBeUndefined();
     expect(emojiPreviewFor("constitutional legitimacy")).toBeUndefined();
+  });
+
+  it("uses only a uniquely tagged nature label for an unfamiliar animal name", () => {
+    expect(natureEmojiPreviewFor("bee")).toBe("🐝");
+    expect(emojiPreviewFor("bee")).toBe("🐝");
+    expect(natureEmojiPreviewFor("dog")).toBe("🐕️");
+    expect(natureEmojiPreviewFor("child")).toBeUndefined();
+    expect(emojiPreviewFor("cup")).toBeUndefined();
   });
 
   it("extracts bounded live hints without claiming to parse the relationship", () => {

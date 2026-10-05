@@ -33,6 +33,15 @@ describe("entity renderer registry", () => {
     }
   });
 
+  it("never turns an exact CLDR nature subject into a stick person when the model mis-types it", () => {
+    const animal = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("person"), label: "bee" }} />);
+    expect(animal).toContain('data-symbol-id="emoji-preview"');
+    expect(animal).toContain("🐝");
+    expect(animal).not.toContain("character-rig");
+    const human = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("person"), label: "child" }} />);
+    expect(human).toContain("character-rig");
+  });
+
   it("selects deterministic varied poses without random scene drift", () => {
     expect(characterPoseFor(entity("student", "student-1"))).toEqual(characterPoseFor(entity("student", "student-1")));
     expect(characterPoseFor(entity("teacher")).name).toBe("explain");
