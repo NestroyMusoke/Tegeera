@@ -19,6 +19,7 @@ import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
 import { offlineArtworkAttributions, offlineGlyphCatalog } from "./glyphs/catalog";
 import { extractEmojiPreviews } from "./glyphs/emojiPreview";
 import { LiveGlyphResolver } from "./glyphs/runtimeResolver";
+import { needsRuntimeGlyph } from "./glyphs/runtimeEligibility";
 import { DEFAULT_FREE_GLYPH_MODEL, editStrokeGlyphRemotely, generateStrokeGlyphRemotely, planLessonNouns } from "./llm/generateGlyph";
 import { allTestedPhrases, showcaseGroups } from "./evaluation/showcaseExamples";
 import {
@@ -74,7 +75,7 @@ function App() {
   if (!glyphResolver.current) glyphResolver.current = new LiveGlyphResolver({
     ...offlineGlyphCatalog, cache: glyphCache.current, timeoutMs: hostedInterpreterUrl ? 40_000 : 12_000,
     onGenerated: (noun, glyph) => {
-      if (!sceneRef.current.entities.some((entity) => entity.kind === "generic" && glyphKey(entity.label ?? "") === noun)) return;
+      if (!sceneRef.current.entities.some((entity) => needsRuntimeGlyph(entity) && glyphKey(entity.label ?? "") === noun)) return;
       setPendingGlyphReview((current) => [...current.filter((item) => item.noun !== noun), { noun, glyph, origin: "runtime" as const }].slice(-30));
     },
     onGenerationError: (noun, error) => setGlyphIssue(
@@ -102,7 +103,7 @@ function App() {
   useEffect(() => {
     const arrived = scene.entities.flatMap((entity) => {
       const noun = glyphKey(entity.label ?? "");
-      const glyph = entity.kind === "generic" ? glyphResolver.current!.draftFor(noun) : undefined;
+      const glyph = needsRuntimeGlyph(entity) ? glyphResolver.current!.draftFor(noun) : undefined;
       return glyph ? [{ noun, glyph, origin: "runtime" as const }] : [];
     });
     if (arrived.length) setPendingGlyphReview((current) => {
@@ -113,7 +114,7 @@ function App() {
   const visualScene = useMemo<SceneState>(() => ({
     ...scene,
     entities: scene.entities.map((entity) => {
-      if (entity.kind !== "generic" || entity.glyph || !entity.label) return entity;
+      if (!needsRuntimeGlyph(entity) || !entity.label) return entity;
       const resolution = glyphResolver.current!.resolve(entity.label);
       // A stream is only a draft. Keep the instant emoji/label in the lesson
       // until the teacher explicitly accepts the artwork in the review tray.

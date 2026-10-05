@@ -54,6 +54,12 @@ export const attractionMotion = (predicate?: string): boolean =>
 export const awayFromMotion = (predicate?: string): boolean =>
   /\b(?:points?|faces?|extends?|moves?|travels?|flows?)\s+away\s+from\b/i.test(predicate?.trim() ?? "");
 
+/** "X rises from Y" encodes X -> Y grammatically, but the visible motion
+ * begins at the origin Y. Keep graph endpoints unchanged; reverse only ink. */
+export const originMotion = (predicate?: string): boolean =>
+  /^(?:rises?|ascends?|emerges?|flows?|falls?|descends?|drops?|comes?|moves?|travels?|drips?|pours?|escapes?)\s+from\b/i
+    .test(readableRelationLabel(predicate));
+
 /** Model relation IDs occasionally arrive as camelCase; captions are prose. */
 export const readableRelationLabel = (predicate?: string): string =>
   (predicate ?? "relates to").replace(/([a-z])([A-Z])/g, (_, first: string, second: string) =>
@@ -107,7 +113,8 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
   const actor = entities.find((entity) => entity.id === relation.sourceIds[0]);
   const patient = entities.find((entity) => entity.id === relation.targetIds[0]);
   if (!actor || !patient || actor.id === patient.id) return null;
-  const reversedMotion = attractionMotion(relation.predicate) || awayFromMotion(relation.predicate);
+  const reversedMotion = attractionMotion(relation.predicate) || awayFromMotion(relation.predicate)
+    || originMotion(relation.predicate);
   const source = reversedMotion ? patient : actor;
   const target = reversedMotion ? actor : patient;
   const startCenter = center(source); const endCenter = center(target);

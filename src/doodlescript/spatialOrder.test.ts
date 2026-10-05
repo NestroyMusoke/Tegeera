@@ -16,6 +16,12 @@ describe("embedded spatial predicates", () => {
     expect(spatialOrder("slows down")).toBeUndefined();
   });
 
+  it("positions upward and downward motion without hiding its arrow", () => {
+    expect(spatialOrder("rises from")).toEqual({ axis: "y", sign: -1 });
+    expect(spatialOrder("fallsFrom")).toEqual({ axis: "y", sign: 1 });
+    expect(isPositionalRelation("rises from")).toBe(false);
+  });
+
   it("marks symmetric neighbors as undirected position, not movement", () => {
     for (const phrase of ["beside", "next to", "adjacent to", "alongside"]) {
       expect(spatialOrder(phrase)).toBeUndefined();

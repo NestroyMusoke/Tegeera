@@ -53,6 +53,22 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it("corrects contradictory upward-motion coordinates and keeps a directed arrow", () => {
+    const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: [
+        { id: "cup", label: "cup", kind: "generic", x: 40, y: 25 },
+        { id: "steam", label: "steam", kind: "generic", x: 40, y: 72 }
+      ], connections: [{ from: "steam", to: "cup", label: "rises from" }] };
+    const script = compileUniversalScene(plan, initialScene, "Steam rises from a cup.");
+    const scene = applyDoodleScript(initialScene, script);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    expect(scene.entities.find((item) => item.id === "steam")!.y)
+      .toBeLessThan(scene.entities.find((item) => item.id === "cup")!.y);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html).toContain('aria-label="steam rises from cup"');
+    expect(html).toContain('class="universal-relation-flow"');
+  });
+
   it("honours explicit spatial relations even when model coordinates say the opposite", () => {
     const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
       objects: [
