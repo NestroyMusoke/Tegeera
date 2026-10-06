@@ -13,6 +13,7 @@ describe("runtime glyph eligibility", () => {
 
   it("requests a doodle for a nature noun mistyped as a person", () => {
     expect(needsRuntimeGlyph(entity("bee", "person"))).toBe(true);
+    expect(needsRuntimeGlyph(entity("second bee", "person"))).toBe(true);
     expect(needsRuntimeGlyph(entity("dogs", "person"))).toBe(true);
   });
 

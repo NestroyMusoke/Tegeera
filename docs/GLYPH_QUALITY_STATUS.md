@@ -1,6 +1,12 @@
 # Glyph quality and live-priority findings (29 September 2026)
 
-This is a development record, not a launch claim. Tegeera's approved offline glyph pack is still empty. Runtime unknown nouns are labelled, emoji-previewed when an exact CLDR match exists, or shown as unapproved generated drafts. A validated SVG or stroke sequence is **not** proof that a person can recognize the object.
+This is a development record, not a launch claim. Tegeera's **human-approved** offline glyph pack is still empty. A separate, clearly marked provisional pack now contains three licensed, model-screened Quick, Draw! sketches. Runtime unknown nouns remain labelled, emoji-previewed when a safe CLDR match exists, or shown as unapproved generated drafts. A validated SVG, model guess, or stroke sequence is **not** proof that a person can recognize the object.
+
+## 6 October 2026 follow-up
+
+With the user's explicit approval, Tegeera now ships three **provisional, not human-reviewed** Quick, Draw! previews: bee, cup, and flower. The source drawing IDs, CC BY 4.0 attribution, blind 64 px model guesses, and `humanReviewed: false` are preserved in a manifest separate from the approved pack. They render synchronously without a glyph API call. Qualified object labels such as “second bee” can use the bee preview, while interim transcript hints retain exact matching so the verb “flies” is not mistaken for an insect. The app visibly reports the provisional sketch count and exposes credits.
+
+In a saved six-object bee-scene replay, both bee objects and the flower became sketches; nectar, hive, and hive entrance remained honest placeholders. A fresh Nebius probe of “A bee carries pollen from a flower to its hive” took 15.6 seconds and drew bee and flower sketches, but only 0/2 expected directed links matched; pollen and hive remained placeholders. The picture is still a labelled relation diagram, **not** a lively, complete illustration. The provisional tier improved noun recognition only, and the live probe is not a visual or semantic pass.
 
 ## 5 October 2026 follow-up
 

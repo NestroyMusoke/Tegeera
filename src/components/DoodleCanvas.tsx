@@ -227,6 +227,8 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
       )}
       <div className="canvas-status">
         <span>{scene.entities.length} objects</span>
+        {scene.entities.some((entity) => entity.glyphSource === "provisional") &&
+          <span>{scene.entities.filter((entity) => entity.glyphSource === "provisional").length} provisional sketches · not human-reviewed</span>}
         <span>Revision {scene.revision}</span>
       </div>
     </section>

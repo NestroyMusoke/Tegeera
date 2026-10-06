@@ -1,5 +1,6 @@
 import { glyphKey, glyphSchema, resolveGlyph, type GlyphSource, type TegeeraGlyph } from "./glyph";
 import { compileStrokeGlyph, strokeGlyphSchema, strokeSchema, strokeGlyphStructuralIssue, type Stroke, type StrokeGlyph } from "./strokeGlyph";
+import { provisionalPreviewFor } from "./provisionalCatalog";
 
 const spokenColors = "red|orange|yellow|green|blue|purple|pink|brown|black|white|gray";
 const speculativeNounPattern = new RegExp(`\\b(?:a|an|the)\\s+(?:(?:${spokenColors})\\s+)?([a-z][a-z'-]{2,})\\b`, "g");
@@ -17,6 +18,7 @@ export type GlyphEditor = (noun: string, current: StrokeGlyph, instruction: stri
 
 interface ResolverOptions {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
+  preview?: ReadonlyMap<string, TegeeraGlyph>;
   emoji?: ReadonlyMap<string, TegeeraGlyph>;
   cache?: Map<string, TegeeraGlyph>;
   synonyms?: ReadonlyMap<string, string>;
@@ -32,6 +34,7 @@ interface ResolverOptions {
 export class LiveGlyphResolver {
   private readonly cache: Map<string, TegeeraGlyph>;
   private readonly pack?: ReadonlyMap<string, TegeeraGlyph>;
+  private readonly provisional?: ReadonlyMap<string, TegeeraGlyph>;
   private readonly emoji?: ReadonlyMap<string, TegeeraGlyph>;
   private readonly synonyms?: ReadonlyMap<string, string>;
   private readonly persist?: ResolverOptions["persist"];
@@ -58,6 +61,7 @@ export class LiveGlyphResolver {
 
   constructor(options: ResolverOptions = {}) {
     this.pack = options.pack;
+    this.provisional = options.preview;
     this.emoji = options.emoji;
     this.cache = options.cache ?? new Map();
     this.synonyms = options.synonyms;
@@ -182,6 +186,8 @@ export class LiveGlyphResolver {
       cache: this.cache, synonyms: this.synonyms
     });
     if (resolved.glyph) return { ...resolved, status: "final" };
+    const provisionalGlyph = glyphSchema.safeParse(this.provisional && provisionalPreviewFor(key, this.provisional));
+    if (provisionalGlyph.success) return { glyph: provisionalGlyph.data, source: "provisional", status: "placeholder" };
     if (visible && this.inFlight.has(key)) this.inFlightVisible.add(key);
     if (visible && this.queued.has(key) && !this.queuedVisible.has(key)) {
       this.queue.splice(this.queue.indexOf(key), 1);

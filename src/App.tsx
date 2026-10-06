@@ -17,6 +17,7 @@ import { compileUniversalScene } from "./llm/universalScene";
 import { forgetGlyph, loadGlyphCache, rememberGlyph } from "./glyphs/cache";
 import { glyphKey, type TegeeraGlyph } from "./glyphs/glyph";
 import { offlineArtworkAttributions, offlineGlyphCatalog } from "./glyphs/catalog";
+import { provisionalCatalog } from "./glyphs/provisionalCatalog";
 import { extractEmojiPreviews } from "./glyphs/emojiPreview";
 import { LiveGlyphResolver } from "./glyphs/runtimeResolver";
 import { needsRuntimeGlyph } from "./glyphs/runtimeEligibility";
@@ -73,7 +74,8 @@ function App() {
   const glyphCache = useRef(new Map<string, TegeeraGlyph>());
   const glyphResolver = useRef<LiveGlyphResolver | null>(null);
   if (!glyphResolver.current) glyphResolver.current = new LiveGlyphResolver({
-    ...offlineGlyphCatalog, cache: glyphCache.current, timeoutMs: hostedInterpreterUrl ? 40_000 : 12_000,
+    ...offlineGlyphCatalog, preview: provisionalCatalog.preview,
+    cache: glyphCache.current, timeoutMs: hostedInterpreterUrl ? 40_000 : 12_000,
     onGenerated: (noun, glyph) => {
       if (!sceneRef.current.entities.some((entity) => needsRuntimeGlyph(entity) && glyphKey(entity.label ?? "") === noun)) return;
       setPendingGlyphReview((current) => [...current.filter((item) => item.noun !== noun), { noun, glyph, origin: "runtime" as const }].slice(-30));
@@ -118,8 +120,10 @@ function App() {
       const resolution = glyphResolver.current!.resolve(entity.label);
       // A stream is only a draft. Keep the instant emoji/label in the lesson
       // until the teacher explicitly accepts the artwork in the review tray.
-      return resolution.glyph && resolution.status === "final" ? { ...entity, glyph: resolution.glyph,
-        glyphSource: resolution.source === "cache" || resolution.source === "generated" ? "deferred"
+      return resolution.glyph && (resolution.status === "final" || resolution.source === "provisional")
+        ? { ...entity, glyph: resolution.glyph,
+        glyphSource: resolution.source === "provisional" ? "provisional"
+          : resolution.source === "cache" || resolution.source === "generated" ? "deferred"
           : resolution.source === "glyph-pack" ? "glyph-pack" : "emoji" } : entity;
     })
   // The service emits only after a validated glyph replaces a placeholder.
@@ -700,11 +704,13 @@ function App() {
             {exampleLimit < filteredTestedPhrases.length ? <button className="load-more" type="button" onClick={() => setExampleLimit((current) => current + 24)}>Show 24 more</button> : null}
           </details>
         </section>
-        {offlineArtworkAttributions.length ? <details className="latency-panel">
+        {offlineArtworkAttributions.length || provisionalCatalog.attributions.length ? <details className="latency-panel">
           <summary>Artwork credits</summary>
-          <p>These reviewed doodles use credited third-party strokes. Tegeera normalizes their scale, colors and line rendering.</p>
+          <p>Approved artwork is listed below when available. Provisional sketches use credited Quick, Draw! strokes, passed a blind 64-pixel model check, and have not been human-reviewed. They are previews, not verified illustrations.</p>
           <ul>{offlineArtworkAttributions.map(({ noun, author, license, sourceUrl }) =>
-            <li key={`${noun}-${sourceUrl}`}>{noun} — {author}, {license}. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}</ul>
+            <li key={`${noun}-${sourceUrl}`}>{noun} — {author}, {license}. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}
+            {provisionalCatalog.attributions.map(({ noun, license, sourceUrl }) =>
+              <li key={`provisional-${noun}-${sourceUrl}`}>{noun} — Quick, Draw! contributor, {license}; provisional, not human-reviewed. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}</ul>
         </details> : null}
       </section>
       </DoodleCanvas>

@@ -19,12 +19,13 @@ async function loadRenderer(directory) {
     import { compileUniversalScene } from './src/llm/universalScene';
     import { initialScene, applyDoodleScript } from './src/doodlescript/scene';
     import { validateDoodleScript } from './src/doodlescript/validator';
+    import { withProvisionalPreviews } from './src/glyphs/provisionalCatalog';
     export function render(candidate, statement) {
       const script = compileUniversalScene(candidate, initialScene, statement);
       const checked = validateDoodleScript(script, initialScene);
       if (!checked.ok) throw new Error(checked.issues.map(issue => issue.message).join('; '));
       return renderToStaticMarkup(React.createElement(DoodleCanvas,
-        { scene: applyDoodleScript(initialScene, checked.script) }));
+        { scene: withProvisionalPreviews(applyDoodleScript(initialScene, checked.script)) }));
     }
   `, resolveDir: root, loader: "tsx" }, bundle: true, platform: "node", format: "cjs", jsx: "automatic", write: false });
   const bundlePath = join(directory, "renderer.cjs");

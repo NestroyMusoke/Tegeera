@@ -11,6 +11,8 @@ describe("offline emoji previews", () => {
 
   it("uses only a uniquely tagged nature label for an unfamiliar animal name", () => {
     expect(natureEmojiPreviewFor("bee")).toBe("🐝");
+    expect(natureEmojiPreviewFor("second bee")).toBe("🐝");
+    expect(natureEmojiPreviewFor("tiny bees")).toBe("🐝");
     expect(emojiPreviewFor("bee")).toBe("🐝");
     expect(natureEmojiPreviewFor("dog")).toBe("🐕️");
     expect(natureEmojiPreviewFor("child")).toBeUndefined();

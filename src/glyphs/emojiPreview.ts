@@ -1,6 +1,6 @@
 import emojiIndex from "./emojiIndex.json";
 import natureEmojiIndex from "./emojiNatureIndex.json";
-import { glyphKey } from "./glyph";
+import { glyphKey, previewNounKeys } from "./glyph";
 
 const index = emojiIndex as Record<string, string>;
 const natureIndex = natureEmojiIndex as Record<string, string>;
@@ -18,12 +18,16 @@ function exactOrSingular(label: string, entries: Record<string, string>): string
 
 /** Only CLDR Animals & Nature labels or globally unique tags qualify. */
 export function natureEmojiPreviewFor(label: string): string | undefined {
-  return exactOrSingular(label, natureIndex);
+  for (const key of previewNounKeys(label)) {
+    const emoji = exactOrSingular(key, natureIndex);
+    if (emoji) return emoji;
+  }
+  return undefined;
 }
 
 /** Exact CLDR label retrieval only. No fuzzy keyword guessing for teaching diagrams. */
 export function emojiPreviewFor(label: string): string | undefined {
-  return exactOrSingular(label, index) ?? natureEmojiPreviewFor(label);
+  return exactOrSingular(label, index) ?? exactOrSingular(label, natureIndex);
 }
 
 export function extractEmojiPreviews(text: string, limit = 4): Array<{ label: string; emoji: string }> {

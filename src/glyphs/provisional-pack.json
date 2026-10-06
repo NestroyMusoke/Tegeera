@@ -1,0 +1,218 @@
+{
+  "formatVersion": "1.0.0",
+  "entries": [
+    {
+      "noun": "bee",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M84.65 45.91 L73.31 45.59 L50.94 42.44 L34.88 43.39 L23.86 45.59 L17.24 48.43 L11.57 52.52 L10 60.39 L11.57 63.54 L20.71 71.42 L32.99 78.66 L41.5 82.13 L49.69 83.39 L69.53 84.33 L76.46 83.07 L84.33 78.66 L90 70.47 L90 60.08 L88.43 55.04 L84.96 50.63 L79.29 46.22",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M62.28 46.22 L66.38 43.07 L72.05 34.25 L77.09 24.8 L78.03 15.67 L77.09 10.31 L72.68 10 L70.47 11.26 L65.12 20.71 L63.23 28.9 L63.86 42.44 L64.8 38.98 L64.8 33.62 L62.6 21.34 L60.08 19.13 L52.83 18.82 L50 22.28 L51.57 36.77 L54.72 42.44 L60.08 45.28",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M46.54 51.26 L50.63 55.67 L54.09 62.91 L55.04 79.29 L52.83 83.7",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M29.84 47.8 L31.73 50.31 L41.18 71.42 L42.44 78.03 L42.13 88.11 L40.87 90",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M64.49 48.11 L67.32 57.56 L68.27 65.43 L67.95 73.94 L66.38 83.7",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M78.66 54.72 L81.18 61.02 L81.81 73.31",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/bee.ndjson#key_id=6401386805723136",
+        "drawingId": "6401386805723136"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "bee"
+      }
+    },
+    {
+      "noun": "cup",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M52.04 15.02 L42.31 11.88 L33.84 10.94 L26.94 10.63 L19.41 12.51 L14.71 15.33 L12.2 19.1 L10 25.37 L10.31 29.14 L11.88 30.71 L18.78 34.78 L33.22 37.29 L47.33 37.61 L64.59 34.16 L69.92 31.96 L70.55 29.45 L64.27 22.24 L54.24 18.47 L42.31 17.84",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M12.51 26.63 L15.65 85.29",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M71.18 31.02 L71.18 38.86 L68.98 52.04 L61.14 75.88",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M19.41 75.57 L23.18 80.27 L29.14 84.67 L33.84 86.86 L45.14 89.37 L53.61 87.18 L59.88 83.41 L64.59 77.76 L67.41 68.98",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M70.86 49.53 L79.65 40.75 L83.73 38.24 L87.8 37.92 L89.69 42.63 L90 54.86 L88.12 58.94 L83.73 63.65 L74 64.27",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M74.63 52.35 L77.45 50.78 L83.1 50.16 L75.57 56.75",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10.63
+          ],
+          "ground": [
+            50,
+            89.37
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/cup.ndjson#key_id=5044554690461696",
+        "drawingId": "5044554690461696"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Cup of coffee"
+      }
+    },
+    {
+      "noun": "flower",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M53.92 40.12 L47.96 39.49 L39.8 43.88 L36.04 47.96 L32.9 54.24 L31.96 59.88 L31.65 66.78 L32.9 70.24 L35.73 72.43 L38.24 72.43 L44.51 69.92 L53.61 63.65 L59.57 57.37 L60.51 54.24 L57.37 47.02 L56.12 44.51 L51.41 43.57",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M47.02 66.47 L47.96 73.37 L49.84 78.39 L55.18 84.98 L64.9 88.75 L71.8 89.37 L74.31 83.73 L74.31 65.22 L61.76 57.06 L59.25 57.06",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M55.49 51.73 L57.37 55.18 L73.06 60.2 L85.29 62.39 L89.37 57.69 L90 50.78 L88.12 44.51 L82.78 38.55 L75.88 32.27 L62.71 32.27 L59.25 35.41 L54.55 42.63 L49.53 46.08",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M55.49 36.35 L58.63 27.88 L62.08 21.29 L62.71 18.16 L49.53 11.57 L43.88 10.63 L40.75 12.2 L36.98 24.12 L36.98 40.43",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M37.29 42.94 L39.8 39.18 L23.18 17.84 L14.39 23.18 L11.57 26.63 L10 31.65 L10 33.84 L11.25 36.35 L18.16 40.12 L26.94 47.96 L31.33 54.24",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M32.9 49.22 L30.08 47.65 L22.55 47.65 L10.63 55.8",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10.63
+          ],
+          "ground": [
+            50,
+            89.37
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/flower.ndjson#key_id=5157573114200064",
+        "drawingId": "5157573114200064"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "flower"
+      }
+    }
+  ]
+}

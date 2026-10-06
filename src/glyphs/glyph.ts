@@ -55,7 +55,7 @@ export const glyphSchema = z.object({
 });
 
 export type TegeeraGlyph = z.infer<typeof glyphSchema>;
-export type GlyphSource = "hero-rig" | "glyph-pack" | "emoji" | "cache" | "generated" | "sticker";
+export type GlyphSource = "hero-rig" | "glyph-pack" | "provisional" | "emoji" | "cache" | "generated" | "sticker";
 
 export interface GlyphResolution {
   source: GlyphSource;
@@ -63,6 +63,17 @@ export interface GlyphResolution {
 }
 
 export const glyphKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/** Exact noun phrase first, then its head noun. Only preview tiers use the
+ * fallback: "second bee" can borrow bee art without asserting an approved
+ * glyph is valid for every qualified phrase. */
+export function previewNounKeys(value: string): string[] {
+  const words = glyphKey(value).replace(/^(?:a|an|the) /, "").split(" ").filter(Boolean);
+  if (!words.length) return [];
+  const full = words.join(" ");
+  if (words.length === 1 || words.length > 4) return [full];
+  return [...new Set([full, words.slice(-2).join(" "), words.at(-1)!])];
+}
 const validFrom = (source: GlyphSource, candidate?: unknown): GlyphResolution | undefined => {
   if (!candidate) return undefined;
   const parsed = glyphSchema.safeParse(candidate);

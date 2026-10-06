@@ -123,7 +123,7 @@ function Generic({ entity }: EntityRendererProps) {
       <ComposedSymbol category={plan.category} primitives={plan.primitives} capabilities={plan.capabilities} rotation={rotation} />
     </g>;
   }
-  const emoji = emojiPreviewFor(entity.label ?? "");
+  const emoji = emojiPreviewFor(entity.label ?? "") ?? natureEmojiPreviewFor(entity.label ?? "");
   if (emoji) return <g data-symbol-id="emoji-preview" data-symbol-version="cldr-17" data-symbol-category="temporary-preview" data-symbol-confidence="0.7" data-symbol-fallback="true">
     <title>{`${entity.label} — temporary emoji preview while the doodle is prepared`}</title>
     <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="76" style={{ filter: "grayscale(1) contrast(1.5)" }}>{emoji}</text>
@@ -216,7 +216,8 @@ export function EntityGlyph({ entity, moving = false }: EntityRendererProps) {
     data-entity-color={entity.color}
     style={entity.color ? { "--entity-color": entityColors[entity.color] } as CSSProperties : undefined}
     data-glyph-source={entity.glyphSource ?? glyph.source}
-  >{glyph.glyph ? entity.glyphSource === "deferred"
+  >{entity.glyphSource === "provisional" && <title>{`${entity.label} — provisional Quick, Draw! sketch; model-screened, not human-reviewed`}</title>}
+  {glyph.glyph ? entity.glyphSource === "deferred"
     ? <g className="glyph-crossfade"><g className="glyph-crossfade-placeholder"><Generic entity={visualEntity} /></g><g className="glyph-crossfade-final"><ValidatedGlyph entity={visualEntity} moving={moving} /></g></g>
     : <ValidatedGlyph entity={visualEntity} moving={moving} />
     : entity.visual ? <ProceduralDoodle entity={entity} moving={moving} />

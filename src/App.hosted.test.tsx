@@ -3,6 +3,31 @@ import { afterEach, expect, it, vi } from "vitest";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.resetModules(); });
 
+it("draws model-screened provisional nature sketches immediately without a glyph API call", async () => {
+  vi.stubEnv("VITE_TEGEERA_INTERPRETER_URL", "https://tegeera.example");
+  vi.resetModules();
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url.endsWith("/health")) return new Response(JSON.stringify({ configured: true,
+      provider: "nebius", model: "test" }), { status: 200 });
+    if (url.endsWith("/v1/interpret")) return new Response(JSON.stringify({ provider: "nebius",
+      model: "test", candidate: { blueprintVersion: "1.0", mode: "replace", confidence: 0.93,
+        objects: [{ id: "a", label: "second bee", kind: "person", x: 25, y: 45 },
+          { id: "b", label: "flower", kind: "generic", x: 75, y: 45 }],
+        connections: [{ from: "a", to: "b", label: "visits" }] } }), { status: 200 });
+    throw new Error(`Unexpected request ${url}`);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  const { default: App } = await import("./App");
+  const { container } = render(<App />);
+  fireEvent.change(screen.getByLabelText("Your explanation"),
+    { target: { value: "A second bee visits a flower." } });
+  fireEvent.click(screen.getByRole("button", { name: "Draw it" }));
+  await waitFor(() => expect(screen.getByText("Revision 1")).toBeTruthy());
+  expect(container.querySelectorAll('[data-glyph-source="provisional"]')).toHaveLength(2);
+  expect(screen.getByText("2 provisional sketches · not human-reviewed")).toBeTruthy();
+  expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/v1/glyph"))).toBe(false);
+}, 20_000);
+
 it("draws a hosted explanation but preserves it when follow-up plans lose negation or colour", async () => {
   vi.stubEnv("VITE_TEGEERA_INTERPRETER_URL", "https://tegeera.example");
   vi.resetModules();

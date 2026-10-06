@@ -4,15 +4,29 @@ import { DoodleCanvas } from "../components/DoodleCanvas";
 import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { compileUniversalScene } from "../llm/universalScene";
 import { LiveGlyphResolver } from "./runtimeResolver";
+import type { TegeeraGlyph } from "./glyph";
 import type { Stroke } from "./strokeGlyph";
 
-const glyph = {
+const glyph: TegeeraGlyph = {
   schemaVersion: "1.0.0", viewBox: "0 0 100 100",
   parts: [{ id: "body", d: "M10 10 L90 10 L90 90 L10 90 Z", fill: "#cad2c5", stroke: "#2f3e46" }],
   anchors: { top: [50, 10], ground: [50, 90], front: [90, 50] }
 };
 
 describe("non-blocking glyph resolver", () => {
+  it("shows a machine-screened preview synchronously without caching or generating it", async () => {
+    const generator = vi.fn(async () => glyph);
+    const resolver = new LiveGlyphResolver({ preview: new Map([["bee", glyph]]), generator });
+    expect(resolver.resolve("bee")).toMatchObject({ source: "provisional", status: "placeholder", glyph });
+    expect(resolver.resolve("second bee")).toMatchObject({ source: "provisional", status: "placeholder", glyph });
+    await Promise.resolve();
+    expect(generator).not.toHaveBeenCalled();
+    expect(resolver.approve("bee")).toBeUndefined();
+    const approved = new LiveGlyphResolver({ pack: new Map([["bee", glyph]]),
+      preview: new Map([["bee", glyph]]) });
+    expect(approved.resolve("bee").source).toBe("glyph-pack");
+  });
+
   it("stages a scene-supplied glyph for review without starting another request", async () => {
     const generator = vi.fn(async () => glyph);
     const resolver = new LiveGlyphResolver({ generator });
