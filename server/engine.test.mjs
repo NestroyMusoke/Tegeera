@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { completeExplicitPassages } from "../shared/sourceConstraints.mjs";
+import { normalizeStandaloneReplacement } from "../shared/normalizeBlueprint.mjs";
 import {
   NEBIUS_CHAT_URL, NVIDIA_SCENE_MODEL, callModel, editGlyph, generateGlyph, interpretScene, modelConfiguration,
   scenePrompt, sceneValidationIssue, strokeStructuralIssue, validScene, validStrokes
@@ -19,6 +20,25 @@ const complete = {
 const strokes = { strokes: [{ part: "outline", color: "#2f3e46", pts: [[8, 8], [42, 8], [42, 42], [8, 8]] }] };
 const nvidia = modelConfiguration({ NVIDIA_API_KEY: "private-key" });
 const nebius = modelConfiguration({ NEBIUS_API_KEY: "nebius-test-key" });
+
+test("standalone explanations replace unrelated scenes without spending a repair call", async () => {
+  const candidate = { blueprintVersion: "1.0", mode: "extend", confidence: 0.9,
+    objects: [{ id: "new", label: "comet", kind: "generic", x: 50, y: 50 }], connections: [] };
+  const previous = { entities: [{ id: "old", label: "vase", kind: "generic", x: 20, y: 50 }], relations: [] };
+  let calls = 0;
+  const result = await interpretScene({ text: "A comet glows.", scene: previous }, nebius, {
+    fetchImpl: async () => { calls += 1; return new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify(candidate) } }]
+    }), { status: 200 }); }
+  });
+  assert.equal(result.candidate.mode, "replace");
+  assert.equal(calls, 1);
+  for (const text of ["Add a comet", "Another comet appears", "Also show a comet"]) {
+    assert.equal(normalizeStandaloneReplacement(text, candidate).mode, "extend");
+  }
+  const linked = { ...candidate, connections: [{ from: "new", to: "old", label: "above" }] };
+  assert.equal(normalizeStandaloneReplacement("A comet is above the vase", linked).mode, "extend");
+});
 
 test("Nebius Token Factory takes precedence and uses its Nemotron endpoint", async () => {
   assert.equal(modelConfiguration({ NEBIUS_API_KEY: "nebius-test-key", NVIDIA_API_KEY: "direct-key" }).provider, "nebius");

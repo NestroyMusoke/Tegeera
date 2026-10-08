@@ -5,6 +5,7 @@ import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { validateDoodleScript } from "../doodlescript/validator";
 import type { TegeeraGlyph } from "../glyphs/glyph";
 import { compileUniversalScene } from "./universalScene";
+import { universalSceneEdges } from "../doodlescript/universalEdge";
 
 const dragonGlyph: TegeeraGlyph = {
   schemaVersion: "1.0.0", viewBox: "0 0 100 100",
@@ -53,6 +54,87 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it("replaces an unrelated scene even if the model incorrectly chooses extend", () => {
+    const previous = applyDoodleScript(initialScene, compileUniversalScene(blueprint, initialScene,
+      "A dragon flies over a village"));
+    const candidate = { blueprintVersion: "1.0", mode: "extend", confidence: 0.9,
+      objects: [{ id: "flower", label: "flower", kind: "generic", x: 50, y: 50 }], connections: [] };
+    const script = compileUniversalScene(candidate, previous, "A flower blooms.");
+    expect(script.commands[0].action).toBe("clear");
+    expect(applyDoodleScript(previous, script).entities.map(({ id }) => id)).toEqual(["flower"]);
+    const addition = compileUniversalScene(candidate, previous, "Add a flower.");
+    expect(addition.commands.some(({ action }) => action === "clear")).toBe(false);
+    expect(applyDoodleScript(previous, addition).entities).toHaveLength(3);
+  });
+  it("does not turn an arbitrary structure into the native house silhouette", () => {
+    for (const [label, supplied, expected] of [
+      ["bridge", "building", "generic"], ["viaduct", "building", "generic"],
+      ["bicycle", "car", "generic"], ["yellow car", "car", "car"],
+      ["school", "building", "building"], ["oak tree", "tree", "tree"]
+    ]) {
+      const script = compileUniversalScene({ blueprintVersion: "1.0", confidence: 0.9,
+        objects: [{ id: "subject", label, kind: supplied, x: 50, y: 50 }], connections: []
+      }, initialScene, "Draw the subject.");
+      expect(applyDoodleScript(initialScene, script).entities[0].kind).toBe(expected);
+    }
+  });
+  it("separates co-located model objects without dropping an explicit below constraint", () => {
+    const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "operator", label: "operator", kind: "person", x: 30, y: 50 },
+        { id: "vehicle", label: "vehicle", kind: "generic", x: 35, y: 50 },
+        { id: "crossing", label: "crossing", kind: "generic", x: 50, y: 50 },
+        { id: "swimmer", label: "swimmer", kind: "generic", x: 50, y: 30 }
+      ], connections: [
+        { from: "operator", to: "vehicle", label: "rides" },
+        { from: "operator", to: "crossing", label: "across" },
+        { from: "swimmer", to: "crossing", label: "swims beneath" }
+      ] };
+    const script = compileUniversalScene(candidate, initialScene, "An operator rides a vehicle across a crossing while a swimmer swims beneath the crossing.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(new Set(scene.entities.map(({ x, y }) => `${x},${y}`)).size).toBe(4);
+    expect(scene.entities.find(({ id }) => id === "swimmer")!.y)
+      .toBeGreaterThan(scene.entities.find(({ id }) => id === "crossing")!.y);
+    expect([...universalSceneEdges(scene.relations ?? [], scene.entities).values()].every(Boolean)).toBe(true);
+  });
+
+  it("wraps an over-specified four-level model stack while retaining every endpoint", () => {
+    const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: ["holder", "cover", "droplets", "source"].map((id, index) => ({
+        id, label: id, kind: index === 0 ? "person" : "generic", x: 50, y: [80, 50, 35, 20][index]
+      })), connections: [
+        { from: "holder", to: "cover", label: "holds" },
+        { from: "source", to: "droplets", label: "releases" },
+        { from: "droplets", to: "cover", label: "onto" }
+      ] };
+    const script = compileUniversalScene(candidate, initialScene, "A holder holds a cover as a source releases droplets onto the cover.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.entities).toHaveLength(4);
+    expect(scene.relations).toHaveLength(3);
+    expect([...universalSceneEdges(scene.relations ?? [], scene.entities).values()].every(Boolean)).toBe(true);
+  });
+  it("chooses short visible routes after correcting conflicting model coordinates", () => {
+    const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+      objects: [
+        { id: "origin", label: "chamber", kind: "generic", x: 40, y: 30 },
+        { id: "destination", label: "screen", kind: "generic", x: 40, y: 70 },
+        { id: "moving", label: "mist", kind: "generic", x: 40, y: 50 }
+      ], connections: [
+        { from: "moving", to: "origin", label: "rises from" },
+        { from: "moving", to: "destination", label: "collects on" }
+      ] };
+    const script = compileUniversalScene(candidate, initialScene, "Mist rises from a chamber and collects on a screen.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    const routes = [...universalSceneEdges(scene.relations ?? [], scene.entities).values()];
+    expect(routes).toHaveLength(2);
+    expect(routes.every((route) => route?.route === "direct")).toBe(true);
+    expect(scene.relations?.map((relation) => [relation.sourceIds[0], relation.targetIds[0]]))
+      .toEqual([["moving", "origin"], ["moving", "destination"]]);
+    expect(compileUniversalScene(candidate, initialScene, script.sourceText)).toEqual(script);
+  });
   it("corrects contradictory upward-motion coordinates and keeps a directed arrow", () => {
     const plan = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
       objects: [

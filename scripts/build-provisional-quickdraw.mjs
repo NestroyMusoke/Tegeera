@@ -15,6 +15,7 @@ export function createProvisionalPack(manifest, triage, selections) {
     || selections?.formatVersion !== '1.0.0' || !Array.isArray(selections.ids)
     || selections.ids.length > 2000) throw new Error('Invalid provisional source files.');
   const entries = new Map(manifest.entries.map((entry) => [entry.id, entry]));
+  if (entries.size !== manifest.entries.length) throw new Error('Duplicate provisional source ID.');
   const nouns = new Set();
   const output = [];
   for (const id of selections.ids) {
@@ -41,14 +42,27 @@ export function createProvisionalPack(manifest, triage, selections) {
 }
 
 async function main() {
-  const source = resolve(option('--source-dir', resolve(root, '.visual-check', 'quickdraw-priority')));
   const selected = resolve(option('--selections', resolve(root, 'scripts', 'provisional-quickdraw-selections.json')));
   const output = resolve(option('--out', resolve(root, 'src', 'glyphs', 'provisional-pack.json')));
-  const [manifest, triage, selections] = await Promise.all([
-    readFile(resolve(source, 'candidates.json'), 'utf8').then(JSON.parse),
-    readFile(resolve(source, 'vision-triage.json'), 'utf8').then(JSON.parse),
-    readFile(selected, 'utf8').then(JSON.parse)
-  ]);
+  const selections = JSON.parse(await readFile(selected, 'utf8'));
+  const directories = args.includes('--source-dir') ? [option('--source-dir')]
+    : selections.sourceDirs ?? ['.visual-check/quickdraw-priority'];
+  if (!Array.isArray(directories) || !directories.length || directories.length > 20
+    || directories.some((directory) => typeof directory !== 'string')) throw new Error('Invalid source directories.');
+  const manifest = { formatVersion: '1.0.0', entries: [] };
+  const triage = { formatVersion: '1.0.0', items: {} };
+  for (const directory of directories) {
+    const source = resolve(root, directory);
+    const batch = JSON.parse(await readFile(resolve(source, 'candidates.json'), 'utf8'));
+    const screening = JSON.parse(await readFile(resolve(source, 'vision-triage.json'), 'utf8'));
+    if (batch.formatVersion !== '1.0.0' || !Array.isArray(batch.entries)
+      || screening.formatVersion !== '1.0.0' || !screening.items) throw new Error('Invalid source batch.');
+    for (const entry of batch.entries) {
+      if (manifest.entries.some((prior) => prior.id === entry.id)) throw new Error('Duplicate provisional source ID.');
+      manifest.entries.push(entry);
+      if (screening.items[entry.id]) triage.items[entry.id] = screening.items[entry.id];
+    }
+  }
   const pack = createProvisionalPack(manifest, triage, selections);
   await writeFile(output, `${JSON.stringify(pack, null, 2)}\n`);
   console.log(`Wrote ${pack.entries.length} model-screened, human-unreviewed provisional sketches to ${output}.`);

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Unseen mixed-object release probes. Roles and links are scoring annotations only, never planner input. Endpoint coverage is not visual approval.",
+  "cases": [
+    {
+      "id": "r1",
+      "text": "A cyclist rides a bicycle across a bridge while fish swim beneath the bridge.",
+      "roles": ["cyclist", "bicycle", "bridge", "fish"],
+      "links": [["cyclist", "bicycle"], ["bicycle", "bridge"], ["fish", "bridge"]]
+    },
+    {
+      "id": "r2",
+      "text": "A fan blows air toward a window while a curtain hangs beside the window.",
+      "roles": ["fan", "air", "window", "curtain"],
+      "links": [["fan", "air"], ["air", "window"], ["curtain", "window"]]
+    },
+    {
+      "id": "r3",
+      "text": "A child holds an umbrella while rain falls from a cloud onto the umbrella.",
+      "roles": ["child", "umbrella", "rain", "cloud"],
+      "links": [["child", "umbrella"], ["cloud", "rain"], ["rain", "umbrella"]]
+    }
+  ]
+}

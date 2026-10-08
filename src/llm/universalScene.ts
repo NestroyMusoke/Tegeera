@@ -8,7 +8,8 @@ import {
   type SceneEntity,
   type SceneState
 } from "../doodlescript/schema";
-import { glyphKey, glyphSchema, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
+import { glyphKey, glyphSchema, previewNounKeys, resolveGlyph, type TegeeraGlyph } from "../glyphs/glyph";
+import { conceptForAlias } from "../doodlescript/conceptRegistry";
 import { planPartWholeFlow } from "../doodlescript/partWholeFlow";
 import { applyDoodleScript } from "../doodlescript/scene";
 import { planCirculationLoop } from "../doodlescript/circulationLoop";
@@ -19,7 +20,7 @@ import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { spatialOrder } from "../doodlescript/spatialOrder";
 import { completeExplicitPassages, sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
-import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry } from "../../shared/normalizeBlueprint.mjs";
+import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry, normalizeStandaloneReplacement } from "../../shared/normalizeBlueprint.mjs";
 
 export interface UniversalGlyphSources {
   pack?: ReadonlyMap<string, TegeeraGlyph>;
@@ -204,7 +205,7 @@ const cleanId = (value: string, index: number) => {
 };
 
 function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections: UniversalSceneBlueprint["connections"], scene: SceneState, extend: boolean,
-  routeable?: (positions: readonly { x: number; y: number }[]) => boolean,
+  routeQuality?: (positions: readonly { x: number; y: number }[]) => { cost: number; detours: number } | null,
   orderable?: (positions: readonly { x: number; y: number }[]) => boolean) {
   // An extension may need to add something above an existing top-row object.
   // The shallow third row is reserved for extensions so ordinary dense scenes
@@ -224,20 +225,26 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
   const distances = objects.map((object) => available.map((slot) =>
     ((slot.x - object.x) ** 2 + (slot.y - object.y) ** 2) / 100));
   const indexById = new Map(objects.map((object, index) => [object.id, index] as const));
+  const repairingOrder = connections.some((connection) => {
+    const order = spatialOrder(connection.label);
+    const from = objects.find((object) => object.id === connection.from);
+    const to = objects.find((object) => object.id === connection.to);
+    return order && from && to && Math.sign(from[order.axis] - to[order.axis]) !== order.sign;
+  });
   const existingPosition = (reference: string) => {
     const byId = scene.entities.find((entity) => entity.id === reference);
     if (byId) return byId;
     const matches = scene.entities.filter((entity) => glyphKey(entity.label ?? "") === glyphKey(reference));
     return matches.length === 1 ? matches[0] : undefined;
   };
-  const collect = (candidateLimit: number) => {
+  const collect = (candidateLimit: number, preserveModelOrder = true) => {
     const current: number[] = [];
     const choices: { assignment: number[]; cost: number }[] = [];
     let worstCost = Number.POSITIVE_INFINITY;
     const place = (index: number, used: number, cost: number) => {
     if (cost >= worstCost) return;
     if (index === objects.length) {
-      if (orderable && !orderable(current.map((slotIndex) => available[slotIndex]))) return;
+      if (preserveModelOrder && orderable && !orderable(current.map((slotIndex) => available[slotIndex]))) return;
       choices.push({ assignment: [...current], cost });
       choices.sort((left, right) => left.cost - right.cost);
       if (choices.length > candidateLimit) choices.pop();
@@ -282,12 +289,29 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
     place(0, 0, 0);
     return choices;
   };
-  const first = collect(1)[0];
-  if (first && (!routeable || routeable(first.assignment.map((index) => available[index])))) {
+  const ordered = collect(1)[0];
+  // Suggested coordinates may overlap or ask for more levels than the canvas
+  // has. If no assignment exists, use their soft cost instead. Every explicit
+  // spatial predicate is still enforced inside place(), including contradictions.
+  const preserveModelOrder = Boolean(ordered);
+  const first = ordered ?? collect(1, false)[0];
+  const firstQuality = first && routeQuality?.(first.assignment.map((index) => available[index]));
+  if (first && (!routeQuality || (firstQuality && (!repairingOrder || firstQuality.detours === 0)))) {
     return first.assignment.map((index) => available[index]);
   }
-  const best = routeable && first ? collect(128).find(({ assignment }) =>
-    routeable(assignment.map((index) => available[index]))) : undefined;
+  // A routable plan can still send a short relationship around the entire
+  // board. Compare a bounded shortlist using the actual renderer geometry.
+  // Explicit spatial constraints remain hard; model coordinates break ties.
+  let best: { assignment: number[]; cost: number } | undefined;
+  if (routeQuality && first) {
+    for (const choice of collect(128, preserveModelOrder)) {
+      const quality = routeQuality(choice.assignment.map((index) => available[index]));
+      if (!quality) continue;
+      if (!repairingOrder) return choice.assignment.map((index) => available[index]);
+      const cost = quality.cost + choice.cost * 0.1;
+      if (!best || cost < best.cost) best = { assignment: choice.assignment, cost };
+    }
+  }
   if (!best) throw new Error("The spatial relationships cannot fit; an arrow or caption cannot be placed clearly on this canvas.");
   return best.assignment.map((index) => available[index]);
 }
@@ -296,7 +320,8 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
 export function compileUniversalScene(
   candidate: unknown, scene: SceneState, sourceText: string, glyphSources: UniversalGlyphSources = {}
 ): DoodleScript {
-  candidate = completeExplicitPassages(sourceText, normalizeOrdinaryCarry(normalizeOptionalTypedKinds(candidate)));
+  candidate = completeExplicitPassages(sourceText, normalizeStandaloneReplacement(sourceText,
+    normalizeOrdinaryCarry(normalizeOptionalTypedKinds(candidate))));
   const hydrated = typeof candidate === "object" && candidate !== null && !Array.isArray(candidate)
     ? {
       ...candidate,
@@ -305,14 +330,20 @@ export function compileUniversalScene(
           if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
           const object = raw as Record<string, unknown>;
           if (typeof object.label !== "string") return raw;
-          const kind = typeof object.kind === "string" ? object.kind : "generic";
+          const declaredKind = typeof object.kind === "string" ? object.kind : "generic";
+          // A broad model classification is not evidence for a specific native
+          // silhouette. Require the existing noun registry for concrete rigs;
+          // otherwise allow the noun's own glyph/preview/sticker to represent it.
+          const concreteRig = ["car", "book", "desk", "tree", "building"].includes(declaredKind);
+          const kind = concreteRig && !previewNounKeys(object.label).some((key) => conceptForAlias(key)?.kind === declaredKind)
+            ? "generic" : declaredKind;
           if (kind !== "generic") return { ...object, glyph: undefined, glyphSource: undefined };
           const resolved = resolveGlyph({
             noun: object.label, kind: "generic",
             ...glyphSources, generated: object.glyph as TegeeraGlyph | undefined
           });
-          if (!resolved.glyph || resolved.source === "sticker" || resolved.source === "hero-rig") return raw;
-          return { ...object, glyph: resolved.glyph, glyphSource: resolved.source };
+          if (!resolved.glyph || resolved.source === "sticker" || resolved.source === "hero-rig") return { ...object, kind };
+          return { ...object, kind, glyph: resolved.glyph, glyphSource: resolved.source };
         }) : (candidate as { objects?: unknown }).objects
     } : candidate;
   const parsedBlueprint = universalSceneBlueprintSchema.safeParse(hydrated);
@@ -371,7 +402,7 @@ export function compileUniversalScene(
       }
       return true;
     } : undefined;
-  const routeable = hasGenericLinks
+  const routeQuality = hasGenericLinks
     ? (positions: readonly { x: number; y: number }[]) => {
       const stagedEntities: SceneEntity[] = blueprint.objects.map((object, index) => ({
         id: object.id, label: object.label, kind: object.kind, ...positions[index], scale: visualScale,
@@ -382,10 +413,20 @@ export function compileUniversalScene(
           sourceIds: [edge.from], targetIds: [edge.to], predicate: edge.label }));
       if (stagedRelations.some((edge) => edge.sourceIds[0] === edge.targetIds[0]
         || !stagedEntities.some(({ id }) => id === edge.sourceIds[0])
-        || !stagedEntities.some(({ id }) => id === edge.targetIds[0]))) return true;
-      return [...universalSceneEdges(stagedRelations, stagedEntities).values()].every(Boolean);
+        || !stagedEntities.some(({ id }) => id === edge.targetIds[0]))) return { cost: 0, detours: 0 };
+      let cost = 0; let detours = 0;
+      for (const geometry of universalSceneEdges(stagedRelations, stagedEntities).values()) {
+        if (!geometry) return null;
+        if (geometry.route !== "direct") detours += 1;
+        cost += Math.max(0, geometry.points.length - 2) * 36;
+        for (let index = 1; index < geometry.points.length; index += 1) {
+          const a = geometry.points[index - 1]; const b = geometry.points[index];
+          cost += Math.hypot(b.x - a.x, b.y - a.y);
+        }
+      }
+      return { cost, detours };
     } : undefined;
-  const positions = assignedSlots(blueprint.objects, blueprint.connections, scene, blueprint.mode === "extend", routeable, orderable);
+  const positions = assignedSlots(blueprint.objects, blueprint.connections, scene, blueprint.mode === "extend", routeQuality, orderable);
   const commands: DoodleCommand[] = [];
   if (blueprint.mode === "replace") commands.push({ action: "clear" });
 

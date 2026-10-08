@@ -637,7 +637,7 @@ function App() {
 
         {issues.length ? (
           <div className="clarification" role="status" data-clarification-code={clarification?.code}>
-            <strong>Help me understand</strong>
+            <strong>{remoteBusy ? "Preparing your drawing" : "Help me understand"}</strong>
             <span>{issues[0].message}</span>
             {clarification?.alternatives.length ? (
               <small>{clarification.alternatives.join(" · ")}</small>

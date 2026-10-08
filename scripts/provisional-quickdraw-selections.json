@@ -1,8 +1,25 @@
 {
   "formatVersion": "1.0.0",
+  "sourceDirs": [
+    ".visual-check/quickdraw-priority",
+    ".visual-check/quickdraw-batch",
+    ".visual-check/quickdraw-oct08"
+  ],
   "ids": [
     "bee-6401386805723136",
     "cup-5044554690461696",
-    "flower-5157573114200064"
+    "flower-5157573114200064",
+    "leaf-6081582064467968",
+    "sun-6326936030674944",
+    "mountain-5445216926433280",
+    "fan-4701781118418944",
+    "fish-6687003452112896",
+    "butterfly-5743214453587968",
+    "bicycle-5695535568650240",
+    "airplane-4531131665874944",
+    "ladder-5368600716115968",
+    "umbrella-4672158661869568",
+    "cloud-5287405579927552",
+    "apple-5962374890651648"
   ]
 }

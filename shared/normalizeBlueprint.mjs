@@ -37,3 +37,17 @@ export function normalizeOptionalTypedKinds(candidate) {
   });
   return changed ? { ...candidate, connections } : candidate;
 }
+
+/** A self-contained explanation starts a fresh drawing. Model-selected extend
+ * is reserved for an explicit addition or a link to an established object.
+ * This avoids accumulating unrelated lessons when the teacher submits again. */
+export function normalizeStandaloneReplacement(text, candidate) {
+  if (!candidate || typeof candidate !== "object" || candidate.mode !== "extend"
+    || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return candidate;
+  if (/\b(?:add|adding|include|including|also|another|additional|extra|more)\b/i.test(String(text))) return candidate;
+  const names = new Set(candidate.objects.flatMap((object) => [object?.id, object?.label])
+    .filter((value) => typeof value === "string").map((value) => value.toLowerCase().trim()));
+  const selfContained = candidate.connections.every((edge) => edge && [edge.from, edge.to, edge.via]
+    .filter((value) => value !== undefined).every((value) => typeof value === "string" && names.has(value.toLowerCase().trim())));
+  return selfContained ? { ...candidate, mode: "replace" } : candidate;
+}

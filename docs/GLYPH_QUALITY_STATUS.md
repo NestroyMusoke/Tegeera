@@ -1,6 +1,10 @@
 # Glyph quality and live-priority findings (29 September 2026)
 
-This is a development record, not a launch claim. Tegeera's **human-approved** offline glyph pack is still empty. A separate, clearly marked provisional pack now contains three licensed, model-screened Quick, Draw! sketches. Runtime unknown nouns remain labelled, emoji-previewed when a safe CLDR match exists, or shown as unapproved generated drafts. A validated SVG, model guess, or stroke sequence is **not** proof that a person can recognize the object.
+This is a development record, not a launch claim. Tegeera's **human-approved** offline glyph pack is still empty. A separate, clearly marked provisional pack now contains fifteen licensed, model-screened Quick, Draw! sketches. Runtime unknown nouns remain labelled, emoji-previewed when a safe CLDR match exists, or shown as unapproved generated drafts. A validated SVG, model guess, or stroke sequence is **not** proof that a person can recognize the object.
+
+## 8 October 2026 follow-up
+
+The provisional pack now includes bee, cup, flower, leaf, sun, mountain, fan, fish, butterfly, bicycle, airplane, ladder, umbrella, cloud and apple. The nine newly sampled categories selected for shipping came from a bounded 40-candidate blind screen; ambiguous model-matched drawings were excluded after inspection. Each shipped entry retains its exact source and screening evidence. The builder accepts multiple source batches and refuses duplicate source IDs. See [release evidence](RELEASE_READINESS_2026-10-08.md) for fresh live tests, browser-discovered fixes and unresolved release gates. None of these entries is described as human-approved art.
 
 ## 6 October 2026 follow-up
 

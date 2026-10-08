@@ -12,9 +12,17 @@ const subject = (label: string, kind: SceneEntity["kind"]): SceneEntity => ({
 
 describe("provisional Quick, Draw! previews", () => {
   it("keeps machine screening distinct from human approval and retains source credits", () => {
-    expect(provisionalPackSchema.parse(data).entries).toHaveLength(3);
+    expect(provisionalPackSchema.parse(data).entries).toHaveLength(15);
     expect(data.entries.every((entry) => entry.screening.humanReviewed === false)).toBe(true);
     expect(provisionalCatalog.attributions.every((entry) => entry.sourceUrl.includes("quickdraw_dataset"))).toBe(true);
+  });
+
+  it("makes every shipped preview available offline without promoting it to approved art", () => {
+    for (const entry of data.entries) {
+      const scene = withProvisionalPreviews({ ...initialScene, entities: [subject(entry.noun, "generic")] });
+      expect(scene.entities[0].glyph).toEqual(entry.glyph);
+      expect(scene.entities[0].glyphSource).toBe("provisional");
+    }
   });
 
   it("shows a preview for a generic noun or animal mistyped as a person", () => {

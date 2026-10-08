@@ -202,6 +202,8 @@ describe("teaching workflow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enable AI understanding" }));
     explain("A dragon flies over a tiny village");
     expect(screen.getByRole("button", { name: "Update drawing" })).toBeTruthy();
+    expect(screen.getByText("Preparing your drawing")).toBeTruthy();
+    expect(screen.queryByText("Help me understand")).toBeNull();
     fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: "A volcano floats over a tiny castle" } });
     fireEvent.click(screen.getByRole("button", { name: "Update drawing" }));
     await waitFor(() => expect(container.querySelector('[data-entity-id="volcano"]')).not.toBeNull());

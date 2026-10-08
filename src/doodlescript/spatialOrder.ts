@@ -24,5 +24,6 @@ export function isPositionalRelation(label: string): boolean {
   // An upward/downward journey has an ordered endpoint and still needs an
   // arrow; it is not a static "above" or "below" relation.
   if (/^(?:rises?|ascends?|falls?|descends?|drops?) from$/.test(words)) return false;
-  return Boolean(spatialOrder(label)) || /^(?:beside|next to|adjacent to|alongside)$/.test(words);
+  return Boolean(spatialOrder(label))
+    || /^(?:(?:is|sits?|stands?|waits?|hangs?|rests?) )?(?:beside|next to|adjacent to|alongside)$/.test(words);
 }

@@ -20,6 +20,7 @@ test('provisional builder retains source, glyph, and an explicit non-human-revie
 });
 
 test('provisional builder rejects stale artwork, a wrong guess, and duplicate nouns', () => {
+  assert.throws(() => createProvisionalPack({ ...manifest, entries: [entry, entry] }, triage, selections), /Duplicate provisional source ID/);
   assert.throws(() => createProvisionalPack(manifest, { ...triage, items: {
     [entry.id]: { ...triage.items[entry.id], fingerprint: 'stale' }
   } }, selections), /No matching blind/);

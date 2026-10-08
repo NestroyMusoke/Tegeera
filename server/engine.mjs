@@ -1,6 +1,6 @@
 import { completeExplicitPassages, sourceConstraintIssue } from "../shared/sourceConstraints.mjs";
 import { CORE_SCENE_RULES } from "../shared/scenePlanningRules.mjs";
-import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry } from "../shared/normalizeBlueprint.mjs";
+import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry, normalizeStandaloneReplacement } from "../shared/normalizeBlueprint.mjs";
 import { SCENE_RESPONSE_SCHEMA } from "./sceneResponseSchema.mjs";
 
 export const NVIDIA_SCENE_MODEL = "nvidia/nemotron-3-super-120b-a12b";
@@ -318,7 +318,8 @@ export function interpretScene(body, config, options = {}) {
     config, (candidate) => validScene(candidate, body.scene, body.text),
     { ...options, nebiusResponseFormat: options.nebiusResponseFormat ?? config.sceneResponseFormat ?? "default" },
     (candidate) => sceneValidationIssue(candidate, body.scene, body.text), repairTask,
-    (candidate) => completeExplicitPassages(body.text, normalizeOrdinaryCarry(normalizeOptionalTypedKinds(candidate))));
+    (candidate) => completeExplicitPassages(body.text, normalizeStandaloneReplacement(body.text,
+      normalizeOrdinaryCarry(normalizeOptionalTypedKinds(candidate)))));
 }
 
 export function generateGlyph(body, config, options = {}) {

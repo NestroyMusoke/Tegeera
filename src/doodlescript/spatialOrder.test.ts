@@ -23,7 +23,7 @@ describe("embedded spatial predicates", () => {
   });
 
   it("marks symmetric neighbors as undirected position, not movement", () => {
-    for (const phrase of ["beside", "next to", "adjacent to", "alongside"]) {
+    for (const phrase of ["beside", "next to", "adjacent to", "alongside", "hangs beside", "waits beside", "stands next to"]) {
       expect(spatialOrder(phrase)).toBeUndefined();
       expect(isPositionalRelation(phrase)).toBe(true);
     }

@@ -213,6 +213,852 @@
         "model": "openbmb/MiniCPM-V-4_5",
         "blindGuessAt64px": "flower"
       }
+    },
+    {
+      "noun": "leaf",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M83.57 14.39 L67.25 34.47 L43.41 56.43 L26.47 74.63 L23.02 77.45 L22.71 76.51",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M80.43 19.41 L70.71 12.51 L61.29 10 L54.71 10.31 L45.92 12.51 L34.63 18.78 L29.29 24.75 L25.84 32.59 L19.88 52.98 L11.73 76.2 L12.98 76.82",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M13.61 68.67 L12.04 76.51 L11.41 88.12 L15.49 81.22 L27.1 69.61 L28.04 69.61",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M17.06 85.29 L26.47 90 L37.45 89.06 L59.41 82.47 L76.04 71.49 L84.82 61.14 L88.27 52.67 L88.59 41.37 L87.02 33.84 L82.94 26.63",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M46.55 30.71 L71.65 32.9 L71.65 36.67 L66.94 53.29",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M26.16 54.55 L35.25 51.73 L43.41 50.47 L44.35 54.55 L42.47 72.43",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            88.59,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/leaf.ndjson#key_id=6081582064467968",
+        "drawingId": "6081582064467968"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Leaf with a line through it"
+      }
+    },
+    {
+      "noun": "sun",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M37.45 88.12 L32.43 86.24 L27.73 78.39 L25.84 69.92 L25.84 56.12 L29.92 48.27 L33.69 45.14 L42.16 42 L50.94 41.69 L58.47 45.45 L61.61 48.27 L66 55.49 L67.25 60.51 L66.94 69.92 L64.75 74.63 L57.84 82.47 L49.69 87.8 L45.29 89.37 L33.37 90 L29.92 88.43 L25.84 84.04",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M17.37 40.12 L11.73 27.88 L11.1 22.24 L12.98 20.67",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M41.84 31.96 L41.53 26.63 L43.73 14.71 L44.67 11.25 L46.86 10",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M56.59 34.47 L69.14 22.55 L72.59 20.98 L75.41 20.98",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M71.65 47.65 L81.37 49.53 L86.39 51.1 L88.9 52.98",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M73.84 81.53 L73.84 81.53",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            88.9,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/sun.ndjson#key_id=6326936030674944",
+        "drawingId": "6326936030674944"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Sun"
+      }
+    },
+    {
+      "noun": "mountain",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M44.82 10.31 L37.61 18.47 L28.82 33.22 L24.75 43.57 L15.65 82.78 L14.08 86.24 L12.51 87.49",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M42.31 13.76 L41.06 15.33 L41.06 18.47 L52.67 41.69 L54.24 60.51",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M28.82 29.45 L30.71 34.47 L32.27 35.1 L33.84 34.47 L36.98 30.08 L41.37 33.53 L43.88 33.53 L46.71 31.02 L48.9 31.33",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M54.24 60.2 L56.75 73.06 L61.45 90",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M56.12 65.22 L61.76 51.1 L77.45 23.49 L80.9 10 L83.1 20.67 L87.49 68.35",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M71.8 23.18 L72.43 27.57 L74.31 31.33 L75.25 31.96 L76.82 30.08 L78.39 30.08 L82.47 34.47 L85.29 35.41 L86.24 33.84",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            87.49,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/mountain.ndjson#key_id=5445216926433280",
+        "drawingId": "5445216926433280"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "mountains"
+      }
+    },
+    {
+      "noun": "fan",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M44.2 71.49 L27.88 69.92 L15.65 60.82 L11.57 43.57 L26.63 21.92 L60.82 10.63 L85.29 14.71 L90 31.65 L88.75 45.14 L66.78 73.69 L71.18 79.96 L84.67 87.18 L67.1 89.37 L33.22 86.24 L32.9 84.04 L47.65 74 L46.71 71.49 L41.06 71.8",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M48.9 15.96 L49.53 58.63 L52.04 63.65",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M10 47.02 L35.1 45.45 L72.75 41.37 L81.53 38.55 L82.47 37.29",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M49.22 50.78 L49.53 67.73 L47.96 72.43 L52.98 70.55 L65.22 69.61",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M20.98 66.78 L31.02 57.37 L52.98 44.2 L65.84 31.96 L74.63 25.69 L80.9 16.9",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M25.06 22.55 L47.02 43.57 L54.55 47.02 L63.02 53.92 L67.41 58.31 L72.12 64.59 L74 65.53",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10.63
+          ],
+          "ground": [
+            50,
+            89.37
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/fan.ndjson#key_id=4701781118418944",
+        "drawingId": "4701781118418944"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Fan"
+      }
+    },
+    {
+      "noun": "fish",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M90 10.31 L88.75 17.84 L88.75 63.02 L87.49 73.69 L86.24 75.88 L84.98 75.57",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M89.69 15.02 L68.35 32.9 L60.2 38.24",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M86.55 69.61 L79.33 64.27 L68.35 51.1 L59.57 37.92 L53.29 26 L48.9 22.24 L45.14 21.29 L42 22.24 L37.92 25.69 L22.86 42.31 L14.39 56.12 L10.94 63.02 L10 68.98 L10 76.2 L12.82 80.9 L17.84 85.61 L22.55 88.43 L26.63 89.69 L38.86 88.43 L44.82 84.67 L53.61 74 L61.45 52.67 L65.22 43.57 L70.55 35.1 L76.82 29.45 L80.27 27.57 L83.41 26.63 L87.8 26.63",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M26.63 50.78 L26.94 53.29 L26 55.8 L23.8 54.86 L24.43 47.33 L25.69 45.45 L26.63 47.33 L21.92 53.92",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M10.31 82.16 L18.47 79.33 L34.78 68.98",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M26 86.55 L31.02 70.55",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10.31
+          ],
+          "ground": [
+            50,
+            89.69
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/fish.ndjson#key_id=6687003452112896",
+        "drawingId": "6687003452112896"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Fish"
+      }
+    },
+    {
+      "noun": "butterfly",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M46.24 26.31 L42.47 29.45 L36.51 66.78 L36.51 75.57 L37.76 79.96 L38.39 88.12 L39.02 86.24 L39.02 65.84",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M44.67 29.14 L78.24 29.14 L84.82 34.47 L87.02 38.86 L87.96 43.25 L87.33 45.45 L82.94 52.04 L73.84 57.69 L69.76 59.25 L56.9 58.31 L60.98 58 L68.51 59.57 L72.9 62.39 L75.41 66.47 L74.16 68.67 L69.76 72.12 L67.25 78.71 L62.55 87.49 L58.16 90 L43.41 89.69 L41.53 87.49 L39.65 78.39",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M42.47 31.65 L33.69 29.45 L29.29 30.39 L17.06 38.86 L12.67 44.82 L12.04 47.33 L12.35 52.04 L15.18 58.63 L19.57 59.88 L28.35 59.88 L19.25 59.57 L12.98 63.02 L12.35 74 L15.49 82.47 L28.35 82.47 L34.94 83.73 L36.82 80.59 L37.76 76.51",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M41.53 30.71 L37.76 21.92 L37.76 20.04 L39.96 18.47 L44.04 18.78 L48.12 21.61 L47.8 28.2",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M46.24 20.98 L59.41 11.25 L59.41 10",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M37.45 17.53 L29.61 12.2",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            87.96,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/butterfly.ndjson#key_id=5743214453587968",
+        "drawingId": "5743214453587968"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Butterfly"
+      }
+    },
+    {
+      "noun": "bicycle",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M47.02 43.41 L38.86 39.96 L31.65 39.96 L26.31 40.9 L17.84 44.98 L12.51 51.57 L10 59.1 L10 65.69 L14.08 71.96 L19.41 74.47 L27.25 74.16 L31.02 72.27 L38.24 65.37 L42.63 60.35 L44.2 56.27 L45.45 44.67 L43.25 40.9",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M90 48.12 L83.41 44.98 L71.8 44.35 L66.78 47.49 L55.49 62.55 L50.47 71.02 L49.84 80.75 L53.61 84.82 L62.71 87.65 L72.75 87.65 L80.27 85.76 L86.86 82.94 L89.69 79.49 L89.69 71.33 L88.43 63.49 L83.41 52.51 L75.25 46.24 L68.35 45.92",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M27.25 59.41 L47.65 62.86 L74 64.43 L79.33 65.37 L75.57 65.69",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M78.71 64.43 L81.53 53.45 L82.78 44.35 L82.47 33.37 L79.96 24.9 L80.27 12.67",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M81.53 14.24 L69.92 17.69 L68.35 17.06 L66.16 13.29 L64.27 12.35",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M26.63 59.41 L26 58.16 L26.63 49.69",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            12.35
+          ],
+          "ground": [
+            50,
+            87.65
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/bicycle.ndjson#key_id=5695535568650240",
+        "drawingId": "5695535568650240"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "bicycle"
+      }
+    },
+    {
+      "noun": "airplane",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M56.12 61.45 L57.06 65.53 L55.8 70.55 L56.12 85.29 L54.86 84.98 L52.98 81.22 L44.82 63.02 L47.96 59.88 L52.35 58.63 L57.37 60.82",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M42.94 62.08 L68.67 58 L84.98 58.94 L87.18 58.31 L89.37 55.8 L90 49.84 L84.98 44.51 L74.63 46.71 L50.16 48.27 L46.39 49.84 L37.61 50.78 L33.53 53.61 L27.25 52.67 L21.92 53.61 L18.16 52.35 L14.39 44.2 L12.82 50.78 L10.63 52.04 L10 54.24 L11.88 61.14 L18.47 62.71 L21.92 62.08 L30.39 63.02 L39.18 61.76 L41.37 59.25",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M48.9 47.96 L52.67 27.88 L52.98 14.71 L65.84 42.63 L66.47 47.33 L65.22 52.67",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M83.73 51.41 L84.67 51.41",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M84.98 50.47 L84.98 50.16",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M83.73 47.65 L79.65 50.16 L84.04 54.86",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            14.71
+          ],
+          "ground": [
+            50,
+            85.29
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/airplane.ndjson#key_id=4531131665874944",
+        "drawingId": "4531131665874944"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "airplane"
+      }
+    },
+    {
+      "noun": "ladder",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M68.98 10 L68.04 13.14 L62.39 23.49 L50.78 41.37 L10.63 90",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M89.37 15.65 L89.37 22.55 L86.55 30.39 L73.06 62.08 L64.27 77.45 L61.14 85.92 L59.57 86.86",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M30.39 72.12 L54.24 75.25 L58.94 78.08",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M49.84 57.37 L70.86 63.96",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M60.51 39.8 L68.35 39.8 L76.82 41.69",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M64.59 24.43 L75.57 26.31 L87.49 30.39",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            89.37,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/ladder.ndjson#key_id=5368600716115968",
+        "drawingId": "5368600716115968"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Ladder"
+      }
+    },
+    {
+      "noun": "umbrella",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M10 45.45 L10 42 L11.88 36.04 L16.27 27.57 L21.92 19.73 L26 15.65 L31.33 12.51 L37.29 10.63 L52.35 10 L57.69 11.88 L68.67 18.16 L75.88 24.43 L85.61 38.24 L88.43 46.39",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M10.31 44.2 L16.27 47.65 L24.75 47.96 L27.88 45.14 L31.96 37.61 L37.61 43.25 L45.14 46.39 L51.1 46.71 L55.18 41.37 L58.63 44.82 L63.65 47.33 L67.73 47.33 L69.92 43.88 L71.49 43.25 L75.25 47.96 L79.96 48.9 L90 42.31",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M50.16 44.2 L53.29 54.55 L58 74.94 L58.63 84.98 L54.24 88.43 L48.27 89.69 L39.18 90 L35.1 88.12",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M15.96 38.55 L37.29 37.92 L61.76 40.43 L74.63 40.43",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M19.41 24.12 L31.33 23.8 L45.14 25.37 L65.84 30.08 L74.94 33.22",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M34.47 15.02 L36.04 13.76 L49.84 13.76 L71.49 20.67",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/umbrella.ndjson#key_id=4672158661869568",
+        "drawingId": "4672158661869568"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Umbrella"
+      }
+    },
+    {
+      "noun": "cloud",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M40.75 39.18 L47.02 31.33 L51.41 29.14 L56.43 27.57 L65.53 27.57 L72.43 29.76 L76.51 33.84 L76.82 37.29 L75.88 40.75 L73.06 43.57 L71.49 43.57 L71.18 42.31",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M63.02 59.25 L70.86 71.18 L71.49 73.69 L70.24 77.14 L65.22 80.59 L58.63 80.9 L49.84 79.02 L45.45 75.88",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M26 43.25 L23.18 42 L21.29 42.63 L17.84 45.45 L13.45 51.1 L10 59.88 L11.25 67.41 L15.65 71.18 L22.55 71.18 L38.55 63.33",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M16.9 47.02 L14.71 43.57 L14.71 41.69 L15.96 35.73 L17.84 31.65 L23.18 25.06 L29.76 20.67 L35.41 19.1 L42.94 20.04 L47.33 22.86 L51.73 31.02",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M73.06 40.12 L78.71 40.43 L84.67 43.88 L88.75 48.9 L90 55.49 L88.75 60.51 L84.98 64.59 L74.94 65.84 L71.18 63.96",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            19.1
+          ],
+          "ground": [
+            50,
+            80.9
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/cloud.ndjson#key_id=5287405579927552",
+        "drawingId": "5287405579927552"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "cloud"
+      }
+    },
+    {
+      "noun": "apple",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M53.29 38.86 L44.51 37.29 L37.92 34.47 L36.67 32.9 L39.49 29.76 L43.25 28.51 L52.67 28.82 L63.96 32.27 L63.96 32.9",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M39.49 30.39 L32.9 26.94 L25.69 27.25 L18.78 31.96 L15.33 39.49 L15.96 47.96 L20.67 62.39 L24.75 81.84 L28.2 85.29 L34.78 88.43 L43.88 88.43 L52.98 90 L59.25 89.06 L67.41 84.04 L76.82 72.12 L82.47 61.45 L84.67 55.18 L84.67 49.84 L80.27 42.31 L69.92 36.04",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M27.25 27.25 L36.04 24.75 L49.53 23.49",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M46.39 23.49 L57.06 29.76 L63.65 35.41",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M59.57 36.04 L59.57 29.76 L61.14 23.49 L63.02 18.47 L68.04 10 L68.04 12.82 L58 33.53 L55.8 34.47 L57.69 28.51 L62.71 21.29 L56.75 25.37 L47.33 35.73",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M56.75 34.47 L47.33 22.55 L41.37 16.59 L34.78 14.08 L30.39 14.39 L27.25 17.22 L26.31 20.04 L27.25 23.49 L35.1 28.82 L45.45 33.84 L50.47 39.18",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            10
+          ],
+          "ground": [
+            50,
+            90
+          ],
+          "front": [
+            84.67,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/apple.ndjson#key_id=5962374890651648",
+        "drawingId": "5962374890651648"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Apple"
+      }
     }
   ]
 }
