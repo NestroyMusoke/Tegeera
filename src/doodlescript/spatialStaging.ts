@@ -54,7 +54,8 @@ export function stageTargetedPair(scene: SceneState, actorId: string, targetId: 
 const contactAxis = Array.from({ length: 177 }, (_, index) => 6 + index * 0.5);
 
 /** Finds a close but non-overlapping pair whose target surface is arm-reachable. */
-export function stageContactPair(scene: SceneState, actorId: string, targetId: string, movableIds: ReadonlySet<string>): StagedMove[] {
+export function stageContactPair(scene: SceneState, actorId: string, targetId: string, movableIds: ReadonlySet<string>,
+  accepts?: (actor: SceneEntity, target: SceneEntity) => boolean): StagedMove[] {
   const originalActor = scene.entities.find((entity) => entity.id === actorId);
   const originalTarget = scene.entities.find((entity) => entity.id === targetId);
   if (!originalActor || !originalTarget || actorId === targetId || !movableIds.size) return [];
@@ -65,6 +66,7 @@ export function stageContactPair(scene: SceneState, actorId: string, targetId: s
       : [])]
     : [{ x: originalActor.x, y: originalActor.y }];
   let best: { actor: SceneEntity; target: SceneEntity; score: number } | undefined;
+  const constrained: NonNullable<typeof best>[] = [];
 
   for (const actorPosition of actorPositions) {
     const actor = withPosition(originalActor, actorPosition);
@@ -82,9 +84,14 @@ export function stageContactPair(scene: SceneState, actorId: string, targetId: s
       const score = Math.abs(contact.solution.distance - 40) * 3
         + Math.abs(target.y - actor.y) * 0.75
         + (target.x < actor.x ? 3 : 0) + movement * 0.15;
-      if (!best || score < best.score) best = { actor, target, score };
+      if (accepts) constrained.push({ actor, target, score });
+      else if (!best || score < best.score) best = { actor, target, score };
     }
   }
+  // Route checks are substantially more expensive than arm geometry. Bound
+  // the optional scene-wide search; a diagram fallback is preferable to lag.
+  if (accepts) best = constrained.sort((a, b) => a.score - b.score).slice(0, 32)
+    .find(({ actor, target }) => accepts(actor, target));
   if (!best) return [];
   return [best.actor, best.target]
     .filter((entity) => movableIds.has(entity.id))

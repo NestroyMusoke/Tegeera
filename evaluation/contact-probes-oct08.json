@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh compositional probes. Expected endpoints are scoring metadata, not model input. Contact staging does not guarantee an anatomically correct grip or approved artwork.",
+  "cases": [
+    {
+      "id": "c1",
+      "text": "A gardener carries a watering can while a butterfly flies above a flower.",
+      "roles": ["gardener", "watering can", "butterfly", "flower"],
+      "links": [["gardener", "watering can"], ["butterfly", "flower"]]
+    },
+    {
+      "id": "c2",
+      "text": "A scientist holds a glass flask beside a microscope.",
+      "roles": ["scientist", "glass flask", "microscope"],
+      "links": [["scientist", "glass flask"]]
+    },
+    {
+      "id": "c3",
+      "text": "A child touches a balloon while a bird flies above the child.",
+      "roles": ["child", "balloon", "bird"],
+      "links": [["child", "balloon"], ["bird", "child"]]
+    }
+  ]
+}

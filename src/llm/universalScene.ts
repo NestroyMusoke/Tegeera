@@ -19,6 +19,7 @@ import { planCallReturnFlow } from "../doodlescript/callReturnFlow";
 import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { spatialOrder } from "../doodlescript/spatialOrder";
+import { groundContactPerformances } from "./groundedPerformance";
 import { completeExplicitPassages, sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
 import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry, normalizeStandaloneReplacement } from "../../shared/normalizeBlueprint.mjs";
 
@@ -515,6 +516,7 @@ export function compileUniversalScene(
     context: { subjectIds: createdIds.slice(0, 1), objectIds: createdIds.slice(1) }
   };
   const requireVisibleConnectors = (candidateScript: DoodleScript): DoodleScript => {
+    candidateScript = groundContactPerformances(scene, candidateScript);
     const projected = applyDoodleScript(scene, candidateScript);
     for (const relation of projected.relations ?? []) {
       const order = relation.predicate && spatialOrder(relation.predicate);
