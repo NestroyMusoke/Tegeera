@@ -931,3 +931,12 @@ button {
 .circulation-return {
   animation-delay: 0.2s;
 }
+@keyframes propagation-travel {
+  from { transform: translateX(0); opacity: 0.25; }
+  15% { opacity: 1; }
+  to { transform: translateX(var(--propagation-distance)); opacity: 0; }
+}
+.propagation-pulse { transform: translateX(var(--propagation-rest, 0px)); animation: propagation-travel 2.8s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .propagation-pulse { animation: none; }
+}

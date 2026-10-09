@@ -35,6 +35,7 @@ import { conditionFlowGeometry, isConditionFlowRelation } from "./conditionFlow"
 import { isProgressiveNarrowingRelation, progressiveNarrowingGeometry } from "./progressiveNarrowing";
 import { fifoGeometry, isFifoRelation } from "./fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "./processorMemoryLink";
+import { isPropagationEntity, linearPropagationGeometry } from "./linearPropagation";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "./doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "./consumptionChain";
 
@@ -281,6 +282,9 @@ export function validateDoodleScript(
   const fifoRelations = (projected.relations ?? []).filter(isFifoRelation);
   if (fifoRelations.length && !fifoGeometry(fifoRelations, projected.entities)) issues.push({ gate: "semantic", message: "A FIFO queue needs exactly three ordered entries and one service endpoint, with the earliest entry at the front." });
   const processorMemoryRelations = (projected.relations ?? []).filter(isProcessorMemoryRelation);
+  if (projected.entities.some(isPropagationEntity) && !linearPropagationGeometry(projected.relations ?? [], projected.entities)) {
+    issues.push({ gate: "semantic", message: "Propagation needs a coherent source, medium, payload and destination with a forward path." });
+  }
   if (processorMemoryRelations.length && !processorMemoryGeometry(processorMemoryRelations, projected.entities)) issues.push({ gate: "semantic", message: "Fast data access needs one processing unit, one distinct nearby memory unit, and a shared bidirectional data link." });
   const doublingRelations = (projected.relations ?? []).filter(isDoublingGrowthRelation);
   if (doublingRelations.length && !doublingGrowthGeometry(doublingRelations, projected.entities)) issues.push({ gate: "semantic", message: "Doubling growth needs one subject and the distinct ordered stages 1, 2, 4, and 8." });

@@ -1,0 +1,9 @@
+{
+  "cases": [
+    { "id": "heat-rod", "text": "When you heat a metal rod at one end, the heat slowly moves along to the other end." },
+    { "id": "signal-cable", "text": "A signal travels through a cable from a transmitter to a receiver." },
+    { "id": "wave-spring", "text": "A wave propagates along a spring from a shaker to a clamp." },
+    { "id": "warm-strip", "text": "Thermal energy spreads through an aluminium strip from a heater to a far end." },
+    { "id": "reverse-heat", "text": "Heat moves along a rod from the right end to the left end." }
+  ]
+}

@@ -4,6 +4,8 @@ import { ownershipBadges, type OwnershipBadge } from "./ownership";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isQueue, queueGeometry } from "../doodlescript/queue";
 import { EntityGlyph } from "./entityRenderers";
+import { LinearPropagationDrawing } from "./LinearPropagationDrawing";
+import { isPropagationEntity } from "../doodlescript/linearPropagation";
 import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
 import { actionForPredicate } from "../doodlescript/actionRegistry";
 import { applyHandoverPerformance, handoverParticipants, isHandover } from "../doodlescript/handover";
@@ -161,7 +163,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
             data-relation-family={definition.family}
             data-relation-kind={definition.kind}
             data-relation-predicate={relation.predicate}
-            data-relation-layout={definition.layout}
+            data-relation-layout={scene.entities.some((entity) => isPropagationEntity(entity) && relation.sourceIds.includes(entity.id)) ? "linear-propagation" : definition.layout}
             data-relation-registry-version={RELATION_REGISTRY_VERSION}
             data-layout-topology={layout.topology}
             data-layout-registry-version={LAYOUT_FAMILY_REGISTRY_VERSION}>
@@ -282,6 +284,9 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
 
 function Relationship({ relation, relations, entities, genericEdges }: { relation: SceneRelation; relations: SceneRelation[];
   entities: SceneEntity[]; genericEdges: ReturnType<typeof universalSceneEdges> }) {
+  if (entities.some((entity) => isPropagationEntity(entity) && relation.sourceIds.includes(entity.id))) {
+    return relation.predicate === "enters" ? <LinearPropagationDrawing relations={relations} entities={entities} /> : null;
+  }
   if (isConsumptionChainRelation(relation)) {
     const chainRelations = relations.filter(isConsumptionChainRelation);
     if (relation.id !== chainRelations.find(({ kind }) => kind === "chainStartsWith")?.id) return null;
@@ -1035,6 +1040,7 @@ function DoodleEntity({
   forceBody?: boolean;
 }) {
   const x = entity.x * 10;
+  if (isPropagationEntity(entity)) return <g data-entity-id={entity.id} data-propagation-role={entity.propagationRole} aria-label={entity.label} />;
   const y = entity.y * 6.2;
   const transform = `translate(${x} ${y}) scale(${entity.scale})`;
   const className = `doodle-object ${entity.highlighted ? "highlighted" : ""}${handoverObject ? " handover-object" : ""}`;

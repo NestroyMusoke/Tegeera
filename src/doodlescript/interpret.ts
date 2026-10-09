@@ -34,6 +34,7 @@ import { planFifoQueue } from "./fifoQueue";
 import { planProcessorMemoryLink } from "./processorMemoryLink";
 import { planDoublingGrowth } from "./doublingGrowth";
 import { planConsumptionChain } from "./consumptionChain";
+import { buildLinearPropagation, matchLinearPropagation } from "./linearPropagation";
 
 export type Interpretation =
   | { ok: true; script: DoodleScript }
@@ -71,6 +72,13 @@ function resolve(phrase: string, scene: SceneState): SceneEntity {
 }
 
 export function interpretTeacherText(input: string, scene: SceneState): Interpretation {
+  const propagation = matchLinearPropagation(input);
+  if (propagation) {
+    const script = buildLinearPropagation(propagation, scene, input);
+    if (script) return { ok: true, script };
+    return { ok: false, message: "Start a new scene to give this continuous propagation diagram enough room.", clause: input,
+      clarification: { code: "layout-limit", question: "Start a new scene for this propagation diagram?", alternatives: ["Start a new scene"], evidenceText: input } };
+  }
   const commands: DoodleCommand[] = [];
   let working = scene;
   let currentClause = input;

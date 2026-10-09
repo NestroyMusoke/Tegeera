@@ -73,6 +73,7 @@ export const sceneEntitySchema = z.object({
   glyph: glyphSchema.optional(),
   glyphSource: z.enum(["glyph-pack", "provisional", "emoji", "cache", "generated", "deferred", "streaming"]).optional(),
   visualRole: visualRoleSchema.optional(),
+  propagationRole: z.enum(["source", "medium", "payload", "destination"]).optional(),
   fraction: z.object({ numerator: z.number().int().min(1).max(12), denominator: z.number().int().min(2).max(12) }).optional(),
   performance: characterPerformanceSchema.optional()
 });

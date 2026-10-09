@@ -60,6 +60,7 @@ describe("independent semantic-scene gold annotations", () => {
 
   it("reports every dimension honestly without requiring the current engine to pass", () => {
     const result = evaluateIndependentGold(teacherCases, gold, {
+      15: observeCase(15),
       1: observeCase(1), 2: observeCase(2), 3: observeCase(3), 4: observeCase(4), 6: observeCase(6), 11: observeCase(11), 12: observeCase(12), 13: observeCase(13), 21: observeCase(21), 22: observeCase(22), 23: observeCase(23), 24: observeCase(24), 25: observeCase(25), 26: observeCase(26), 27: observeCase(27), 28: observeCase(28), 29: observeCase(29), 30: observeCase(30), 31: observeCase(31), 32: observeCase(32), 33: observeCase(33), 41: observeCase(41), 42: observeCase(42), 44: observeCase(44), 51: observeCase(51)
     });
     expect(result.total).toBe(29);
@@ -70,7 +71,7 @@ describe("independent semantic-scene gold annotations", () => {
       failures: ["human visual review pending"]
     });
     expect(result.passed).toBe(3);
-    expect(result.automatedReady).toBe(28);
+    expect(result.automatedReady).toBe(29);
     expect(result.falseConfident).toBe(0);
     expect(result.results.find(({ id }) => id === 53)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
     expect(result.results.find(({ id }) => id === 56)).toMatchObject({ passed: true, observedIntent: "clarify", automatedReady: true });
