@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "report:readiness": "node scripts/report-readiness.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/check-bundle.mjs",
     "verify:bundle": "node scripts/check-bundle.mjs",
