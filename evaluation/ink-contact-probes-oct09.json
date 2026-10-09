@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh hosted explanations for glyph-aware contact. Endpoint coverage is not artwork approval. Scoring annotations never enter the planner prompt.",
+  "cases": [
+    {
+      "id": "i1",
+      "text": "A hiker holds a cup while a butterfly flies above a flower.",
+      "roles": ["hiker", "cup", "butterfly", "flower"],
+      "links": [["hiker", "cup"], ["butterfly", "flower"]]
+    },
+    {
+      "id": "i2",
+      "text": "A student carries an apple while a teacher holds a book.",
+      "roles": ["student", "apple", "teacher", "book"],
+      "links": [["student", "apple"], ["teacher", "book"]]
+    }
+  ]
+}

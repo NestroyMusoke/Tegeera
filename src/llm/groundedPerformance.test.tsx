@@ -31,6 +31,14 @@ describe("hosted relationships become physical performances", () => {
     expect(applyDoodleScript(initialScene, script).relations?.[0]).toMatchObject({ kind: "actsOn", predicate: "hold" });
   });
 
+  it("stages with provisional artwork before painting, not with emoji padding", () => {
+    const script = compileUniversalScene(plan("holds", "umbrella"), initialScene, "A traveller holds an umbrella.");
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.entities.find(({ id }) => id === "item")).toMatchObject({ glyphSource: "provisional" });
+    expect(scene.relations?.[0]).toMatchObject({ kind: "actsOn", predicate: "hold" });
+    expect(validateDoodleScript(script, initialScene)).toMatchObject({ ok: true });
+  });
+
   it("retains the existing safe rejection of negated claims", () => {
     expect(() => compileUniversalScene(plan("does not hold"), initialScene, "A traveller does not hold a cup."))
       .toThrow(/negated claim/);

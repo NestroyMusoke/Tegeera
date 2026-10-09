@@ -1,4 +1,4 @@
-import { contactAnchor, entityVisualGeometry, shoulderAnchor } from "./entityGeometry";
+import { contactAnchor, contactHalfWidth, shoulderAnchor } from "./entityGeometry";
 import { solveTwoBone } from "./inverseKinematics";
 import type { SceneEntity } from "./schema";
 
@@ -18,7 +18,7 @@ export function solveContactArm(actor: SceneEntity, target: SceneEntity, bodyLea
 /** Narrow contact overlap exception: visible bodies and labels must still clear. */
 export function contactPairIsVisuallySafe(actor: SceneEntity, target: SceneEntity): boolean {
   const centerGap = Math.abs(actor.x - target.x) * 10;
-  const targetHalfWidth = entityVisualGeometry[target.kind].contact.halfWidth * target.scale;
+  const targetHalfWidth = contactHalfWidth(target) * target.scale;
   const actorCore = 22 * actor.scale;
   const labelHalf = (entity: SceneEntity) => Math.max(14, (entity.label ?? entity.kind).length * 4.5);
   const actorLabelY = actor.y * 6.2 + 84 * actor.scale;

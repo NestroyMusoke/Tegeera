@@ -1,4 +1,5 @@
 import type { EntityKind, SceneEntity } from "./schema";
+import { glyphContactSurface } from "../glyphs/contactSurface";
 
 export interface CanvasPoint {
   x: number;
@@ -44,7 +45,14 @@ export function attentionAnchor(entity: SceneEntity): CanvasPoint {
 export function contactAnchor(entity: SceneEntity, sourceX: number): CanvasPoint {
   const geometry = entityVisualGeometry[entity.kind].contact;
   const side = sourceX <= entity.x * 10 ? -1 : 1;
+  const surface = entity.kind === "generic" && entity.glyph && glyphContactSurface(entity.glyph);
+  if (surface) return toCanvas(entity, side === -1 ? surface.left : surface.right);
   return toCanvas(entity, { x: side * geometry.halfWidth, y: geometry.y });
+}
+
+export function contactHalfWidth(entity: SceneEntity): number {
+  return (entity.kind === "generic" && entity.glyph ? glyphContactSurface(entity.glyph)?.halfWidth : undefined)
+    ?? entityVisualGeometry[entity.kind].contact.halfWidth;
 }
 
 /** Shoulder position after the torso lean used by the articulated SVG rig. */

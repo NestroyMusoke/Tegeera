@@ -20,6 +20,7 @@ import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { spatialOrder } from "../doodlescript/spatialOrder";
 import { groundContactPerformances } from "./groundedPerformance";
+import { provisionalPreviewFor } from "../glyphs/provisionalCatalog";
 import { completeExplicitPassages, sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
 import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry, normalizeStandaloneReplacement } from "../../shared/normalizeBlueprint.mjs";
 
@@ -81,7 +82,7 @@ export const universalSceneBlueprintSchema = z.object({
     x: z.number().min(0).max(100),
     y: z.number().min(0).max(100),
     glyph: glyphSchema.optional(),
-    glyphSource: z.enum(["glyph-pack", "emoji", "cache", "generated"]).optional(),
+    glyphSource: z.enum(["glyph-pack", "provisional", "emoji", "cache", "generated"]).optional(),
     visual: proceduralVisualSchema.optional()
   })).min(1).max(8),
   connections: z.array(universalConnectionSchema).max(12).default([])
@@ -343,7 +344,13 @@ export function compileUniversalScene(
             noun: object.label, kind: "generic",
             ...glyphSources, generated: object.glyph as TegeeraGlyph | undefined
           });
-          if (!resolved.glyph || resolved.source === "sticker" || resolved.source === "hero-rig") return { ...object, kind };
+          if (!resolved.glyph || resolved.source === "sticker" || resolved.source === "hero-rig") {
+            // Layout and painting must use the same artwork. Previously previews
+            // arrived only after staging, so a held sketch inherited sticker or
+            // emoji geometry even though its visible outline was different.
+            const preview = provisionalPreviewFor(object.label);
+            return preview ? { ...object, kind, glyph: preview, glyphSource: "provisional" } : { ...object, kind };
+          }
           return { ...object, kind, glyph: resolved.glyph, glyphSource: resolved.source };
         }) : (candidate as { objects?: unknown }).objects
     } : candidate;
