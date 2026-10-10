@@ -21,6 +21,8 @@ import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { spatialOrder } from "../doodlescript/spatialOrder";
 import { groundContactPerformances } from "./groundedPerformance";
 import { provisionalPreviewFor } from "../glyphs/provisionalCatalog";
+import { buildLinearPropagation } from "../doodlescript/linearPropagation";
+import { propagationLabels, propagationRoles } from "../../shared/propagationBlueprint.mjs";
 import { completeExplicitPassages, sourceConstraintIssue } from "../../shared/sourceConstraints.mjs";
 import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry, normalizeStandaloneReplacement } from "../../shared/normalizeBlueprint.mjs";
 
@@ -34,6 +36,7 @@ export interface UniversalGlyphSources {
 // Small, composable visual grammar shared with the hosted protocol. No lesson nouns
 // or scenario names appear here; unsupported relationships stay generic.
 export const universalConnectionLabels = {
+  ...propagationLabels,
   partOf: "part of",
   flowsInto: "flows into",
   illuminates: "illuminates",
@@ -380,6 +383,18 @@ export function compileUniversalScene(
       throw new Error("A visual relationship referred to a missing or ambiguous object. Please try again.");
     }
   }
+  const propagation = propagationRoles(blueprint);
+  if (propagation) {
+    const role = (name: keyof typeof propagation) => blueprint.objects.find(({ id }) => id === propagation[name])!;
+    const script = buildLinearPropagation({ source: role("source").label, medium: role("medium").label,
+      payload: role("payload").label, destination: role("destination").label },
+    { ...scene, entities: [], relations: [] }, sourceText, role("source").x > role("destination").x);
+    if (!script) throw new Error("The propagation diagram cannot fit safely on this canvas.");
+    return { ...script, confidence: blueprint.confidence, commands: [{ action: "clear" }, ...script.commands.map((command) => {
+      if (command.action !== "create" || !command.entity.propagationRole) return command;
+      return { ...command, entity: { ...command.entity, color: role(command.entity.propagationRole).color } };
+    })] };
+  }
   const sceneDensity = blueprint.objects.length + (blueprint.mode === "extend" ? scene.entities.length : 0);
   // Eight distinct positions already have 240 scene units between columns;
   // shrinking every glyph further made dense phone overviews unreadable.
@@ -482,7 +497,8 @@ export function compileUniversalScene(
       relationId = `universal-relation-${index + 1}-${suffix++}`;
     }
     commands.push({ action: "relate", relation: {
-      id: relationId, kind: mixedContainment && connection.kind === "contains" ? "relatesTo" : connection.kind ?? "relatesTo",
+      id: relationId, kind: connection.kind === "emits" || connection.kind === "enters" || connection.kind === "propagatesThrough" || connection.kind === "reaches"
+        || mixedContainment && connection.kind === "contains" ? "relatesTo" : connection.kind ?? "relatesTo",
       sourceIds: [sourceId], targetIds: [targetId],
       predicate: connection.label.trim(),
       ...(viaId ? { objectIds: [viaId] } : {})

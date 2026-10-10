@@ -173,7 +173,8 @@ describe("teaching workflow", () => {
     expect(screen.queryByRole("button", { name: "Keep this doodle" })).toBeNull();
     await waitFor(() => expect((screen.getByRole("button", { name: "Draw it" }) as HTMLButtonElement).disabled).toBe(false));
     explain("A dragon flies over a tiny village");
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByText("Reused a previously accepted visual plan")).toBeTruthy());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(container.querySelectorAll('[data-glyph-source="cache"]')).toHaveLength(1), { timeout: 5_000 });
     expect(container.querySelectorAll('[data-glyph-source="generated"]')).toHaveLength(0);
     expect(container.querySelector('[data-visual-cue="semantic-connection"]')).not.toBeNull();

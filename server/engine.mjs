@@ -2,6 +2,7 @@ import { completeExplicitPassages, sourceConstraintIssue } from "../shared/sourc
 import { CORE_SCENE_RULES } from "../shared/scenePlanningRules.mjs";
 import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry, normalizeStandaloneReplacement } from "../shared/normalizeBlueprint.mjs";
 import { SCENE_RESPONSE_SCHEMA } from "./sceneResponseSchema.mjs";
+import { propagationLabels, propagationRoles } from "../shared/propagationBlueprint.mjs";
 
 export const NVIDIA_SCENE_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 export const NEBIUS_CHAT_URL = "https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions";
@@ -13,6 +14,7 @@ const kinds = new Set(["person", "teacher", "student", "process", "cpu", "car", 
 const colors = new Set(["red", "orange", "yellow", "green", "blue", "purple", "pink", "brown", "black", "white", "gray"]);
 const ink = new Set(["#2f3e46", "#52796f", "#84a98c", "#f4a261", "#e9c46a", "#cad2c5"]);
 const typedConnectionLabels = Object.freeze({
+  ...propagationLabels,
   partOf: "part of", flowsInto: "flows into", illuminates: "illuminates",
   before: "before", causes: "causes",
   contains: "contains", calls: "calls", returnsControlTo: "returnsTo",
@@ -33,6 +35,7 @@ Represent every essential named or implied visible part needed to explain the te
 Before returning JSON, silently check every clause: inventory explicitly named visible participants, preserve each source and recipient, and check that every stated action has the correct directed relationship. Do not replace an actor-to-recipient action with only a chain through an intermediate substance. If a named actor carries or moves something across a passage to a destination, show the actor entering the passage and a path onward to the destination; the carried thing's movement alone is insufficient. Prefer that connected route over a redundant direct actor-to-destination shortcut. A material moving into something may flowsInto it; light reaching a target illuminates it instead. If an essential participant or relationship cannot be represented faithfully, lower confidence below 0.58. Do not output this checklist.
 For each explicit "X through Y" phrase, Y must be a visible object and a directed connection must end at Y from X. A direct X→whole shortcut is wrong when Y is the named passage. If Y is part of a whole, add Y→whole partOf as a separate connection. This is a compositional rule for any source and passage, not an example to copy.
 Use structural diagram links when the explanation truly has their complete roles. A closed transport loop needs four distinct objects (source, destination, moving payload, enrichment) and exactly three links: source→destination pumpsTo via payload, destination→source returnsTo via the SAME payload, payload→enrichment carries. An opposing-force diagram needs four distinct objects (body, contact surface, applied force, opposing force) and exactly three links: applied force→body appliedTo, opposing force→applied force opposes, body→surface contacts. The optional "via" field is the exact payload object ID and is required only on pumpsTo/returnsTo. Forces are arrows, not people. Do not use either specialist link family unless all its roles and directions are represented; a partial specialist graph is invalid. These are reusable topologies, not lesson templates.
+For continuous propagation through a medium, use four distinct objects (source, medium, payload, destination) and exactly three links: source→payload emits, payload→medium propagatesThrough, payload→destination reaches. Use this only for a complete propagation explanation, not a person travelling or an ordinary arrival. Put source and destination in their stated left/right order. The medium is drawn schematically, not as a realistic object.
 For containment, use a distinct container→content contains link; additional objects are allowed only when visibly connected to the explanation. For a control call and return, use three objects and caller→function calls plus function→call site returnsControlTo. For ascent, apex, descent, and acceleration, use moving object→apex risesTo and fallsFrom plus force→moving object accelerates. Each is a complete reusable role graph, not a lesson-specific template; never use a partial graph.
 When an applied push or pull is explicitly opposed by friction, drag, or resistance, the applied *force* is its own object and the opposing effect is another force object. Use the complete opposing-force topology above; a person→body caption and opposing effect→body caption are not equivalent to two opposing arrows. A named human actor may be omitted only if the four-role limit prevents a faithful force diagram.
 For a connection, use an optional typed kind only when its exact meaning applies: ${typedConnectionGuide}. Its label must exactly match that quoted text. If the truthful relation needs any OTHER label, omit kind entirely; never attach an approximate typed kind to an ordinary action. These are general visual grammar, not special lesson templates. A typed connection also needs visible space between its endpoints; before/causes must go left to right.
@@ -100,6 +103,7 @@ export function sceneValidationIssue(candidate, scene = { entities: [] }, source
       return `A typed connection must use a supported kind with its exact label: ${Object.entries(typedConnectionLabels).map(([kind, label]) => `${kind}="${label}"`).join(", ")}.`;
     }
   }
+  try { propagationRoles(candidate); } catch (error) { return error.message; }
   const edges = candidate.connections;
   const one = (kind) => edges.filter((edge) => edge.kind === kind);
   if (one("contains").length) {

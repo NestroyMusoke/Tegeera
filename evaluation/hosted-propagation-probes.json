@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Novel propagation paraphrases; expected roles and links are scoring-only, never model inputs. Not a held-out product benchmark.",
+  "cases": [
+    { "id": "ultrasound-gel", "text": "The transducer sends ultrasound across the gel to the sensor.", "roles": ["transducer", "ultrasound", "gel", "sensor"], "links": [["transducer", "ultrasound"], ["ultrasound", "gel"], ["ultrasound", "sensor"]] },
+    { "id": "optical-pulses", "text": "Light pulses emitted by a transmitter propagate through an optical fibre until they reach a detector.", "roles": ["transmitter", "light pulses", "optical fibre", "detector"], "links": [["transmitter", "light pulses"], ["light pulses", "optical fibre"], ["light pulses", "detector"]] },
+    { "id": "reverse-vibration", "text": "Vibration spreads across a membrane from an oscillator on the right to a sensor on the left.", "roles": ["oscillator", "vibration", "membrane", "sensor"], "links": [["oscillator", "vibration"], ["vibration", "membrane"], ["vibration", "sensor"]] }
+  ]
+}

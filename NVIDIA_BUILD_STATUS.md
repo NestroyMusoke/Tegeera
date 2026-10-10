@@ -2,6 +2,26 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
+## Latest checkpoint — 10 October 2026
+
+See [hosted propagation and replay evidence](docs/HOSTED_PROPAGATION_2026-10-10.md).
+The current local corpus coverage is **26/60 (43.33%)**. Hosted propagation now
+reaches the continuous renderer; three unfamiliar prompts each eventually passed
+their role/link checks across several live development runs. Cold requests still
+took 5.9–10.3 seconds on the successful observations, not real-time. Safe exact
+standalone repeats can now reuse session plans across scene revisions.
+
+Verification: **628 client tests passed**, three optional live smoke tests skipped;
+**44 backend**, **25 hosted-evaluation tooling**, **24 artwork-tooling** and **2 local
+performance** tests passed. The local SVG-ready benchmark measured **36.36 ms p95**
+over 834 samples, excluding speech, browser paint and phone scheduling. Build,
+bundle budget, lint and Android web-asset sync passed. No connected phone was
+available. The local native build attempt encountered a Gradle loopback startup
+error; it is not a verified APK build.
+
+The sections below preserve earlier checkpoint evidence and historical live
+pilots; their older counts and timings do not supersede this checkpoint.
+
 ## What is implemented
 
 - Android-first Capacitor app; local speech/text, deterministic scene compiler, SVG renderer, Undo, and accessible spoken scene summary.

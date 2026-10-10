@@ -1,3 +1,4 @@
+import { normalizePropagationLabels } from "./propagationBlueprint.mjs";
 // "carries" is also a common ordinary verb. The typed carries link is reserved
 // for a complete closed transport loop; outside that loop its label remains a
 // truthful generic relation, not a half-formed specialist diagram.
@@ -24,9 +25,13 @@ const typedLabels = Object.freeze({
 /** Optional type claims never override the model's more specific relationship.
  * Unknown kinds and transport links with a payload still fail validation. */
 export function normalizeOptionalTypedKinds(candidate) {
+  candidate = normalizePropagationLabels(candidate);
   if (!candidate || typeof candidate !== "object" || !Array.isArray(candidate.connections)) return candidate;
   let changed = false;
   const connections = candidate.connections.map((edge) => {
+    // Complete propagation types carry structural meaning; never silently
+    // downgrade a malformed specialist claim into an ordinary arrow.
+    if (["emits", "enters", "propagatesThrough", "reaches"].includes(edge?.kind)) return edge;
     if (!edge || typeof edge !== "object" || !Object.hasOwn(typedLabels, edge.kind)
       || edge.via !== undefined || typeof edge.label !== "string"
       || edge.label.trim().toLowerCase() === typedLabels[edge.kind].toLowerCase()) return edge;

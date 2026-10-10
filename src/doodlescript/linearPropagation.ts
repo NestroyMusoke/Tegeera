@@ -45,16 +45,16 @@ export function linearPropagationGeometry(relations: readonly SceneRelation[], e
   if (!((source.x < medium.x && medium.x < destination.x || source.x > medium.x && medium.x > destination.x) && Math.abs(source.y - destination.y) < 1
     && Math.abs(payload.x - medium.x) < 1 && payload.y < source.y && medium.y > source.y)) return null;
   return { source, medium, payload, destination, relationId: edges.find(({ predicate }) => predicate === "enters")!.id,
-    thermal: /^(?:heat|thermal energy)$/.test(payload.label ?? "") };
+    thermal: /^(?:heat|thermal energy)$/i.test(payload.label ?? "") };
 }
 
-export function buildLinearPropagation(match: LinearPropagationMatch, scene: SceneState, sourceText: string): DoodleScript | null {
+export function buildLinearPropagation(match: LinearPropagationMatch, scene: SceneState, sourceText: string, reverseDirection?: boolean): DoodleScript | null {
   // Complete propagation explanations can replace a prior propagation scene
   // atomically. The old scene remains in the application's Undo history.
   // Other kinds of scene still require an explicit new-scene action.
   const replacing = scene.entities.length > 0;
   if (replacing && !linearPropagationGeometry(scene.relations ?? [], scene.entities)) return null;
-  const reversed = /\bright\b/.test(match.source) || /\bleft\b/.test(match.destination);
+  const reversed = reverseDirection ?? (/\bright\b/.test(match.source) || /\bleft\b/.test(match.destination));
   const positions = { source: { x: reversed ? 82 : 18, y: 50 }, medium: { x: 50, y: 65 }, payload: { x: 50, y: 28 }, destination: { x: reversed ? 18 : 82, y: 50 } };
   const entities: SceneEntity[] = (Object.keys(positions) as Array<keyof typeof positions>).map((role) => ({
     id: `propagation-${scene.revision + 1}-${role}`, kind: "generic", label: match[role], propagationRole: role,

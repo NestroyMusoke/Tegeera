@@ -36,7 +36,11 @@ function priorMention(prefix, objects, excludedIds) {
   return best?.object ?? null;
 }
 
-const movingSubjectName = (prefix) => prefix.match(/^\s*(?:(?:a|an|the)\s+)?([a-z][a-z -]{0,39}?)\s+(?:flows?|moves?|travels?|passes?|goes?|runs?|rises?)\b/)?.[1] ?? null;
+const movingSubjectName = (prefix) =>
+  // An emitter inside a passive modifier is not the travelling subject:
+  // "X emitted by Y propagate through Z" sends X, not Y, through Z.
+  prefix.match(/^\s*(?:(?:a|an|the)\s+)?([a-z][a-z -]{0,39}?)\s+(?:(?:is|are)\s+)?(?:emitted|generated|produced|sent)\s+by\s+[a-z][a-z -]{0,39}?\s+(?:propagates?|travels?|moves?|flows?|passes?)\s*$/)?.[1]
+  ?? prefix.match(/^\s*(?:(?:a|an|the)\s+)?([a-z][a-z -]{0,39}?)\s+(?:flows?|moves?|travels?|passes?|goes?|runs?|rises?|propagates?)\b/)?.[1] ?? null;
 function movingSubject(prefix, objects) {
   const subject = movingSubjectName(prefix);
   return subject ? matchingPhrase(subject, objects) : null;
@@ -89,7 +93,7 @@ function* explicitPassages(utterance, objects, edges) {
 export function completeExplicitPassages(text, candidate) {
   if (!candidate || candidate.mode !== "replace" || candidate.confidence < 0.58
     || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return candidate;
-  const specialistKinds = new Set(["calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates",
+  const specialistKinds = new Set(["emits", "enters", "propagatesThrough", "reaches", "calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates",
     "pumpsTo", "returnsTo", "carries", "appliedTo", "opposes", "contacts"]);
   if (candidate.connections.some((edge) => specialistKinds.has(edge.kind))) return candidate;
   const edges = [...candidate.connections];

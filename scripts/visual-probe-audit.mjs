@@ -3,11 +3,13 @@ export function auditRenderedScene(markup) {
   const objects = [...String(markup).matchAll(/class="doodle-object[^"]*"/g)].length;
   const labelledPlaceholders = [...String(markup).matchAll(/data-symbol-id="honest-sticker"/g)].length;
   const emojiPreviews = [...String(markup).matchAll(/data-symbol-id="emoji-preview"/g)].length;
+  const propagationRoles = [...String(markup).matchAll(/data-propagation-role="(?:source|medium|payload|destination)"/g)].length;
   return {
     renderedObjects: objects,
     labelledPlaceholders,
     emojiPreviews,
     nonPlaceholderObjects: Math.max(0, objects - labelledPlaceholders - emojiPreviews),
-    humanVisualReview: "pending"
+    humanVisualReview: "pending",
+    ...(propagationRoles ? { schematicRoles: propagationRoles } : {})
   };
 }

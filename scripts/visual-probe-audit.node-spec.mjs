@@ -11,3 +11,12 @@ test("a complete graph does not conceal labelled placeholders or emoji previews"
     nonPlaceholderObjects: 1, humanVisualReview: "pending"
   });
 });
+
+test("schematic roles are counted separately from object artwork", () => {
+  const markup = ["source", "medium", "payload", "destination"].map((role) => `<g data-propagation-role="${role}"></g>`).join("");
+  const result = auditRenderedScene(markup);
+  assert.equal(result.schematicRoles, 4);
+  assert.equal(result.renderedObjects, 0);
+  assert.equal(result.nonPlaceholderObjects, 0);
+  assert.equal(result.humanVisualReview, "pending");
+});
