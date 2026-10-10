@@ -48,6 +48,7 @@ export class LiveGlyphResolver {
   private readonly inFlight = new Set<string>();
   private readonly inFlightVisible = new Set<string>();
   private readonly preempted = new Set<string>();
+  private readonly restartRequested = new Set<string>();
   private readonly controllers = new Map<string, AbortController>();
   private readonly editControllers = new Map<string, AbortController>();
   private readonly failedUntil = new Map<string, number>();
@@ -82,7 +83,10 @@ export class LiveGlyphResolver {
 
   setGenerator(generator?: GlyphGenerator) {
     if (this.generator !== generator) {
-      for (const controller of this.controllers.values()) controller.abort();
+      for (const [noun, controller] of this.controllers) {
+        this.restartRequested.add(noun);
+        controller.abort();
+      }
       for (const controller of this.editControllers.values()) controller.abort();
     }
     this.generator = generator;
@@ -227,15 +231,23 @@ export class LiveGlyphResolver {
   async prepareLesson(topic: string, planner: LessonNounPlanner): Promise<number> {
     if (!topic.trim() || topic.length > 120) return 0;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const nouns = await planner(topic.trim(), controller.signal);
+      // AbortSignal is advisory: a provider adapter can ignore it. Bound the
+      // caller's wait as well, and never enqueue a late planner result.
+      const deadline = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error("Lesson preparation timed out"));
+          controller.abort();
+        }, this.timeoutMs);
+      });
+      const nouns = await Promise.race([planner(topic.trim(), controller.signal), deadline]);
       const clean = [...new Set(nouns.filter((noun) => typeof noun === "string")
         .map(glyphKey).filter((noun) => noun.length >= 2 && noun.length <= 48))].slice(0, 30);
       for (const noun of clean) this.prefetch(noun);
       return clean.length;
     } catch { return 0; }
-    finally { clearTimeout(timer); }
+    finally { if (timer) clearTimeout(timer); }
   }
 
   private drain() {
@@ -263,8 +275,13 @@ export class LiveGlyphResolver {
         this.emit();
       };
       let timer: ReturnType<typeof setTimeout> | undefined;
+      let timedOut = false;
       const timeout = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => { controller.abort(); reject(new Error("Glyph generation timed out")); }, this.timeoutMs);
+        timer = setTimeout(() => {
+          timedOut = true;
+          reject(new Error("Glyph generation timed out"));
+          controller.abort();
+        }, this.timeoutMs);
       });
       const cancellation = new Promise<never>((_, reject) => {
         controller.signal.addEventListener("abort", () => reject(new Error("Glyph generation cancelled")), { once: true });
@@ -288,19 +305,25 @@ export class LiveGlyphResolver {
       }).catch((error: unknown) => {
         this.previews.delete(noun);
         this.emit();
-        if (controller.signal.aborted || epoch !== (this.epochs.get(noun) ?? 0)) return;
+        if ((controller.signal.aborted && !timedOut) || epoch !== (this.epochs.get(noun) ?? 0)) return;
         this.failedUntil.set(noun, Date.now() + 30_000);
         this.onGenerationError?.(noun, error);
       }).finally(() => {
         if (timer) clearTimeout(timer);
         if (this.controllers.get(noun) === controller) this.controllers.delete(noun);
         this.inFlight.delete(noun);
-        this.inFlightVisible.delete(noun);
+        const wasVisible = this.inFlightVisible.delete(noun);
         this.active -= 1;
-        if (this.preempted.delete(noun) && this.generator && !this.queued.has(noun)
-          && !this.cache.has(noun) && !this.drafts.has(noun)) {
+        const restart = this.restartRequested.delete(noun);
+        const preempted = this.preempted.delete(noun);
+        if ((restart || (preempted && this.generator)) && !this.queued.has(noun)
+          && !this.cache.has(noun) && !this.drafts.has(noun)
+          && epoch === (this.epochs.get(noun) ?? 0)) {
           this.queued.add(noun);
-          this.queue.push(noun);
+          if (restart && wasVisible) {
+            this.queue.unshift(noun);
+            this.queuedVisible.add(noun);
+          } else this.queue.push(noun);
         }
         this.drain();
       });

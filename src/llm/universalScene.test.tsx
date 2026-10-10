@@ -54,6 +54,35 @@ const blueprint = {
 };
 
 describe("universal visual scene compiler", () => {
+  it.each([
+    ["tree", "tree"], ["a book", "book"], ["desk", "desk"],
+    ["building", "building"], ["car", "car"], ["learner", "student"],
+    ["teacher", "teacher"], ["processor", "cpu"], ["person", "person"]
+  ])("reuses the registered %s rig when a model only supplies generic", (label, kind) => {
+    const script = compileUniversalScene({ blueprintVersion: "1.0", confidence: .9,
+      objects: [{ id: "subject", label, kind: "generic", color: "green", x: 50, y: 50 }],
+      connections: [] }, initialScene, `Show ${label}.`);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.entities[0]).toMatchObject({ kind, label, color: "green" });
+    expect(renderToStaticMarkup(<DoodleCanvas scene={scene} />)).not.toContain('data-glyph-source="sticker"');
+  });
+
+  it.each(["family tree", "tree house", "book cover", "car engine", "imaginary mechanism"])(
+    "does not infer a native rig for the compound or unknown noun %s", (label) => {
+      const script = compileUniversalScene({ blueprintVersion: "1.0", confidence: .9,
+        objects: [{ id: "subject", label, kind: "generic", x: 50, y: 50 }],
+        connections: [] }, initialScene, `Show ${label}.`);
+      expect(applyDoodleScript(initialScene, script).entities[0].kind).toBe("generic");
+    });
+
+  it("preserves explicitly supplied artwork even for a registered noun", () => {
+    const script = compileUniversalScene({ blueprintVersion: "1.0", confidence: .9,
+      objects: [{ id: "subject", label: "tree", kind: "generic", x: 50, y: 50, glyph: cloudGlyph }],
+      connections: [] }, initialScene, "Show a tree.");
+    expect(applyDoodleScript(initialScene, script).entities[0]).toMatchObject({ kind: "generic", glyph: cloudGlyph });
+  });
+
   it("replaces an unrelated scene even if the model incorrectly chooses extend", () => {
     const previous = applyDoodleScript(initialScene, compileUniversalScene(blueprint, initialScene,
       "A dragon flies over a village"));

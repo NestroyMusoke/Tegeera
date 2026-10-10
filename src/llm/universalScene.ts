@@ -340,9 +340,15 @@ export function compileUniversalScene(
           // silhouette. Require the existing noun registry for concrete rigs;
           // otherwise allow the noun's own glyph/preview/sticker to represent it.
           const concreteRig = ["car", "book", "desk", "tree", "building"].includes(declaredKind);
+          const registered = conceptForAlias(glyphKey(object.label).replace(/^(?:a|an|the) /, ""));
           const kind = concreteRig && !previewNounKeys(object.label).some((key) => conceptForAlias(key)?.kind === declaredKind)
-            ? "generic" : declaredKind;
-          if (kind !== "generic") return { ...object, glyph: undefined, glyphSource: undefined };
+            ? "generic"
+            : declaredKind === "generic" && !object.glyph && !object.visual && registered
+              ? registered.kind : declaredKind;
+          // The model may omit a type we already know. Reuse an exact registered
+          // noun's rig without a network call; never infer it from a compound's
+          // last word (a family tree is not a tree). Preserve supplied artwork.
+          if (kind !== "generic") return { ...object, kind, glyph: undefined, glyphSource: undefined };
           const resolved = resolveGlyph({
             noun: object.label, kind: "generic",
             ...glyphSources, generated: object.glyph as TegeeraGlyph | undefined

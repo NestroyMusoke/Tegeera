@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Synthetic mixed explanations, annotated before the first live run. Role and directed-endpoint scoring only; no artwork approval. Expectations never enter the planner prompt.",
+  "cases": [
+    {
+      "id": "ink-filter",
+      "text": "A pump sends ink through a filter into a bottle while a camera watches the bottle.",
+      "roles": ["pump", "ink", "filter", "bottle", "camera"],
+      "links": [["pump", "ink"], ["ink", "filter"], ["filter", "bottle"], ["camera", "bottle"]]
+    },
+    {
+      "id": "kite-tree",
+      "text": "A child holds a kite above a tree while a dog stands beside the child.",
+      "roles": ["child", "kite", "tree", "dog"],
+      "links": [["child", "kite"], ["kite", "tree"], ["dog", "child"]]
+    },
+    {
+      "id": "lamp-panel",
+      "text": "A battery powers a lamp while a solar panel charges the battery.",
+      "roles": ["battery", "lamp", "solar panel"],
+      "links": [["battery", "lamp"], ["solar panel", "battery"]]
+    }
+  ]
+}

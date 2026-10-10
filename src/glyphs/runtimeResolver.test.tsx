@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { performance as realPerformance } from "node:perf_hooks";
 import { describe, expect, it, vi } from "vitest";
 import { DoodleCanvas } from "../components/DoodleCanvas";
 import { applyDoodleScript, initialScene } from "../doodlescript/scene";
@@ -117,12 +118,12 @@ describe("non-blocking glyph resolver", () => {
     expect(resolver.hasEditableStrokes("new bird")).toBe(false);
     expect(changed).toHaveBeenCalled();
   });
-  it("paints an unseen noun in under 100ms even when generation takes eight seconds", async () => {
+  it("prepares static SVG for an unseen noun in under 100ms even when generation takes eight seconds", async () => {
     vi.useFakeTimers();
     try {
       const generator = vi.fn(() => new Promise((resolve) => setTimeout(() => resolve(glyph), 8_000)));
       const resolver = new LiveGlyphResolver({ generator, timeoutMs: 12_000 });
-      const start = performance.now();
+      const start = realPerformance.now();
       expect(resolver.resolve("unseen creature").status).toBe("placeholder");
       const script = compileUniversalScene({
         blueprintVersion: "1.0", mode: "replace", confidence: .9,
@@ -131,7 +132,7 @@ describe("non-blocking glyph resolver", () => {
       }, initialScene, "An unseen creature");
       const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
       expect(html).toContain('data-glyph-source="sticker"');
-      expect(performance.now() - start).toBeLessThan(100);
+      expect(realPerformance.now() - start).toBeLessThan(100);
       expect(resolver.resolve("unseen creature").status).toBe("placeholder");
       await vi.advanceTimersByTimeAsync(8_000);
       expect(generator).toHaveBeenCalledTimes(1);
@@ -234,6 +235,67 @@ describe("non-blocking glyph resolver", () => {
     await Promise.resolve();
     expect(resolver.approve("dragon")).toBeUndefined();
     expect(onGenerated).not.toHaveBeenCalled();
+  });
+
+  it("reports a generation deadline, cools down retries, and ignores late strokes", async () => {
+    vi.useFakeTimers();
+    try {
+      let finish!: (value: unknown) => void;
+      let publish!: (stroke: Stroke) => void;
+      const onGenerationError = vi.fn();
+      const onGenerated = vi.fn();
+      const generator = vi.fn((_noun, _signal, push) => {
+        publish = push;
+        return new Promise((resolve) => { finish = resolve; });
+      });
+      const resolver = new LiveGlyphResolver({ generator, timeoutMs: 100, onGenerationError, onGenerated });
+      resolver.resolve("unfamiliar animal");
+      await vi.advanceTimersByTimeAsync(100);
+      expect(onGenerationError).toHaveBeenCalledWith("unfamiliar animal", expect.objectContaining({ message: "Glyph generation timed out" }));
+      for (let index = 0; index < 5; index++) resolver.resolve("unfamiliar animal");
+      await vi.advanceTimersByTimeAsync(1);
+      expect(generator).toHaveBeenCalledOnce();
+      publish({ part: "outline", color: "#2f3e46", pts: [[8, 8], [42, 8], [42, 42], [8, 8]] });
+      finish(glyph);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(onGenerated).not.toHaveBeenCalled();
+      expect(resolver.draftFor("unfamiliar animal")).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(30_000);
+      resolver.resolve("unfamiliar animal");
+      await vi.advanceTimersByTimeAsync(0);
+      expect(generator).toHaveBeenCalledTimes(2);
+      resolver.setGenerator(undefined);
+      await vi.advanceTimersByTimeAsync(0);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("restarts interrupted visible work with a replacement provider without another render", async () => {
+    const errors = vi.fn();
+    const oldGenerator = vi.fn(() => new Promise(() => undefined));
+    const resolver = new LiveGlyphResolver({ generator: oldGenerator, onGenerationError: errors });
+    resolver.resolve("new object");
+    await vi.waitFor(() => expect(oldGenerator).toHaveBeenCalledOnce());
+    const replacement = vi.fn(async () => glyph);
+    resolver.setGenerator(replacement);
+    await vi.waitFor(() => expect(resolver.draftFor("new object")).toEqual(glyph));
+    expect(replacement).toHaveBeenCalledOnce();
+    expect(errors).not.toHaveBeenCalled();
+  });
+
+  it("ends lesson preparation even if its planner ignores cancellation", async () => {
+    vi.useFakeTimers();
+    try {
+      let finish!: (value: string[]) => void;
+      const generator = vi.fn(async () => glyph);
+      const resolver = new LiveGlyphResolver({ generator, timeoutMs: 100 });
+      const completed = vi.fn();
+      void resolver.prepareLesson("weather", () => new Promise((resolve) => { finish = resolve; })).then(completed);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(completed).toHaveBeenCalledWith(0);
+      finish(["cloud"]);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(generator).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
   });
 
   it("rejects an in-flight edit without letting the old edit become reusable", async () => {

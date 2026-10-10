@@ -2,7 +2,32 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — 10 October 2026
+## Latest checkpoint — mixed explanations, 10 October 2026
+
+See [mixed-flow and artwork-recovery evidence](docs/MIXED_FLOW_2026-10-10.md).
+Three new live Nebius explanations preserved all 12 expected roles and all nine
+directed links on their first attempts (5.7–9.9 seconds). Static renders were
+inspected. This is **3/3 on a small structural probe, not 100% visual accuracy**.
+
+Exact registered nouns now reuse existing rigs when the model supplies `generic`.
+Replaying the same kite/tree response removed its one unnecessary placeholder;
+six placeholders remain in the other two diagrams. Compounds and supplied art
+are not overwritten by the new exact-match rule. Generation deadlines now report
+errors with cooldown, provider replacement resumes interrupted work, and lesson
+preparation cannot wait forever on a provider that ignores cancellation.
+
+Local corpus coverage is still **26/60 = 43.33%**, a **0.00 percentage-point**
+change. It is not a whole-product completion estimate. Android web assets were
+rebuilt and synchronized; a new APK and phone behavior are not verified here.
+
+Verification: 645 client cases passed in the full run; one timed-out UI case
+passed on an unchanged four-test rerun. Three optional live smoke cases were
+skipped. All 44 backend tests passed. Both performance tests passed on an isolated
+rerun (834 samples, local SVG-ready p95 29.15 ms, not phone or network latency).
+Production build, bundle budgets and lint passed. The evidence note records both
+initial timeout failures, rather than presenting them as clean first runs.
+
+## Earlier checkpoint — hosted propagation, 10 October 2026
 
 See [hosted propagation and replay evidence](docs/HOSTED_PROPAGATION_2026-10-10.md).
 The current local corpus coverage is **26/60 (43.33%)**. Hosted propagation now
