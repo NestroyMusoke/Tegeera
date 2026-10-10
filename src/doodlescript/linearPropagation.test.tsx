@@ -43,6 +43,29 @@ describe("continuous propagation drawings", () => {
     expect(interpretTeacherText(statements[0], scene)).toMatchObject({ ok: false, clarification: { code: "layout-limit" } });
     expect(scene).toEqual(snapshot);
   });
+  it("atomically replaces an earlier propagation scene without mutating its snapshot", () => {
+    const first = interpretTeacherText(statements[0], initialScene);
+    if (!first.ok) throw new Error(first.message);
+    const previous = applyDoodleScript(initialScene, first.script);
+    const snapshot = structuredClone(previous);
+    const second = interpretTeacherText(statements[2], previous);
+    if (!second.ok) throw new Error(second.message);
+    expect(second.script.commands[0]).toEqual({ action: "clear" });
+    expect(validateDoodleScript(second.script, previous).ok).toBe(true);
+    const current = applyDoodleScript(previous, second.script);
+    expect(current.revision).toBe(2);
+    expect(current.entities).toHaveLength(4);
+    expect(current.relations).toHaveLength(3);
+    expect(current.entities.map(({ label }) => label)).toContain("cable");
+    expect(current.entities.map(({ label }) => label)).not.toContain("metal rod");
+    expect(previous).toEqual(snapshot);
+  });
+  it.each(["Add a signal travels through a cable from a transmitter to a receiver.",
+    "Also a signal travels through a cable from a transmitter to a receiver.",
+    "It travels through a cable from a transmitter to a receiver.",
+    "A signal travels through that cable from a transmitter to a receiver."])("does not treat an addition or reference as a standalone replacement: %s", (text) => {
+    expect(matchLinearPropagation(text)).toBeNull();
+  });
   it("rejects reversed propagation and broken topology at the validator", () => {
     const result = interpretTeacherText(statements[0], initialScene);
     if (!result.ok) throw new Error(result.message);

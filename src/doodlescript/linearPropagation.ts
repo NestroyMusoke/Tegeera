@@ -10,6 +10,9 @@ const readable = (value: string) => value.length > 0 && value.length <= 30 && va
 export function matchLinearPropagation(input: string): LinearPropagationMatch | null {
   if (input.length > 500) return null;
   const text = input.toLowerCase().trim().replace(/[.!?]+$/, "").replace(/\s+/g, " ");
+  // Addition requests and unresolved references are not standalone replacement
+  // explanations. Let the ordinary interpreter clarify or resolve them.
+  if (/^(?:add|also|include|another|and)\b/.test(text)) return null;
   if (/\b(?:no|not|never|cannot|can't|doesn't|don't|isn't|aren't|without|might|may|maybe|perhaps|possibly|probably|could|if|unless|provided|assuming)\b/.test(text)) return null;
   const thermal = text.match(/^(?:when you |you )heat (.+?) at one end,? (?:the )?(heat|thermal energy) (?:slowly )?(?:moves|spreads|travels) (?:along|through)(?: it)? to (?:the )?(other end|far end|opposite end)$/);
   const direct = text.match(/^(.+?) (?:slowly )?(?:moves|spreads|travels|propagates) (?:along|through) (.+?) from (.+?) to (.+)$/);
@@ -17,6 +20,7 @@ export function matchLinearPropagation(input: string): LinearPropagationMatch | 
   const result = thermal ? { source: "heat source", medium: clean(thermal[1]), payload: thermal[2], destination: thermal[3] }
     : direct ? { payload: clean(direct[1]), medium: clean(direct[2]), source: clean(direct[3]), destination: clean(direct[4]) } : null;
   if (!result || !Object.values(result).every(readable) || new Set(Object.values(result)).size !== 4) return null;
+  if (Object.values(result).some((value) => /^(?:it|this|that|they|them|these|those|same|existing|previous)(?:\s|$)/.test(value))) return null;
   if (["left", "right"].some((side) => new RegExp(`\\b${side}\\b`).test(result.source) && new RegExp(`\\b${side}\\b`).test(result.destination))) return null;
   return result;
 }
@@ -45,9 +49,11 @@ export function linearPropagationGeometry(relations: readonly SceneRelation[], e
 }
 
 export function buildLinearPropagation(match: LinearPropagationMatch, scene: SceneState, sourceText: string): DoodleScript | null {
-  // A large continuous diagram owns its canvas. Do not overwrite an existing
-  // scene or squeeze unrelated drawings behind the medium.
-  if (scene.entities.length) return null;
+  // Complete propagation explanations can replace a prior propagation scene
+  // atomically. The old scene remains in the application's Undo history.
+  // Other kinds of scene still require an explicit new-scene action.
+  const replacing = scene.entities.length > 0;
+  if (replacing && !linearPropagationGeometry(scene.relations ?? [], scene.entities)) return null;
   const reversed = /\bright\b/.test(match.source) || /\bleft\b/.test(match.destination);
   const positions = { source: { x: reversed ? 82 : 18, y: 50 }, medium: { x: 50, y: 65 }, payload: { x: 50, y: 28 }, destination: { x: reversed ? 18 : 82, y: 50 } };
   const entities: SceneEntity[] = (Object.keys(positions) as Array<keyof typeof positions>).map((role) => ({
@@ -60,7 +66,7 @@ export function buildLinearPropagation(match: LinearPropagationMatch, scene: Sce
     .map(([predicate, from, to], index) => ({ id: `propagation-${scene.revision + 1}-edge-${index}`, kind: "relatesTo",
       predicate, sourceIds: [id(from as keyof typeof positions)], targetIds: [id(to as keyof typeof positions)] }));
   return { schemaVersion: "2.27.0", sceneId: scene.sceneId, revision: scene.revision + 1, confidence: 1, sourceText,
-    commands: [...entities.map((entity) => ({ action: "create" as const, entity })),
+    commands: [...(replacing ? [{ action: "clear" as const }] : []), ...entities.map((entity) => ({ action: "create" as const, entity })),
       ...relations.map((relation) => ({ action: "relate" as const, relation }))],
     context: { subjectIds: [id("payload")], objectIds: [id("medium"), id("destination")] } };
 }

@@ -5,7 +5,7 @@ with a directional arrow and animated payload pulses. It works locally, without
 an LLM call or glyph generation. The four identities remain explicit in the
 scene graph; the picture is not assembled from disconnected placeholder boxes.
 
-Try these in a fresh/cleared scene:
+Start in a fresh/cleared scene, then try these consecutively without refreshing:
 
 - When you heat a metal rod at one end, the heat slowly moves along to the other end.
 - A signal travels through a cable from a transmitter to a receiver.
@@ -27,8 +27,11 @@ gradient and pulse travel. Reduced-motion mode keeps static indicators. The medi
 is schematic: a spring is not drawn as a realistic coil and a signal does not
 become a quantitatively simulated waveform.
 
-The diagram owns its canvas. An occupied scene is preserved and a fresh scene is
-requested; unrelated objects cannot be placed behind it. Negation, uncertainty,
+The diagram owns its canvas. A complete standalone propagation explanation can
+replace an earlier propagation diagram in one validated transaction. Undo restores
+the previous diagram. An occupied scene of another type is preserved and a fresh
+scene is requested; unrelated objects cannot be placed behind it. Explicit additions
+and unresolved references do not trigger this replacement. Negation, uncertainty,
 extra clauses and contradictory endpoint descriptions are not silently forced
 into this grammar. Existing Undo behavior applies to the resulting DoodleScript.
 
@@ -76,3 +79,17 @@ tests. The final production build, bundle budget, lint and Android web-asset syn
 passed. No new APK was built or tested on a phone. No API credits were spent on
 this feature. Static pictures were
 inspected for heat, signal, and reverse flow; phone animation remains unverified.
+
+## Consecutive-explanation follow-up
+
+The real form now has regression coverage for heat → signal → wave, followed by
+two Undo actions, with zero fetch calls. Three additional form cases verify that
+uncertainty, an explicit addition, and an unresolved reference preserve the last
+diagram, and that a subsequent complete explanation still works.
+
+Verification for this follow-up: 92 distinct targeted tests passed across the
+propagation, conversation, app, hosted-app (mocked), independent-gold and readiness
+suites. Production build, bundle budget, lint and Android web-asset sync passed.
+The full suite was not rerun for this follow-up. No live provider call or phone
+test was performed. Local corpus coverage remains 26/60 = 43.33% (0.00 percentage
+point change); this patch improves interaction reliability, not language coverage.
