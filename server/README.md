@@ -8,6 +8,24 @@ The Nemotron 3 Super scene route now requests provider-side JSON-schema guidance
 
 ## Configuration
 
+### Container packaging
+
+Build from the **repository root**, not the `server` directory, because the service
+imports runtime code from `shared`:
+
+```sh
+docker build -f server/Dockerfile -t tegeera-interpreter .
+```
+
+The root `.dockerignore` allowlists only server runtime files and shared JavaScript;
+local keys, browser assets and review images are not sent in the build context.
+Configure private keys through the host's runtime secrets, never Docker build
+arguments. Deploying only the `server` folder is no longer sufficient. The backend
+tests check that the packaged source imports without missing shared modules;
+an actual image build still requires a running Docker engine.
+
+### Credentials and model
+
 `NEBIUS_API_KEY` is the preferred server-side secret for the Nebius x NVIDIA hackathon. It selects NVIDIA Nemotron 3 Super (`nvidia/nemotron-3-super-120b-a12b`) on Nebius Token Factory at `https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions`. `NEBIUS_MODEL` can select a different Token Factory model, but a hackathon submission must still use an NVIDIA open-source model. If no Nebius key is configured, the old direct `NVIDIA_API_KEY` and then `OPENROUTER_API_KEY` paths remain available for development, but **those paths alone do not satisfy the hackathon's Nebius-service requirement**. If no key is set, `/health` reports `configured: false` and model routes return 503; the app's local drawings still work. Do not commit a key or put it in a `VITE_` variable, GitHub Actions variable, URL, or Android source.
 
 `ALLOWED_ORIGINS` is a comma-separated list of **exact origins**, without paths. Include `https://localhost` for the Capacitor Android WebView and the web demo's origin (currently `https://nestroymusoke.github.io`). The default includes localhost development and Capacitor only. `PORT` defaults to 8080.
@@ -25,3 +43,10 @@ For a local **browser** app test, run `set VITE_TEGEERA_INTERPRETER_URL=http://l
 When a hosted service exists, set the GitHub Actions repository **variable** `TEGEERA_INTERPRETER_URL` to its HTTPS base URL and rebuild both Pages and the Android APK. Both workflows now inject that URL at build time. The model key belongs only in the hosting platform's secret configuration. No hosted service or live Nebius model test is implied by this repository configuration.
 
 Routes: `GET /health`, `POST /v1/interpret`, `POST /v1/glyph`, `POST /v1/glyph/edit`, `POST /v1/lesson-nouns`. Requests, reusable-noun hints, and scene hints are bounded; origins, concurrency, outbound provider attempts, and elapsed time are guarded. Model output is treated as untrusted; malformed scenes and strokes fail closed.
+
+Glyph generation/edit clients may request `strokeFormat: "1.1"` to receive an
+optional `interpolation: "linear" | "smooth"` on each stroke. Missing format or
+`"1.0"` preserves the original response fields for older strict clients, which
+continue using legacy smoothing. Unknown formats return 400 without a provider
+call. Current clients send the capability automatically; no user setting or key
+change is needed. The shared prompt's examples teach format, not approved artwork.

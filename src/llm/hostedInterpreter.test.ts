@@ -42,6 +42,9 @@ describe("private hosted model boundary", () => {
     expect((fetchMock.mock.calls[0][1] as RequestInit).headers).not.toHaveProperty("authorization");
     const edited = await editStrokeGlyphRemotely("plant", generated, "add one leaf", "", new AbortController().signal);
     expect(edited).toEqual(strokes);
+    for (const call of fetchMock.mock.calls.slice(0, 2)) {
+      expect(JSON.parse((call[1] as RequestInit).body as string).strokeFormat).toBe("1.1");
+    }
     const nouns = await planLessonNouns("plant biology", "", new AbortController().signal);
     expect(nouns).toEqual(["plant", "roots"]);
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([

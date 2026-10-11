@@ -3,6 +3,7 @@ import { CORE_SCENE_RULES } from "../shared/scenePlanningRules.mjs";
 import { normalizeOptionalTypedKinds, normalizeOrdinaryCarry, normalizeStandaloneReplacement } from "../shared/normalizeBlueprint.mjs";
 import { SCENE_RESPONSE_SCHEMA } from "./sceneResponseSchema.mjs";
 import { propagationLabels, propagationRoles } from "../shared/propagationBlueprint.mjs";
+import { STROKE_DRAWING_RULES, strokeDrawingRules } from "../shared/strokeDrawingRules.mjs";
 
 export const NVIDIA_SCENE_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 export const NEBIUS_CHAT_URL = "https://api.tokenfactory.us-central1.nebius.com/v1/chat/completions";
@@ -46,7 +47,7 @@ Current scene: ${JSON.stringify(prior)}`;
 }
 
 export function strokePrompt(noun) {
-  return `Draw one recognizable ${JSON.stringify(noun)} as a classroom marker doodle. Return only JSON {"strokes":[{"part":"outline","color":"#2f3e46","pts":[[8,8],[42,8],[42,42],[8,42],[8,8]]}]}. Use 3-10 strokes and 4-14 integer points per stroke on a 50x50 grid. Coordinates must stay within 3..47. Use only colors ${[...ink].join(", ")}. Draw the full silhouette first, then 2-4 distinguishing features. No text, SVG, code or unrelated decoration.`;
+  return `Draw one original classroom marker doodle of ${JSON.stringify(noun)}. ${STROKE_DRAWING_RULES}`;
 }
 
 function parseJson(content) {
@@ -169,8 +170,11 @@ export function validScene(candidate, scene = { entities: [] }, sourceText = "")
 
 export function validStrokes(candidate) {
   if (!candidate || typeof candidate !== "object" || !Array.isArray(candidate.strokes)
+    || Object.keys(candidate).some((key) => key !== "strokes")
     || candidate.strokes.length < 1 || candidate.strokes.length > 10) return false;
   return candidate.strokes.every((stroke) => stroke && typeof stroke.part === "string"
+    && Object.keys(stroke).every((key) => ["part", "color", "pts", "interpolation"].includes(key))
+    && (stroke.interpolation === undefined || ["linear", "smooth"].includes(stroke.interpolation))
     && /^[a-z][a-z0-9-]{0,29}$/.test(stroke.part) && ink.has(stroke.color)
     && Array.isArray(stroke.pts) && stroke.pts.length >= 2 && stroke.pts.length <= 14
     && stroke.pts.every((point) => Array.isArray(point) && point.length === 2
@@ -335,7 +339,7 @@ export function generateGlyph(body, config, options = {}) {
 }
 
 export function editGlyph(body, config, options = {}) {
-  const prompt = `Edit this classroom marker doodle of ${JSON.stringify(body.noun)} according to ${JSON.stringify(body.instruction)}. Current strokes: ${JSON.stringify(body.current)}. Return only the complete revised JSON {"strokes":[...]}, preserving unaffected strokes. Every stroke needs a short part name, color from ${[...ink].join(", ")}, and 2-14 integer [x,y] points within 3..47. Use 1-10 strokes. No text or SVG.`;
+  const prompt = `Edit this classroom marker doodle of ${JSON.stringify(body.noun)} according to ${JSON.stringify(body.instruction)}. Current strokes: ${JSON.stringify(body.current)}. Return the complete revised JSON, preserving unaffected strokes and their interpolation. ${strokeDrawingRules(1)}`;
   return validatedCompletion(prompt, config, (candidate) => !strokeStructuralIssue(candidate),
     { ...options, maxTokens: 2200 }, strokeStructuralIssue);
 }

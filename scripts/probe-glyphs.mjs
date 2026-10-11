@@ -13,12 +13,19 @@ const args = process.argv.slice(2);
 const at = args.indexOf("--nouns");
 const nouns = (at >= 0 ? args[at + 1] : "motor,fan,iron nail").split(",").map((noun) => noun.trim()).filter(Boolean);
 const fast = args.includes("--fast");
+const thinkingAt = args.indexOf("--thinking");
+const thinking = thinkingAt >= 0 ? args[thinkingAt + 1] : undefined;
+if (thinkingAt >= 0 && (!['default', 'low', 'off'].includes(thinking) || fast)) {
+  throw new Error("Use --thinking default|low|off without --fast.");
+}
 if (!nouns.length || nouns.length > 3 || nouns.some((noun) => noun.length > 48)) {
   throw new Error("Pass one to three short nouns with --nouns. Each may make two paid model calls.");
 }
 const configuration = modelConfiguration();
 if (configuration?.provider !== "nebius") throw new Error("An ignored private Nebius key is required; no call was made.");
-const directory = resolve(root, ".visual-check", "glyph-quality-probe");
+const outputAt = args.indexOf("--out-dir");
+if (outputAt >= 0 && !args[outputAt + 1]) throw new Error("--out-dir needs a directory.");
+const directory = outputAt >= 0 ? resolve(root, args[outputAt + 1]) : resolve(root, ".visual-check", "glyph-quality-probe");
 await mkdir(directory, { recursive: true });
 if (args.includes("--render-existing")) {
   const page = await readFile(join(directory, fast ? "contact-sheet-fast.html" : "contact-sheet.html"), "utf8");
@@ -45,7 +52,8 @@ for (const noun of nouns) {
   const started = performance.now();
   try {
     const result = await generateGlyph({ noun }, configuration, { signal: AbortSignal.timeout(42_000),
-      ...(fast ? { nebiusThinking: "off", nebiusResponseFormat: "json" } : {}) });
+      ...(fast ? { nebiusThinking: "off", nebiusResponseFormat: "json" }
+        : thinking ? { nebiusThinking: thinking, nebiusResponseFormat: "json" } : {}) });
     const glyph = compileStrokeGlyph(result.candidate);
     await writeFile(join(directory, `${fast ? "fast-" : ""}${noun.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-strokes.json`),
       `${JSON.stringify(result.candidate, null, 2)}\n`);
@@ -69,7 +77,7 @@ const cards = rows.map((row) => `<article><h2>${escape(row.noun)}</h2>${row.ok ?
 const page = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tegeera runtime glyph review</title><style>body{font:16px system-ui;color:#293730;background:#f4f1e9;margin:20px}main{max-width:900px;margin:auto}section{background:white;padding:16px;border-radius:12px;margin-bottom:18px}article{display:inline-block;vertical-align:top;background:white;border:1px solid #cad2c5;border-radius:16px;padding:12px;margin:8px;width:220px}article>svg{display:block;width:200px;height:200px;background:#fffdf7}.phone-size{display:flex;align-items:center;gap:12px;font-size:13px}.phone-size svg{width:64px;height:64px;background:#fffdf7}h2{margin:0 0 8px}</style><main><section><h1>Runtime doodle quality probe</h1><p>Generated synthetic nouns; inspect recognizability at actual 64px. Structural validation is not art approval.</p></section>${cards}</main></html>`;
 const file = join(directory, fast ? "contact-sheet-fast.html" : "contact-sheet.html");
 await writeFile(file, page);
-await writeFile(join(directory, fast ? "report-fast.json" : "report.json"), `${JSON.stringify({ nouns, fast, rows: rows.map((row) => ({
+await writeFile(join(directory, fast ? "report-fast.json" : "report.json"), `${JSON.stringify({ nouns, fast, thinking: thinking ?? "off", rows: rows.map((row) => ({
   noun: row.noun, ok: row.ok, strokes: row.strokes, elapsedMs: row.elapsedMs, attempts: row.attempts,
   ...(row.error ? { error: row.error } : {}), ...(row.diagnostic ? { diagnostic: row.diagnostic } : {})
 })) }, null, 2)}\n`);

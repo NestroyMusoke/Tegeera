@@ -1,6 +1,7 @@
 import { strokeGlyphSchema, strokeSchema, StrokeStreamParser, type Stroke, type StrokeGlyph } from "../glyphs/strokeGlyph";
 import { z } from "zod";
 import { hostedInterpreterUrl } from "./remoteInterpreter";
+import { STROKE_DRAWING_RULES } from "../../shared/strokeDrawingRules.mjs";
 
 const endpoint = "https://openrouter.ai/api/v1/chat/completions";
 const palette = "#2f3e46 #52796f #84a98c #f4a261 #e9c46a #cad2c5";
@@ -43,27 +44,7 @@ async function requestJson(prompt: string, key: string, signal: AbortSignal, max
   return JSON.parse(content);
 }
 
-const strokeExamples = [
-  { noun: "house", strokes: [
-    { part: "walls", color: "#2f3e46", pts: [[10,25],[10,42],[40,42],[40,25],[10,25]] },
-    { part: "roof", color: "#e9c46a", pts: [[7,26],[25,8],[43,26],[7,26]] },
-    { part: "door", color: "#52796f", pts: [[22,42],[22,32],[28,32],[28,42]] }
-  ] },
-  { noun: "sun", strokes: [
-    { part: "disc", color: "#e9c46a", pts: [[25,12],[34,16],[38,25],[34,34],[25,38],[16,34],[12,25],[16,16],[25,12]] },
-    { part: "ray-top", color: "#2f3e46", pts: [[25,4],[25,7],[25,9],[25,11]] },
-    { part: "ray-right", color: "#2f3e46", pts: [[39,25],[42,25],[44,25],[46,25]] },
-    { part: "ray-left", color: "#2f3e46", pts: [[4,25],[6,25],[8,25],[11,25]] }
-  ] },
-  { noun: "fish", strokes: [
-    { part: "body", color: "#52796f", pts: [[10,25],[18,17],[33,17],[41,25],[33,33],[18,33],[10,25]] },
-    { part: "tail", color: "#52796f", pts: [[11,25],[4,17],[4,33],[11,25]] },
-    { part: "eye", color: "#2f3e46", pts: [[31,23],[32,22],[33,23],[31,23]] },
-    { part: "fin", color: "#e9c46a", pts: [[20,18],[25,11],[29,18],[20,18]] }
-  ] }
-];
-
-const strokePrompt = (noun: string) => `Draw ONE original, recognizable classroom doodle of ${JSON.stringify(noun)} on a 50x50 grid (0,0 top-left). Return ONLY one JSON object {"strokes":[{"part":"name","color":"#2f3e46","pts":[[x,y],[x,y],[x,y],[x,y]]}]}. Draw 4-10 ordered strokes, silhouette first, then 2-4 distinguishing features. Each stroke has 4-14 integer points in 3..47. Close a loop by repeating its first point. No words, labels, SVG, markdown or extra fields. Use only ${palette}. Examples of the FORMAT (do not copy their subject for another noun): ${JSON.stringify(strokeExamples)}. Make the requested subject recognizable at 64px, with one coherent body rather than scattered shapes.`;
+const strokePrompt = (noun: string) => `Draw one original classroom marker doodle of ${JSON.stringify(noun)}. ${STROKE_DRAWING_RULES}`;
 
 /** Streams validated complete strokes; a partial JSON token is never shown as artwork. */
 export async function generateStrokeGlyphRemotely(
@@ -72,7 +53,7 @@ export async function generateStrokeGlyphRemotely(
   localBridge = false
 ): Promise<StrokeGlyph> {
   if (hostedInterpreterUrl && !key.trim()) {
-    const strokes = strokeGlyphSchema.parse(await hostedJson("/v1/glyph", { noun }, signal));
+    const strokes = strokeGlyphSchema.parse(await hostedJson("/v1/glyph", { noun, strokeFormat: "1.1" }, signal));
     for (const stroke of strokes.strokes) onStroke(stroke);
     return strokes;
   }
@@ -135,10 +116,10 @@ const editSchema = z.object({ ops: z.array(editOperation).min(1).max(4) }).stric
 export async function editStrokeGlyphRemotely(noun: string, current: StrokeGlyph, instruction: string, key: string, signal: AbortSignal, model = DEFAULT_FREE_GLYPH_MODEL, localBridge = false): Promise<StrokeGlyph> {
   if (!instruction.trim() || instruction.length > 160) throw new Error("Describe one short doodle change.");
   if (hostedInterpreterUrl && !key.trim()) {
-    return strokeGlyphSchema.parse(await hostedJson("/v1/glyph/edit", { noun, current, instruction }, signal));
+    return strokeGlyphSchema.parse(await hostedJson("/v1/glyph/edit", { noun, current, instruction, strokeFormat: "1.1" }, signal));
   }
   const candidate = editSchema.parse(await requestJson(
-    `Edit this classroom doodle of ${JSON.stringify(noun)}. Current strokes: ${JSON.stringify(current)}. User instruction: ${JSON.stringify(instruction)}. Return ONLY JSON {"ops":[{"op":"add","stroke":{"part":"feature","color":"#2f3e46","pts":[[10,10],[13,13]]}}]} using 1-4 add, replace, or remove operations. For replace/remove include zero-based index. Preserve unaffected strokes; do not regenerate the whole drawing. Each stroke needs 2-14 integer points in 3..47 and a color from ${palette}.`,
+    `Edit this classroom doodle of ${JSON.stringify(noun)}. Current strokes: ${JSON.stringify(current)}. User instruction: ${JSON.stringify(instruction)}. Return ONLY JSON {"ops":[{"op":"add","stroke":{"part":"feature","color":"#2f3e46","pts":[[10,10],[13,13]]}}]} using 1-4 add, replace, or remove operations. For replace/remove include zero-based index. Preserve unaffected strokes and their interpolation; do not regenerate the whole drawing. Each stroke needs 2-14 integer points in 3..47 and a color from ${palette}. Use interpolation "linear" for straight edges or "smooth" for curves.`,
     key, signal, 800, model, localBridge
   ));
   const strokes: Stroke[] = [...current.strokes];

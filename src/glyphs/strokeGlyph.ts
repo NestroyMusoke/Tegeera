@@ -5,6 +5,7 @@ const point = z.tuple([z.number().int().min(3).max(47), z.number().int().min(3).
 export const strokeSchema = z.object({
   part: z.string().regex(/^[a-z][a-z0-9-]{0,29}$/),
   color: z.enum(TEGEERA_GLYPH_PALETTE),
+  interpolation: z.enum(["smooth", "linear"]).optional(),
   pts: z.array(point).min(2).max(14).refine((points) =>
     points.some(([x, y]) => x !== points[0][0] || y !== points[0][1]),
   "A visible stroke needs at least two distinct points")
@@ -39,7 +40,7 @@ const round = (value: number) => Math.max(0, Math.min(100, Math.round(value * 10
 const isClosed = (points: Stroke["pts"]) => points[0][0] === points.at(-1)![0] && points[0][1] === points.at(-1)![1];
 
 /** Catmull–Rom to cubic Bézier; controls are clamped before entering the safe SVG path language. */
-function strokePath(points: Stroke["pts"]): string {
+function strokePath(points: Stroke["pts"], interpolation: Stroke["interpolation"]): string {
   const closed = isClosed(points);
   const vertices = closed ? points.slice(0, -1) : points;
   const xy = (index: number) => {
@@ -48,6 +49,11 @@ function strokePath(points: Stroke["pts"]): string {
   };
   const segments = [`M${vertices[0][0] * 2} ${vertices[0][1] * 2}`];
   const count = closed ? vertices.length : vertices.length - 1;
+  if (interpolation === "linear") {
+    for (const [x, y] of vertices.slice(1)) segments.push(`L${x * 2} ${y * 2}`);
+    if (closed) segments.push("Z");
+    return segments.join(" ");
+  }
   for (let i = 0; i < count; i++) {
     const [x0, y0] = xy(i - 1), [x1, y1] = xy(i), [x2, y2] = xy(i + 1), [x3, y3] = xy(i + 2);
     const c1x = round(2 * (x1 + (x2 - x0) / 6));
@@ -71,7 +77,7 @@ export function compileStrokeGlyph(candidate: unknown): TegeeraGlyph {
     viewBox: "0 0 100 100" as const,
     parts: strokes.map((stroke, index) => ({
       id: `${stroke.part.slice(0, 23)}-${index + 1}`,
-      d: strokePath(stroke.pts),
+      d: strokePath(stroke.pts, stroke.interpolation),
       fill: "none" as const,
       stroke: stroke.color
     })),

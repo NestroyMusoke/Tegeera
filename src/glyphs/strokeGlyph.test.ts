@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { compileStrokeGlyph, strokeGlyphSchema, strokeGlyphStructuralIssue, StrokeStreamParser } from "./strokeGlyph";
+import { STROKE_LANGUAGE_EXAMPLES } from "../../shared/strokeDrawingRules.mjs";
 
 const house = { strokes: [
   { part: "walls", color: "#2f3e46", pts: [[10, 25], [10, 42], [40, 42], [40, 25], [10, 25]] },
@@ -8,6 +9,39 @@ const house = { strokes: [
 ] };
 
 describe("validated stroke glyph", () => {
+  it.each(STROKE_LANGUAGE_EXAMPLES)("compiles the shared $noun format example through the real boundary", ({ strokes }) => {
+    expect(strokeGlyphStructuralIssue(strokeGlyphSchema.parse({ strokes }))).toBeNull();
+    expect(compileStrokeGlyph({ strokes }).parts).toHaveLength(strokes.length);
+  });
+  it("preserves explicit straight corners and leaves old smooth strokes unchanged", () => {
+    const stroke = house.strokes[0];
+    const linear = compileStrokeGlyph({ strokes: [{ ...stroke, interpolation: "linear" }] });
+    expect(linear.parts[0].d).toBe("M20 50 L20 84 L80 84 L80 50 Z");
+    const legacy = compileStrokeGlyph({ strokes: [stroke] });
+    const smooth = compileStrokeGlyph({ strokes: [{ ...stroke, interpolation: "smooth" }] });
+    expect(smooth).toEqual(legacy);
+    expect(smooth.parts[0].d).toContain("C");
+    expect(linear.anchors).toEqual(smooth.anchors);
+  });
+
+  it("keeps separate open pen strokes open and permits mixed geometry", () => {
+    const glyph = compileStrokeGlyph({ strokes: [
+      { ...house.strokes[2], interpolation: "linear" }, house.strokes[0]
+    ] });
+    expect(glyph.parts[0].d).toBe("M44 84 L44 64 L56 64 L56 84");
+    expect(glyph.parts[1].d).toContain("C");
+    expect(strokeGlyphSchema.safeParse({ strokes: [{ ...house.strokes[0], interpolation: "script" }] }).success).toBe(false);
+  });
+
+  it("retains interpolation while parsing a fragmented network stream", () => {
+    const parser = new StrokeStreamParser();
+    const stroke = { ...house.strokes[0], interpolation: "linear" };
+    const source = JSON.stringify({ strokes: [stroke] });
+    const emitted = [...source].flatMap((character) => parser.push(character));
+    expect(emitted).toEqual([stroke]);
+    expect(compileStrokeGlyph({ strokes: emitted }).parts[0].d).not.toContain("C");
+  });
+
   it("compiles coarse strokes into bounded, smoothed glyph paths", () => {
     const glyph = compileStrokeGlyph(house);
     expect(glyph.parts).toHaveLength(3);

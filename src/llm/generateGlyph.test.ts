@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { editStrokeGlyphRemotely, generateStrokeGlyphRemotely } from "./generateGlyph";
 import { strokeGlyphSchema } from "../glyphs/strokeGlyph";
+import { STROKE_DRAWING_RULES } from "../../shared/strokeDrawingRules.mjs";
 
 const strokes = { strokes: [
-  { part: "outline", color: "#2f3e46", pts: [[10, 10], [40, 10], [40, 40], [10, 10]] },
+  { part: "outline", color: "#2f3e46", interpolation: "linear", pts: [[10, 10], [40, 10], [40, 40], [10, 10]] },
   { part: "detail", color: "#52796f", pts: [[12, 20], [20, 20], [30, 20], [38, 20]] }
 ] };
 
@@ -27,6 +28,8 @@ describe("remote stroke boundary", () => {
     const body = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string);
     expect(body.stream).toBe(true);
     expect(body.messages[0].content).toContain("50x50 grid");
+    expect(body.messages[0].content).toContain(STROKE_DRAWING_RULES);
+    expect(result.strokes[0].interpolation).toBe("linear");
   });
 
   it("streams through the local bridge without putting the key in the browser request", async () => {

@@ -1,0 +1,12 @@
+# Root build context is allowlisted: never send local credentials or artwork.
+**
+!server/
+!server/Dockerfile
+!server/package.json
+!server/index.mjs
+!server/engine.mjs
+!server/sceneResponseSchema.mjs
+!shared/
+!shared/*.mjs
+**/.env*
+**/*.local

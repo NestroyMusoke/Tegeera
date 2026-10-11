@@ -11,6 +11,33 @@ async function withServer(settings, run) {
   finally { await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
 }
 
+test("glyph endpoints negotiate additive geometry without breaking legacy clients", async () => {
+  const configuration = modelConfiguration({ NVIDIA_API_KEY: "private-test-key" });
+  const stroke = { part: "outline", color: "#2f3e46", pts: [[8,8],[42,8],[42,42],[8,42],[8,8]] };
+  const candidate = { strokes: [{ ...stroke, interpolation: "linear" }] };
+  let calls = 0;
+  const modelFetch = async () => {
+    calls++;
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(candidate) } }] }));
+  };
+  await withServer({ configuration, modelFetch }, async (url) => {
+    for (const route of ["/v1/glyph", "/v1/glyph/edit"]) {
+      for (const strokeFormat of [undefined, "1.0", "1.1"]) {
+        const response = await fetch(`${url}${route}`, {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ noun: "object", strokeFormat, instruction: "keep the outline", current: { strokes: [stroke] } })
+        });
+        assert.equal(response.status, 200);
+        assert.deepEqual((await response.json()).candidate, strokeFormat === "1.1" ? candidate : { strokes: [stroke] });
+      }
+    }
+    const response = await fetch(`${url}/v1/glyph`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ noun: "object", strokeFormat: "unsupported" }) });
+    assert.equal(response.status, 400);
+    assert.equal(calls, 6);
+  });
+});
+
 test("health is honest without a key; Android origin is allowed and unknown origins are rejected", async () => {
   await withServer({ configuration: null, allowedOrigins: new Set(["https://localhost"]) }, async (url) => {
     const health = await fetch(`${url}/health`, { headers: { Origin: "https://localhost" } });

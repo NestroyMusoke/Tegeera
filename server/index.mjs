@@ -128,6 +128,10 @@ return createServer(async (req, res) => {
   if (route === "/v1/glyph" && (typeof body.noun !== "string" || !body.noun.trim() || body.noun.length > 48)) {
     return send(res, 400, { error: "A short drawing noun is required." }, headers);
   }
+  const glyphRoute = route === "/v1/glyph" || route === "/v1/glyph/edit";
+  if (glyphRoute && body.strokeFormat !== undefined && !["1.0", "1.1"].includes(body.strokeFormat)) {
+    return send(res, 400, { error: "Unsupported stroke format." }, headers);
+  }
   if (route === "/v1/glyph/edit" && (typeof body.noun !== "string" || !body.noun.trim() || body.noun.length > 48
     || typeof body.instruction !== "string" || !body.instruction.trim() || body.instruction.length > 160
     || !validStrokes(body.current))) {
@@ -148,7 +152,12 @@ return createServer(async (req, res) => {
       : route === "/v1/glyph" ? await generateGlyph(body, configuration, options)
       : route === "/v1/glyph/edit" ? await editGlyph(body, configuration, options)
       : await planLesson(body, configuration, options);
-    return send(res, 200, result, headers);
+    // Installed older apps validate stroke objects strictly. Negotiate the
+    // additive field rather than breaking them when the backend deploys first.
+    const response = glyphRoute && body.strokeFormat !== "1.1"
+      ? { ...result, candidate: { strokes: result.candidate.strokes.map(({ part, color, pts }) => ({ part, color, pts })) } }
+      : result;
+    return send(res, 200, response, headers);
   } catch (error) {
     if (disconnected.signal.aborted) return;
     if (error instanceof Error && error.message === "Provider call budget exhausted.") {

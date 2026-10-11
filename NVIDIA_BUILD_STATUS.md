@@ -2,7 +2,31 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — mixed explanations, 10 October 2026
+## Latest checkpoint — stroke language, 11 October 2026
+
+See [runtime artwork evidence](docs/STROKE_LANGUAGE_2026-10-11.md). Generated
+strokes can now choose straight or curved geometry; old strokes retain their
+original rendering. The backend and browser use shared drawing instructions,
+and container packaging now includes the service's shared runtime modules.
+
+Six live lamp/bottle drafts (seven provider attempts) were rendered and inspected.
+Straight edges are preserved, but the lamp remains ambiguous and the bottle
+varies by run. Requesting low-effort reasoning did not reliably improve artwork,
+so the runtime reasoning default is unchanged. None of these drafts was promoted
+to the approved pack. This is not evidence of universal doodle quality.
+
+Local coverage remains **26/60 = 43.33%**, unchanged. Docker source packaging is
+tested independently; an actual image build needs a running Docker daemon. No
+new APK, phone validation or deployed-backend update is claimed here.
+
+Verification: **652 client tests passed**, three optional live tests skipped;
+the final protocol safeguard then passed nine focused client tests and all
+**51 backend tests**. Lint, build, bundle budgets and Android web sync passed.
+Both local performance tests passed (834 samples; SVG-ready p95 **48.61 ms**,
+excluding model/network time, browser paint and phone scheduling). New clients
+opt into stroke format 1.1; older clients retain the original response fields.
+
+## Earlier checkpoint — mixed explanations, 10 October 2026
 
 See [mixed-flow and artwork-recovery evidence](docs/MIXED_FLOW_2026-10-10.md).
 Three new live Nebius explanations preserved all 12 expected roles and all nine
