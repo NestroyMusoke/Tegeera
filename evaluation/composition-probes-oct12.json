@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Synthetic compositions annotated before the first live call. Roles and directed endpoints only; intended geometry and artwork need separate inspection. Expectations are not included in model prompts.",
+  "cases": [
+    {
+      "id": "butterfly-flower-bee",
+      "text": "A butterfly hovers above a flower while a bee rests beside the flower.",
+      "roles": ["butterfly", "flower", "bee"],
+      "links": [["butterfly", "flower"], ["bee", "flower"]]
+    },
+    {
+      "id": "key-book-cloud",
+      "text": "A key lies below a book, and the book lies below a cloud.",
+      "roles": ["key", "book", "cloud"],
+      "links": [["key", "book"], ["book", "cloud"]]
+    },
+    {
+      "id": "student-key-bird",
+      "text": "A student holds a key while a bird stands beside the student.",
+      "roles": ["student", "key", "bird"],
+      "links": [["student", "key"], ["bird", "student"]]
+    },
+    {
+      "id": "coloured-cup-book-flower",
+      "text": "A red cup stands beside a blue book, with a flower above the cup.",
+      "roles": ["cup", "book", "flower"],
+      "links": [["cup", "book"], ["flower", "cup"]]
+    },
+    {
+      "id": "umbrella-ladder-cloud-transfer",
+      "text": "A green umbrella rests next to a yellow ladder, with a cloud above the ladder.",
+      "roles": ["umbrella", "ladder", "cloud"],
+      "links": [["umbrella", "ladder"], ["cloud", "ladder"]]
+    }
+  ]
+}

@@ -2,7 +2,29 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — artwork retrieval and lateral placement, 12 October 2026
+## Latest checkpoint — spatial grounding and colour fidelity, 12 October 2026
+
+See [composition and colour evidence](docs/COMPOSITION_AND_COLOUR_2026-10-12.md).
+Four fresh live statements produced three complete graphs and one confident
+omission of two spatial relations. The shared source-grounding path now restores
+explicit, uniquely named missing spatial links without another model call;
+contradictions and ambiguous wording are not silently guessed away.
+
+Outline-only drawings now respect stated colours. Qualified native nouns such
+as "blue book" retain their proper rig without reducing compound nouns to their
+last word. The previously failed scene was replayed and checked in a headless
+browser; a fifth new umbrella/ladder composition passed its first live call.
+The student/key example still illustrates holding with an arrow, not physical
+contact. Cold model calls were 5.87–8.84 seconds, not real-time speech.
+
+Verification: **664 client**, **57 backend**, **25 hosted-evaluation**, and
+**2 performance tests passed**; three optional live smoke tests skipped.
+Lint, build, bundle budgets and Android web sync passed. Local SVG-ready p95:
+**10.81 ms** across 834 samples, excluding model/network and browser/phone paint.
+Local corpus remains **26/60 = 43.33%**, not product completion. Narrow static
+browser review was clipped; physical-phone readiness is not claimed.
+
+## Earlier checkpoint — artwork retrieval and lateral placement, 12 October 2026
 
 See [artwork retrieval evidence](docs/ARTWORK_RETRIEVAL_2026-10-12.md).
 The provisional offline pack grew from 15 to 17 nouns (bird and key added).

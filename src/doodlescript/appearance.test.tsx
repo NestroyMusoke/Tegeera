@@ -51,7 +51,7 @@ describe("composable object appearance", () => {
       objects: [{ id: "object", label: "unknown object", kind: "generic", color: "yellow", x: 50, y: 50, glyph }], connections: []
     }, initialScene, "An unknown yellow object.");
     const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
-    expect(html).toContain('fill="var(--entity-color)"');
+    expect(html).toContain('fill="#f3cf55"');
     expect(html).toContain('data-glyph-part="detail"');
     expect(html).toContain('fill="none"');
   });

@@ -1,4 +1,5 @@
 // Source-grounding checks shared by the hosted service and the browser compiler.
+import { completeExplicitSpatial, explicitSpatialIssue } from './explicitSpatial.mjs';
 // These are deliberately narrow: only explicit, high-signal relationship language
 // is enforced. Unknown prose is left to the planner, not guessed into a diagram.
 const words = (value) => String(value).toLowerCase().match(/[a-z]+/g) ?? [];
@@ -91,6 +92,7 @@ function* explicitPassages(utterance, objects, edges) {
 
 /** Add only explicit, unique, missing passage arrows between existing roles. */
 export function completeExplicitPassages(text, candidate) {
+  candidate = completeExplicitSpatial(text, candidate);
   if (!candidate || candidate.mode !== "replace" || candidate.confidence < 0.58
     || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return candidate;
   const specialistKinds = new Set(["emits", "enters", "propagatesThrough", "reaches", "calls", "returnsControlTo", "risesTo", "fallsFrom", "accelerates",
@@ -164,6 +166,8 @@ export function completeExplicitPassages(text, candidate) {
 /** @returns {string | null} A repairable general constraint, or no proven omission. */
 export function sourceConstraintIssue(text, candidate) {
   if (!candidate || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return null;
+  const spatialIssue = explicitSpatialIssue(text, candidate);
+  if (spatialIssue) return spatialIssue;
   const objects = candidate.objects;
   const edges = candidate.connections;
   const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");

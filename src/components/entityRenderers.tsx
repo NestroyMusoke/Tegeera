@@ -174,8 +174,8 @@ function ValidatedGlyph({ entity }: EntityRendererProps) {
       className="glyph-ink-path"
       data-glyph-part={part.id}
       d={part.d}
-      fill={entity.color && index === primaryFillIndex ? "var(--entity-color)" : part.fill}
-      stroke={part.stroke}
+      fill={entity.color && index === primaryFillIndex ? entityColors[entity.color] : part.fill}
+      stroke={entity.color && primaryFillIndex === -1 ? entityColors[entity.color] : part.stroke}
       strokeWidth="3"
       strokeLinecap="round"
       strokeLinejoin="round"

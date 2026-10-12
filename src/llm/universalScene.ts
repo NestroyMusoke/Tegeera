@@ -363,7 +363,10 @@ export function compileUniversalScene(
           // silhouette. Require the existing noun registry for concrete rigs;
           // otherwise allow the noun's own glyph/preview/sticker to represent it.
           const concreteRig = ["car", "book", "desk", "tree", "building"].includes(declaredKind);
-          const registered = conceptForAlias(glyphKey(object.label).replace(/^(?:a|an|the) /, ""));
+          const nounLabel = glyphKey(object.label).replace(/^(?:a|an|the) /, "");
+          const registered = conceptForAlias(nounLabel) ?? (typeof object.color === "string"
+            && colorWords.has(object.color) && nounLabel.startsWith(`${object.color} `)
+            ? conceptForAlias(nounLabel.slice(object.color.length + 1)) : undefined);
           const kind = concreteRig && !previewNounKeys(object.label).some((key) => conceptForAlias(key)?.kind === declaredKind)
             ? "generic"
             : declaredKind === "generic" && !object.glyph && !object.visual && registered
