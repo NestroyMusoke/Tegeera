@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "New composition annotated before its live call. The corpus tests role and directed-endpoint coverage, not visual approval. No expectations enter the model prompt.",
+  "cases": [
+    {
+      "id": "bird-key-tree",
+      "text": "A bird stands beside a key below a tree.",
+      "roles": ["bird", "key", "tree"],
+      "links": [["bird", "key"], ["key", "tree"]]
+    }
+  ]
+}

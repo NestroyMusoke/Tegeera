@@ -1059,6 +1059,148 @@
         "model": "openbmb/MiniCPM-V-4_5",
         "blindGuessAt64px": "Apple"
       }
+    },
+    {
+      "noun": "key",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M27.25 44.51 L21.92 44.82 L18.47 47.96 L17.53 57.37 L20.67 64.9 L26.63 65.22 L33.53 62.71 L40.43 58 L43.25 53.92 L43.25 47.96 L40.75 44.51 L25.37 44.2",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M23.49 37.61 L19.41 37.61 L13.76 42 L11.88 44.82 L10.31 51.73 L10 58.94 L11.57 63.33 L15.33 69.29 L19.41 71.8 L28.82 74.94 L34.78 73.69 L39.49 70.24 L43.25 65.22 L49.22 52.98",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M24.12 35.41 L34.78 37.29 L39.18 39.18",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M22.24 36.67 L32.9 37.29 L40.75 40.12 L44.2 40.12 L54.24 36.98 L71.18 28.51 L82.78 25.06 L86.24 25.37 L90 30.71 L87.18 33.84 L74.63 40.75 L59.88 46.71 L47.65 54.55",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M78.39 37.92 L78.39 42.94 L79.65 46.08 L81.84 47.33 L84.98 47.33 L88.43 44.51 L88.75 38.55 L87.18 34.78",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M82.16 37.92 L82.78 42.94",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            25.06
+          ],
+          "ground": [
+            50,
+            74.94
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/key.ndjson#key_id=5016195864461312",
+        "drawingId": "5016195864461312"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "Key"
+      }
+    },
+    {
+      "noun": "bird",
+      "glyph": {
+        "schemaVersion": "1.0.0",
+        "viewBox": "0 0 100 100",
+        "parts": [
+          {
+            "id": "part-1",
+            "d": "M42.94 13.61 L29.76 18.63 L24.43 30.55 L25.69 34 L39.49 38.39 L32.27 55.02 L31.33 62.86 L35.1 68.51 L65.22 71.96 L87.8 65.37 L90 51.57 L81.22 39.96 L61.76 32.43 L59.57 19.57 L47.96 13.29 L36.67 11.73",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-2",
+            "d": "M49.53 44.04 L49.53 50.63 L51.41 55.02 L54.24 58.47 L61.76 62.86 L68.98 64.12 L79.65 64.12 L88.43 60.35",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-3",
+            "d": "M26.31 21.45 L10 23.33 L15.65 26.78 L24.75 29.61 L13.76 33.69 L33.84 37.45",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-4",
+            "d": "M46.08 69.76 L44.51 74.16 L45.45 87.33",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-5",
+            "d": "M53.92 73.22 L53.61 88.27",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          },
+          {
+            "id": "part-6",
+            "d": "M37.92 24.9 L38.24 25.84 L39.49 24.9 L39.18 23.02 L36.98 23.65 L37.61 24.9 L38.86 25.22 L38.24 24.59",
+            "fill": "none",
+            "stroke": "#2f3e46"
+          }
+        ],
+        "anchors": {
+          "top": [
+            50,
+            11.73
+          ],
+          "ground": [
+            50,
+            88.27
+          ],
+          "front": [
+            90,
+            50
+          ]
+        }
+      },
+      "provenance": {
+        "source": "Quick, Draw! Dataset",
+        "license": "CC BY 4.0",
+        "sourceUrl": "https://storage.googleapis.com/quickdraw_dataset/full/simplified/bird.ndjson#key_id=6677765937954816",
+        "drawingId": "6677765937954816"
+      },
+      "screening": {
+        "status": "provisional",
+        "humanReviewed": false,
+        "model": "openbmb/MiniCPM-V-4_5",
+        "blindGuessAt64px": "bird"
+      }
     }
   ]
 }

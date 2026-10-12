@@ -18,7 +18,7 @@ import { planLabelledContainer } from "../doodlescript/labelledContainer";
 import { planCallReturnFlow } from "../doodlescript/callReturnFlow";
 import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
-import { spatialOrder } from "../doodlescript/spatialOrder";
+import { isSideBySideRelation, spatialOrder } from "../doodlescript/spatialOrder";
 import { groundContactPerformances } from "./groundedPerformance";
 import { provisionalPreviewFor } from "../glyphs/provisionalCatalog";
 import { buildLinearPropagation } from "../doodlescript/linearPropagation";
@@ -224,6 +224,27 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
     && new Set(objects.map((object) => Math.round(object.y / 8))).size >= 3;
   const candidates = extend ? [...columns.map((x) => ({ x, y: 15 })), ...slots]
     : verticalStack ? [20, 50, 80].flatMap((y) => columns.map((x) => ({ x, y }))) : slots;
+  const existingPosition = (reference: string) => {
+    const byId = scene.entities.find((entity) => entity.id === reference);
+    if (byId) return byId;
+    const matches = scene.entities.filter((entity) => glyphKey(entity.label ?? "") === glyphKey(reference));
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  if (extend) {
+    const newIds = new Set(objects.map((object) => object.id));
+    const anchorRows = new Set(connections.filter((connection) => isSideBySideRelation(connection.label))
+      .flatMap((connection) => [connection.from, connection.to])
+      .filter((reference) => !newIds.has(reference))
+      .flatMap((reference) => {
+        const anchor = existingPosition(reference);
+        return anchor ? [anchor.y] : [];
+      }));
+    // Preserve fixed existing objects, including rows outside the overview grid.
+    // Keep the bounded search below its 32-bit occupied-slot mask limit.
+    for (const y of [...anchorRows].slice(0, 4)) {
+      for (const x of columns) if (!candidates.some((slot) => slot.x === x && slot.y === y)) candidates.push({ x, y });
+    }
+  }
   const available = candidates.filter((slot) => !extend || !scene.entities.some((entity) =>
     Math.abs(entity.x - slot.x) < 18 && Math.abs(entity.y - slot.y) < 22));
   if (available.length < objects.length) throw new Error("The current scene has no safe room for that extension.");
@@ -234,14 +255,9 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
     const order = spatialOrder(connection.label);
     const from = objects.find((object) => object.id === connection.from);
     const to = objects.find((object) => object.id === connection.to);
-    return order && from && to && Math.sign(from[order.axis] - to[order.axis]) !== order.sign;
+    return from && to && ((order && Math.sign(from[order.axis] - to[order.axis]) !== order.sign)
+      || (isSideBySideRelation(connection.label) && from.y !== to.y));
   });
-  const existingPosition = (reference: string) => {
-    const byId = scene.entities.find((entity) => entity.id === reference);
-    if (byId) return byId;
-    const matches = scene.entities.filter((entity) => glyphKey(entity.label ?? "") === glyphKey(reference));
-    return matches.length === 1 ? matches[0] : undefined;
-  };
   const collect = (candidateLimit: number, preserveModelOrder = true) => {
     const current: number[] = [];
     const choices: { assignment: number[]; cost: number }[] = [];
@@ -276,6 +292,13 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
         const toSlot = to === undefined ? existingPosition(connection.to) : to === index ? slot : available[current[to]];
         if (!fromSlot || !toSlot) continue;
         const order = spatialOrder(connection.label);
+        // Explicit lateral neighbors share a row. Distance preferences alone
+        // can put them diagonally apart when another relation repairs a column.
+        // Do not apply this to "adjacent": adjacency need not be horizontal.
+        if (isSideBySideRelation(connection.label) && fromSlot.y !== toSlot.y) {
+          nextCost = Number.POSITIVE_INFINITY;
+          break;
+        }
         if (order && Math.sign(fromSlot[order.axis] - toSlot[order.axis]) !== order.sign) {
           nextCost = Number.POSITIVE_INFINITY;
           break;

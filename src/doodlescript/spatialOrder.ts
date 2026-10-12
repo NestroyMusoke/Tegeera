@@ -18,6 +18,12 @@ export function spatialOrder(label: string): { axis: "x" | "y"; sign: -1 | 1 } |
 }
 
 /** Symmetric position is a connection, not a flow of matter or action. */
+export function isSideBySideRelation(label: string): boolean {
+  const words = label.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().trim()
+    .replace(/[^a-z ]/g, " ").replace(/\s+/g, " ");
+  return /^(?:(?:is|sits?|stands?|waits?|hangs?|rests?) )?(?:beside|next to|alongside)$/.test(words);
+}
+
 export function isPositionalRelation(label: string): boolean {
   const words = label.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().trim()
     .replace(/[^a-z ]/g, " ").replace(/\s+/g, " ");

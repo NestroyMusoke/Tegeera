@@ -1,10 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DoodleCanvas } from "../components/DoodleCanvas";
 import { initialScene } from "../doodlescript/scene";
 import type { SceneEntity } from "../doodlescript/schema";
 import { provisionalCatalog, provisionalPackSchema, withProvisionalPreviews } from "./provisionalCatalog";
 import data from "./provisional-pack.json";
+import { LiveGlyphResolver } from "./runtimeResolver";
 
 const subject = (label: string, kind: SceneEntity["kind"]): SceneEntity => ({
   id: label, label, kind, x: 50, y: 50, scale: 1, direction: "right", highlighted: false
@@ -12,7 +13,7 @@ const subject = (label: string, kind: SceneEntity["kind"]): SceneEntity => ({
 
 describe("provisional Quick, Draw! previews", () => {
   it("keeps machine screening distinct from human approval and retains source credits", () => {
-    expect(provisionalPackSchema.parse(data).entries).toHaveLength(15);
+    expect(provisionalPackSchema.parse(data).entries).toHaveLength(17);
     expect(data.entries.every((entry) => entry.screening.humanReviewed === false)).toBe(true);
     expect(provisionalCatalog.attributions.every((entry) => entry.sourceUrl.includes("quickdraw_dataset"))).toBe(true);
   });
@@ -23,6 +24,20 @@ describe("provisional Quick, Draw! previews", () => {
       expect(scene.entities[0].glyph).toEqual(entry.glyph);
       expect(scene.entities[0].glyphSource).toBe("provisional");
     }
+  });
+
+  it("resolves the expanded pack immediately without provider calls or persistence", async () => {
+    const generator = vi.fn();
+    const persist = vi.fn();
+    const resolver = new LiveGlyphResolver({ preview: provisionalCatalog.preview, generator, persist });
+    for (const noun of ["bird", "key", "birds", "keys"]) {
+      expect(resolver.resolve(noun)).toMatchObject({ source: "provisional", status: "placeholder" });
+      expect(resolver.resolve(noun).glyph).toBeDefined();
+    }
+    await Promise.resolve();
+    expect(generator).not.toHaveBeenCalled();
+    expect(persist).not.toHaveBeenCalled();
+    expect(resolver.approve("bird")).toBeUndefined();
   });
 
   it("shows a preview for a generic noun or animal mistyped as a person", () => {

@@ -2,7 +2,33 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — stroke language, 11 October 2026
+## Latest checkpoint — artwork retrieval and lateral placement, 12 October 2026
+
+See [artwork retrieval evidence](docs/ARTWORK_RETRIEVAL_2026-10-12.md).
+The provisional offline pack grew from 15 to 17 nouns (bird and key added).
+Twelve new blind vision calls plus nine reused screenings did not justify
+shipping every model-matched drawing: the ambiguous dog was left out.
+
+A new live bird/key/tree composition preserved 3/3 roles and 2/2 directed
+endpoints in 5,742 ms with zero labelled placeholders, but static inspection
+revealed diagonal placement for "beside". The general layout rule now preserves
+lateral alignment along with vertical constraints, including additions beside
+existing off-grid objects without moving them. The saved response was replayed
+and inspected after the fix, with no additional model call.
+
+Local corpus coverage remains **26/60 = 43.33%**, unchanged. This is not overall
+product completion. The cold model call still took seconds; phone and broad
+visual-quality validation remain separate open gates.
+
+Verification: **658 client tests passed** (three optional smoke tests skipped),
+then **75 focused tests passed** for the final contact-pose safeguard. Backend:
+**51 passed**; artwork tools: **26 passed**. Final lint, production build,
+bundle budget and Android web synchronization passed. This does not build or
+test a new APK on a physical phone.
+Both isolated performance checks passed: 834 local samples, SVG-ready p95
+**16.13 ms**, excluding model/network time, speech and browser/device painting.
+
+## Earlier checkpoint — stroke language, 11 October 2026
 
 See [runtime artwork evidence](docs/STROKE_LANGUAGE_2026-10-11.md). Generated
 strokes can now choose straight or curved geometry; old strokes retain their

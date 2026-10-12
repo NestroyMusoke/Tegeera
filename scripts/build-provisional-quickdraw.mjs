@@ -9,6 +9,33 @@ const root = resolve(import.meta.dirname, '..');
 const args = process.argv.slice(2);
 const option = (name, fallback) => { const index = args.indexOf(name); return index < 0 ? fallback : args[index + 1]; };
 
+export function mergeProvisionalSources(sources) {
+  const entries = new Map();
+  const items = {};
+  for (const { batch, screening } of sources) {
+    if (batch?.formatVersion !== '1.0.0' || !Array.isArray(batch.entries)
+      || screening?.formatVersion !== '1.0.0' || !screening.items
+      || Array.isArray(screening.items) || typeof screening.items !== 'object') throw new Error('Invalid source batch.');
+    const localIds = new Set();
+    for (const entry of batch.entries) {
+      if (localIds.has(entry.id)) throw new Error('Duplicate provisional source ID within batch.');
+      localIds.add(entry.id);
+      const prior = entries.get(entry.id);
+      if (prior && (candidateFingerprint(prior) !== candidateFingerprint(entry)
+        || prior.noun !== entry.noun || prior.keyId !== entry.keyId || prior.sourceUrl !== entry.sourceUrl)) {
+        throw new Error(`Conflicting provisional source ID: ${entry.id}`);
+      }
+      if (!prior) entries.set(entry.id, entry);
+      const assessment = screening.items[entry.id];
+      // A later incomplete or stale batch must not erase an earlier valid review.
+      if (!items[entry.id] && assessment?.status === 'guessed'
+        && assessment.fingerprint === candidateFingerprint(entry)) items[entry.id] = assessment;
+    }
+  }
+  return { manifest: { formatVersion: '1.0.0', entries: [...entries.values()] },
+    triage: { formatVersion: '1.0.0', items } };
+}
+
 export function createProvisionalPack(manifest, triage, selections) {
   if (manifest?.formatVersion !== '1.0.0' || !Array.isArray(manifest.entries)
     || triage?.formatVersion !== '1.0.0' || !triage.items || typeof triage.items !== 'object'
@@ -49,20 +76,14 @@ async function main() {
     : selections.sourceDirs ?? ['.visual-check/quickdraw-priority'];
   if (!Array.isArray(directories) || !directories.length || directories.length > 20
     || directories.some((directory) => typeof directory !== 'string')) throw new Error('Invalid source directories.');
-  const manifest = { formatVersion: '1.0.0', entries: [] };
-  const triage = { formatVersion: '1.0.0', items: {} };
+  const sources = [];
   for (const directory of directories) {
     const source = resolve(root, directory);
     const batch = JSON.parse(await readFile(resolve(source, 'candidates.json'), 'utf8'));
     const screening = JSON.parse(await readFile(resolve(source, 'vision-triage.json'), 'utf8'));
-    if (batch.formatVersion !== '1.0.0' || !Array.isArray(batch.entries)
-      || screening.formatVersion !== '1.0.0' || !screening.items) throw new Error('Invalid source batch.');
-    for (const entry of batch.entries) {
-      if (manifest.entries.some((prior) => prior.id === entry.id)) throw new Error('Duplicate provisional source ID.');
-      manifest.entries.push(entry);
-      if (screening.items[entry.id]) triage.items[entry.id] = screening.items[entry.id];
-    }
+    sources.push({ batch, screening });
   }
+  const { manifest, triage } = mergeProvisionalSources(sources);
   const pack = createProvisionalPack(manifest, triage, selections);
   await writeFile(output, `${JSON.stringify(pack, null, 2)}\n`);
   console.log(`Wrote ${pack.entries.length} model-screened, human-unreviewed provisional sketches to ${output}.`);

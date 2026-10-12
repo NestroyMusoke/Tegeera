@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createProvisionalPack } from './build-provisional-quickdraw.mjs';
+import { createProvisionalPack, mergeProvisionalSources } from './build-provisional-quickdraw.mjs';
 import { candidateFingerprint } from './quickdraw-vision-triage.mjs';
 
 const entry = { id: 'bee-123', noun: 'bee', keyId: '123',
@@ -29,4 +29,22 @@ test('provisional builder rejects stale artwork, a wrong guess, and duplicate no
   } }, selections), /No matching blind/);
   assert.throws(() => createProvisionalPack(manifest, triage,
     { ...selections, ids: [entry.id, entry.id] }), /Duplicate provisional noun/);
+});
+
+test('overlapping batches merge identical drawings but never conflicting artwork or provenance', () => {
+  const source = { batch: manifest, screening: triage };
+  const merged = mergeProvisionalSources([source, source]);
+  assert.equal(merged.manifest.entries.length, 1);
+  assert.equal(createProvisionalPack(merged.manifest, merged.triage, selections).entries.length, 1);
+  const stale = { ...source, screening: { ...triage, items: { [entry.id]: {
+    ...triage.items[entry.id], fingerprint: 'stale' } } } };
+  assert.deepEqual(mergeProvisionalSources([source, stale]).triage, triage);
+  assert.deepEqual(mergeProvisionalSources([stale, source]).triage, triage);
+  for (const change of [{ svg: entry.svg.replace('L90 10', 'L80 10') }, { noun: 'wasp' },
+    { keyId: '456' }, { sourceUrl: 'https://example.com/changed' }]) {
+    assert.throws(() => mergeProvisionalSources([source, { ...source,
+      batch: { ...manifest, entries: [{ ...entry, ...change }] } }]), /Conflicting provisional source ID/);
+  }
+  assert.throws(() => mergeProvisionalSources([{ ...source,
+    batch: { ...manifest, entries: [entry, entry] } }]), /within batch/);
 });

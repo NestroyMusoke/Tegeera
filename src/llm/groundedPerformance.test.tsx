@@ -87,4 +87,15 @@ describe("hosted relationships become physical performances", () => {
     const scene = applyDoodleScript(initialScene, compileUniversalScene(candidate, initialScene, "A traveller holds a cup and carries an apple."));
     expect(scene.relations?.every(({ kind }) => kind === "relatesTo")).toBe(true);
   });
+
+  it.each(["beside", "next to", "alongside"])("does not trade %s alignment for a contact pose", (label) => {
+    const candidate = plan("holds");
+    candidate.objects.push({ id: "other", label: "flower", kind: "generic", x: 50, y: 50 });
+    candidate.connections.push({ from: "item", to: "other", label });
+    const script = compileUniversalScene(candidate, initialScene, "A traveller holds a cup beside a flower.");
+    const scene = applyDoodleScript(initialScene, script);
+    expect(validateDoodleScript(script, initialScene)).toMatchObject({ ok: true });
+    expect(scene.entities.find(({ id }) => id === "item")!.y).toBe(scene.entities.find(({ id }) => id === "other")!.y);
+    expect(scene.relations).toHaveLength(2);
+  });
 });

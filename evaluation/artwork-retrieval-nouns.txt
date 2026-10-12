@@ -1,0 +1,6 @@
+clock
+key
+bridge
+bus
+bird
+dog

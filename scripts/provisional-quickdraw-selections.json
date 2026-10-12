@@ -3,7 +3,8 @@
   "sourceDirs": [
     ".visual-check/quickdraw-priority",
     ".visual-check/quickdraw-batch",
-    ".visual-check/quickdraw-oct08"
+    ".visual-check/quickdraw-oct08",
+    ".visual-check/quickdraw-oct12"
   ],
   "ids": [
     "bee-6401386805723136",
@@ -20,6 +21,8 @@
     "ladder-5368600716115968",
     "umbrella-4672158661869568",
     "cloud-5287405579927552",
-    "apple-5962374890651648"
+    "apple-5962374890651648",
+    "key-5016195864461312",
+    "bird-6677765937954816"
   ]
 }

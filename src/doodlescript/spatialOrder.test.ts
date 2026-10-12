@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { isPositionalRelation, spatialOrder } from "./spatialOrder";
+import { isPositionalRelation, isSideBySideRelation, spatialOrder } from "./spatialOrder";
 
 describe("embedded spatial predicates", () => {
+  it("distinguishes lateral neighbors from unconstrained adjacency and motion", () => {
+    for (const label of ["beside", "next to", "standsNextTo", "waits beside", "alongside"]) {
+      expect(isSideBySideRelation(label)).toBe(true);
+    }
+    for (const label of ["adjacent to", "above", "walks toward", "not beside", "beside the tree"]) {
+      expect(isSideBySideRelation(label)).toBe(false);
+    }
+  });
   it("keeps the mover below the object it passes beneath", () => {
     expect(spatialOrder("passes beneath")).toEqual({ axis: "y", sign: 1 });
     expect(spatialOrder("flows under")).toEqual({ axis: "y", sign: 1 });

@@ -3,7 +3,7 @@ import { conceptSupports } from "../doodlescript/conceptRegistry";
 import { applyDoodleScript } from "../doodlescript/scene";
 import type { DoodleScript, SceneEntity, SceneState } from "../doodlescript/schema";
 import { stageContactPair } from "../doodlescript/spatialStaging";
-import { spatialOrder } from "../doodlescript/spatialOrder";
+import { isSideBySideRelation, spatialOrder } from "../doodlescript/spatialOrder";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { validateDoodleScript } from "../doodlescript/validator";
 import { emojiPreviewFor, natureEmojiPreviewFor } from "../glyphs/emojiPreview";
@@ -48,11 +48,14 @@ export function groundContactPerformances(scene: SceneState, input: DoodleScript
     const accepts = (performer: SceneEntity, target: SceneEntity) => {
       const entities = staged.entities.map((entity) => entity.id === actorId ? performer : entity.id === targetId ? target : entity);
       for (const edge of relations) {
-        const order = edge.kind === "relatesTo" && spatialOrder(edge.predicate ?? "");
-        if (!order) continue;
+        if (edge.kind !== "relatesTo") continue;
+        const order = spatialOrder(edge.predicate ?? "");
+        const lateral = isSideBySideRelation(edge.predicate ?? "");
+        if (!order && !lateral) continue;
         const from = entities.find(({ id }) => id === edge.sourceIds[0]);
         const to = entities.find(({ id }) => id === edge.targetIds[0]);
-        if (from && to && Math.sign(from[order.axis] - to[order.axis]) !== order.sign) return false;
+        if (from && to && ((order && Math.sign(from[order.axis] - to[order.axis]) !== order.sign)
+          || (lateral && from.y !== to.y))) return false;
       }
       return [...universalSceneEdges(relations, entities).values()].every(Boolean);
     };

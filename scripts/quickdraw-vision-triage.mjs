@@ -56,7 +56,8 @@ function singular(word) {
 
 /** Conservative ordering hint only, never a quality or approval decision. */
 export function blindGuessMatches(noun, answer) {
-  if (typeof answer !== 'string' || /\b(?:unclear|unrecognizable|unknown|not|no|maybe)\b/i.test(answer)) return false;
+  if (typeof answer !== 'string' || /\b(?:unclear|unrecognizable|unknown|not|no|maybe|possibly|perhaps|probably|could|might|or)\b/i.test(answer)
+    || /[?\/]/.test(answer)) return false;
   const subject = String(noun).toLowerCase().match(/[a-z]+/g)?.map(singular) ?? [];
   const guess = answer.toLowerCase().match(/[a-z]+/g)?.map(singular) ?? [];
   return subject.length > 0 && guess.some((_, start) => subject.every((word, offset) => guess[start + offset] === word));
@@ -107,10 +108,13 @@ export async function blindVisionGuess(entry, { key, model = VISION_MODEL, fetch
 }
 
 export async function runVisionTriage({ outDir, key, model = VISION_MODEL, maxCandidates = 5,
-  execute = false, onlyNouns = [], fetchImpl = fetch }) {
+  execute = false, onlyNouns = [], reuseDirs = [], fetchImpl = fetch }) {
   if (!Number.isInteger(maxCandidates) || maxCandidates < 1 || maxCandidates > 40) throw new Error('Max candidates must be 1–40.');
   if (!Array.isArray(onlyNouns) || onlyNouns.some((noun) => typeof noun !== 'string' || !/^[a-z][a-z ]{1,46}[a-z]$/.test(noun))) {
     throw new Error('Only nouns must be lowercase category names.');
+  }
+  if (!Array.isArray(reuseDirs) || reuseDirs.length > 20 || reuseDirs.some((dir) => typeof dir !== 'string' || !dir.trim())) {
+    throw new Error('Reuse directories must be a bounded list of paths.');
   }
   const manifest = JSON.parse(await readFile(join(outDir, 'candidates.json'), 'utf8'));
   if (manifest.formatVersion !== '1.0.0' || !Array.isArray(manifest.entries)) throw new Error('Invalid candidate manifest.');
@@ -123,15 +127,37 @@ export async function runVisionTriage({ outDir, key, model = VISION_MODEL, maxCa
   if (report.formatVersion !== '1.0.0' || !report.items || Array.isArray(report.items)
     || typeof report.items !== 'object') throw new Error('Invalid vision triage state.');
   const selectedNouns = new Set(onlyNouns);
+  // Reuse only identical pixels screened by the same model. A failed or stale
+  // assessment must never suppress a new request or become a shipping decision.
+  let reused = 0;
+  for (const directory of reuseDirs) {
+    const previous = JSON.parse(await readFile(join(directory, 'vision-triage.json'), 'utf8'));
+    if (previous.formatVersion !== '1.0.0' || !previous.items || Array.isArray(previous.items)
+      || typeof previous.items !== 'object') throw new Error('Invalid reusable vision triage state.');
+    for (const entry of manifest.entries) {
+      if (selectedNouns.size && !selectedNouns.has(entry.noun)) continue;
+      const fingerprint = candidateFingerprint(entry);
+      const current = report.items[entry.id];
+      if (current?.status === 'guessed' && current.model === model && current.fingerprint === fingerprint) continue;
+      const prior = previous.items[entry.id];
+      if (prior?.status === 'guessed' && prior.model === model && prior.fingerprint === fingerprint
+        && prior.noun === entry.noun && typeof prior.blindGuess === 'string'
+        && prior.blindGuess.trim() && prior.blindGuess.length <= 120) {
+        report.items[entry.id] = prior;
+        reused += 1;
+      }
+    }
+  }
+  if (execute && reused) await saveJson(path, report);
   const pending = roundRobinCandidates(manifest.entries).filter((entry) =>
     (!selectedNouns.size || selectedNouns.has(entry.noun)) && (
     report.items[entry.id]?.fingerprint !== candidateFingerprint(entry)
     || report.items[entry.id]?.model !== model || report.items[entry.id]?.status !== 'guessed')).slice(0, maxCandidates);
   if (!execute) {
     if (Object.keys(report.items).length) await writeReports(outDir, manifest.entries, report);
-    return { attempted: 0, pending: pending.length, total: manifest.entries.length, path };
+    return { attempted: 0, pending: pending.length, reused, total: manifest.entries.length, path };
   }
-  if (!key?.trim()) throw new Error('NEBIUS_API_KEY is required. Use the ignored server/.env.local, never the repo or browser.');
+  if (pending.length && !key?.trim()) throw new Error('NEBIUS_API_KEY is required. Use the ignored server/.env.local, never the repo or browser.');
   let attempted = 0;
   for (const entry of pending) {
     const fingerprint = candidateFingerprint(entry);
@@ -151,19 +177,20 @@ export async function runVisionTriage({ outDir, key, model = VISION_MODEL, maxCa
     await saveJson(path, report);
   }
   await writeReports(outDir, manifest.entries, report);
-  return { attempted, pending: pending.length, total: manifest.entries.length, path };
+  return { attempted, pending: pending.length, reused, total: manifest.entries.length, path };
 }
 
 async function main() {
   if (has('--help')) {
-    console.log('Usage: node --env-file=server/.env.local scripts/quickdraw-vision-triage.mjs [--out-dir .visual-check/quickdraw-batch] [--execute --max-candidates 5] [--only-nouns sun,leaf]');
+    console.log('Usage: node --env-file=server/.env.local scripts/quickdraw-vision-triage.mjs [--out-dir .visual-check/quickdraw-batch] [--execute --max-candidates 5] [--only-nouns sun,leaf] [--reuse-dir previous-batch]');
     return;
   }
   const result = await runVisionTriage({ outDir: resolve(option('--out-dir', join(ROOT, '.visual-check', 'quickdraw-batch'))),
     key: process.env.NEBIUS_API_KEY, model: option('--model', VISION_MODEL),
     maxCandidates: Number(option('--max-candidates', '5')), execute: has('--execute'),
-    onlyNouns: option('--only-nouns', '').split(',').map((noun) => noun.trim()).filter(Boolean) });
-  console.log(result.attempted ? `Saved ${result.attempted} blind model guesses to ${result.path}. Human review is still required.`
+    onlyNouns: option('--only-nouns', '').split(',').map((noun) => noun.trim()).filter(Boolean),
+    reuseDirs: args.flatMap((arg, index) => arg === '--reuse-dir' ? [resolve(args[index + 1] ?? '')] : []) });
+  console.log(has('--execute') ? `Completed: ${result.attempted} new calls, ${result.reused} reused assessments. Saved to ${result.path}. These are not human approvals.`
     : `Dry run: ${result.pending} of ${result.total} candidates would be triaged. Add --execute to use Nebius credits.`);
 }
 

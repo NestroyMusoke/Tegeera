@@ -66,6 +66,9 @@ test('ranking is a conservative review hint, not an approval decision', () => {
   assert.equal(blindGuessMatches('dragon', 'bending bird'), false);
   assert.equal(blindGuessMatches('sun', 'not a sun'), false);
   assert.equal(blindGuessMatches('leaf', 'unclear leaf-like line'), false);
+  for (const guess of ['sun or flower', 'possibly a sun', 'sun?', 'sun/flower', 'could be a sun']) {
+    assert.equal(blindGuessMatches('sun', guess), false, guess);
+  }
   const report = { items: {
     'dragon-1': { status: 'guessed', fingerprint: candidateFingerprint(entries[0]), blindGuess: 'bird' },
     'dragon-2': { status: 'guessed', fingerprint: candidateFingerprint(entries[1]), blindGuess: 'dragon' },
@@ -75,6 +78,41 @@ test('ranking is a conservative review hint, not an approval decision', () => {
   assert.deepEqual(ordered.entries.map((entry) => entry.id), ['dragon-2', 'dragon-1', 'sun-1']);
   assert.equal(ordered.hints['sun-1'], undefined);
   assert.equal(ordered.hints['dragon-1'], 'bird');
+});
+
+test('cross-batch reuse requires identical art, noun and model and avoids paid calls', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'tegeera-vision-reuse-'));
+  const prior = await mkdtemp(join(tmpdir(), 'tegeera-vision-prior-'));
+  try {
+    const entry = entries[0];
+    await writeFile(join(dir, 'candidates.json'), JSON.stringify({ formatVersion: '1.0.0', entries: [entry] }));
+    const item = { status: 'guessed', noun: entry.noun, model: 'test-model',
+      fingerprint: candidateFingerprint(entry), blindGuess: 'a bird' };
+    const savePrior = async (overrides = {}) => writeFile(join(prior, 'vision-triage.json'),
+      JSON.stringify({ formatVersion: '1.0.0', items: { [entry.id]: { ...item, ...overrides } } }));
+    const options = { outDir: dir, reuseDirs: [prior], model: 'test-model',
+      fetchImpl: async () => { throw new Error('Must not call the provider'); } };
+    for (const change of [{ fingerprint: 'stale' }, { model: 'different-model' },
+      { noun: 'bird' }, { status: 'failed' }, { blindGuess: '' }]) {
+      await savePrior(change);
+      const result = await runVisionTriage(options);
+      assert.equal(result.reused, 0);
+      assert.equal(result.pending, 1);
+    }
+    await savePrior();
+    const dry = await runVisionTriage(options);
+    assert.equal(dry.reused, 1);
+    await assert.rejects(readFile(join(dir, 'vision-triage.json')), { code: 'ENOENT' });
+    // A completed reused batch needs no API key, including negative guesses.
+    const result = await runVisionTriage({ ...options, execute: true });
+    assert.equal(result.attempted, 0);
+    assert.equal(result.reused, 1);
+    assert.equal(JSON.parse(await readFile(join(dir, 'vision-triage.json'))).items[entry.id].blindGuess, 'a bird');
+    assert.equal((await runVisionTriage({ ...options, execute: true })).reused, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(prior, { recursive: true, force: true });
+  }
 });
 
 test('report escapes untrusted model guesses and candidate names', () => {
