@@ -1,4 +1,4 @@
-import type { ComponentType, CSSProperties } from "react";
+import { useId, type ComponentType, type CSSProperties } from "react";
 import type { EntityKind, SceneEntity } from "../doodlescript/schema";
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { characterPoseFor, type LimbPose } from "./characterPerformance";
@@ -107,6 +107,25 @@ function Desk() {
   return <g><path className="doodle-stroke entity-color-fill" d="M-48 4 Q0-3 48 4 L43 16 H-43 Z M-35 16 L-39 52 M35 16 L39 52" /><path className="doodle-detail" d="M-24 27 H24" /></g>;
 }
 
+function EmojiPreview({ entity, emoji }: EntityRendererProps & { emoji: string }) {
+  // Per-instance IDs prevent two coloured copies of the same noun from sharing
+  // a filter. Only a fixed palette and local SVG fragment enter this pipeline.
+  const filterId = `emoji-tone-${useId().replace(/:/g, "")}`;
+  const tone = entity.color ? entityColors[entity.color] : undefined;
+  const channels = tone ? [1, 3, 5].map((offset) => parseInt(tone.slice(offset, offset + 2), 16) / 255) : [];
+  // A small colour floor also tints monochrome font fallbacks. Luminance keeps
+  // eyes/contours darker; the unchanged alpha keeps the background transparent.
+  const matrix = channels.flatMap((channel) => [0.2126 * 0.65 * channel, 0.7152 * 0.65 * channel, 0.0722 * 0.65 * channel, 0, 0.35 * channel]);
+  return <g data-symbol-id="emoji-preview" data-symbol-version="cldr-17" data-symbol-category="temporary-preview" data-symbol-confidence="0.7" data-symbol-fallback="true">
+    <title>{`${entity.label} — temporary emoji preview while the doodle is prepared`}</title>
+    {tone && <defs><filter id={filterId} x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
+      <feColorMatrix type="matrix" values={[...matrix, 0, 0, 0, 1, 0].join(" ")} />
+    </filter></defs>}
+    <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="76"
+      style={{ filter: tone ? `url(#${filterId})` : "grayscale(1) contrast(1.5)" }}>{emoji}</text>
+  </g>;
+}
+
 function Generic({ entity }: EntityRendererProps) {
   const plan = resolveVisualSymbol(entity.label ?? entity.kind);
   if (!plan.fallback && plan.category !== "unknown") {
@@ -123,11 +142,8 @@ function Generic({ entity }: EntityRendererProps) {
       <ComposedSymbol category={plan.category} primitives={plan.primitives} capabilities={plan.capabilities} rotation={rotation} />
     </g>;
   }
-  const emoji = emojiPreviewFor(entity.label ?? "") ?? natureEmojiPreviewFor(entity.label ?? "");
-  if (emoji) return <g data-symbol-id="emoji-preview" data-symbol-version="cldr-17" data-symbol-category="temporary-preview" data-symbol-confidence="0.7" data-symbol-fallback="true">
-    <title>{`${entity.label} — temporary emoji preview while the doodle is prepared`}</title>
-    <text x="0" y="3" textAnchor="middle" dominantBaseline="central" fontFamily="Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif" fontSize="76" style={{ filter: "grayscale(1) contrast(1.5)" }}>{emoji}</text>
-  </g>;
+  const emoji = emojiPreviewFor(entity.label ?? "", entity.color) ?? natureEmojiPreviewFor(entity.label ?? "");
+  if (emoji) return <EmojiPreview entity={entity} emoji={emoji} />;
   const words = (entity.label ?? entity.kind).trim().split(/\s+/).filter(Boolean);
   const display = words.length <= 1 ? [words[0] ?? "object"]
     : words.length === 2 ? words : [words[0], words.slice(1).join(" ")];

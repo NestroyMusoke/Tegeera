@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh exploratory statements; annotations precede provider calls and are never sent to the model. Endpoint coverage is not visual accuracy.",
+  "cases": [
+    {"id":"green-snail","text":"A green snail.","roles":["snail"],"links":[]},
+    {"id":"pink-jellyfish","text":"A pink jellyfish above a blue crab.","roles":["jellyfish","crab"],"links":[["jellyfish","crab"]]},
+    {"id":"cup-support","text":"A cup sits on a book.","roles":["cup","book"],"links":[["cup","book"]]},
+    {"id":"robot-hammer","text":"A robot holds a hammer beside a bicycle.","roles":["robot","hammer","bicycle"],"links":[["robot","hammer"]]}
+  ]
+}

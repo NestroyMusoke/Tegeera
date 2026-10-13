@@ -2,7 +2,25 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — twelve fresh live probes, 12 October 2026
+## Latest checkpoint — general layout/appearance fixes, 13 October 2026
+
+See [the ten-statement live review](docs/RANDOM_LIVE_REVIEW_2026-10-13.md).
+Eight fresh statements plus two unseen post-fix holdouts used twelve provider attempts.
+Seven of ten passed endpoint checks; seven are renderable after replaying the repaired
+shelf scene. This is not a visual-accuracy or completion score.
+
+Four-level vertical chains now determine their own row count with bounded geometry;
+colour-qualified labels recover omitted attributes; emoji previews respect colours and
+validated colour prefixes no longer break exact retrieval. Browser inspection also
+exposed and fixed partially animated saved review pages. Conditional/negative explanations,
+mixed specialist plans, physical interactions and artwork coverage remain open gaps.
+
+Verification: 673 client, 60 backend, 25 hosted-evaluation and 2 performance tests passed
+(three optional client smoke tests skipped); snapshot regression rerun passed. Lint,
+build/bundle budget and Android web sync passed. Local SVG-ready p95 was 14.76ms, while
+live calls took 5.707–28.406 seconds. No deployment, APK or phone verification is claimed.
+
+## Previous checkpoint — twelve fresh live probes, 12 October 2026
 
 See [the complete short/medium/complex review](docs/RANDOM_LIVE_REVIEW_2026-10-12.md).
 Twelve new statements used thirteen provider attempts: 10/12 passed directed

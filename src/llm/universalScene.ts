@@ -20,6 +20,7 @@ import { planChangingSpeedMotion } from "../doodlescript/changingSpeedMotion";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
 import { isSideBySideRelation, spatialOrder } from "../doodlescript/spatialOrder";
 import { groundContactPerformances } from "./groundedPerformance";
+import { spatialLevels } from "./spatialLevels";
 import { provisionalPreviewFor } from "../glyphs/provisionalCatalog";
 import { buildLinearPropagation } from "../doodlescript/linearPropagation";
 import { propagationLabels, propagationRoles } from "../../shared/propagationBlueprint.mjs";
@@ -222,8 +223,13 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
   const verticalStack = !extend && objects.length >= 3 && objects.length <= 4
     && Math.max(...objects.map((object) => object.x)) - Math.min(...objects.map((object) => object.x)) <= 24
     && new Set(objects.map((object) => Math.round(object.y / 8))).size >= 3;
+  const levels = spatialLevels(objects, connections);
+  if (!extend && levels.count > 4) throw new Error("This scene needs more than four vertical levels. Please split it into smaller views.");
+  const levelRows = !extend && levels.count >= 3
+    ? levels.count === 3 ? [20, 50, 80] : [15, 38, 61, 84] : undefined;
   const candidates = extend ? [...columns.map((x) => ({ x, y: 15 })), ...slots]
-    : verticalStack ? [20, 50, 80].flatMap((y) => columns.map((x) => ({ x, y }))) : slots;
+    : levelRows ? levelRows.flatMap((y) => columns.map((x) => ({ x, y })))
+      : verticalStack ? [20, 50, 80].flatMap((y) => columns.map((x) => ({ x, y }))) : slots;
   const existingPosition = (reference: string) => {
     const byId = scene.entities.find((entity) => entity.id === reference);
     if (byId) return byId;
@@ -275,6 +281,10 @@ function assignedSlots(objects: UniversalSceneBlueprint["objects"], connections:
     for (let slotIndex = 0; slotIndex < available.length; slotIndex += 1) {
       if (used & (1 << slotIndex)) continue;
       const slot = available[slotIndex];
+      if (levelRows) {
+        const rank = levelRows.indexOf(slot.y);
+        if (rank < levels.above[index] || rank > levelRows.length - 1 - levels.below[index]) continue;
+      }
       let nextCost = cost + distances[index][slotIndex];
       for (let previous = 0; previous < index; previous += 1) {
         const earlier = objects[previous];
@@ -430,7 +440,10 @@ export function compileUniversalScene(
   const sceneDensity = blueprint.objects.length + (blueprint.mode === "extend" ? scene.entities.length : 0);
   // Eight distinct positions already have 240 scene units between columns;
   // shrinking every glyph further made dense phone overviews unreadable.
-  const visualScale = sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 1;
+  const fourLevels = blueprint.mode === "replace" && spatialLevels(blueprint.objects, blueprint.connections).count === 4;
+  // Four rows are 23% apart. Reserve the validator's full body+label envelope
+  // (26 * scale) rather than selecting a visually plausible but overlapping grid.
+  const visualScale = fourLevels ? 0.86 : sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 1;
   const mixedContainment = (blueprint.objects.length > 3 || blueprint.connections.length > 2)
     && blueprint.connections.some((edge) => edge.kind === "contains");
   const isGenericLink = (edge: UniversalSceneBlueprint["connections"][number]) =>

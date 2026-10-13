@@ -13,7 +13,7 @@ test('recovers explicit single-object colour independently of noun vocabulary', 
   }
 });
 test('never guesses from complex, ambiguous, contradictory or uncertain requests', () => {
-  for (const text of ['Not a purple octopus.', 'A purple octopus beside a fish.', 'A purple octopus?', 'Maybe a purple octopus.', 'A purple octopus and a fish.']) {
+  for (const text of ['Not a purple octopus.', 'A purple octopus?', 'Maybe a purple octopus.', 'A purple fish beside an octopus.']) {
     const before = scene('purple octopus');
     assert.equal(normalizeStandaloneColour(text, before), before);
   }
@@ -22,4 +22,13 @@ test('never guesses from complex, ambiguous, contradictory or uncertain requests
     { ...scene('purple octopus'), objects: [{ label: 'purple octopus', color: 'red' }] }]) {
     assert.equal(normalizeStandaloneColour(`A ${before.objects[0].label}.`, before), before);
   }
+});
+test('recovers different explicit colours in a longer scene without transferring them', () => {
+  const before = { ...scene('blue vase'), objects: [{ id: 'v', label: 'blue vase' }, { id: 's', label: 'red suitcase' }, { id: 'c', label: 'cat' }] };
+  const after = normalizeStandaloneColour('A blue vase rests above a red suitcase beside a cat.', before);
+  assert.deepEqual(after.objects.map((object) => object.color), ['blue', 'red', undefined]);
+  assert.equal(normalizeStandaloneColour('A blue vase rests above a red suitcase beside a cat.', after), after);
+  const duplicate = { ...before, objects: [before.objects[0], { ...before.objects[0], id: 'other' }] };
+  assert.equal(normalizeStandaloneColour('A blue vase.', duplicate), duplicate);
+  assert.equal(before.objects[0].color, undefined);
 });

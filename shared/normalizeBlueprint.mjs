@@ -58,19 +58,26 @@ export function normalizeStandaloneReplacement(text, candidate) {
   return selfContained ? { ...candidate, mode: "replace" } : candidate;
 }
 
-/** Recover an omitted attribute only for an entire, unambiguous noun-phrase
- * request. Longer prose, negation, duplicate objects and existing colours are
- * intentionally left to validation, not guessed from an adjective elsewhere. */
+/** Recover omitted colour only from an exact, unique colour-qualified label
+ * present verbatim in positive source text. Never move adjectives between nouns. */
 export function normalizeStandaloneColour(text, candidate) {
   if (!candidate || typeof candidate !== 'object' || candidate.mode !== 'replace'
-    || !Number.isFinite(candidate.confidence) || candidate.confidence < 0.58 || candidate.objects?.length !== 1
-    || !Array.isArray(candidate.connections) || candidate.connections.length) return candidate;
-  const object = candidate.objects[0];
-  if (!object || object.color !== undefined || typeof object.label !== 'string') return candidate;
-  const phrase = String(text).trim().toLowerCase().replace(/[.!]$/, '').replace(/^(?:a|an|the) /, '');
-  const label = object.label.trim().toLowerCase().replace(/^(?:a|an|the) /, '');
+    || !Number.isFinite(candidate.confidence) || candidate.confidence < 0.58
+    || !Array.isArray(candidate.objects) || candidate.objects.length > 8) return candidate;
+  const source = String(text).toLowerCase();
+  if (source.length > 4000 || /[?]|\b(?:not|no|never|without|neither|nor|maybe|perhaps|if|unless|might|could|cannot)\b|n't/.test(source)) return candidate;
+  const normalized = ` ${source.replace(/[^a-z]+/g, ' ').trim()} `;
+  const labels = candidate.objects.map((object) => typeof object?.label === 'string'
+    ? object.label.trim().toLowerCase().replace(/^(?:a|an|the) /, '') : '');
   // Orange is also a noun (orange juice/peel); don't infer its attribute here.
-  const match = /^(red|yellow|green|blue|purple|pink|brown|black|white|gray) ([a-z]+(?: [a-z]+){0,3})$/.exec(phrase);
-  if (!match || phrase !== label || /\b(?:not|and|or|without|if)\b/.test(phrase)) return candidate;
-  return { ...candidate, objects: [{ ...object, color: match[1] }] };
+  let changed = false;
+  const objects = candidate.objects.map((object, index) => {
+    const label = labels[index];
+    const match = /^(red|yellow|green|blue|purple|pink|brown|black|white|gray) ([a-z]+(?: [a-z]+){0,3})$/.exec(label);
+    if (!object || object.color !== undefined || !match || labels.filter((value) => value === label).length !== 1
+      || !normalized.includes(` ${label} `) || /\b(?:and|or)\b/.test(label)) return object;
+    changed = true;
+    return { ...object, color: match[1] };
+  });
+  return changed ? { ...candidate, objects } : candidate;
 }

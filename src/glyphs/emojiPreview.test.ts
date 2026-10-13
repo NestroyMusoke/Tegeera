@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { emojiPreviewFor, extractEmojiPreviews, natureEmojiPreviewFor } from "./emojiPreview";
 
 describe("offline emoji previews", () => {
+  it("separates a validated colour from an exact noun without stripping arbitrary modifiers", () => {
+    expect(emojiPreviewFor("purple satellite", "purple")).toBe(emojiPreviewFor("satellite"));
+    expect(emojiPreviewFor("purple satellite", "purple")).toBeDefined();
+    expect(emojiPreviewFor("green hammers", "green")).toBe(emojiPreviewFor("hammer"));
+    expect(emojiPreviewFor("purple satellite")).toBeUndefined();
+    expect(emojiPreviewFor("purple satellite", "blue")).toBeUndefined();
+    expect(emojiPreviewFor("purple satellite factory", "purple")).toBeUndefined();
+    expect(emojiPreviewFor("yellow submarine", "yellow")).toBeUndefined();
+  });
   it("retrieves exact labels and safe plurals without guessing ambiguous concepts", () => {
     expect(emojiPreviewFor("dragon")).toBe("🐉");
     expect(emojiPreviewFor("volcanoes")).toBe("🌋");

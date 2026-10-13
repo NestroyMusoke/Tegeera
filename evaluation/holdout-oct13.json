@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Post-fix holdouts with new nouns/compositions. Authored before their live provider calls.",
+  "cases": [
+    {"id":"submarine-satellite","text":"A yellow submarine floats below a purple satellite.","roles":["submarine","satellite"],"links":[["submarine","satellite"]]},
+    {"id":"four-level-nature","text":"A cloud floats above a butterfly. The butterfly is above a flower, and the flower is above a cup.","roles":["cloud","butterfly","flower","cup"],"links":[["cloud","butterfly"],["butterfly","flower"],["flower","cup"]]}
+  ]
+}

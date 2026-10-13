@@ -9,6 +9,33 @@ const entity = (kind: SceneEntity["kind"], id = `${kind}-1`): SceneEntity => ({
 });
 
 describe("entity renderer registry", () => {
+  it("tints temporary emoji with independent local filters and preserves their alpha", () => {
+    const html = renderToStaticMarkup(<svg>{(["purple", "green"] as const).map((color, index) =>
+      <EntityGlyph key={color} entity={{ ...entity("generic", `preview-${index}`), label: "octopus", color }} />)}</svg>);
+    const document = new DOMParser().parseFromString(html, "image/svg+xml");
+    const filters = [...document.querySelectorAll("filter")];
+    expect(filters).toHaveLength(2);
+    expect(new Set(filters.map((filter) => filter.id)).size).toBe(2);
+    for (const filter of filters) {
+      const values = filter.querySelector("feColorMatrix")!.getAttribute("values")!.split(" ").map(Number);
+      expect(values).toHaveLength(20);
+      expect(values.every(Number.isFinite)).toBe(true);
+      expect(values.slice(-5)).toEqual([0, 0, 0, 1, 0]);
+      expect(values[4]).toBeGreaterThan(0);
+      expect(values[9]).toBeGreaterThan(0);
+      expect(values[14]).toBeGreaterThan(0);
+      expect(html).toContain(`url(#${filter.id})`);
+    }
+    expect(html).toContain("temporary emoji preview");
+    expect(html).not.toContain("grayscale(1)");
+    expect(filters[0].textContent).toBe("");
+  });
+
+  it("keeps unspecified emoji monochrome without allocating a colour filter", () => {
+    const html = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic"), label: "octopus" }} />);
+    expect(html).toContain("grayscale(1)");
+    expect(html).not.toContain("feColorMatrix");
+  });
   it("exposes versioned concept metadata selected from the shared registry", () => {
     const html = renderToStaticMarkup(<EntityGlyph entity={entity("desk")} />);
     expect(html).toContain('data-concept-id="desk"');

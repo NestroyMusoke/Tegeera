@@ -32,7 +32,11 @@ test("a captured blueprint can be replayed through the current renderer without 
     assert.equal(report.rows[0].rendered, true);
     assert.equal(report.rows[0].connectionCount, 3);
     assert.equal(report.rows[0].links.some((link) => link.includes("feeds")), false);
-    assert.equal((await readFile(report.rows[0].reviewFile, "utf8")).includes("roof feeds rain"), false);
+    const review = await readFile(report.rows[0].reviewFile, "utf8");
+    assert.equal(review.includes("roof feeds rain"), false);
+    assert.ok(review.includes('animation:none!important'));
+    assert.ok(review.includes('stroke-dasharray:none!important;stroke-dashoffset:0!important'));
+    assert.ok(review.includes('.entity-label{opacity:1!important}'));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

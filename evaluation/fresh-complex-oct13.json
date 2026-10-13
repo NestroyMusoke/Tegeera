@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh long/complex statements. Conditional and negative meaning must be inspected beyond directed endpoints.",
+  "cases": [
+    {"id":"shelf-scene","text":"A blue vase rests on a shelf above a red suitcase. A cat sits beside the suitcase while a butterfly flies above the vase.","roles":["vase","shelf","suitcase","cat","butterfly"],"links":[["vase","shelf"],["shelf","suitcase"],["cat","suitcase"],["butterfly","vase"]]},
+    {"id":"conditional-door","text":"A sensor detects smoke and sends a signal to a controller. The controller opens a door only when smoke is detected.","roles":["sensor","smoke","signal","controller","door"],"links":[["sensor","smoke"],["sensor","signal"],["signal","controller"],["controller","door"]]},
+    {"id":"negated-chase","text":"A dog sits beside a cat. The dog does not chase the cat, and a bird flies above both animals.","roles":["dog","cat","bird"],"links":[["dog","cat"],["bird","dog"],["bird","cat"]]},
+    {"id":"river-transfer","text":"Water flows from a mountain through a river into a lake. A bridge crosses the river, and a cyclist stands beside the bridge holding a yellow umbrella.","roles":["water","mountain","river","lake","bridge","cyclist","umbrella"],"links":[["water","river"],["river","lake"],["bridge","river"],["cyclist","bridge"],["cyclist","umbrella"]]}
+  ]
+}

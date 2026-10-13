@@ -33,7 +33,7 @@ export function groundContactPerformances(scene: SceneState, input: DoodleScript
     // Procedural art also lacks a reliable contact surface at present.
     if (target.visual || target.kind === "generic" && !target.glyph
       && resolveVisualSymbol(target.label ?? "").fallback
-      && (emojiPreviewFor(target.label ?? "") || natureEmojiPreviewFor(target.label ?? ""))) continue;
+      && (emojiPreviewFor(target.label ?? "", target.color) || natureEmojiPreviewFor(target.label ?? ""))) continue;
     const competing = projected.relations?.some((relation) => relation.id !== original.id
       && (relation.kind === "actsOn" && (relation.sourceIds.includes(actorId) || relation.targetIds.includes(targetId))
         || relation.kind === "relatesTo" && relation.sourceIds.includes(actorId)

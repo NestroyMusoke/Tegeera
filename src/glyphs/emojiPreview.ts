@@ -1,6 +1,7 @@
 import emojiIndex from "./emojiIndex.json";
 import natureEmojiIndex from "./emojiNatureIndex.json";
 import { glyphKey, previewNounKeys } from "./glyph";
+import type { SceneEntity } from "../doodlescript/schema";
 
 const index = emojiIndex as Record<string, string>;
 const natureIndex = natureEmojiIndex as Record<string, string>;
@@ -26,8 +27,15 @@ export function natureEmojiPreviewFor(label: string): string | undefined {
 }
 
 /** Exact CLDR label retrieval only. No fuzzy keyword guessing for teaching diagrams. */
-export function emojiPreviewFor(label: string): string | undefined {
-  return exactOrSingular(label, index) ?? exactOrSingular(label, natureIndex);
+export function emojiPreviewFor(label: string, color?: SceneEntity["color"]): string | undefined {
+  const direct = exactOrSingular(label, index) ?? exactOrSingular(label, natureIndex);
+  if (direct) return direct;
+  // Only remove a validated appearance field, never an arbitrary first word
+  // or a compound noun's head ("satellite dish" is not "satellite").
+  const noun = glyphKey(label).replace(/^(?:a|an|the) /, "");
+  if (!color || !noun.startsWith(`${color} `)) return undefined;
+  const uncoloured = noun.slice(color.length + 1);
+  return exactOrSingular(uncoloured, index) ?? exactOrSingular(uncoloured, natureIndex);
 }
 
 export function extractEmojiPreviews(text: string, limit = 4): Array<{ label: string; emoji: string }> {
