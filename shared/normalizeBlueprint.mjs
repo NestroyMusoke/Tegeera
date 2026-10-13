@@ -47,6 +47,7 @@ export function normalizeOptionalTypedKinds(candidate) {
  * is reserved for an explicit addition or a link to an established object.
  * This avoids accumulating unrelated lessons when the teacher submits again. */
 export function normalizeStandaloneReplacement(text, candidate) {
+  candidate = normalizeStandaloneColour(text, candidate);
   if (!candidate || typeof candidate !== "object" || candidate.mode !== "extend"
     || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return candidate;
   if (/\b(?:add|adding|include|including|also|another|additional|extra|more)\b/i.test(String(text))) return candidate;
@@ -55,4 +56,21 @@ export function normalizeStandaloneReplacement(text, candidate) {
   const selfContained = candidate.connections.every((edge) => edge && [edge.from, edge.to, edge.via]
     .filter((value) => value !== undefined).every((value) => typeof value === "string" && names.has(value.toLowerCase().trim())));
   return selfContained ? { ...candidate, mode: "replace" } : candidate;
+}
+
+/** Recover an omitted attribute only for an entire, unambiguous noun-phrase
+ * request. Longer prose, negation, duplicate objects and existing colours are
+ * intentionally left to validation, not guessed from an adjective elsewhere. */
+export function normalizeStandaloneColour(text, candidate) {
+  if (!candidate || typeof candidate !== 'object' || candidate.mode !== 'replace'
+    || !Number.isFinite(candidate.confidence) || candidate.confidence < 0.58 || candidate.objects?.length !== 1
+    || !Array.isArray(candidate.connections) || candidate.connections.length) return candidate;
+  const object = candidate.objects[0];
+  if (!object || object.color !== undefined || typeof object.label !== 'string') return candidate;
+  const phrase = String(text).trim().toLowerCase().replace(/[.!]$/, '').replace(/^(?:a|an|the) /, '');
+  const label = object.label.trim().toLowerCase().replace(/^(?:a|an|the) /, '');
+  // Orange is also a noun (orange juice/peel); don't infer its attribute here.
+  const match = /^(red|yellow|green|blue|purple|pink|brown|black|white|gray) ([a-z]+(?: [a-z]+){0,3})$/.exec(phrase);
+  if (!match || phrase !== label || /\b(?:not|and|or|without|if)\b/.test(phrase)) return candidate;
+  return { ...candidate, objects: [{ ...object, color: match[1] }] };
 }

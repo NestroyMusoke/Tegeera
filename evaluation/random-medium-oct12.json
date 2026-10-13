@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "New mixed-domain stress probes annotated before calls. Endpoint scores are diagnostic, not proof of correct action or appearance.",
+  "cases": [
+    { "id": "violin-lantern", "text": "A violin rests beside a lantern.", "roles": ["violin", "lantern"], "links": [["violin", "lantern"]] },
+    { "id": "apple-handover", "text": "A child gives an apple to a teacher.", "roles": ["child", "apple", "teacher"], "links": [["child", "apple"], ["apple", "teacher"]] },
+    { "id": "magnet-nail-compass", "text": "A magnet attracts a nail beside a compass.", "roles": ["magnet", "nail", "compass"], "links": [["magnet", "nail"], ["nail", "compass"]] },
+    { "id": "two-coloured-books", "text": "A red book and a blue book lie below a cloud.", "roles": ["red book", "blue book", "cloud"], "links": [["red book", "cloud"], ["blue book", "cloud"]] }
+  ]
+}

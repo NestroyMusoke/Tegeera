@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Long multi-clause stress probes annotated before calls. All objects, actions, conditions, layout and drawing identity need inspection beyond role/endpoint scoring. No expectation enters the model prompt.",
+  "cases": [
+    { "id": "rain-gardener", "text": "Rain flows from a roof through a gutter into a barrel while a gardener stands beside the barrel and holds a watering can.", "roles": ["rain", "roof", "gutter", "barrel", "gardener", "watering can"], "links": [["rain", "gutter"], ["roof", "gutter"], ["gutter", "barrel"], ["gardener", "barrel"], ["gardener", "watering can"]] },
+    { "id": "battery-air-flower", "text": "A battery powers a motor that spins a fan; the fan blows air toward a flower, and a bee rests beside the flower.", "roles": ["battery", "motor", "fan", "air", "flower", "bee"], "links": [["battery", "motor"], ["motor", "fan"], ["fan", "air"], ["air", "flower"], ["bee", "flower"]] },
+    { "id": "student-desk-landscape", "text": "A student stands beside a desk and holds a key. A book rests on the desk, while a cloud floats above a tree to the right of the desk.", "roles": ["student", "desk", "key", "book", "cloud", "tree"], "links": [["student", "desk"], ["student", "key"], ["book", "desk"], ["cloud", "tree"], ["tree", "desk"]] },
+    { "id": "conditional-pump", "text": "A pump sends water through a filter into a tank. A sensor measures the water level, and a controller stops the pump when the sensor detects that the tank is full.", "roles": ["pump", "water", "filter", "tank", "sensor", "water level", "controller"], "links": [["pump", "water"], ["water", "filter"], ["filter", "tank"], ["sensor", "water level"], ["controller", "pump"]] }
+  ]
+}

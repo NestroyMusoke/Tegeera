@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "New short stress probes annotated before calls. Structural scoring is not visual approval; colour, count and recognizability require separate inspection.",
+  "cases": [
+    { "id": "purple-octopus", "text": "A purple octopus.", "roles": ["octopus"], "links": [] },
+    { "id": "bee-over-flower", "text": "One bee above a flower.", "roles": ["bee", "flower"], "links": [["bee", "flower"]] },
+    { "id": "bicycle", "text": "A bicycle.", "roles": ["bicycle"], "links": [] },
+    { "id": "rain", "text": "Rain.", "roles": ["rain"], "links": [] }
+  ]
+}

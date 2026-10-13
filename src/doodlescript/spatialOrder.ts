@@ -3,6 +3,9 @@ export function spatialOrder(label: string): { axis: "x" | "y"; sign: -1 | 1 } |
   const words = label.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().trim()
     .replace(/[^a-z ]/g, " ").replace(/\s+/g, " ");
   if (/^(?:above|over|on top of|directly above|directly over)$/.test(words)) return { axis: "y", sign: -1 };
+  // Explicit support verbs imply vertical order. Do not match every "on":
+  // depends on, switches on, and feeds on are not support relationships.
+  if (/^(?:rests?|sits?|stands?|lies?|lying|resting|sitting|standing) on(?: top of)?$/.test(words)) return { axis: "y", sign: -1 };
   if (/^(?:beneath|below|under|underneath|directly beneath|directly below)$/.test(words)) return { axis: "y", sign: 1 };
   if (/^(?:left of|to the left of|on the left of)$/.test(words)) return { axis: "x", sign: -1 };
   if (/^(?:right of|to the right of|on the right of)$/.test(words)) return { axis: "x", sign: 1 };

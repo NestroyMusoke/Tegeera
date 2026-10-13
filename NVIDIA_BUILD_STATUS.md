@@ -2,7 +2,26 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — spatial grounding and colour fidelity, 12 October 2026
+## Latest checkpoint — twelve fresh live probes, 12 October 2026
+
+See [the complete short/medium/complex review](docs/RANDOM_LIVE_REVIEW_2026-10-12.md).
+Twelve new statements used thirteen provider attempts: 10/12 passed directed
+endpoint checks, while only 11/12 initially rendered. A zero-call replay recovered
+the missing standalone colour attribute, but monochrome emoji art remains a
+visual failure. Support predicates now put a book above its desk instead of
+beside it; physical contact is not yet implemented by this fix.
+
+Actual static drawings were inspected, including the failures. Complex scenes
+still have substantial placeholder coverage and incomplete conditional meaning.
+Live latency was 4.217–30.777 seconds (median 6.7145 seconds), not real time.
+These percentages describe this probe set, not overall completion.
+
+Verification: 667 client tests passed (3 optional smoke tests skipped), 59 backend,
+25 hosted-evaluation and 2 performance tests passed. Lint/build/bundle budget and
+Android web sync passed. Local SVG-ready p95 was 17.02ms across 834 samples;
+this excludes AI calls, speech, browser paint and phone performance.
+
+## Previous checkpoint — spatial grounding and colour fidelity, 12 October 2026
 
 See [composition and colour evidence](docs/COMPOSITION_AND_COLOUR_2026-10-12.md).
 Four fresh live statements produced three complete graphs and one confident

@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { isPositionalRelation, isSideBySideRelation, spatialOrder } from "./spatialOrder";
 
 describe("embedded spatial predicates", () => {
+  it("orders supported objects above their support without treating causal on as spatial", () => {
+    for (const label of ["rests on", "sits on", "standsOn", "lies on", "lying on", "resting on top of"]) {
+      expect(spatialOrder(label)).toEqual({ axis: "y", sign: -1 });
+      expect(isPositionalRelation(label)).toBe(true);
+    }
+    for (const label of ["depends on", "feeds on", "switches on", "not resting on", "on", "rests on behalf of"]) {
+      expect(spatialOrder(label)).toBeUndefined();
+    }
+  });
   it("distinguishes lateral neighbors from unconstrained adjacency and motion", () => {
     for (const label of ["beside", "next to", "standsNextTo", "waits beside", "alongside"]) {
       expect(isSideBySideRelation(label)).toBe(true);
