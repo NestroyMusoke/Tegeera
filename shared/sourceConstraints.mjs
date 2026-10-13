@@ -1,5 +1,6 @@
 // Source-grounding checks shared by the hosted service and the browser compiler.
 import { completeExplicitSpatial, explicitSpatialIssue } from './explicitSpatial.mjs';
+import { transferDirectionIssue } from './transferDirection.mjs';
 // These are deliberately narrow: only explicit, high-signal relationship language
 // is enforced. Unknown prose is left to the planner, not guessed into a diagram.
 const words = (value) => String(value).toLowerCase().match(/[a-z]+/g) ?? [];
@@ -168,6 +169,8 @@ export function sourceConstraintIssue(text, candidate) {
   if (!candidate || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)) return null;
   const spatialIssue = explicitSpatialIssue(text, candidate);
   if (spatialIssue) return spatialIssue;
+  const transferIssue = transferDirectionIssue(text, candidate);
+  if (transferIssue) return transferIssue;
   const objects = candidate.objects;
   const edges = candidate.connections;
   const utterance = String(text).toLowerCase().replace(/[’‘]/g, "'");

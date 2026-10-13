@@ -372,7 +372,7 @@ export function compileUniversalScene(
           // A broad model classification is not evidence for a specific native
           // silhouette. Require the existing noun registry for concrete rigs;
           // otherwise allow the noun's own glyph/preview/sticker to represent it.
-          const concreteRig = ["car", "book", "desk", "tree", "building"].includes(declaredKind);
+          const concreteRig = ["car", "book", "desk", "tree", "building", "process", "cpu"].includes(declaredKind);
           const nounLabel = glyphKey(object.label).replace(/^(?:a|an|the) /, "");
           const registered = conceptForAlias(nounLabel) ?? (typeof object.color === "string"
             && colorWords.has(object.color) && nounLabel.startsWith(`${object.color} `)
@@ -426,7 +426,7 @@ export function compileUniversalScene(
     }
   }
   const propagation = propagationRoles(blueprint);
-  if (propagation) {
+  if (propagation && blueprint.objects.length === 4 && blueprint.connections.length === 3) {
     const role = (name: keyof typeof propagation) => blueprint.objects.find(({ id }) => id === propagation[name])!;
     const script = buildLinearPropagation({ source: role("source").label, medium: role("medium").label,
       payload: role("payload").label, destination: role("destination").label },
@@ -436,6 +436,17 @@ export function compileUniversalScene(
       if (command.action !== "create" || !command.entity.propagationRole) return command;
       return { ...command, entity: { ...command.entity, color: role(command.entity.propagationRole).color } };
     })] };
+  }
+  if (propagation) {
+    // The complete role contract was checked above. Preserve every contextual
+    // object and edge in an ordinary diagram instead of invoking a four-object
+    // specialist renderer that would discard the rest of the explanation.
+    blueprint.connections = blueprint.connections.map((edge) => {
+      if (!edge.kind || !Object.hasOwn(propagationLabels, edge.kind)) return edge;
+      const ordinary = { ...edge };
+      delete ordinary.kind;
+      return ordinary;
+    });
   }
   const sceneDensity = blueprint.objects.length + (blueprint.mode === "extend" ? scene.entities.length : 0);
   // Eight distinct positions already have 240 scene units between columns;

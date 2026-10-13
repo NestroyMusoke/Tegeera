@@ -2,7 +2,31 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — general layout/appearance fixes, 13 October 2026
+## Latest checkpoint — mixed explanations and misleading output, 13 October 2026
+
+See [the six-statement mixed-mechanism review](docs/MIXED_MECHANISMS_2026-10-13.md).
+Six new statements received eleven live evaluations including post-fix retries.
+Complete propagation mechanisms can now retain connected ordinary context instead
+of rejecting or dropping it. Physical phenomena no longer get computer-process/CPU
+icons solely from a model classification. A source-grounded transfer check catches
+an active/passive predicate reversal that endpoint scoring alone missed.
+
+Two previously rejected observer scenes now retain their expected graphs and render.
+The radio holdout repaired its incorrect predicate, but still draws six labelled
+placeholders. The vibration retry uses payload captions instead of all expected
+nodes; the heat holdout timed out at 42 seconds. These are not finished doodles,
+and no overall completion percentage is justified by this small, repeated sample.
+
+Verification: 682 client, 68 backend, 25 hosted-evaluation and 2 performance tests
+passed; three optional client live smoke tests skipped. Lint, production build,
+bundle budget, Android web sync and diff whitespace checks passed. Vite emitted
+its 500 kB chunk warning (main chunk 501.76 kB); the repository's explicit bundle
+budget passed. Local SVG-ready p95 was 30.52 ms across 834 samples, maximum 82.53 ms.
+This benchmark excludes AI, speech, browser paint and phone scheduling. No deployment,
+APK build or phone verification is claimed. Static drawings were inspected; artwork
+coverage and multi-second AI latency remain material product gaps.
+
+## Previous checkpoint — general layout/appearance fixes, 13 October 2026
 
 See [the ten-statement live review](docs/RANDOM_LIVE_REVIEW_2026-10-13.md).
 Eight fresh statements plus two unseen post-fix holdouts used twelve provider attempts.

@@ -1,0 +1,8 @@
+{
+ "schemaVersion":"1.0.0",
+ "note":"New post-fix holdouts. Their annotations never enter the model request.",
+ "cases":[
+  {"id":"heat-observer","text":"A heater sends heat through a metal plate to a thermometer. An engineer watches the thermometer.","roles":["heater","heat","metal plate","thermometer","engineer"],"links":[["heat","metal plate"],["heat","thermometer"],["engineer","thermometer"]]},
+  {"id":"radio-screen","text":"An antenna sends radio waves through air to a receiver. The receiver sends data to a screen.","roles":["antenna","radio waves","air","receiver","data","screen"],"links":[["radio waves","air"],["radio waves","receiver"],["receiver","data"],["data","screen"]]}
+ ]
+}

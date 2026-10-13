@@ -1,0 +1,10 @@
+{
+  "schemaVersion":"1.0.0",
+  "note":"Fresh exploratory cases annotated before calls. Complete endpoints do not prove correct artwork or mechanism.",
+  "cases":[
+    {"id":"light-observer","text":"A transmitter sends light through an optical fibre to a detector. A technician watches the detector.","roles":["transmitter","light","optical fibre","detector","technician"],"links":[["light","optical fibre"],["light","detector"],["technician","detector"]]},
+    {"id":"sound-listener","text":"A speaker sends sound through air to a microphone, while a student stands beside the speaker.","roles":["speaker","sound","air","microphone","student"],"links":[["sound","air"],["sound","microphone"],["student","speaker"]]},
+    {"id":"vibration-display","text":"An oscillator sends vibration through a membrane to a sensor. The sensor sends a reading to a display.","roles":["oscillator","vibration","membrane","sensor","reading","display"],"links":[["vibration","membrane"],["vibration","sensor"],["sensor","reading"],["reading","display"]]},
+    {"id":"plain-propagation","text":"A laser sends light through glass to a detector.","roles":["laser","light","glass","detector"],"links":[["light","glass"],["light","detector"]]}
+  ]
+}

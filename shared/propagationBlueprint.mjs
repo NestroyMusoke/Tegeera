@@ -12,18 +12,25 @@ export function normalizePropagationLabels(candidate) {
 }
 
 // Shared by service and browser: a partial topology must never become a diagram.
+// A complete topology may have connected ordinary context; it then uses the
+// general graph renderer, which retains all objects rather than the four-role rig.
 export function propagationRoles(candidate) {
   const edges = candidate.connections ?? [];
   if (!edges.some((edge) => Object.hasOwn(propagationLabels, edge.kind))) return null;
-  const fail = () => { throw new Error("Propagation needs replace mode, four distinct roles, and exactly source→payload emits, payload→medium propagatesThrough, payload→destination reaches links (source→medium enters is also supported)."); };
-  if (candidate.mode !== "replace" || candidate.objects.length !== 4 || edges.length !== 3) fail();
+  const fail = () => { throw new Error("Propagation needs replace mode and a complete four-role subgraph: source→payload emits, payload→medium propagatesThrough, payload→destination reaches (source→medium enters also supported). Additional context must be connected and untyped. If this mechanism is not stated, use truthful ordinary labels without propagation kinds; do not invent roles."); };
+  if (candidate.mode !== "replace" || candidate.objects.length < 4 || candidate.objects.length > 8 || edges.length < 3 || edges.length > 12) fail();
   const one = (kind) => edges.filter((edge) => edge.kind === kind);
   if (["propagatesThrough", "reaches"].some((kind) => one(kind).length !== 1)) fail();
   const through = one("propagatesThrough")[0], reaches = one("reaches")[0];
   if (reaches.from !== through.from) {
     throw new Error(`Propagation reaches must start at the travelling payload ${through.from}, not ${reaches.from}. Keep the medium ${through.to} separate from that payload.`);
   }
-  const origin = edges.find((edge) => edge !== through && edge !== reaches);
+  const origins = edges.filter((edge) => edge !== through && edge !== reaches && (
+    edge.kind === "enters" && edge.to === through.to
+    || edge.to === through.from && /^(?:emits|sends|generates|causes)$/.test(edge.label?.toLowerCase().trim() ?? "")
+      && (!edge.kind || ["relatesTo", "emits", "causes"].includes(edge.kind))));
+  if (origins.length !== 1) fail();
+  const origin = origins[0];
   const feedsMedium = origin.kind === "enters" && origin.to === through.to;
   const emitsPayload = origin.to === through.from && /^(?:emits|sends|generates|causes)$/.test(origin.label?.toLowerCase().trim() ?? "")
     && (!origin.kind || ["relatesTo", "emits", "causes"].includes(origin.kind));
@@ -31,5 +38,19 @@ export function propagationRoles(candidate) {
   const roles = { source: origin.from, medium: through.to, payload: through.from, destination: reaches.to };
   if (reaches.from !== roles.payload || new Set(Object.values(roles)).size !== 4
     || Object.values(roles).some((id) => !candidate.objects.some((object) => object.id === id))) fail();
+  const context = edges.filter((edge) => edge !== origin && edge !== through && edge !== reaches);
+  // Do not combine unrelated specialist layouts, hide duplicate propagation
+  // claims, or strip a type to bypass validation. Context must be ordinary.
+  if (context.some((edge) => edge.via !== undefined || edge.kind && edge.kind !== "relatesTo")) fail();
+  const known = new Set(candidate.objects.map((object) => object.id));
+  if (edges.some((edge) => !known.has(edge.from) || !known.has(edge.to) || edge.from === edge.to)) fail();
+  const connected = new Set(Object.values(roles));
+  for (let pass = 0; pass < candidate.objects.length; pass++) {
+    for (const edge of context) {
+      if (connected.has(edge.from)) connected.add(edge.to);
+      if (connected.has(edge.to)) connected.add(edge.from);
+    }
+  }
+  if (candidate.objects.some((object) => !connected.has(object.id))) fail();
   return roles;
 }
