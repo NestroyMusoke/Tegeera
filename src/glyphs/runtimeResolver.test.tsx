@@ -15,6 +15,23 @@ const glyph: TegeeraGlyph = {
 };
 
 describe("non-blocking glyph resolver", () => {
+  it("revisits an existing scene when AI becomes ready without another input", async () => {
+    const resolver = new LiveGlyphResolver();
+    expect(resolver.resolve("telescope").source).toBe("sticker");
+    const render = vi.fn(() => { resolver.resolve("telescope"); });
+    const unsubscribe = resolver.subscribe(render);
+    const generator = vi.fn(async () => glyph);
+    resolver.setGenerator(generator);
+    expect(render).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(resolver.draftFor("telescope")).toEqual(glyph));
+    expect(generator).toHaveBeenCalledOnce();
+    const count = render.mock.calls.length;
+    resolver.setGenerator(generator);
+    expect(render).toHaveBeenCalledTimes(count);
+    expect(resolver.resolve("telescope").status).toBe("placeholder");
+    unsubscribe();
+    resolver.setGenerator(undefined);
+  });
   it("shows a machine-screened preview synchronously without caching or generating it", async () => {
     const generator = vi.fn(async () => glyph);
     const resolver = new LiveGlyphResolver({ preview: new Map([["bee", glyph]]), generator });

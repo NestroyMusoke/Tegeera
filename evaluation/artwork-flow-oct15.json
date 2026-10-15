@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh short, relational and multi-clause probes. Expectations never enter the provider prompt; endpoint success is not artwork approval.",
+  "cases": [
+    {"id":"telescope","text":"A purple telescope.","roles":["telescope"],"links":[]},
+    {"id":"watering","text":"A gardener holds a watering can beside a sunflower.","roles":["gardener","watering can","sunflower"],"links":[["gardener","watering can"],["gardener","sunflower"]]},
+    {"id":"river-monitor","text":"A sensor measures water in a river. The sensor sends a reading to a computer, and a scientist watches the computer.","roles":["sensor","water","river","reading","computer","scientist"],"links":[["sensor","water"],["water","river"],["sensor","reading"],["reading","computer"],["scientist","computer"]]}
+  ]
+}

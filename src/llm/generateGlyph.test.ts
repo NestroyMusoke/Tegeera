@@ -11,6 +11,46 @@ const strokes = { strokes: [
 afterEach(() => vi.unstubAllGlobals());
 
 describe("remote stroke boundary", () => {
+  it("cancels an oversized open stream instead of leaving the reader running", async () => {
+    const cancel = vi.fn();
+    const stream = new ReadableStream<Uint8Array>({ start(controller) {
+      controller.enqueue(new TextEncoder().encode("x".repeat(64_001)));
+    }, cancel });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(stream)));
+    await expect(generateStrokeGlyphRemotely("telescope", "test-key", new AbortController().signal, () => undefined))
+      .rejects.toThrow("Oversized stroke stream");
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(stream.locked).toBe(false);
+  });
+
+  it("bounds total traffic even when every comment line is short", async () => {
+    const cancel = vi.fn();
+    const stream = new ReadableStream<Uint8Array>({ pull(controller) {
+      controller.enqueue(new TextEncoder().encode(": heartbeat\n".repeat(1000)));
+    }, cancel });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(stream)));
+    await expect(generateStrokeGlyphRemotely("telescope", "test-key", new AbortController().signal, () => undefined))
+      .rejects.toThrow("Oversized stroke stream");
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(stream.locked).toBe(false);
+  });
+
+  it("aborts a stalled reader even when the mocked transport ignores the signal", async () => {
+    const cancel = vi.fn();
+    const stream = new ReadableStream<Uint8Array>({ cancel });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(stream)));
+    const controller = new AbortController();
+    const seen = vi.fn();
+    const pending = generateStrokeGlyphRemotely("watering can", "test-key", controller.signal, seen);
+    const rejected = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await vi.waitFor(() => expect(stream.locked).toBe(true));
+    controller.abort();
+    await rejected;
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(seen).not.toHaveBeenCalled();
+    expect(stream.locked).toBe(false);
+  });
+
   it("streams only completed strokes from split SSE frames", async () => {
     const text = JSON.stringify(strokes);
     const split = text.indexOf('},{"part":"detail"') + 1;

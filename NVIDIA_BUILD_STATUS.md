@@ -2,7 +2,29 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — mixed explanations and misleading output, 13 October 2026
+## Latest checkpoint — artwork activation and quality experiment, 15 October 2026
+
+See [the live artwork/lifecycle review](docs/ARTWORK_LIFECYCLE_2026-10-15.md).
+Fixed resolver notification when AI becomes available after a scene exists,
+application cleanup of generation, and bounded/cancellable streamed-art readers.
+Generated drafts still require review; no new artwork was marked approved.
+
+Three fresh statements all rendered, but only 1/3 met every literal role/endpoint
+expectation. One relational wording was ambiguous; the complex river-monitoring
+example omitted the river. Five direct glyph evaluations (seven provider attempts)
+showed that low-effort reasoning did not reliably improve silhouettes. Production
+model/reasoning settings were therefore left unchanged. The existing purple telescope
+preview was recognizable; the generated replacements were not acceptable.
+
+Verification: 68 backend tests passed. Full client run: 685 passed, one failed,
+three optional smoke tests skipped. The failure is the existing local-render timing
+assertion: 105.24 ms against a 100 ms limit. An isolated targeted run passed 23/23,
+but does not erase that full-suite failure. Lint, production build, bundle budget,
+Android web sync and diff whitespace checks passed. The main chunk remains above
+Vite's advisory 500 kB threshold (502.12 kB). No phone/APK/deployment test is claimed.
+This checkpoint is not release-green or product completion.
+
+## Previous checkpoint — mixed explanations and misleading output, 13 October 2026
 
 See [the six-statement mixed-mechanism review](docs/MIXED_MECHANISMS_2026-10-13.md).
 Six new statements received eleven live evaluations including post-fix retries.

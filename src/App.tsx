@@ -181,6 +181,7 @@ function App() {
       ? (noun, signal, publishStroke) => generateStrokeGlyphRemotely(noun, openRouterKey, signal, publishStroke)
       : localAiEnabled ? (noun, signal, publishStroke) => generateStrokeGlyphRemotely(noun, "", signal, publishStroke, DEFAULT_FREE_GLYPH_MODEL, true)
       : undefined);
+    return () => { glyphResolver.current!.setGenerator(undefined); };
   }, [openRouterKey, localAiEnabled]);
 
   useEffect(() => { acceptedPlanCache.current.clear(); }, [openRouterKey, localAiEnabled]);

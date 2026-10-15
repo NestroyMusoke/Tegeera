@@ -82,6 +82,7 @@ export class LiveGlyphResolver {
   private emit() { for (const listener of this.listeners) listener(); }
 
   setGenerator(generator?: GlyphGenerator) {
+    if (this.generator === generator) return;
     if (this.generator !== generator) {
       for (const [noun, controller] of this.controllers) {
         this.restartRequested.add(noun);
@@ -91,6 +92,9 @@ export class LiveGlyphResolver {
     }
     this.generator = generator;
     this.drain();
+    // A scene may have resolved before the connection became ready. Invalidate
+    // subscribers so its existing placeholders can enqueue without a new input.
+    this.emit();
   }
 
   seedCache(entries: ReadonlyMap<string, TegeeraGlyph>) {

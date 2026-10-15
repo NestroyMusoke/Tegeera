@@ -86,18 +86,34 @@ export async function generateStrokeGlyphRemotely(
     content += chunk;
     for (const stroke of parser.push(chunk)) onStroke(stroke);
   };
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    lines += decoder.decode(value, { stream: true });
-    if (lines.length > 64_000) throw new Error("Oversized stroke stream");
-    let newline: number;
-    while ((newline = lines.indexOf("\n")) >= 0) {
-      acceptLine(lines.slice(0, newline).trimEnd());
-      lines = lines.slice(newline + 1);
+  let wireBytes = 0;
+  const cancelRead = () => { void reader.cancel().catch(() => undefined); };
+  signal.addEventListener("abort", cancelRead, { once: true });
+  try {
+    while (true) {
+      signal.throwIfAborted();
+      const { done, value } = await reader.read();
+      signal.throwIfAborted();
+      if (done) break;
+      wireBytes += value.byteLength;
+      if (wireBytes > 512_000) throw new Error("Oversized stroke stream");
+      lines += decoder.decode(value, { stream: true });
+      if (lines.length > 64_000) throw new Error("Oversized stroke stream");
+      let newline: number;
+      while ((newline = lines.indexOf("\n")) >= 0) {
+        acceptLine(lines.slice(0, newline).trimEnd());
+        lines = lines.slice(newline + 1);
+      }
     }
+    lines += decoder.decode();
+    if (lines.trim()) acceptLine(lines.trim());
+  } finally {
+    signal.removeEventListener("abort", cancelRead);
+    // Release the upstream response on parse errors, size limits and aborts,
+    // not only on successful EOF. Never wait for an uncooperative cancel hook.
+    void reader.cancel().catch(() => undefined);
+    reader.releaseLock();
   }
-  if (lines.trim()) acceptLine(lines.trim());
   if (content.length > 32_000) throw new Error("Oversized stroke glyph");
   try { return strokeGlyphSchema.parse(JSON.parse(content)); }
   catch {
