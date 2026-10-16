@@ -8,6 +8,28 @@ import {
 } from "./engine.mjs";
 
 const scene = { entities: [], relations: [] };
+test("explicit containment context is completed without a paid repair, but contradictions remain rejected", async () => {
+  const text = "A case contains a camera. A photographer stands to the left of the case and points at the camera.";
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+    objects: ["case", "camera", "photographer"].map((label, index) => ({ id: `p${index}`, label,
+      kind: "generic", x: 30 + index * 20, y: 50 })),
+    connections: [{ from: "p0", to: "p1", label: "contains", kind: "contains" },
+      { from: "p2", to: "p1", label: "points at" }] };
+  let calls = 0;
+  const result = await interpretScene({ text, scene }, modelConfiguration({ NEBIUS_API_KEY: "test" }), {
+    fetchImpl: async () => { calls += 1; return new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify(candidate) } }] })); }
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.repaired, false);
+  assert.ok(result.candidate.connections.some((edge) => edge.from === "p2" && edge.to === "p0" && edge.label === "left of"));
+  const contradictory = { ...candidate, connections: [...candidate.connections,
+    { from: "p2", to: "p0", label: "right of" }] };
+  assert.match(sceneValidationIssue(completeExplicitPassages(text, contradictory), scene, text), /spatial relation/);
+  for (const uncertain of [text.replace("stands", "might stand"), text.replace("stands", "does not stand")]) {
+    assert.equal(completeExplicitPassages(uncertain, candidate).connections.length, 2);
+  }
+});
 const complete = {
   blueprintVersion: "1.0", mode: "replace", confidence: 0.92,
   objects: [
@@ -527,6 +549,7 @@ test("an explicit passage omission is repaired deterministically before another 
 
 test("repairs malformed model JSON once, then returns a structurally complete plan", async () => {
   let calls = 0;
+  const diagnostics = [];
   const fetchImpl = async (_url, request) => {
     calls += 1;
     const content = calls === 1 ? '{"blueprintVersion":"1.0","objects":[]}' : JSON.stringify(complete);
@@ -534,11 +557,16 @@ test("repairs malformed model JSON once, then returns a structurally complete pl
     return new Response(JSON.stringify({ usage: { prompt_tokens: 40, completion_tokens: 20, total_tokens: 60 },
       choices: [{ message: { content } }] }), { status: 200 });
   };
-  const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nvidia, { fetchImpl });
+  const result = await interpretScene({ text: "Water enters the plant through roots", scene }, nvidia, { fetchImpl,
+    onRepair: (diagnostic) => { diagnostics.push(diagnostic); throw new Error("observer failure"); } });
   assert.equal(result.repaired, true);
   assert.equal(result.candidate.objects.length, 3);
   assert.equal(calls, 2);
   assert.equal(result.providerAttempts, 2);
+  assert.equal(diagnostics.length, 1);
+  assert.match(diagnostics[0].reason, /mode/);
+  assert.ok(diagnostics[0].firstAttemptMs >= 0);
+  assert.equal("repairDiagnostics" in result, false);
   assert.deepEqual(result.usage, { promptTokens: 80, completionTokens: 40, totalTokens: 120 });
 });
 

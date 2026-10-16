@@ -44,12 +44,13 @@ const rows = [];
 for (const [index, item] of selected.entries()) {
   if (index && !replayCandidate) await new Promise((done) => setTimeout(done, 6000));
   const started = performance.now();
+  const repairDiagnostics = [];
   let row;
   try {
     const result = replayCandidate
       ? { candidate: JSON.parse(await readFile(resolve(replayCandidate), "utf8")), providerAttempts: 0 }
       : await interpretScene({ text: item.text, scene: { entities: [], relations: [] } }, configuration,
-        { signal: AbortSignal.timeout(42_000) });
+        { signal: AbortSignal.timeout(42_000), onRepair: (diagnostic) => repairDiagnostics.push(diagnostic) });
     if (!replayCandidate) {
       await mkdir(renderDirectory, { recursive: true });
       await writeFile(join(renderDirectory, `${item.id}-candidate.json`), `${JSON.stringify(result.candidate, null, 2)}\n`);
@@ -82,6 +83,7 @@ for (const [index, item] of selected.entries()) {
       ...(typeof error?.diagnostic === "string" ? { diagnostic: error.diagnostic.slice(0, 200) } : {}),
       ...(error?.candidateSummary ? { candidateSummary: error.candidateSummary } : {}) };
   }
+  row.repairDiagnostics = repairDiagnostics;
   rows.push(row);
   console.log(`${item.id}: ${row.graphComplete ? "graph complete" : "not complete"}; ${row.visualAudit?.labelledPlaceholders ?? "?"} labelled placeholders; ${row.elapsedMs}ms; ${row.attempts ?? "?"} attempt(s)`);
   await mkdir(dirname(output), { recursive: true });

@@ -6,6 +6,20 @@ import { validateDoodleScript } from "../doodlescript/validator";
 import { compileUniversalScene } from "./universalScene";
 
 describe("explicit spatial recovery and coloured artwork", () => {
+  it("recovers an omitted spatial link beside a containment relation", () => {
+    const script = compileUniversalScene({ blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: [{ id: "case", label: "case", kind: "generic", x: 50, y: 50 },
+        { id: "camera", label: "camera", kind: "generic", x: 50, y: 50 },
+        { id: "observer", label: "photographer", kind: "person", x: 80, y: 50 }],
+      connections: [{ from: "case", to: "camera", kind: "contains", label: "contains" },
+        { from: "observer", to: "camera", label: "points at" }] }, initialScene,
+    "A case contains a camera. A photographer stands to the left of the case and points at the camera.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.relations).toHaveLength(3);
+    expect(scene.entities.find((entity) => entity.id === "observer")!.x)
+      .toBeLessThan(scene.entities.find((entity) => entity.id === "case")!.x);
+  });
   it("recovers an explicit noun-phrase attribute before client colour validation", () => {
     const script = compileUniversalScene({ blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
       objects: [{ id: "a", label: "purple octopus", kind: "generic", x: 50, y: 50 }], connections: [] }, initialScene, "A purple octopus.");

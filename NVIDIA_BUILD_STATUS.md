@@ -2,7 +2,28 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — contextual containment and visible targets, 16 October 2026
+## Latest checkpoint — diagnose retries and recover explicit context, 16 October 2026
+
+See [the retry review](docs/RETRY_REVIEW_2026-10-16.md). Source-grounded spatial
+completion now also handles containment graphs, preserving existing contradiction,
+uncertainty, ambiguity and graph-size guards. A controlled missing-link regression
+failed after two provider attempts before the fix and succeeds in one afterwards.
+An internal opt-in hook records repair reasons in local synthetic probe reports;
+public API results and key handling are unchanged.
+
+Three fresh statements used five provider attempts: 13.383 s, 23.879 s and
+15.995 s. The final holdout used one call, but this does not prove a general
+latency improvement. Two containment scenes remain schematic illustrations;
+the pump/hose/gardener scene still has three placeholders. Static SVG images
+were inspected. No universal accuracy, real-time inference or percentage claim.
+
+Final verification: 702 client tests passed, three optional smoke tests skipped;
+69 backend tests and 25 hosted-evaluation tooling tests passed. No timeout or
+validation threshold was relaxed. No APK, phone or deployment check is claimed.
+Lint, production build, bundle budget and Android web sync passed. Main chunk:
+503.88 kB; Vite's existing advisory chunk warning remains.
+
+## Previous checkpoint — contextual containment and visible targets, 16 October 2026
 
 See [contextual containment evidence](docs/CONTEXTUAL_CONTAINMENT_2026-10-16.md).
 Three-object containment no longer becomes an arrow merely because the same

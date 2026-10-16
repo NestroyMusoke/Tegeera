@@ -68,7 +68,10 @@ const equivalent = (expected, edge) => (!edge.kind || edge.kind === 'relatesTo')
 export function completeExplicitSpatial(text, candidate) {
   if (!candidate || candidate.mode !== 'replace' || !(candidate.confidence >= 0.58)
     || !Array.isArray(candidate.objects) || !Array.isArray(candidate.connections)
-    || candidate.connections.some((edge) => edge.kind && edge.kind !== 'relatesTo')) return candidate;
+    // Containment can carry ordinary spatial context. Recover only an explicit
+    // missing link between uniquely named existing roles, just as in ordinary
+    // graphs; never rewrite contradictory edges or specialised mechanisms.
+    || candidate.connections.some((edge) => edge.kind && !['relatesTo', 'contains'].includes(edge.kind))) return candidate;
   const connections = [...candidate.connections];
   for (const expected of explicitSpatialRelations(text, candidate.objects)) {
     if (connections.some((edge) => equivalent(expected, edge))) continue;

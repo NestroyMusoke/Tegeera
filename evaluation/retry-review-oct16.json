@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh mixed explanations with repair diagnostics; expectations withheld from model.",
+  "cases": [
+    { "id": "case-photographer", "text": "A case contains a camera. A photographer stands to the left of the case and points at the camera.", "roles": ["case", "camera", "photographer"], "links": [["case", "camera"], ["photographer", "case"], ["photographer", "camera"]] },
+    { "id": "pump-gardener", "text": "A pump sends water through a hose into a bucket while a gardener watches the bucket.", "roles": ["pump", "water", "hose", "bucket", "gardener"], "links": [["water", "hose"], ["gardener", "bucket"]] },
+    { "id": "trunk-guide", "text": "A trunk contains a book. A guide stands to the right of the trunk and points at the book.", "roles": ["trunk", "book", "guide"], "links": [["trunk", "book"], ["guide", "trunk"], ["guide", "book"]] }
+  ]
+}

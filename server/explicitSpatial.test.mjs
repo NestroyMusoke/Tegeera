@@ -53,9 +53,9 @@ test('equivalent reversed edges remain unchanged; contradictions go to validatio
   assert.match(explicitSpatialIssue(pairText, wrong), /missing or contradictory/);
 });
 
-test('does not repair low-confidence plans, extensions, specialist diagrams or missing objects', () => {
+test('does not repair low-confidence plans, extensions, mechanism diagrams or missing objects', () => {
   for (const override of [{ confidence: 0.4 }, { mode: 'extend' },
-    { connections: [{ from: 'a', to: 'b', kind: 'contains', label: 'contains' }] }]) {
+    { connections: [{ from: 'a', to: 'b', kind: 'flowsInto', label: 'flows into' }] }]) {
     const plan = { ...candidate(), ...override };
     assert.equal(completeExplicitSpatial(text, plan), plan);
   }
