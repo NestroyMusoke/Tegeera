@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Unseen contextual containment checks; expectations are withheld from the model. Graph completeness is not visual approval.",
+  "cases": [
+    { "id": "jar-observer", "text": "A jar contains a lemon. A teacher stands to the left of the jar and points at the lemon.", "roles": ["jar", "lemon", "teacher"], "links": [["jar", "lemon"], ["teacher", "jar"], ["teacher", "lemon"]] },
+    { "id": "cabinet-observer", "text": "A cabinet contains a violin. A student stands to the right of the cabinet and looks at the violin.", "roles": ["cabinet", "violin", "student"], "links": [["cabinet", "violin"], ["student", "cabinet"], ["student", "violin"]] }
+  ]
+}

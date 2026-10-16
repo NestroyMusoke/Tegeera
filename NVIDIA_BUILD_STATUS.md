@@ -2,7 +2,30 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — protect ongoing teaching interactions, 16 October 2026
+## Latest checkpoint — contextual containment and visible targets, 16 October 2026
+
+See [contextual containment evidence](docs/CONTEXTUAL_CONTAINMENT_2026-10-16.md).
+Three-object containment no longer becomes an arrow merely because the same
+objects have extra ordinary relationships. Context placement preserves explicit
+left/right constraints, and connectors target the displayed content rather than
+its hidden layout slot. No noun-specific production rules were added.
+
+The final clean client run passed 701 tests, with three optional smoke tests
+skipped. Both isolated performance tests passed: 278 probes, 834 samples, local
+SVG-ready p95 33.20 ms, maximum 59.25 ms. The unseen-noun delayed-provider test
+passed at 92.16 ms. These timings exclude live inference and browser/phone paint.
+
+Two fresh live statements used four provider attempts (16.377 and 15.859 seconds).
+The left-side example exposed a placement failure; saved-response replay verifies
+the fix without another call. Basket/apple, jar/lemon and cabinet/violin SVGs were
+inspected. Containers remain labelled schematics and natural pointing/gaze is not
+established. Larger mixed/nested scenes remain unsupported by this layout.
+Independent corpus coverage is unchanged; this is not a completion percentage.
+Lint, TypeScript, production build, bundle budget and Android web sync passed.
+The main chunk is 503.85 kB (Vite's advisory warning remains). No APK, real-browser
+or phone verification is claimed for this patch. Backend code was unchanged.
+
+## Previous checkpoint — protect ongoing teaching interactions, 16 October 2026
 
 See [the workflow review](docs/WORKFLOW_REVIEW_2026-10-16.md). Two reproduced
 failures are fixed: late hosted replies no longer erase a newer unsent draft,

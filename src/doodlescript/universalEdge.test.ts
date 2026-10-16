@@ -11,6 +11,21 @@ const edge = (from: string, to: string): SceneRelation => ({
 });
 
 describe("source-to-target connector geometry", () => {
+  it("targets visible contained artwork without changing logical scene positions", () => {
+    const holder = { ...entity("holder", 45, 32), visualRole: "container" as const };
+    const content = { ...entity("content", 45, 62), visualRole: "contained" as const };
+    const observer = entity("observer", 85, 60);
+    const contains: SceneRelation = { id: "enclosure", kind: "contains", sourceIds: [holder.id], targetIds: [content.id] };
+    const points = { ...edge(observer.id, content.id), predicate: "points at" };
+    const entities = [holder, content, observer];
+    const before = JSON.stringify(entities);
+    const route = universalSceneEdges([contains, points], entities).get(points.id)!;
+    expect(route).toBeTruthy();
+    expect(route.target.y * 6.2).toBeCloseTo(32 * 6.2 + 72 + 15);
+    expect(route.target.scale).toBe(0.75);
+    expect(route.end.y).toBeLessThan(content.y * 6.2 - 40);
+    expect(JSON.stringify(entities)).toBe(before);
+  });
   it("renders model camelCase relation labels as readable captions", () => {
     expect(readableRelationLabel("passesThrough")).toBe("passes through");
     expect(readableRelationLabel("leadsTo")).toBe("leads to");

@@ -21,6 +21,38 @@ function render(candidate: ReturnType<typeof plan>, explanation: string) {
 }
 
 describe("hosted blueprints reach existing specialist drawing grammars", () => {
+  it("moves connected context with the enclosure while preserving explicit left placement", () => {
+    const candidate = plan(["jar", "lemon", "teacher"], [link(0, 1, "contains"),
+      link(2, 0, "relatesTo", "left of"), link(2, 1, "relatesTo", "points at")]);
+    candidate.objects[0].x = 100;
+    candidate.objects[1].x = 100;
+    candidate.objects[1].y = 30;
+    candidate.objects[2].x = 60;
+    const script = compileUniversalScene(candidate, initialScene, "A jar contains a lemon. A teacher stands to the left of the jar and points at the lemon.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.entities.find((entity) => entity.id === "role-2")!.x)
+      .toBeLessThan(scene.entities.find((entity) => entity.id === "role-0")!.x);
+    expect(renderToStaticMarkup(<DoodleCanvas scene={scene} />)).toContain('data-visual-cue="contained-artwork"');
+  });
+  it.each([["basket", "apple", "child"], ["case", "camera", "teacher"]])(
+    "retains containment for %s with multiple contextual relationships", (holder, item, observer) => {
+      const candidate = plan([holder, item, observer], [link(0, 1, "contains"),
+        link(2, 0, "relatesTo", "stands to the right of"), link(2, 1, "relatesTo", "points at")]);
+      candidate.objects[0].x = 30;
+      candidate.objects[1].x = 30;
+      candidate.objects[2].x = 80;
+      const script = compileUniversalScene(candidate, initialScene, `${holder} contains ${item}; ${observer} stands to the right of ${holder} and points at ${item}`);
+      expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+      const scene = applyDoodleScript(initialScene, script);
+      expect(scene.relations).toHaveLength(3);
+      expect(scene.relations?.filter((edge) => edge.kind === "contains")).toHaveLength(1);
+      const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+      expect(html).toContain('data-visual-cue="contained-artwork"');
+      expect(html).toContain("points at");
+      expect(scene.entities.find((entity) => entity.id === "role-2")!.x)
+        .toBeGreaterThan(scene.entities.find((entity) => entity.id === "role-0")!.x);
+    });
   it("draws arbitrary container/content pairs with connected context but rejects orphaned objects", () => {
     for (const [container, content] of [["variable", "value"], ["specimen jar", "sample"]]) {
       const candidate = plan([container, content], [link(0, 1, "contains")]);

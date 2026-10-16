@@ -1,4 +1,5 @@
 import { entityVisualGeometry } from "./entityGeometry";
+import { containedArtworkPlacement, labelledContainerGeometry } from "./labelledContainer";
 import type { SceneEntity, SceneRelation } from "./schema";
 
 type Point = { x: number; y: number };
@@ -217,9 +218,21 @@ export function universalSceneEdges(relations: readonly SceneRelation[], entitie
   ReadonlyMap<string, UniversalEdgeGeometry | null> {
   const result = new Map<string, UniversalEdgeGeometry | null>();
   const reserved: UniversalEdgeGeometry[] = [];
+  // Specialist artwork is not painted at its logical layout slot. Route to
+  // the displayed content, using the same transform as the enclosure renderer.
+  // Keep scene entities immutable; these are connector-only projections.
+  const projected = new Map<string, SceneEntity>();
+  for (const relation of relations) {
+    const enclosure = labelledContainerGeometry(relation, entities);
+    if (!enclosure) continue;
+    const artwork = containedArtworkPlacement(enclosure);
+    projected.set(enclosure.content.id, { ...enclosure.content,
+      x: artwork.x / 10, y: artwork.y / 6.2, scale: artwork.scale });
+  }
+  const visibleEntities = entities.map((entity) => projected.get(entity.id) ?? entity);
   for (const relation of relations) {
     if (relation.kind !== "relatesTo") continue;
-    const geometry = universalEdgeGeometry(relation, entities, reserved);
+    const geometry = universalEdgeGeometry(relation, visibleEntities, reserved);
     result.set(relation.id, geometry);
     if (geometry) reserved.push(geometry);
   }

@@ -116,7 +116,10 @@ function visualMotif(blueprint: UniversalSceneBlueprint): VisualMotif | null {
     if (blueprint.objects.some((object) => !edges.some((edge) => edge.from === object.id || edge.to === object.id))) {
       throw new Error("Containment needs every extra object connected to the explanation.");
     }
-    if (blueprint.objects.length > 3 || edges.length > 2) return null;
+    // Extra links to the same context object do not increase the number of
+    // bodies to place. Keep the enclosure; validate every contextual route
+    // after staging instead of discarding containment based on edge count.
+    if (blueprint.objects.length > 3) return null;
     return { family: "labelled-container", container: one("contains")[0].from, content: one("contains")[0].to };
   }
   if (edges.some((edge) => edge.kind === "calls" || edge.kind === "returnsControlTo")) {
@@ -455,7 +458,7 @@ export function compileUniversalScene(
   // Four rows are 23% apart. Reserve the validator's full body+label envelope
   // (26 * scale) rather than selecting a visually plausible but overlapping grid.
   const visualScale = fourLevels ? 0.86 : sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 1;
-  const mixedContainment = (blueprint.objects.length > 3 || blueprint.connections.length > 2)
+  const mixedContainment = blueprint.objects.length > 3
     && blueprint.connections.some((edge) => edge.kind === "contains");
   const isGenericLink = (edge: UniversalSceneBlueprint["connections"][number]) =>
     !edge.kind || edge.kind === "relatesTo" || (mixedContainment && edge.kind === "contains");
@@ -624,7 +627,7 @@ export function compileUniversalScene(
       }, new Set(createdIds), motif.direction)
       : motif.family === "labelled-container"
         ? planLabelledContainer(staged, idMap.get(motif.container)!, idMap.get(motif.content)!,
-          new Set([idMap.get(motif.container)!, idMap.get(motif.content)!]))
+          new Set(createdIds))
       : motif.family === "call-return-flow"
         ? planCallReturnFlow(staged, { callerId: idMap.get(motif.caller)!, functionId: idMap.get(motif.fn)!,
           callSiteId: idMap.get(motif.callSite)! }, new Set(createdIds))

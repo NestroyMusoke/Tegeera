@@ -1,4 +1,5 @@
 import { selectLayoutCandidate } from "./layoutPlanner";
+import { spatialOrder } from "./spatialOrder";
 import type { SceneEntity, SceneRelation, SceneState } from "./schema";
 
 export const LABELLED_CONTAINER_VERSION = "1.0.0";
@@ -40,6 +41,11 @@ export interface LabelledContainerGeometry {
   height: number;
 }
 
+/** Shared by artwork rendering and external relation routing, in SVG units. */
+export function containedArtworkPlacement(geometry: LabelledContainerGeometry) {
+  return { x: geometry.centerX, y: geometry.centerY + 15, scale: 0.75 };
+}
+
 export function labelledContainerGeometry(relation: SceneRelation, entities: readonly SceneEntity[]): LabelledContainerGeometry | null {
   if (relation.kind !== "contains" || relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) return null;
   const container = entities.find(({ id }) => id === relation.sourceIds[0]);
@@ -65,11 +71,24 @@ export function planLabelledContainer(
   const byId = new Map(scene.entities.map((entity) => [entity.id, entity] as const));
   if (!byId.has(containerId) || !byId.has(contentId)) return null;
   const position = (id: string, x: number, y: number) => ({ ...byId.get(id)!, x, y });
-  const candidates = [52, 45, 59].map((x) => [position(containerId, x, 32), position(contentId, x, 62)]);
+  const context = scene.entities.filter((entity) => entity.id !== containerId && entity.id !== contentId && movableIds.has(entity.id));
+  if (context.length > 1) return null;
+  const candidates = [52, 45, 59].flatMap((x) => {
+    const pair = [position(containerId, x, 32), position(contentId, x, 62)];
+    return context.length ? [12, 88].flatMap((contextX) => [50, 72, 28].map((contextY) =>
+      [...pair, position(context[0].id, contextX, contextY)])) : [pair];
+  });
   const relation: SceneRelation = { id: "planned-contains", kind: "contains", sourceIds: [containerId], targetIds: [contentId] };
   const selected = selectLayoutCandidate(scene, candidates, {
     family: "labelled-container",
     validate: (projected) => Boolean(labelledContainerGeometry(relation, projected))
+      && (scene.relations ?? []).every((edge) => {
+        const order = edge.kind === "relatesTo" && edge.predicate && spatialOrder(edge.predicate);
+        if (!order) return true;
+        const from = projected.find((entity) => entity.id === edge.sourceIds[0]);
+        const to = projected.find((entity) => entity.id === edge.targetIds[0]);
+        return !from || !to || Math.sign(from[order.axis] - to[order.axis]) === order.sign;
+      })
   })?.entities;
   return selected?.filter(({ id }) => movableIds.has(id)).map(({ id, x, y }) => ({ targetId: id, x, y })) ?? null;
 }

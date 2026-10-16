@@ -17,7 +17,7 @@ import { LAYOUT_FAMILY_REGISTRY_VERSION, layoutFamilyFor } from "../doodlescript
 import { isPartWholeFlowRelation, partWholeAttachmentGeometry, partWholeFlowGeometry } from "../doodlescript/partWholeFlow";
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiagram";
-import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
+import { containedArtworkPlacement, labelledContainerGeometry } from "../doodlescript/labelledContainer";
 import { geometricConstructionGeometry } from "../doodlescript/geometricConstruction";
 import { isLandscapeFlowRelation, landscapeFlowGeometry } from "../doodlescript/landscapeFlow";
 import { circulationLoopGeometry, isCirculationRelation } from "../doodlescript/circulationLoop";
@@ -788,6 +788,7 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
     const top = geometry.centerY - geometry.height / 2;
     const contentLabel = geometry.content.label ?? geometry.content.kind;
     const contentHasArt = hasEntityArtwork(geometry.content);
+    const artwork = containedArtworkPlacement(geometry);
     return <g className="labelled-container-annotation" aria-label={`${geometry.container.label} contains ${geometry.content.label}`}>
       <path data-visual-cue="container-outline" className="container-outline"
         d={`M${left + 18} ${top} H${left + geometry.width - 18} Q${left + geometry.width} ${top} ${left + geometry.width} ${top + 18} V${top + geometry.height - 18} Q${left + geometry.width} ${top + geometry.height} ${left + geometry.width - 18} ${top + geometry.height} H${left + 18} Q${left} ${top + geometry.height} ${left} ${top + geometry.height - 18} V${top + 18} Q${left} ${top} ${left + 18} ${top}`} fill="none" stroke="#302e29" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
@@ -798,7 +799,7 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
       </g>
       <g data-visual-cue="value-inside-container">
         {contentHasArt ? <>
-          <g data-visual-cue="contained-artwork" transform={`translate(${geometry.centerX} ${geometry.centerY + 15}) scale(0.75)`}>
+          <g data-visual-cue="contained-artwork" transform={`translate(${artwork.x} ${artwork.y}) scale(${artwork.scale})`}>
             <EntityGlyph entity={geometry.content} />
           </g>
           <text x={geometry.centerX} y={geometry.centerY + 94} textAnchor="middle" fill="#302e29"
