@@ -2,7 +2,30 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — diagnose retries and recover explicit context, 16 October 2026
+## Latest checkpoint — human roles and visible attention, 16 October 2026
+
+See [the attention review](docs/HUMAN_ATTENTION_2026-10-16.md). Shared planner
+guidance now distinguishes human roles from unfamiliar nonhuman objects. Exact
+registered pointing/looking relationships become targeted human poses without
+moving objects. Poses and connectors share the displayed position of contained
+artwork. No noun-specific production branches or extra provider calls were added.
+
+Three fresh live statements used three provider attempts: 5.742 s, 8.294 s and
+24.183 s. All three static SVG images were inspected. Human roles and pointing
+improved; globe, camera and gate still used placeholders, gaze remains subtle,
+and the cabinet is schematic. These are not perfect visual results or real-time
+inference. No browser, phone, APK or deployment verification is claimed.
+
+Final verification: 709 client tests passed, three optional smoke tests skipped;
+69 backend tests passed. Both isolated performance tests passed: 278 probes,
+834 samples, local SVG-ready p95 31.86 ms, maximum 56.78 ms. The unseen-noun
+delayed-provider test passed at 94.26 ms. These timings exclude live inference
+and screen paint. Lint, TypeScript, production build, bundle budget and Android
+web sync passed. Main chunk: 505.61 kB; Vite's advisory chunk warning remains.
+Independent corpus coverage remains 26/60 drawn, 1 held and 33 clarified;
+strict gold remains 3/29. Neither is a product-completion percentage.
+
+## Previous checkpoint — diagnose retries and recover explicit context, 16 October 2026
 
 See [the retry review](docs/RETRY_REVIEW_2026-10-16.md). Source-grounded spatial
 completion now also handles containment graphs, preserving existing contradiction,

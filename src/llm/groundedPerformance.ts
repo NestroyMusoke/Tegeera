@@ -9,16 +9,55 @@ import { validateDoodleScript } from "../doodlescript/validator";
 import { emojiPreviewFor, natureEmojiPreviewFor } from "../glyphs/emojiPreview";
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 
+/** Exact registered non-contact actions can use the rig without restaging
+ * any object, including a target drawn inside a specialist enclosure. */
+function groundAttentionPerformances(scene: SceneState, input: DoodleScript): DoodleScript {
+  const projected = applyDoodleScript(scene, input);
+  const relations = projected.relations ?? [];
+  const replacements = new Map<string, { relation: typeof relations[number]; performance: NonNullable<SceneEntity["performance"]> }>();
+  for (const relation of relations) {
+    if (relation.kind !== "relatesTo" || relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) continue;
+    const [verb, ...rest] = (relation.predicate ?? "").toLowerCase().trim().split(/\s+/);
+    const action = actionForAlias(verb);
+    const preposition = rest.join(" ");
+    if (!action?.targeting || action.targeting.gesture === "contact"
+      || !action.targeting.prepositions.includes(preposition)) continue;
+    const actor = projected.entities.find(({ id }) => id === relation.sourceIds[0]);
+    if (!actor || actor.visualRole || !conceptSupports(actor.kind, "human-performance")
+      || natureEmojiPreviewFor(actor.label ?? "")
+      || !input.commands.some((command) => command.action === "create" && command.entity.id === actor.id)) continue;
+    // Do not choose a winner when one actor has multiple action targets.
+    if (relations.some((other) => other.id !== relation.id && other.sourceIds.includes(actor.id)
+      && (other.kind === "actsOn" || other.kind === "handover"
+        || other.kind === "relatesTo" && actionForAlias((other.predicate ?? "").split(/\s+/)[0])?.targeting))) continue;
+    replacements.set(relation.id, { relation: { ...relation, kind: "actsOn", predicate: action.predicate, preposition },
+      performance: action.performance });
+  }
+  if (!replacements.size) return input;
+  const candidate = { ...input, commands: input.commands.map((command) => {
+    if (command.action === "relate") {
+      const replacement = replacements.get(command.relation.id);
+      return replacement ? { ...command, relation: replacement.relation } : command;
+    }
+    if (command.action === "create") {
+      const replacement = [...replacements.values()].find(({ relation }) => relation.sourceIds[0] === command.entity.id);
+      return replacement ? { ...command, entity: { ...command.entity, performance: replacement.performance } } : command;
+    }
+    return command;
+  }) };
+  return validateDoodleScript(candidate, scene).ok ? candidate : input;
+}
+
 /** Promote exact action verbs, not lesson sentences or noun-specific templates.
  * Failed staging retains the original diagram; it never removes a relationship.
  * Existing scene objects stay fixed. One physical target per performer.
  */
 export function groundContactPerformances(scene: SceneState, input: DoodleScript): DoodleScript {
-  let result = input;
+  let result = groundAttentionPerformances(scene, input);
   const movable = new Set(input.commands.flatMap((command) => command.action === "create" ? [command.entity.id] : []));
   let projected = applyDoodleScript(scene, result);
   // Specialist diagrams own their geometry and must not be restaged here.
-  if (projected.relations?.some((relation) => !["relatesTo", "actsOn"].includes(relation.kind))) return input;
+  if (projected.relations?.some((relation) => !["relatesTo", "actsOn"].includes(relation.kind))) return result;
   for (const original of projected.relations ?? []) {
     if (original.kind !== "relatesTo" || original.sourceIds.length !== 1 || original.targetIds.length !== 1) continue;
     const action = actionForAlias((original.predicate ?? "").toLowerCase().trim());

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh role and attention checks; expectations withheld from planner. No noun-specific production rules.",
+  "cases": [
+    { "id": "archivist-globe", "text": "An archivist points at a globe.", "roles": ["archivist", "globe"], "links": [["archivist", "globe"]] },
+    { "id": "curator-violin", "text": "A cabinet contains a violin. A curator stands to the left of the cabinet and points at the violin.", "roles": ["cabinet", "violin", "curator"], "links": [["cabinet", "violin"], ["curator", "cabinet"], ["curator", "violin"]] },
+    { "id": "camera-gardener", "text": "A security camera points at a gate. A gardener looks at a fountain.", "roles": ["security camera", "gate", "gardener", "fountain"], "links": [["security camera", "gate"], ["gardener", "fountain"]] }
+  ]
+}

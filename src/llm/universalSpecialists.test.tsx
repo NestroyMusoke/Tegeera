@@ -49,7 +49,7 @@ describe("hosted blueprints reach existing specialist drawing grammars", () => {
       expect(scene.relations?.filter((edge) => edge.kind === "contains")).toHaveLength(1);
       const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
       expect(html).toContain('data-visual-cue="contained-artwork"');
-      expect(html).toContain("points at");
+      expect(html).toMatch(/points? at/);
       expect(scene.entities.find((entity) => entity.id === "role-2")!.x)
         .toBeGreaterThan(scene.entities.find((entity) => entity.id === "role-0")!.x);
     });

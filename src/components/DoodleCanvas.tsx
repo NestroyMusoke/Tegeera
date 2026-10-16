@@ -36,7 +36,7 @@ import { fifoGeometry, isFifoRelation } from "../doodlescript/fifoQueue";
 import { isProcessorMemoryRelation, processorMemoryGeometry } from "../doodlescript/processorMemoryLink";
 import { doublingGrowthGeometry, isDoublingGrowthRelation } from "../doodlescript/doublingGrowth";
 import { consumptionChainGeometry, isConsumptionChainRelation } from "../doodlescript/consumptionChain";
-import { readableRelationLabel, universalSceneEdges } from "../doodlescript/universalEdge";
+import { entitiesAtArtworkPositions, readableRelationLabel, universalSceneEdges } from "../doodlescript/universalEdge";
 import { isPositionalRelation } from "../doodlescript/spatialOrder";
 import { forceOverviewFrame, measuredArtFrame, overviewFrame } from "./overviewFraming";
 
@@ -58,6 +58,7 @@ function hasEntityArtwork(entity: SceneEntity): boolean {
 export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const ownership = ownershipBadges(scene);
   const genericEdges = useMemo(() => universalSceneEdges(scene.relations ?? [], scene.entities), [scene]);
+  const visibleEntities = useMemo(() => entitiesAtArtworkPositions(scene.relations ?? [], scene.entities), [scene]);
   const [detail, setDetail] = useState(false);
   const [areaSelection, setAreaSelection] = useState<{
     sceneId: string; revision: number; area: DrawingArea;
@@ -184,7 +185,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           const target = scene.entities.find((item) => item.id === motion?.targetIds[0]);
           const geometry = motion && target ? motionGeometry(entity, target, motion.kind as "toward" | "away") : null;
           const targeting = scene.relations?.find((relation) => isTargetedPerformance(relation) && relation.sourceIds[0] === entity.id);
-          const performanceTarget = scene.entities.find((item) => item.id === targeting?.targetIds[0]);
+          const performanceTarget = visibleEntities.find((item) => item.id === targeting?.targetIds[0]);
           const attachment = scene.relations?.find((relation) => isAttachedPerformance(relation) && relation.targetIds[0] === entity.id);
           const carrier = scene.entities.find((item) => item.id === attachment?.sourceIds[0]);
           const attachmentPerformance = carrier?.performance ?? actionForPredicate(attachment?.predicate)?.performance;

@@ -5,6 +5,8 @@ import { applyDoodleScript, initialScene } from "../doodlescript/scene";
 import { validateDoodleScript } from "../doodlescript/validator";
 import { solveContactArm } from "../doodlescript/contactGeometry";
 import { compileUniversalScene } from "./universalScene";
+import { entitiesAtArtworkPositions } from "../doodlescript/universalEdge";
+import { applyTargetedPerformance } from "../doodlescript/targetedPerformance";
 
 function plan(verb: string, label = "cup", actorKind = "person") {
   return { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
@@ -14,6 +16,48 @@ function plan(verb: string, label = "cup", actorKind = "person") {
 }
 
 describe("hosted relationships become physical performances", () => {
+  it("aims a person at contained artwork rather than its hidden logical slot", () => {
+    const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: [{ id: "box", label: "case", kind: "generic", x: 50, y: 40 },
+        { id: "camera", label: "camera", kind: "generic", x: 50, y: 60 },
+        { id: "actor", label: "archivist", kind: "person", x: 85, y: 60 }],
+      connections: [{ from: "box", to: "camera", kind: "contains", label: "contains" },
+        { from: "actor", to: "box", label: "right of" },
+        { from: "actor", to: "camera", label: "points at" }] };
+    const script = compileUniversalScene(candidate, initialScene, "A case contains a camera. An archivist stands to the right of the case and points at the camera.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    const relation = scene.relations!.find((edge) => edge.kind === "actsOn")!;
+    expect(relation).toMatchObject({ predicate: "point", targetIds: ["camera"] });
+    const actor = scene.entities.find(({ id }) => id === "actor")!;
+    const target = entitiesAtArtworkPositions(scene.relations!, scene.entities).find(({ id }) => id === "camera")!;
+    const expected = applyTargetedPerformance(actor, target, relation);
+    const original = applyTargetedPerformance(actor, scene.entities.find(({ id }) => id === "camera")!, relation);
+    expect(expected.performance!.rightArm!.upper).not.toBe(original.performance!.rightArm!.upper);
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html).toContain(`rotate(${expected.performance!.rightArm!.upper})`);
+  });
+  it.each(["points at", "looks toward"])("grounds %s as a non-contact performance", (verb) => {
+    const candidate = plan(verb, "compass");
+    const script = compileUniversalScene(candidate, initialScene, `A traveller ${verb} a compass.`);
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.relations?.[0]).toMatchObject({ kind: "actsOn", preposition: verb.split(" ")[1] });
+    expect(scene.entities[0].performance).toBeDefined();
+  });
+  it.each(["almost points at", "points away from", "looks after"])("does not reinterpret %s as attention", (verb) => {
+    const script = compileUniversalScene(plan(verb), initialScene, `A traveller ${verb} a cup.`);
+    expect(applyDoodleScript(initialScene, script).relations?.[0].kind).toBe("relatesTo");
+  });
+  it("does not infer a human from a pointing verb or choose between two attention targets", () => {
+    const nonhuman = compileUniversalScene(plan("points at", "cup", "generic"), initialScene, "A traveller points at a cup.");
+    expect(applyDoodleScript(initialScene, nonhuman).relations?.[0].kind).toBe("relatesTo");
+    const candidate = plan("points at");
+    candidate.objects.push({ id: "other", label: "camera", kind: "generic", x: 50, y: 20 });
+    candidate.connections.push({ from: "actor", to: "other", label: "looks at" });
+    const script = compileUniversalScene(candidate, initialScene, "A traveller points at a cup and looks at a camera.");
+    expect(applyDoodleScript(initialScene, script).relations?.every((edge) => edge.kind === "relatesTo")).toBe(true);
+  });
   it.each(["holds", "carrying", "touches"])("grounds %s without changing object identity", (verb) => {
     const script = compileUniversalScene(plan(verb), initialScene, `A traveller ${verb} a cup.`);
     expect(validateDoodleScript(script, initialScene)).toMatchObject({ ok: true });

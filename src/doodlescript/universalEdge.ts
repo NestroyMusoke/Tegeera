@@ -212,15 +212,11 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
     route: best.route, start: points[0], end, points };
 }
 
-/** The planner and canvas use the same reservations, so accepted plans cannot
- * silently paint a different set of generic arrows from the one validated. */
-export function universalSceneEdges(relations: readonly SceneRelation[], entities: readonly SceneEntity[]):
-  ReadonlyMap<string, UniversalEdgeGeometry | null> {
-  const result = new Map<string, UniversalEdgeGeometry | null>();
-  const reserved: UniversalEdgeGeometry[] = [];
+/** Shared displayed positions for connector routing and human pose targeting. */
+export function entitiesAtArtworkPositions(relations: readonly SceneRelation[], entities: readonly SceneEntity[]): readonly SceneEntity[] {
   // Specialist artwork is not painted at its logical layout slot. Route to
   // the displayed content, using the same transform as the enclosure renderer.
-  // Keep scene entities immutable; these are connector-only projections.
+  // Keep scene entities immutable; these are rendering-only projections.
   const projected = new Map<string, SceneEntity>();
   for (const relation of relations) {
     const enclosure = labelledContainerGeometry(relation, entities);
@@ -229,7 +225,15 @@ export function universalSceneEdges(relations: readonly SceneRelation[], entitie
     projected.set(enclosure.content.id, { ...enclosure.content,
       x: artwork.x / 10, y: artwork.y / 6.2, scale: artwork.scale });
   }
-  const visibleEntities = entities.map((entity) => projected.get(entity.id) ?? entity);
+  return entities.map((entity) => projected.get(entity.id) ?? entity);
+}
+
+/** The planner and canvas share reservations so validated arrows match paint. */
+export function universalSceneEdges(relations: readonly SceneRelation[], entities: readonly SceneEntity[]):
+  ReadonlyMap<string, UniversalEdgeGeometry | null> {
+  const result = new Map<string, UniversalEdgeGeometry | null>();
+  const reserved: UniversalEdgeGeometry[] = [];
+  const visibleEntities = entitiesAtArtworkPositions(relations, entities);
   for (const relation of relations) {
     if (relation.kind !== "relatesTo") continue;
     const geometry = universalEdgeGeometry(relation, visibleEntities, reserved);

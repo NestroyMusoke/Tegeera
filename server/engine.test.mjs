@@ -96,6 +96,8 @@ test("scene prompt reserves stick-person kinds for human roles, not arbitrary an
   const prompt = scenePrompt("An animal visits a plant", scene);
   assert.match(prompt, /person, teacher and student are human figures only, never animals/);
   assert.match(prompt, /an animal must not become a stick person/);
+  assert.match(prompt, /A human occupation or social role uses person/);
+  assert.match(prompt, /Do not infer humanity merely from an action/);
 });
 
 test("Nebius non-thinking mode is opt-in and never sent to other providers", async () => {
