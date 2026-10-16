@@ -2,7 +2,70 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — artwork activation and quality experiment, 15 October 2026
+## Latest checkpoint — protect ongoing teaching interactions, 16 October 2026
+
+See [the workflow review](docs/WORKFLOW_REVIEW_2026-10-16.md). Two reproduced
+failures are fixed: late hosted replies no longer erase a newer unsent draft,
+and Undo cancels/invalidate pending interpretation before changing history.
+All 25 focused mounted-app tests passed. A subsequent full run had 691 passed,
+six timed out, three skipped and one worker RPC timeout. Both affected files then
+passed all 19 tests in isolation; this is not a full-suite green checkpoint. Lint,
+production build and bundle budget passed. Browser automation failed
+initialization, so no real-browser or phone verification is claimed.
+
+Two unseen live explanations used three provider attempts (5.272 and 9.422
+seconds). Both passed role/endpoint checks, but inspected SVGs exposed a suitcase
+placeholder and arrow-only containment/pointing. Neither is claimed visually
+complete. No scenario-specific production rules were added.
+
+## Previous checkpoint — retain artwork inside containment, 15 October 2026
+
+See [the fresh-statement containment review](docs/CONTAINED_ARTWORK_2026-10-15.md).
+Two fresh plans exposed a renderer-level fidelity loss: available content artwork
+and colour were replaced by a text card. The shared containment renderer now reuses
+EntityGlyph inside the enclosure, retaining unknown concepts as labelled values.
+No noun-specific production rules or new dependencies were added.
+
+The same saved camera/lemon plans now show their content artwork; unseen violin
+and butterfly-with-observer follow-ups also rendered nested artwork. Four fresh
+statements used four provider attempts, 3.275–7.544 seconds each. All matched their
+literal role/endpoint expectations; static images were inspected. Outer containers
+remain labelled schematics, and larger mixed scenes still use containment arrows.
+This is a bounded visual improvement, not universal visual accuracy or completion.
+
+Verification: 695 client tests passed, three optional smoke tests skipped; both
+performance tests passed. Local SVG-ready p95 was 17.72 ms over 834 samples, maximum
+36.89 ms, excluding inference/speech/browser paint/device scheduling. Six new tests
+cover nested native/preview/validated artwork, colour, fallback and immutability.
+Lint, production build/bundle budget, Android web sync and whitespace checks passed.
+Vite's advisory 500 kB chunk warning remains (main chunk 503.24 kB).
+No phone, APK or deployment verification is claimed. Backend code was unchanged.
+
+## Previous checkpoint — cancel obsolete scene artwork, 15 October 2026
+
+See [cancellation and fresh visual evidence](docs/SCENE_ARTWORK_CANCELLATION_2026-10-15.md).
+Replacing or clearing a scene now cancels its obsolete queued/in-flight artwork,
+while preserving lesson prefetches and completed review drafts. A quick Undo can
+restart a cancelled noun after its previous request releases the slot. New tests
+cover providers that ignore cancellation and prevent late results from resurfacing.
+
+Three fresh live statements used three provider attempts: all rendered and met
+their literal role/endpoint checks (4.403–10.741 seconds). Static visual inspection
+found recognizable octopus/instrument previews, but the five-object bag scene
+still uses a placeholder and diagram arrows rather than actual containment/support.
+This is not a 100% visual score or overall completion claim.
+
+Verification: full client suite 689 passed, three optional smoke tests skipped;
+two isolated performance tests passed. Local SVG-ready p95 was 18.37 ms across
+834 samples, maximum 32.68 ms, excluding AI/speech/browser paint/phone scheduling.
+The under-100 ms cold-render regression passed at 50.22 ms in the full suite.
+The prior 105.24 ms failure was not reproduced; scheduling variability is not
+claimed solved. Stage timings are now printed without loosening the threshold.
+Lint, production build/bundle budget, Android web sync and diff checks passed.
+Vite's advisory chunk warning remains (main chunk 502.68 kB). No deployment,
+APK or phone verification is claimed. Backend code was unchanged this run.
+
+## Previous checkpoint — artwork activation and quality experiment, 15 October 2026
 
 See [the live artwork/lifecycle review](docs/ARTWORK_LIFECYCLE_2026-10-15.md).
 Fixed resolver notification when AI becomes available after a scene exists,

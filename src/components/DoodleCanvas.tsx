@@ -4,6 +4,7 @@ import { ownershipBadges, type OwnershipBadge } from "./ownership";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isQueue, queueGeometry } from "../doodlescript/queue";
 import { EntityGlyph } from "./entityRenderers";
+import { emojiPreviewFor, natureEmojiPreviewFor } from "../glyphs/emojiPreview";
 import { LinearPropagationDrawing } from "./LinearPropagationDrawing";
 import { isPropagationEntity } from "../doodlescript/linearPropagation";
 import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
@@ -45,6 +46,14 @@ interface DoodleCanvasProps {
 }
 
 type DrawingArea = "whole" | "left" | "middle" | "right";
+
+/** Reuse available art inside a structural enclosure; unknown concepts keep labels. */
+function hasEntityArtwork(entity: SceneEntity): boolean {
+  return Boolean(entity.glyph || entity.visual || entity.kind !== "generic"
+    || !resolveVisualSymbol(entity.label ?? entity.kind).fallback
+    || emojiPreviewFor(entity.label ?? "", entity.color)
+    || natureEmojiPreviewFor(entity.label ?? ""));
+}
 
 export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
   const ownership = ownershipBadges(scene);
@@ -777,6 +786,8 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
     if (!geometry) return null;
     const left = geometry.centerX - geometry.width / 2;
     const top = geometry.centerY - geometry.height / 2;
+    const contentLabel = geometry.content.label ?? geometry.content.kind;
+    const contentHasArt = hasEntityArtwork(geometry.content);
     return <g className="labelled-container-annotation" aria-label={`${geometry.container.label} contains ${geometry.content.label}`}>
       <path data-visual-cue="container-outline" className="container-outline"
         d={`M${left + 18} ${top} H${left + geometry.width - 18} Q${left + geometry.width} ${top} ${left + geometry.width} ${top + 18} V${top + geometry.height - 18} Q${left + geometry.width} ${top + geometry.height} ${left + geometry.width - 18} ${top + geometry.height} H${left + 18} Q${left} ${top + geometry.height} ${left} ${top + geometry.height - 18} V${top + 18} Q${left} ${top} ${left + 18} ${top}`} fill="none" stroke="#302e29" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
@@ -786,8 +797,16 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
         <text x={geometry.centerX} y={top + 15} textAnchor="middle" fill="#245c4b" fontSize="25" fontWeight="700">{geometry.container.label}</text>
       </g>
       <g data-visual-cue="value-inside-container">
+        {contentHasArt ? <>
+          <g data-visual-cue="contained-artwork" transform={`translate(${geometry.centerX} ${geometry.centerY + 15}) scale(0.75)`}>
+            <EntityGlyph entity={geometry.content} />
+          </g>
+          <text x={geometry.centerX} y={geometry.centerY + 94} textAnchor="middle" fill="#302e29"
+            fontSize={Math.max(12, Math.min(22, (geometry.width - 32) / Math.max(1, contentLabel.length * 0.6)))}>{contentLabel}</text>
+        </> : <>
         <path d={`M${geometry.centerX - 98} ${geometry.centerY - 2} Q${geometry.centerX} ${geometry.centerY - 16} ${geometry.centerX + 98} ${geometry.centerY - 2} V${geometry.centerY + 60} Q${geometry.centerX} ${geometry.centerY + 72} ${geometry.centerX - 98} ${geometry.centerY + 60} Z`} fill="#f4dfaa" stroke="#9b6a22" strokeWidth="3" />
         <text x={geometry.centerX} y={geometry.centerY + 41} textAnchor="middle" fill="#694512" fontSize="29" fontWeight="700">{geometry.content.label}</text>
+        </>}
       </g>
     </g>;
   }

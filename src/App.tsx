@@ -103,6 +103,10 @@ function App() {
   const acceptedPlanCache = useRef(new AcceptedPlanCache());
   const scene = history.at(-1) ?? initialScene;
   useEffect(() => {
+    glyphResolver.current!.setVisibleNouns(scene.entities
+      .filter(needsRuntimeGlyph).map((entity) => entity.label ?? ""));
+  }, [scene]);
+  useEffect(() => {
     const arrived = scene.entities.flatMap((entity) => {
       const noun = glyphKey(entity.label ?? "");
       const glyph = needsRuntimeGlyph(entity) ? glyphResolver.current!.draftFor(noun) : undefined;
@@ -295,7 +299,8 @@ function App() {
             ...newDrafts
           ].slice(-30));
           if (!isHold) setHistory((current) => replaceScene ? [initialScene, nextScene] : [...current, nextScene]);
-          setInput("");
+          // A reply owns the submitted explanation, not a newer unsent draft.
+          setInput((current) => current === text ? "" : current);
           setIssues([]);
           setClarification(null);
           setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
@@ -338,7 +343,7 @@ function App() {
     const nextScene = isHold ? targetScene : applyDoodleScript(targetScene, result.script);
     markDecision(isHold ? "hold" : "draw");
     if (!isHold) setHistory((current) => replaceScene ? [initialScene, nextScene] : [...current, nextScene]);
-    setInput("");
+    setInput((current) => current === text ? "" : current);
     setIssues([]);
     setClarification(null);
     setHoldNotice(isHold ? "Break recognized. The current drawing is unchanged." : null);
@@ -377,6 +382,9 @@ function App() {
 
   const undo = () => {
     if (!canUndo) return;
+    // Undo invalidates work based on the scene being removed, even if a
+    // provider ignores AbortSignal and delivers its old response afterwards.
+    cancelPendingRemote();
     setHistory((current) => current.slice(0, -1));
     setIssues([]);
     setClarification(null);

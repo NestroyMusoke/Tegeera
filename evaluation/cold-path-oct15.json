@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh source-first probes. Endpoint annotations are withheld from the provider; literal graph matches do not establish visual quality.",
+  "cases": [
+    {"id":"octopus","text":"An orange octopus.","roles":["octopus"],"links":[]},
+    {"id":"instruments","text":"A violin is to the left of a drum.","roles":["violin","drum"],"links":[["violin","drum"]]},
+    {"id":"classroom-bag","text":"A bag contains a thermometer. The bag is on a table. A child stands to the left of the table, and a nurse watches the child.","roles":["bag","thermometer","table","child","nurse"],"links":[["bag","thermometer"],["bag","table"],["child","table"],["nurse","child"]]}
+  ]
+}

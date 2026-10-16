@@ -1,7 +1,51 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.resetModules(); });
+
+it.each(["typing", "undo"])("protects the user's next action (%s) from a late hosted response", async (action) => {
+  vi.stubEnv("VITE_TEGEERA_INTERPRETER_URL", "https://tegeera.example");
+  vi.resetModules();
+  let finish!: (response: Response) => void;
+  const pending = new Promise<Response>((resolve) => { finish = resolve; });
+  let requestSignal: AbortSignal | undefined;
+  vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+    if (url.endsWith("/health")) return Promise.resolve(new Response(JSON.stringify({ configured: true })));
+    if (url.endsWith("/v1/interpret")) { requestSignal = init?.signal as AbortSignal; return pending; }
+    throw new Error(`Unexpected request ${url}`);
+  }));
+  const { default: App } = await import("./App");
+  const { container } = render(<App />);
+  const input = screen.getByLabelText("Your explanation") as HTMLInputElement;
+  const submit = (text: string) => {
+    fireEvent.change(input, { target: { value: text } });
+    fireEvent.click(screen.getByRole("button", { name: "Draw it" }));
+  };
+  submit("Draw a car");
+  submit("A camera rests beside a violin.");
+  expect(screen.getByRole("button", { name: "Stop AI" })).toBeTruthy();
+  const draft = "A yellow umbrella stands beside a suitcase.";
+  if (action === "typing") fireEvent.change(input, { target: { value: draft } });
+  else fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  await act(async () => {
+    finish(new Response(JSON.stringify({ provider: "nebius", candidate: {
+      blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
+      objects: [{ id: "camera", label: "camera", kind: "generic", x: 25, y: 50 },
+        { id: "violin", label: "violin", kind: "generic", x: 75, y: 50 }],
+      connections: [{ from: "camera", to: "violin", label: "beside" }]
+    } })));
+    await pending;
+  });
+  if (action === "typing") {
+    await waitFor(() => expect(screen.getByText("Revision 2")).toBeTruthy());
+    expect(input.value).toBe(draft);
+  } else {
+    expect(requestSignal?.aborted).toBe(true);
+    expect(screen.getByText("Revision 0")).toBeTruthy();
+    expect(container.querySelectorAll(".doodle-object")).toHaveLength(0);
+  }
+  expect(screen.queryByRole("button", { name: "Stop AI" })).toBeNull();
+}, 20_000);
 
 it("draws a hosted propagation diagram, replays after Undo, and preserves it on a malformed follow-up", async () => {
   vi.stubEnv("VITE_TEGEERA_INTERPRETER_URL", "https://tegeera.example");

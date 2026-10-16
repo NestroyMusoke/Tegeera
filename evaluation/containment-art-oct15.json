@@ -1,0 +1,10 @@
+{
+  "schemaVersion":"1.0.0",
+  "note":"Fresh containment probes; expectations are withheld from the planner. Semantic endpoints alone do not pass visual review.",
+  "cases":[
+    {"id":"case-camera","text":"A case contains a camera.","roles":["case","camera"],"links":[["case","camera"]]},
+    {"id":"basket-lemon","text":"A basket contains a yellow lemon.","roles":["basket","lemon"],"links":[["basket","lemon"]]},
+    {"id":"locker-violin","text":"A locker contains a violin.","roles":["locker","violin"],"links":[["locker","violin"]]},
+    {"id":"terrarium-observer","text":"A terrarium contains a butterfly. A student watches the terrarium.","roles":["terrarium","butterfly","student"],"links":[["terrarium","butterfly"],["student","terrarium"]]}
+  ]
+}

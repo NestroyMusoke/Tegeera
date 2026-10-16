@@ -225,6 +225,27 @@ export class LiveGlyphResolver {
 
   prefetch(noun: string) { this.resolveWithPriority(noun, false); }
 
+  /** Release slots spent on a scene the teacher has replaced or cleared.
+   * Explicit speculative lesson work and completed review drafts are retained. */
+  setVisibleNouns(nouns: readonly string[]) {
+    const visible = new Set(nouns.map(glyphKey));
+    let changed = false;
+    for (const noun of new Set([...this.queuedVisible, ...this.inFlightVisible])) {
+      if (visible.has(noun)) continue;
+      this.epochs.set(noun, (this.epochs.get(noun) ?? 0) + 1);
+      this.queued.delete(noun);
+      this.queuedVisible.delete(noun);
+      const index = this.queue.indexOf(noun);
+      if (index >= 0) this.queue.splice(index, 1);
+      this.restartRequested.delete(noun);
+      this.preempted.delete(noun);
+      this.controllers.get(noun)?.abort();
+      changed = this.previews.delete(noun) || changed;
+    }
+    if (changed) this.emit();
+    this.drain();
+  }
+
   speculativePrefetch(interimTranscript: string) {
     if (interimTranscript.length > 250) return;
     const candidates = [...interimTranscript.toLowerCase().matchAll(speculativeNounPattern)]
@@ -330,6 +351,9 @@ export class LiveGlyphResolver {
           } else this.queue.push(noun);
         }
         this.drain();
+        // A quick Undo can make a cancelled noun visible again before its old
+        // request releases the slot. Let subscribers resolve it after cleanup.
+        this.emit();
       });
     }
   }

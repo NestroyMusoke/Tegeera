@@ -15,6 +15,58 @@ const glyph: TegeeraGlyph = {
 };
 
 describe("non-blocking glyph resolver", () => {
+  it("restarts a cancelled noun after an immediate Undo before cleanup has finished", async () => {
+    const generator = vi.fn().mockImplementationOnce(() => new Promise(() => undefined))
+      .mockResolvedValue(glyph);
+    const resolver = new LiveGlyphResolver({ generator });
+    resolver.resolve("returned object");
+    await vi.waitFor(() => expect(generator).toHaveBeenCalledOnce());
+    resolver.setVisibleNouns([]);
+    const unsubscribe = resolver.subscribe(() => { resolver.resolve("returned object"); });
+    resolver.resolve("returned object");
+    await vi.waitFor(() => expect(resolver.draftFor("returned object")).toEqual(glyph));
+    expect(generator).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
+  it("releases old scene work so a new noun need not wait for an abandoned provider", async () => {
+    let finishOld!: (value: unknown) => void;
+    const signals = new Map<string, AbortSignal>();
+    const generator = vi.fn((noun: string, signal: AbortSignal) => {
+      signals.set(noun, signal);
+      return noun === "old scene" ? new Promise((resolve) => { finishOld = resolve; }) : Promise.resolve(glyph);
+    });
+    const onGenerated = vi.fn();
+    const errors = vi.fn();
+    const resolver = new LiveGlyphResolver({ generator, maxConcurrent: 1, onGenerated, onGenerationError: errors });
+    resolver.resolve("old scene");
+    await vi.waitFor(() => expect(signals.has("old scene")).toBe(true));
+    resolver.resolve("old queued object");
+    resolver.resolve("new scene");
+    resolver.setVisibleNouns(["new scene"]);
+    await vi.waitFor(() => expect(resolver.draftFor("new scene")).toEqual(glyph));
+    expect(signals.get("old scene")?.aborted).toBe(true);
+    expect(signals.has("old queued object")).toBe(false);
+    finishOld(glyph);
+    await Promise.resolve();
+    expect(resolver.draftFor("old scene")).toBeUndefined();
+    expect(onGenerated).toHaveBeenCalledTimes(1);
+    expect(errors).not.toHaveBeenCalled();
+  });
+
+  it("keeps lesson prefetch and completed review drafts when the scene is cleared", async () => {
+    const requested: string[] = [];
+    const generator = vi.fn(async (noun: string) => { requested.push(noun); return glyph; });
+    const resolver = new LiveGlyphResolver({ generator });
+    resolver.stageDraft("review me", glyph);
+    resolver.resolve("cancel this");
+    resolver.prefetch("lesson noun");
+    resolver.setVisibleNouns([]);
+    await vi.waitFor(() => expect(resolver.draftFor("lesson noun")).toEqual(glyph));
+    expect(requested).toEqual(["lesson noun"]);
+    expect(resolver.draftFor("review me")).toEqual(glyph);
+    resolver.resolve("cancel this");
+    await vi.waitFor(() => expect(resolver.draftFor("cancel this")).toEqual(glyph));
+  });
   it("revisits an existing scene when AI becomes ready without another input", async () => {
     const resolver = new LiveGlyphResolver();
     expect(resolver.resolve("telescope").source).toBe("sticker");
@@ -142,14 +194,20 @@ describe("non-blocking glyph resolver", () => {
       const resolver = new LiveGlyphResolver({ generator, timeoutMs: 12_000 });
       const start = realPerformance.now();
       expect(resolver.resolve("unseen creature").status).toBe("placeholder");
+      const resolvedAt = realPerformance.now();
       const script = compileUniversalScene({
         blueprintVersion: "1.0", mode: "replace", confidence: .9,
         objects: [{ id: "creature", label: "unseen creature", kind: "generic", x: 50, y: 50 }],
         connections: []
       }, initialScene, "An unseen creature");
-      const html = renderToStaticMarkup(<DoodleCanvas scene={applyDoodleScript(initialScene, script)} />);
+      const compiledAt = realPerformance.now();
+      const scene = applyDoodleScript(initialScene, script);
+      const appliedAt = realPerformance.now();
+      const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+      const renderedAt = realPerformance.now();
+      console.info(`Unseen noun cold path: resolve=${(resolvedAt - start).toFixed(2)}ms compile=${(compiledAt - resolvedAt).toFixed(2)}ms apply=${(appliedAt - compiledAt).toFixed(2)}ms SVG=${(renderedAt - appliedAt).toFixed(2)}ms total=${(renderedAt - start).toFixed(2)}ms`);
       expect(html).toContain('data-glyph-source="sticker"');
-      expect(realPerformance.now() - start).toBeLessThan(100);
+      expect(renderedAt - start).toBeLessThan(100);
       expect(resolver.resolve("unseen creature").status).toBe("placeholder");
       await vi.advanceTimersByTimeAsync(8_000);
       expect(generator).toHaveBeenCalledTimes(1);

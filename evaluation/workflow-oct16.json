@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Unseen teaching explanations. Roles and endpoints are checks, not proof of visual fidelity; withheld from the model.",
+  "cases": [
+    { "id": "umbrella-suitcase", "text": "A yellow umbrella stands to the left of a blue suitcase.", "roles": ["umbrella", "suitcase"], "links": [["umbrella", "suitcase"]] },
+    { "id": "basket-observer", "text": "A basket contains an apple. A child stands to the right of the basket and points at the apple.", "roles": ["basket", "apple", "child"], "links": [["basket", "apple"], ["child", "basket"], ["child", "apple"]] }
+  ]
+}
