@@ -1,5 +1,5 @@
 import { entityVisualGeometry } from "./entityGeometry";
-import { containedArtworkPlacement, labelledContainerGeometry } from "./labelledContainer";
+import { containedArtworkPlacement, labelledContainerGeometry, type LabelledContainerGeometry } from "./labelledContainer";
 import type { SceneEntity, SceneRelation } from "./schema";
 
 type Point = { x: number; y: number };
@@ -109,7 +109,7 @@ function crossing(a: Point, b: Point, c: Point, d: Point): { point: Point; overl
 
 /** Clip both ends to visible silhouettes; route around third-party symbols and labels. */
 export function universalEdgeGeometry(relation: SceneRelation, entities: readonly SceneEntity[],
-  reserved: readonly UniversalEdgeGeometry[] = []): UniversalEdgeGeometry | null {
+  reserved: readonly UniversalEdgeGeometry[] = [], enclosures: readonly LabelledContainerGeometry[] = []): UniversalEdgeGeometry | null {
   if (relation.kind !== "relatesTo" || relation.sourceIds.length !== 1 || relation.targetIds.length !== 1) return null;
   const actor = entities.find((entity) => entity.id === relation.sourceIds[0]);
   const patient = entities.find((entity) => entity.id === relation.targetIds[0]);
@@ -118,9 +118,31 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
     || originMotion(relation.predicate);
   const source = reversedMotion ? patient : actor;
   const target = reversedMotion ? actor : patient;
-  const startCenter = center(source); const endCenter = center(target);
-  const sourceBox = obstacle(source); const targetBox = obstacle(target);
-  const blockers = entities.filter((entity) => entity.id !== source.id && entity.id !== target.id).map(obstacle);
+  const enclosureFor = (entity: SceneEntity) => enclosures.find((item) => item.container.id === entity.id);
+  const visibleCenter = (entity: SceneEntity) => {
+    const enclosure = enclosureFor(entity);
+    return enclosure ? { x: enclosure.centerX, y: enclosure.centerY } : center(entity);
+  };
+  const visibleBox = (entity: SceneEntity): Box => {
+    const enclosure = enclosureFor(entity);
+    return enclosure ? { left: enclosure.centerX - enclosure.width / 2 - 6,
+      right: enclosure.centerX + enclosure.width / 2 + 6,
+      top: enclosure.centerY - enclosure.height / 2 - 6,
+      bottom: enclosure.centerY + enclosure.height / 2 + 6 } : obstacle(entity);
+  };
+  const clipVisible = (entity: SceneEntity, toward: Point, leaving = false): Point => {
+    if (!enclosureFor(entity)) return clipEllipse(entity, toward, leaving);
+    const from = visibleCenter(entity); const box = visibleBox(entity);
+    const dx = toward.x - from.x; const dy = toward.y - from.y;
+    const distance = Math.max(Math.abs(dx) / ((box.right - box.left) / 2),
+      Math.abs(dy) / ((box.bottom - box.top) / 2)) || 1;
+    return { x: from.x + dx / distance, y: from.y + dy / distance };
+  };
+  const startCenter = visibleCenter(source); const endCenter = visibleCenter(target);
+  const sourceBox = visibleBox(source); const targetBox = visibleBox(target);
+  const blockers = entities.filter((entity) => entity.id !== source.id && entity.id !== target.id
+    // An edge explicitly targeting content may enter its enclosing border.
+    && ![source.id, target.id].includes(enclosureFor(entity)?.content.id ?? "")).map(visibleBox);
   const candidates: { route: UniversalEdgeGeometry["route"]; via: Point[] }[] = [
     { route: "direct", via: [] },
     ...[72, 96, 120].map((y) => ({ route: "above" as const, via: [{ x: startCenter.x, y }, { x: endCenter.x, y }] })),
@@ -133,7 +155,7 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
   for (const { route, via } of candidates) {
     const first = via[0] ?? endCenter;
     const last = via.at(-1) ?? startCenter;
-    const points = [clipEllipse(source, first, true), ...via, clipEllipse(target, last)]
+    const points = [clipVisible(source, first, true), ...via, clipVisible(target, last)]
       .filter((point, index, array) => !index || length(point, array[index - 1]) > 1);
     if (points.length < 2 || points.some((point) => point.x < 12 || point.x > 988 || point.y < 12 || point.y > 608)) continue;
     const segments = points.slice(1).map((point, index) => [points[index], point] as const);
@@ -234,9 +256,13 @@ export function universalSceneEdges(relations: readonly SceneRelation[], entitie
   const result = new Map<string, UniversalEdgeGeometry | null>();
   const reserved: UniversalEdgeGeometry[] = [];
   const visibleEntities = entitiesAtArtworkPositions(relations, entities);
+  const enclosures = relations.flatMap((relation) => {
+    const geometry = labelledContainerGeometry(relation, entities);
+    return geometry ? [geometry] : [];
+  });
   for (const relation of relations) {
     if (relation.kind !== "relatesTo") continue;
-    const geometry = universalEdgeGeometry(relation, visibleEntities, reserved);
+    const geometry = universalEdgeGeometry(relation, visibleEntities, reserved, enclosures);
     result.set(relation.id, geometry);
     if (geometry) reserved.push(geometry);
   }

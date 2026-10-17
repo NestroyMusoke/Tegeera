@@ -2,7 +2,32 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — composable attention; cold-render gate still failing, 16 October 2026
+## Latest checkpoint — four-object containment and visible borders, 17 October 2026
+
+See [containment context evidence](docs/CONTAINMENT_CONTEXT_2026-10-17.md).
+Two reproduced failures are fixed: adding a second surrounding object no longer
+automatically downgrades containment to an arrow, and enclosure connectors clip
+to the displayed rectangle instead of ending in its interior. A bounded layout
+search preserves spatial constraints and existing safety gates; no noun branches.
+
+Two fresh live statements used two provider attempts (6.551 s and 7.127 s).
+Saved-response replays of those and the previous butterfly example were visually
+inspected as static PNGs. Content stays inside the schematic enclosure; the lamp
+still uses a placeholder. Five-plus-object, multiple/nested containment and
+general scene composition remain limited. No real-time inference claim.
+
+Final client suite: 718 passed, three optional smoke tests skipped. Both isolated
+performance tests passed: 278 probes / 834 samples, SVG-ready p95 16.46 ms,
+maximum 29.33 ms. Cold unseen-noun test passed at 32.52 ms without changing its
+100 ms threshold. Previous failures remain recorded: this run does not prove
+a causal speed improvement or consistent performance on a phone.
+Lint, TypeScript, production build, bundle budget and Android web sync passed;
+main chunk 507.33 kB with the existing advisory warning. Backend unchanged and
+not rerun. No APK, browser interaction, phone or deployment verification.
+Independent corpus remains 26/60 drawn, 1 held, 33 clarified; strict gold 3/29.
+No product-completion percentage is claimed.
+
+## Previous checkpoint — composable attention; cold-render gate still failing, 16 October 2026
 
 See [composition evidence](docs/ATTENTION_COMPOSITION_2026-10-16.md). A reproduced
 failure rendered pointing and looking at one target as two arrows. The compiler,

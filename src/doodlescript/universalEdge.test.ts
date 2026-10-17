@@ -11,6 +11,22 @@ const edge = (from: string, to: string): SceneRelation => ({
 });
 
 describe("source-to-target connector geometry", () => {
+  it("clips connections to the visible enclosure border, not its hidden logical slot", () => {
+    const holder = { ...entity("holder", 45, 32), visualRole: "container" as const };
+    const content = { ...entity("content", 45, 62), visualRole: "contained" as const };
+    const observers = [entity("left", 12, 28), entity("right", 88, 28)];
+    const contains: SceneRelation = { id: "enclosure", kind: "contains", sourceIds: [holder.id], targetIds: [content.id] };
+    const left = { ...edge("left", holder.id), predicate: "left of" };
+    const right = { ...edge("right", holder.id), predicate: "right of" };
+    const routes = universalSceneEdges([contains, left, right], [holder, content, ...observers]);
+    for (const relation of [left, right]) {
+      const route = routes.get(relation.id)!;
+      expect(route).toBeTruthy();
+      const edgeDistance = Math.max(Math.abs(route.end.x - 450) / 196,
+        Math.abs(route.end.y - (32 * 6.2 + 72)) / 116);
+      expect(edgeDistance).toBeCloseTo(1);
+    }
+  });
   it("targets visible contained artwork without changing logical scene positions", () => {
     const holder = { ...entity("holder", 45, 32), visualRole: "container" as const };
     const content = { ...entity("content", 45, 62), visualRole: "contained" as const };

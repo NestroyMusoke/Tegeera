@@ -17,6 +17,26 @@ function plan(verb: string, label = "cup", actorKind = "person") {
 }
 
 describe("hosted relationships become physical performances", () => {
+  it("keeps containment with two observers and preserves their opposite sides", () => {
+    const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: .95,
+      objects: [{ id: "case", label: "display case", kind: "generic", x: 40, y: 40 },
+        { id: "item", label: "butterfly", kind: "generic", x: 60, y: 40 },
+        { id: "left", label: "observer", kind: "person", x: 20, y: 50 },
+        { id: "right", label: "visitor", kind: "person", x: 80, y: 50 }],
+      connections: [{ from: "case", to: "item", kind: "contains", label: "contains" },
+        { from: "left", to: "case", label: "left of" }, { from: "right", to: "case", label: "right of" },
+        { from: "left", to: "item", label: "points at" }, { from: "right", to: "item", label: "looks at" }] };
+    const script = compileUniversalScene(candidate, initialScene, "A display case contains a butterfly. An observer is left of the case and points at the butterfly. A visitor is right of the case and looks at the butterfly.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.relations?.filter((edge) => edge.kind === "contains")).toHaveLength(1);
+    expect(scene.relations?.filter((edge) => edge.kind === "actsOn")).toHaveLength(2);
+    const holder = scene.entities.find(({ id }) => id === "case")!;
+    expect(scene.entities.find(({ id }) => id === "left")!.x).toBeLessThan(holder.x);
+    expect(scene.entities.find(({ id }) => id === "right")!.x).toBeGreaterThan(holder.x);
+    expect(scene.entities.find(({ id }) => id === "item")!.visualRole).toBe("contained");
+    expect(renderToStaticMarkup(<DoodleCanvas scene={scene} />)).toContain('data-visual-cue="contained-artwork"');
+  });
   it("leaves scripts without newly created human performers untouched", () => {
     const script = compileUniversalScene({ ...plan("points at", "cup", "generic"), connections: [] }, initialScene, "A traveller and a cup.");
     expect(groundContactPerformances(initialScene, script)).toBe(script);

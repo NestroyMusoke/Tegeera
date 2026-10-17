@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DoodleCanvas } from "../components/DoodleCanvas";
 import { interpretTeacherText } from "./interpret";
-import { labelledContainerGeometry, matchLabelledContainer } from "./labelledContainer";
+import { labelledContainerGeometry, matchLabelledContainer, planLabelledContainer } from "./labelledContainer";
+import type { SceneEntity, SceneRelation } from "./schema";
 import { applyDoodleScript, initialScene } from "./scene";
 import { validateDoodleScript } from "./validator";
 
@@ -16,6 +17,28 @@ function build(text: string) {
 }
 
 describe("open labelled-container grammar", () => {
+  it("places two connected objects on one requested side without overlap or mutation", () => {
+    const { scene } = build("A variable is a labeled box that holds a value.");
+    const holder = scene.entities[0];
+    const extras: SceneEntity[] = ["observer-a", "observer-b"].map((id) => ({
+      id, label: id, kind: "person", x: 80, y: 50, scale: .92, direction: "right", highlighted: false
+    }));
+    const edges: SceneRelation[] = extras.map(({ id }) => ({ id: `left-${id}`, kind: "relatesTo",
+      predicate: "left of", sourceIds: [id], targetIds: [holder.id] }));
+    const extended = { ...scene, entities: [...scene.entities, ...extras], relations: [...scene.relations!, ...edges] };
+    const before = JSON.stringify(extended);
+    const moves = planLabelledContainer(extended, holder.id, scene.entities[1].id, new Set(extended.entities.map(({ id }) => id)));
+    expect(moves).toBeTruthy();
+    expect(moves).toEqual(planLabelledContainer(extended, holder.id, scene.entities[1].id, new Set(extended.entities.map(({ id }) => id))));
+    const placed = extras.map(({ id }) => moves!.find((move) => move.targetId === id)!);
+    expect(placed.every((move) => move.x < moves!.find((move) => move.targetId === holder.id)!.x)).toBe(true);
+    expect(Math.abs(placed[0].y - placed[1].y)).toBeGreaterThan(26 * .92);
+    expect(JSON.stringify(extended)).toBe(before);
+    const contradiction = { ...extended, relations: [...extended.relations,
+      { ...edges[0], id: "contradiction", predicate: "right of" }] };
+    expect(planLabelledContainer(contradiction, holder.id, scene.entities[1].id,
+      new Set(extended.entities.map(({ id }) => id)))).toBeNull();
+  });
   it("extracts reusable slots rather than a programming-specific sentence", () => {
     expect(matchLabelledContainer("a variable is just a labeled box that holds a value")).toEqual({
       containerText: "variable", contentText: "value", shape: "box"

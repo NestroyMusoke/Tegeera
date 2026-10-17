@@ -72,11 +72,19 @@ export function planLabelledContainer(
   if (!byId.has(containerId) || !byId.has(contentId)) return null;
   const position = (id: string, x: number, y: number) => ({ ...byId.get(id)!, x, y });
   const context = scene.entities.filter((entity) => entity.id !== containerId && entity.id !== contentId && movableIds.has(entity.id));
-  if (context.length > 1) return null;
+  if (context.length > 2) return null;
+  // Bounded slot assignments, independent of nouns or roles. Two observers can
+  // occupy opposite sides or different rows on one side; hard gates below keep
+  // bodies apart and preserve explicit spatial relationships.
+  const slots = [12, 88].flatMap((x) => [50, 72, 28].map((y) => ({ x, y })));
   const candidates = [52, 45, 59].flatMap((x) => {
     const pair = [position(containerId, x, 32), position(contentId, x, 62)];
-    return context.length ? [12, 88].flatMap((contextX) => [50, 72, 28].map((contextY) =>
-      [...pair, position(context[0].id, contextX, contextY)])) : [pair];
+    if (!context.length) return [pair];
+    return slots.flatMap((first, index) => {
+      const placed = [...pair, position(context[0].id, first.x, first.y)];
+      return context.length === 1 ? [placed] : slots.filter((_, other) => other !== index)
+        .map((second) => [...placed, position(context[1].id, second.x, second.y)]);
+    });
   });
   const relation: SceneRelation = { id: "planned-contains", kind: "contains", sourceIds: [containerId], targetIds: [contentId] };
   const selected = selectLayoutCandidate(scene, candidates, {

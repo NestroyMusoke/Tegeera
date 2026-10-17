@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh containment/context statements, expectations withheld from the model.",
+  "cases": [
+    { "id": "basket-duck", "text": "A basket contains a duck. A child stands to the left of the basket. A farmer stands to its right and points at the duck.", "roles": ["basket", "duck", "child", "farmer"], "links": [["basket", "duck"], ["child", "basket"], ["farmer", "basket"], ["farmer", "duck"]] },
+    { "id": "box-key", "text": "A box contains a key. A lamp is left of the box and a book is right of it.", "roles": ["box", "key", "lamp", "book"], "links": [["box", "key"], ["lamp", "box"], ["book", "box"]] }
+  ]
+}
