@@ -7,6 +7,7 @@ import { solveContactArm } from "../doodlescript/contactGeometry";
 import { compileUniversalScene } from "./universalScene";
 import { entitiesAtArtworkPositions } from "../doodlescript/universalEdge";
 import { applyTargetedPerformance } from "../doodlescript/targetedPerformance";
+import { groundContactPerformances } from "./groundedPerformance";
 
 function plan(verb: string, label = "cup", actorKind = "person") {
   return { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
@@ -16,6 +17,26 @@ function plan(verb: string, label = "cup", actorKind = "person") {
 }
 
 describe("hosted relationships become physical performances", () => {
+  it("leaves scripts without newly created human performers untouched", () => {
+    const script = compileUniversalScene({ ...plan("points at", "cup", "generic"), connections: [] }, initialScene, "A traveller and a cup.");
+    expect(groundContactPerformances(initialScene, script)).toBe(script);
+  });
+  it.each([false, true])("composes pointing and looking at the same target regardless of order (%s)", (reverse) => {
+    const candidate = plan("points at", "flower");
+    candidate.connections.push({ from: "actor", to: "item", label: "looks at" });
+    if (reverse) candidate.connections.reverse();
+    const script = compileUniversalScene(candidate, initialScene, "A traveller points at and looks at a flower.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.relations).toHaveLength(2);
+    expect(scene.relations?.every((edge) => edge.kind === "actsOn")).toBe(true);
+    const point = scene.relations!.find((edge) => edge.predicate === "point")!;
+    const expected = applyTargetedPerformance(scene.entities[0], scene.entities[1], point);
+    expect(scene.entities[0].performance?.rightArm).toBeDefined();
+    const html = renderToStaticMarkup(<DoodleCanvas scene={scene} />);
+    expect(html).toContain(`rotate(${expected.performance!.rightArm!.upper})`);
+    expect(html).not.toContain('class="universal-edge"');
+  });
   it("aims a person at contained artwork rather than its hidden logical slot", () => {
     const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
       objects: [{ id: "box", label: "case", kind: "generic", x: 50, y: 40 },

@@ -2,6 +2,7 @@ import {
   doodleScriptSchema,
   type DoodleCommand,
   type DoodleScript,
+  type SceneRelation,
   type SceneState
 } from "./schema";
 import { applyDoodleScript } from "./scene";
@@ -9,6 +10,7 @@ import { overlaps, withinCanvas } from "./layout";
 import { isMotion, motionGeometry } from "./motion";
 import { isQueue, queueGeometry } from "./queue";
 import { actionRegistry } from "./actionRegistry";
+import { compatibleAttention } from "./targetedPerformance";
 import { contactPairIsVisuallySafe, solveContactArm } from "./contactGeometry";
 import { handoverIsVisuallySafe, handoverParticipants } from "./handover";
 import { eventFlowGeometry, hasDirectedCycle, isEventRelation } from "./eventRelations";
@@ -224,6 +226,7 @@ export function validateDoodleScript(
   const owned = new Set<string>();
   const moving = new Set<string>();
   const targeting = new Set<string>();
+  const priorPerformances = new Map<string, SceneRelation[]>();
   const handedOver = new Set<string>();
   const eventEdges = new Set<string>();
   const visualActionEdges = new Set<string>();
@@ -343,7 +346,11 @@ export function validateDoodleScript(
           issues.push({ gate: "layout", message: "That contact pose cannot reach the visible object safely. Add it beside the person or move one endpoint closer." });
         }
       }
-      if (targeting.has(relation.sourceIds[0])) issues.push({ gate: "semantic", message: "A person cannot have two conflicting performance targets." });
+      const previous = priorPerformances.get(relation.sourceIds[0]) ?? [];
+      if (targeting.has(relation.sourceIds[0]) && (!previous.length || !previous.every((other) => compatibleAttention(other, relation)))) {
+        issues.push({ gate: "semantic", message: "A person cannot have two conflicting performance targets." });
+      }
+      priorPerformances.set(relation.sourceIds[0], [...previous, relation]);
       targeting.add(relation.sourceIds[0]);
     }
     if (isQueue(relation)) {

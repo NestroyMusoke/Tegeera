@@ -22,6 +22,17 @@ function run(text: string, scene = initialScene): SceneState {
 }
 
 describe("targeted semantic performance", () => {
+  it.each(["look", "point", "wave"])("validates same-target composition without allowing arbitrary duplicate actions (%s)", (predicate) => {
+    const script = interpret("A teacher points at a tree");
+    const relation = script.commands.find((command) => command.action === "relate");
+    if (!relation || relation.action !== "relate") throw new Error("Missing relation");
+    const combined = { ...script, commands: [...script.commands, { ...relation,
+      relation: { ...relation.relation, id: "second-action", predicate } }] };
+    expect(validateDoodleScript(combined, initialScene).ok).toBe(predicate === "look");
+    const third = { ...combined, commands: [...combined.commands, { ...relation,
+      relation: { ...relation.relation, id: "third-action", predicate: "look" } }] };
+    expect(validateDoodleScript(third, initialScene).ok).toBe(false);
+  });
   it("extracts actor, action, preposition and target without a sentence-specific rule", () => {
     const frame = analyzeTeacherInput("The teacher is pointing towards a tree").frames[0];
     expect(frame.actions).toEqual([{

@@ -7,7 +7,7 @@ import { EntityGlyph } from "./entityRenderers";
 import { emojiPreviewFor, natureEmojiPreviewFor } from "../glyphs/emojiPreview";
 import { LinearPropagationDrawing } from "./LinearPropagationDrawing";
 import { isPropagationEntity } from "../doodlescript/linearPropagation";
-import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance } from "../doodlescript/targetedPerformance";
+import { applyTargetedPerformance, isAttachedPerformance, isTargetedPerformance, primaryTargetedPerformance } from "../doodlescript/targetedPerformance";
 import { actionForPredicate } from "../doodlescript/actionRegistry";
 import { applyHandoverPerformance, handoverParticipants, isHandover } from "../doodlescript/handover";
 import { eventFlowGeometry, isEventRelation } from "../doodlescript/eventRelations";
@@ -184,7 +184,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           const motion = scene.relations?.find((relation) => isMotion(relation) && relation.sourceIds[0] === entity.id);
           const target = scene.entities.find((item) => item.id === motion?.targetIds[0]);
           const geometry = motion && target ? motionGeometry(entity, target, motion.kind as "toward" | "away") : null;
-          const targeting = scene.relations?.find((relation) => isTargetedPerformance(relation) && relation.sourceIds[0] === entity.id);
+          const targeting = primaryTargetedPerformance(scene.relations ?? [], entity.id);
           const performanceTarget = visibleEntities.find((item) => item.id === targeting?.targetIds[0]);
           const attachment = scene.relations?.find((relation) => isAttachedPerformance(relation) && relation.targetIds[0] === entity.id);
           const carrier = scene.entities.find((item) => item.id === attachment?.sourceIds[0]);

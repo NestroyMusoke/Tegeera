@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh compositional attention probes, never included in planner prompts.",
+  "cases": [
+    { "id": "botanist-flower", "text": "A botanist points at and looks at a flower.", "roles": ["botanist", "flower"], "links": [["botanist", "flower"]] },
+    { "id": "guide-two-targets", "text": "A guide points at a mountain while looking at a child.", "roles": ["guide", "mountain", "child"], "links": [["guide", "mountain"], ["guide", "child"]] },
+    { "id": "two-observers", "text": "A glass case contains a butterfly. A biologist stands to the left of the case and points at the butterfly. A student stands to the right of the case and looks at the butterfly.", "roles": ["case", "butterfly", "biologist", "student"], "links": [["case", "butterfly"], ["biologist", "case"], ["biologist", "butterfly"], ["student", "case"], ["student", "butterfly"]] }
+  ]
+}

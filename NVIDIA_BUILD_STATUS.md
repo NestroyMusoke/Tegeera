@@ -2,7 +2,30 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — human roles and visible attention, 16 October 2026
+## Latest checkpoint — composable attention; cold-render gate still failing, 16 October 2026
+
+See [composition evidence](docs/ATTENTION_COMPOSITION_2026-10-16.md). A reproduced
+failure rendered pointing and looking at one target as two arrows. The compiler,
+validator and renderer now share a narrow compatibility contract: one point and
+one look toward the same target, preserving both relations and choosing the arm
+pose independently of relation order. Different targets, duplicates, third
+actions, waving and contact are not silently collapsed. No noun-specific rule.
+
+Three fresh live requests used three provider attempts (4.325, 5.728 and 7.242 s).
+All static PNGs were inspected; a zero-call saved-response replay verifies the
+botanist pose fix. The longer four-object scene still shows containment as an
+arrow and a case placeholder. Graph-complete 3/3 does not mean visually correct.
+
+Full client run: 713 passed, one cold-render timing failure, three optional tests
+skipped. A subsequent no-op pose-processing optimization passed its regression;
+focused run: 55 passed, the same timing gate failed at 137.12 ms (100 ms budget).
+No full-suite green claim and no relaxed threshold. Isolated coarse performance:
+two passed, 834 samples, p95 57.50 ms, maximum 133.90 ms. Lint, TypeScript, build,
+bundle budget and Android web sync passed; main chunk 506.65 kB, advisory remains.
+Backend unchanged/not rerun; no browser, APK, phone or deployment check.
+Independent corpus and strict gold are unchanged. No completion percentage.
+
+## Previous checkpoint — human roles and visible attention, 16 October 2026
 
 See [the attention review](docs/HUMAN_ATTENTION_2026-10-16.md). Shared planner
 guidance now distinguishes human roles from unfamiliar nonhuman objects. Exact

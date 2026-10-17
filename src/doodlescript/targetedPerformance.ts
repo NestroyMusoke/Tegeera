@@ -5,6 +5,25 @@ import type { CharacterPerformance, SceneEntity, SceneRelation } from "./schema"
 
 export const isTargetedPerformance = (relation: SceneRelation): boolean => relation.kind === "actsOn";
 
+/** Pointing already supplies gaze. Only this complementary pair shares a rig;
+ * waving, contact, duplicates and different targets must not be collapsed. */
+export function compatibleAttention(a: SceneRelation, b: SceneRelation): boolean {
+  return a.kind === "actsOn" && b.kind === "actsOn"
+    && a.sourceIds.length === 1 && b.sourceIds.length === 1
+    && a.targetIds.length === 1 && b.targetIds.length === 1
+    && a.sourceIds[0] === b.sourceIds[0] && a.targetIds[0] === b.targetIds[0]
+    && ((a.predicate === "point" && b.predicate === "look")
+      || (a.predicate === "look" && b.predicate === "point"));
+}
+
+export function primaryTargetedPerformance(relations: readonly SceneRelation[], actorId: string): SceneRelation | undefined {
+  const actions = relations.filter((relation) => isTargetedPerformance(relation) && relation.sourceIds[0] === actorId);
+  if (actions.length === 2 && compatibleAttention(actions[0], actions[1])) {
+    return actions.find((relation) => relation.predicate === "point");
+  }
+  return actions[0];
+}
+
 export const isAttachedPerformance = (relation: SceneRelation): boolean => relation.kind === "actsOn"
   && Boolean(actionRegistry.find((action) => action.predicate === relation.predicate)?.targeting?.attachment);
 

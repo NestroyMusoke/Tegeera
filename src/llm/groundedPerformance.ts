@@ -1,7 +1,8 @@
 import { actionForAlias } from "../doodlescript/actionRegistry";
 import { conceptSupports } from "../doodlescript/conceptRegistry";
 import { applyDoodleScript } from "../doodlescript/scene";
-import type { DoodleScript, SceneEntity, SceneState } from "../doodlescript/schema";
+import type { DoodleScript, SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
+import { compatibleAttention } from "../doodlescript/targetedPerformance";
 import { stageContactPair } from "../doodlescript/spatialStaging";
 import { isSideBySideRelation, spatialOrder } from "../doodlescript/spatialOrder";
 import { universalSceneEdges } from "../doodlescript/universalEdge";
@@ -11,6 +12,17 @@ import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 
 /** Exact registered non-contact actions can use the rig without restaging
  * any object, including a target drawn inside a specialist enclosure. */
+function attentionRelation(relation: SceneRelation): SceneRelation | undefined {
+  if (relation.kind === "actsOn") return relation;
+  if (relation.kind !== "relatesTo") return undefined;
+  const [verb, ...rest] = (relation.predicate ?? "").toLowerCase().trim().split(/\s+/);
+  const action = actionForAlias(verb);
+  const preposition = rest.join(" ");
+  if (!action?.targeting || action.targeting.gesture === "contact"
+    || !action.targeting.prepositions.includes(preposition)) return undefined;
+  return { ...relation, kind: "actsOn", predicate: action.predicate, preposition };
+}
+
 function groundAttentionPerformances(scene: SceneState, input: DoodleScript): DoodleScript {
   const projected = applyDoodleScript(scene, input);
   const relations = projected.relations ?? [];
@@ -26,11 +38,13 @@ function groundAttentionPerformances(scene: SceneState, input: DoodleScript): Do
     if (!actor || actor.visualRole || !conceptSupports(actor.kind, "human-performance")
       || natureEmojiPreviewFor(actor.label ?? "")
       || !input.commands.some((command) => command.action === "create" && command.entity.id === actor.id)) continue;
-    // Do not choose a winner when one actor has multiple action targets.
+    const promoted = attentionRelation(relation)!;
+    // Only complementary actions that aim at the same target may share a rig.
     if (relations.some((other) => other.id !== relation.id && other.sourceIds.includes(actor.id)
       && (other.kind === "actsOn" || other.kind === "handover"
-        || other.kind === "relatesTo" && actionForAlias((other.predicate ?? "").split(/\s+/)[0])?.targeting))) continue;
-    replacements.set(relation.id, { relation: { ...relation, kind: "actsOn", predicate: action.predicate, preposition },
+        || other.kind === "relatesTo" && actionForAlias((other.predicate ?? "").toLowerCase().trim().split(/\s+/)[0])?.targeting)
+      && !compatibleAttention(promoted, attentionRelation(other) ?? other))) continue;
+    replacements.set(relation.id, { relation: promoted,
       performance: action.performance });
   }
   if (!replacements.size) return input;
@@ -40,7 +54,8 @@ function groundAttentionPerformances(scene: SceneState, input: DoodleScript): Do
       return replacement ? { ...command, relation: replacement.relation } : command;
     }
     if (command.action === "create") {
-      const replacement = [...replacements.values()].find(({ relation }) => relation.sourceIds[0] === command.entity.id);
+      const choices = [...replacements.values()].filter(({ relation }) => relation.sourceIds[0] === command.entity.id);
+      const replacement = choices.find(({ relation }) => relation.predicate === "point") ?? choices[0];
       return replacement ? { ...command, entity: { ...command.entity, performance: replacement.performance } } : command;
     }
     return command;
@@ -53,6 +68,10 @@ function groundAttentionPerformances(scene: SceneState, input: DoodleScript): Do
  * Existing scene objects stay fixed. One physical target per performer.
  */
 export function groundContactPerformances(scene: SceneState, input: DoodleScript): DoodleScript {
+  // Both grounding paths only adjust newly created human performers. Avoid
+  // projecting the scene twice for ordinary objects and untouched actors.
+  if (!input.commands.some((command) => command.action === "create"
+    && conceptSupports(command.entity.kind, "human-performance"))) return input;
   let result = groundAttentionPerformances(scene, input);
   const movable = new Set(input.commands.flatMap((command) => command.action === "create" ? [command.entity.id] : []));
   let projected = applyDoodleScript(scene, result);
