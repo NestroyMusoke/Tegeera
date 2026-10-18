@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh held-out statements; roles and links are never sent to the planner.",
+  "cases": [
+    { "id": "thermostat-heater", "text": "A thermostat controls a heater.", "roles": ["thermostat", "heater"], "links": [["thermostat", "heater"]] },
+    { "id": "sensor-controller", "text": "A temperature sensor sends a measurement to a microcontroller. The microcontroller sends a command to a ventilation fan.", "roles": ["temperature sensor", "measurement", "microcontroller", "command", "ventilation fan"], "links": [["temperature sensor", "microcontroller"], ["microcontroller", "ventilation fan"]] },
+    { "id": "greenhouse-context", "text": "A greenhouse contains a seedling. A rainwater tank stands to the left of the greenhouse and a weather station stands to its right. The tank supplies water to the seedling.", "roles": ["greenhouse", "seedling", "rainwater tank", "weather station"], "links": [["greenhouse", "seedling"], ["rainwater tank", "greenhouse"], ["weather station", "greenhouse"], ["rainwater tank", "seedling"]] }
+  ]
+}

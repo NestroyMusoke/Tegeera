@@ -120,8 +120,10 @@ describe("entity renderer registry", () => {
     expect(html).toContain('data-symbol-fallback="true"');
     expect(html).toContain('class="unknown-glyph-outline"');
     expect(html).toContain('class="unknown-glyph-mark"');
-    expect(html).toContain("constitu…");
-    expect(html).toContain("legitima…");
+    expect(html).toContain(">constitutional</text>");
+    expect(html).toContain(">legitimacy</text>");
+    expect(html).toContain('textLength="80"');
+    expect(html).not.toContain("…");
     expect(html).not.toContain('>?</text>');
     expect(html).not.toContain(">C</text>");
   });

@@ -6,6 +6,7 @@ import { ComposedSymbol } from "./symbolPrimitives";
 import { CONCEPT_REGISTRY_VERSION, conceptForKind } from "../doodlescript/conceptRegistry";
 import { resolveGlyph } from "../glyphs/glyph";
 import { emojiPreviewFor, natureEmojiPreviewFor } from "../glyphs/emojiPreview";
+import { stickerLabel } from "./stickerLabel";
 
 export interface EntityRendererProps {
   entity: SceneEntity;
@@ -144,16 +145,13 @@ function Generic({ entity }: EntityRendererProps) {
   }
   const emoji = emojiPreviewFor(entity.label ?? "", entity.color) ?? natureEmojiPreviewFor(entity.label ?? "");
   if (emoji) return <EmojiPreview entity={entity} emoji={emoji} />;
-  const words = (entity.label ?? entity.kind).trim().split(/\s+/).filter(Boolean);
-  const display = words.length <= 1 ? [words[0] ?? "object"]
-    : words.length === 2 ? words : [words[0], words.slice(1).join(" ")];
-  const lines = display.slice(0, 2).map((line) => line.length > 9 ? `${line.slice(0, 8)}…` : line);
-  const fontSize = Math.max(13, 20 - Math.max(...lines.map((line) => line.length)) * 0.6);
+  const { lines, fontSize } = stickerLabel(entity.label ?? entity.kind);
   return <g data-symbol-id="honest-sticker" data-symbol-version={plan.ontologyVersion} data-symbol-category="unknown" data-symbol-confidence="0" data-symbol-fallback="true">
     <title>{`${entity.label ?? entity.kind} — labelled while its doodle is prepared`}</title>
     <rect className="unknown-glyph-outline" x="-48" y="-38" width="96" height="76" rx="17" />
     {lines.map((line, index) => <text key={index} className="unknown-glyph-mark" x="0"
-      y={lines.length === 1 ? 6 : index === 0 ? -5 : 17} textAnchor="middle" fontSize={fontSize}
+      y={6 + (index - (lines.length - 1) / 2) * 19} textAnchor="middle" fontSize={fontSize}
+      textLength={Array.from(line).length > 10 ? 80 : undefined} lengthAdjust="spacingAndGlyphs"
       aria-hidden="true">{line}</text>)}
   </g>;
 }

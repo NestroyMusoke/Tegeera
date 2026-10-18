@@ -2,7 +2,32 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — vocabulary lookup safety, 18 October 2026
+## Latest checkpoint — readable fallback labels, 18 October 2026
+
+See [label readability and fresh live evidence](docs/LABEL_READABILITY_2026-10-18.md).
+Shared sticker text now wraps into up to three bounded lines instead of cutting
+every word after eight characters. Full labels such as thermostat and
+microcontroller were checked in saved-response PNGs. No noun-specific drawings
+or changes to scene geometry were introduced.
+
+Three fresh live probes used three provider attempts: 4.343, 5.740 and 10.560
+seconds. Strict graph score was 2/3. The remaining sensor example retains
+measurement/command as arrow labels, not separate objects as the probe expects;
+that mismatch remains reported. Several objects still use labeled placeholders.
+No universal drawing or real-time inference claim.
+
+Client suite: 739 passed, three optional smoke tests skipped. Backend: 69 passed;
+evaluation tooling: 25 passed; glyph-pack tooling: 26 passed. Browser automation
+failed initialization with Windows path error 3; no interactive browser or phone
+verification. Independent corpus and strict gold remain unchanged; there is no
+defensible overall product-completion percentage.
+
+Both performance tests passed: 834 local SVG-ready samples, p95 14.49 ms,
+maximum 55.53 ms; cold unseen noun 51.57 ms. Inference and paint are excluded.
+Lint, TypeScript, production build, bundle budget and Android web sync passed.
+Main chunk 508.85 kB retains its advisory warning. No APK build was performed.
+
+## Previous checkpoint — vocabulary lookup safety, 18 October 2026
 
 See [fresh live probes and vocabulary evidence](docs/VOCABULARY_SAFETY_2026-10-18.md).
 A reproduced inherited-property lookup bug made `constructor` appear blank.
