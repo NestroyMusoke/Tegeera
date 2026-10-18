@@ -11,6 +11,17 @@ const scene = (...entities: SceneEntity[]): SceneState => ({
 });
 
 describe("shared layout candidate evaluation", () => {
+  it("runs expensive validation in ranked order and stops at the first valid candidate", () => {
+    const visited: number[] = [];
+    const result = selectLayoutCandidate(scene(entity("a", 30, 28)), [
+      [entity("a", 70, 28)], [entity("a", 36, 28)], [entity("a", 30, 28)]
+    ], { family: "event-graph", validate: (projected) => {
+      visited.push(projected[0].x);
+      return projected[0].x !== 30;
+    } });
+    expect(result?.entities[0].x).toBe(36);
+    expect(visited).toEqual([30, 36]);
+  });
   it("rejects clipped, overlapping, and fixed-obstacle collisions", () => {
     const base = scene(entity("a", 12, 28), entity("fixed", 48, 28));
     const result = selectLayoutCandidate(base, [

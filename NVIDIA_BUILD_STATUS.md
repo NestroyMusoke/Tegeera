@@ -2,7 +2,38 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — four-object containment and visible borders, 17 October 2026
+## Latest checkpoint — five-object composition and ranked validation, 18 October 2026
+
+See [composition/workflow evidence](docs/COMPOSITION_WORKFLOW_2026-10-17.md).
+One enclosure can now retain three connected contextual objects. Partial layout
+candidates are pruned against displayed enclosure bounds and explicit spatial
+constraints, including beside alignment and below clearance. Connector visibility
+is checked during selection so a failed caption route can try another placement.
+The shared selector ranks first and validates in rank order, preserving selection
+and tie-breaking while avoiding validation of worse candidates after success.
+
+Three fresh live statements used three provider attempts: 7.294, 11.868 and
+13.316 seconds. Initial and fixed SVG PNGs were inspected; cabinet/violin now
+stays nested, and aquarium context aligns with its visible enclosure. Moon and
+clock remain placeholders, and one connector takes a long detour. This is not
+universal visual accuracy. Saved-response replays required no additional calls.
+
+New mounted-app workflow test: complex drawing -> replacement -> Undo -> cached
+replacement, two interpretation requests and no refresh. Final full client run:
+723 passed, three optional smoke tests skipped. Both performance tests passed:
+834 samples, local SVG-ready p95 15.38 ms, maximum 29.32 ms. Cold unseen noun:
+28.25 ms. Separate five-object diagnostic (12 samples) remained slower:
+104.21 ms first/max/p95, 25.45 ms median, excluding module load, model and paint.
+No guarantee of sub-100 ms performance or inference speedup.
+
+Lint, TypeScript, build, bundle budget and Android web sync passed. Main chunk:
+508.33 kB; existing advisory warning remains. Backend unchanged/not rerun.
+Browser automation failed initialization (kernel asset path, os error 3); no
+browser interaction, APK, phone or deployment verification. Six-plus-object and
+multiple/nested containment remain limited. Independent corpus and strict gold
+unchanged; no product-completion percentage.
+
+## Previous checkpoint — four-object containment and visible borders, 17 October 2026
 
 See [containment context evidence](docs/CONTAINMENT_CONTEXT_2026-10-17.md).
 Two reproduced failures are fixed: adding a second surrounding object no longer

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Unseen compositional prompts; expected graphs withheld from planner.",
+  "cases": [
+    { "id": "astronomer-telescope", "text": "An astronomer stands beside a telescope and looks at the moon above it.", "roles": ["astronomer", "telescope", "moon"], "links": [["astronomer", "telescope"], ["astronomer", "moon"], ["moon", "telescope"]] },
+    { "id": "aquarium-context", "text": "An aquarium contains a fish. A child stands beside the aquarium and points at the fish. A cat is below the aquarium.", "roles": ["aquarium", "fish", "child", "cat"], "links": [["aquarium", "fish"], ["child", "aquarium"], ["child", "fish"], ["cat", "aquarium"]] },
+    { "id": "cabinet-context", "text": "A cabinet contains a violin. A musician stands to the left of the cabinet and looks at the violin. A chair is to the right of the cabinet, and a clock is above it.", "roles": ["cabinet", "violin", "musician", "chair", "clock"], "links": [["cabinet", "violin"], ["musician", "cabinet"], ["musician", "violin"], ["chair", "cabinet"], ["clock", "cabinet"]] }
+  ]
+}

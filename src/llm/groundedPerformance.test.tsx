@@ -8,6 +8,7 @@ import { compileUniversalScene } from "./universalScene";
 import { entitiesAtArtworkPositions } from "../doodlescript/universalEdge";
 import { applyTargetedPerformance } from "../doodlescript/targetedPerformance";
 import { groundContactPerformances } from "./groundedPerformance";
+import { labelledContainerGeometry } from "../doodlescript/labelledContainer";
 
 function plan(verb: string, label = "cup", actorKind = "person") {
   return { blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
@@ -17,6 +18,38 @@ function plan(verb: string, label = "cup", actorKind = "person") {
 }
 
 describe("hosted relationships become physical performances", () => {
+  it("aligns beside context to visible enclosure height and keeps below context outside its border", () => {
+    const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: .95,
+      objects: ["holder", "content", "observer", "animal"].map((id) => ({ id, label: id,
+        kind: id === "observer" ? "person" : "generic", x: 50, y: 50 })),
+      connections: [{ from: "holder", to: "content", kind: "contains", label: "contains" },
+        { from: "observer", to: "holder", label: "beside" },
+        { from: "observer", to: "content", label: "points at" },
+        { from: "animal", to: "holder", label: "below" }] };
+    const script = compileUniversalScene(candidate, initialScene, "A holder contains content. An observer is beside it and points at the content. An animal is below the holder.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    const contains = scene.relations!.find((edge) => edge.kind === "contains")!;
+    const geometry = labelledContainerGeometry(contains, scene.entities)!;
+    const observer = scene.entities.find(({ id }) => id === "observer")!;
+    const animal = scene.entities.find(({ id }) => id === "animal")!;
+    expect(observer.y * 6.2).toBeCloseTo(geometry.centerY);
+    expect(animal.y * 6.2 - 14 * animal.scale * 6.2).toBeGreaterThanOrEqual(geometry.centerY + geometry.height / 2);
+  });
+  it("preserves five-object containment with context above and on both sides", () => {
+    const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: .95,
+      objects: ["case", "item", "left", "right", "above"].map((id, index) => ({
+        id, label: id, kind: "generic", x: 10 + index * 18, y: 50 })),
+      connections: [{ from: "case", to: "item", kind: "contains", label: "contains" },
+        { from: "left", to: "case", label: "left of" }, { from: "right", to: "case", label: "right of" },
+        { from: "above", to: "case", label: "above" }] };
+    const script = compileUniversalScene(candidate, initialScene, "A case contains an item, with objects left, right and above it.");
+    expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+    const scene = applyDoodleScript(initialScene, script);
+    expect(scene.relations?.filter((edge) => edge.kind === "contains")).toHaveLength(1);
+    expect(scene.entities).toHaveLength(5);
+    expect(renderToStaticMarkup(<DoodleCanvas scene={scene} />)).toContain('data-layout-topology="nested-container"');
+  });
   it("keeps containment with two observers and preserves their opposite sides", () => {
     const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: .95,
       objects: [{ id: "case", label: "display case", kind: "generic", x: 40, y: 40 },

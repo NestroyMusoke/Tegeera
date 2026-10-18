@@ -17,6 +17,18 @@ function build(text: string) {
 }
 
 describe("open labelled-container grammar", () => {
+  it("tries another valid placement when the caller rejects a connector layout", () => {
+    const { scene } = build("A variable is a labeled box that holds a value.");
+    const ids = new Set(scene.entities.map(({ id }) => id));
+    const [holder, content] = scene.entities;
+    const first = planLabelledContainer(scene, holder.id, content.id, ids)!;
+    const oldX = first.find((move) => move.targetId === holder.id)!.x;
+    const alternative = planLabelledContainer(scene, holder.id, content.id, ids,
+      (projected) => projected.find(({ id }) => id === holder.id)!.x !== oldX);
+    expect(alternative).toBeTruthy();
+    expect(alternative!.find((move) => move.targetId === holder.id)!.x).not.toBe(oldX);
+    expect(planLabelledContainer(scene, holder.id, content.id, ids, () => false)).toBeNull();
+  });
   it("places two connected objects on one requested side without overlap or mutation", () => {
     const { scene } = build("A variable is a labeled box that holds a value.");
     const holder = scene.entities[0];

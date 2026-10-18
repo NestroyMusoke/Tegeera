@@ -1,5 +1,6 @@
 import { selectLayoutCandidate } from "./layoutPlanner";
-import { spatialOrder } from "./spatialOrder";
+import { isSideBySideRelation, spatialOrder } from "./spatialOrder";
+import { entityHalfWidth, overlaps, withinCanvas } from "./layout";
 import type { SceneEntity, SceneRelation, SceneState } from "./schema";
 
 export const LABELLED_CONTAINER_VERSION = "1.0.0";
@@ -65,38 +66,72 @@ export function planLabelledContainer(
   scene: SceneState,
   containerId: string,
   contentId: string,
-  movableIds: ReadonlySet<string>
+  movableIds: ReadonlySet<string>,
+  accepts?: (projected: readonly SceneEntity[]) => boolean
 ): { targetId: string; x: number; y: number }[] | null {
   if (containerId === contentId) return null;
   const byId = new Map(scene.entities.map((entity) => [entity.id, entity] as const));
   if (!byId.has(containerId) || !byId.has(contentId)) return null;
   const position = (id: string, x: number, y: number) => ({ ...byId.get(id)!, x, y });
   const context = scene.entities.filter((entity) => entity.id !== containerId && entity.id !== contentId && movableIds.has(entity.id));
-  if (context.length > 2) return null;
-  // Bounded slot assignments, independent of nouns or roles. Two observers can
-  // occupy opposite sides or different rows on one side; hard gates below keep
-  // bodies apart and preserve explicit spatial relationships.
-  const slots = [12, 88].flatMap((x) => [50, 72, 28].map((y) => ({ x, y })));
-  const candidates = [52, 45, 59].flatMap((x) => {
-    const pair = [position(containerId, x, 32), position(contentId, x, 62)];
-    if (!context.length) return [pair];
-    return slots.flatMap((first, index) => {
-      const placed = [...pair, position(context[0].id, first.x, first.y)];
-      return context.length === 1 ? [placed] : slots.filter((_, other) => other !== index)
-        .map((second) => [...placed, position(context[1].id, second.x, second.y)]);
-    });
-  });
+  if (context.length > 3) return null;
   const relation: SceneRelation = { id: "planned-contains", kind: "contains", sourceIds: [containerId], targetIds: [contentId] };
-  const selected = selectLayoutCandidate(scene, candidates, {
-    family: "labelled-container",
-    validate: (projected) => Boolean(labelledContainerGeometry(relation, projected))
-      && (scene.relations ?? []).every((edge) => {
+  const visibleBounds = (entity: SceneEntity, geometry: LabelledContainerGeometry) => {
+    if (entity.id === containerId) return { left: geometry.centerX - geometry.width / 2,
+      right: geometry.centerX + geometry.width / 2, top: geometry.centerY - geometry.height / 2 - 22,
+      bottom: geometry.centerY + geometry.height / 2, centerY: geometry.centerY };
+    const artwork = entity.id === contentId ? containedArtworkPlacement(geometry) : null;
+    const cx = artwork?.x ?? entity.x * 10, cy = artwork?.y ?? entity.y * 6.2;
+    const scale = artwork?.scale ?? entity.scale;
+    return { left: cx - entityHalfWidth(entity) * 10, right: cx + entityHalfWidth(entity) * 10,
+      top: cy - 14 * scale * 6.2, bottom: cy + 14 * scale * 6.2, centerY: cy };
+  };
+  const validPlacement = (projected: readonly SceneEntity[]) => {
+      const geometry = labelledContainerGeometry(relation, projected);
+      if (!geometry) return false;
+      const enclosure = visibleBounds(geometry.container, geometry);
+      if (projected.some((entity) => {
+        if (entity.id === containerId || entity.id === contentId) return false;
+        const box = visibleBounds(entity, geometry);
+        return box.left < enclosure.right && box.right > enclosure.left
+          && box.top < enclosure.bottom && box.bottom > enclosure.top;
+      })) return false;
+      return (scene.relations ?? []).every((edge) => {
         const order = edge.kind === "relatesTo" && edge.predicate && spatialOrder(edge.predicate);
-        if (!order) return true;
+        const beside = edge.kind === "relatesTo" && edge.predicate && isSideBySideRelation(edge.predicate);
+        if (!order && !beside) return true;
         const from = projected.find((entity) => entity.id === edge.sourceIds[0]);
         const to = projected.find((entity) => entity.id === edge.targetIds[0]);
-        return !from || !to || Math.sign(from[order.axis] - to[order.axis]) === order.sign;
-      })
+        if (!from || !to) return true;
+        const a = visibleBounds(from, geometry), b = visibleBounds(to, geometry);
+        if (beside && Math.abs(a.centerY - b.centerY) > 1) return false;
+        if (!order) return true;
+        if (from.id === containerId || to.id === containerId) {
+          return order.axis === "x" ? order.sign < 0 ? a.right <= b.left : a.left >= b.right
+            : order.sign < 0 ? a.bottom <= b.top : a.top >= b.bottom;
+        }
+        return Math.sign(from[order.axis] - to[order.axis]) === order.sign;
+      });
+  };
+  // Bound search and prune geometric/semantic failures before expanding them.
+  const candidates = [52, 45, 59].flatMap((x) => [32, 42].flatMap((y) => {
+    const pair = [position(containerId, x, y), position(contentId, x, y + 30)];
+    const slots = [12, 88].flatMap((slotX) => [y + 72 / 6.2, 85, 16].map((slotY) => ({ x: slotX, y: slotY })));
+    slots.push({ x, y: 16 }, { x, y: 85 });
+    let partial = [pair];
+    for (const entity of context) {
+      partial = partial.flatMap((placed) => slots.flatMap((slot) => {
+        const next = position(entity.id, slot.x, slot.y);
+        const candidate = [...placed, next];
+        return withinCanvas(next) && !placed.some((other) => overlaps(next, other))
+          && validPlacement(candidate) ? [candidate] : [];
+      }));
+    }
+    return partial;
+  }));
+  const selected = selectLayoutCandidate(scene, candidates, {
+    family: "labelled-container",
+    validate: (projected) => validPlacement(projected) && (!accepts || accepts(projected))
   })?.entities;
   return selected?.filter(({ id }) => movableIds.has(id)).map(({ id, x, y }) => ({ targetId: id, x, y })) ?? null;
 }

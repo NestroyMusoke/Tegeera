@@ -119,7 +119,7 @@ function visualMotif(blueprint: UniversalSceneBlueprint): VisualMotif | null {
     // Extra links to the same context object do not increase the number of
     // bodies to place. Keep the enclosure; validate every contextual route
     // after staging instead of discarding containment based on edge count.
-    if (blueprint.objects.length > 4) return null;
+    if (blueprint.objects.length > 5) return null;
     return { family: "labelled-container", container: one("contains")[0].from, content: one("contains")[0].to };
   }
   if (edges.some((edge) => edge.kind === "calls" || edge.kind === "returnsControlTo")) {
@@ -458,7 +458,7 @@ export function compileUniversalScene(
   // Four rows are 23% apart. Reserve the validator's full body+label envelope
   // (26 * scale) rather than selecting a visually plausible but overlapping grid.
   const visualScale = fourLevels ? 0.86 : sceneDensity <= 2 ? 1.15 : sceneDensity <= 4 ? 0.92 : 1;
-  const mixedContainment = blueprint.objects.length > 4
+  const mixedContainment = blueprint.objects.length > 5
     && blueprint.connections.some((edge) => edge.kind === "contains");
   const isGenericLink = (edge: UniversalSceneBlueprint["connections"][number]) =>
     !edge.kind || edge.kind === "relatesTo" || (mixedContainment && edge.kind === "contains");
@@ -627,7 +627,14 @@ export function compileUniversalScene(
       }, new Set(createdIds), motif.direction)
       : motif.family === "labelled-container"
         ? planLabelledContainer(staged, idMap.get(motif.container)!, idMap.get(motif.content)!,
-          new Set(createdIds))
+          new Set(createdIds), (projected) => {
+            const byId = new Map(projected.map((entity) => [entity.id, entity]));
+            try {
+              requireVisibleConnectors({ ...script, commands: commands.map((command) => command.action === "create"
+                ? { ...command, entity: byId.get(command.entity.id) ?? command.entity } : command) });
+              return true;
+            } catch { return false; }
+          })
       : motif.family === "call-return-flow"
         ? planCallReturnFlow(staged, { callerId: idMap.get(motif.caller)!, functionId: idMap.get(motif.fn)!,
           callSiteId: idMap.get(motif.callSite)! }, new Set(createdIds))

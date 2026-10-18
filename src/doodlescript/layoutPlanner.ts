@@ -89,7 +89,6 @@ export function selectLayoutCandidate(
 
     const plannedById = new Map(candidate.map((entity) => [entity.id, entity]));
     const projected = scene.entities.map((entity) => plannedById.get(entity.id) ?? entity);
-    if (options.validate && !options.validate(projected)) continue;
     const movement = candidate.reduce((total, entity) => {
       const original = originalById.get(entity.id)!;
       return total + Math.abs(original.x - entity.x) + Math.abs(original.y - entity.y);
@@ -105,8 +104,11 @@ export function selectLayoutCandidate(
     });
   }
 
+  // Pure geometry validation may include expensive connector routing. Ranking
+  // first preserves the optimum while avoiding work on worse candidates.
   return accepted.sort((a, b) => a.score.total - b.score.total
     || a.score.connectorCrossings - b.score.connectorCrossings
     || a.score.movement - b.score.movement
-    || signature(a.entities).localeCompare(signature(b.entities)))[0] ?? null;
+    || signature(a.entities).localeCompare(signature(b.entities)))
+    .find((candidate) => !options.validate || options.validate(candidate.projected)) ?? null;
 }
