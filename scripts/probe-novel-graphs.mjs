@@ -85,9 +85,9 @@ for (const [index, item] of selected.entries()) {
   }
   row.repairDiagnostics = repairDiagnostics;
   rows.push(row);
-  console.log(`${item.id}: ${row.graphComplete ? "graph complete" : "not complete"}; ${row.visualAudit?.labelledPlaceholders ?? "?"} labelled placeholders; ${row.elapsedMs}ms; ${row.attempts ?? "?"} attempt(s)`);
+  console.log(`${item.id}: ${row.graphComplete ? "graph complete" : "not complete"}; relation meaning ${row.relationCoverage ?? "not checked"}; ${row.visualAudit?.labelledPlaceholders ?? "?"} labelled placeholders; ${row.elapsedMs}ms; ${row.attempts ?? "?"} attempt(s)`);
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify({ schemaVersion: "1.0.0", seed, selectedIds: selected.map(({ id }) => id),
-    scoringLimit: "Roles and directed endpoints only. Placeholder count is automatic; visual quality requires human review.", rows }, null, 2)}\n`);
+    scoringLimit: "Roles and directed endpoints; exact relation labels only where explicitly annotated. Unannotated meaning is not checked. Placeholder count is automatic; visual quality requires human review.", rows }, null, 2)}\n`);
 }
 console.log(`Graph-complete ${rows.filter((row) => row.graphComplete).length}/${rows.length}. Saved bounded local report to ${output}.`);

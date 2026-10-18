@@ -44,6 +44,22 @@ function intersects(a: Point, b: Point, box: Box): boolean {
 
 const length = (a: Point, b: Point) => Math.hypot(b.x - a.x, b.y - a.y);
 
+/** Nearly parallel strokes can visually merge without mathematically crossing. */
+export function crowdedParallelStrokes(a: Point, b: Point, c: Point, d: Point): boolean {
+  const span = length(a, b), otherSpan = length(c, d);
+  if (span < 24 || otherSpan < 24) return false;
+  const ux = (b.x - a.x) / span, uy = (b.y - a.y) / span;
+  if (Math.abs(ux * (d.x - c.x) + uy * (d.y - c.y)) / otherSpan < 0.985) return false;
+  const cAlong = (c.x - a.x) * ux + (c.y - a.y) * uy;
+  const dAlong = (d.x - a.x) * ux + (d.y - a.y) * uy;
+  const low = Math.max(0, Math.min(cAlong, dAlong));
+  const high = Math.min(span, Math.max(cAlong, dAlong));
+  if (high - low < 24) return false;
+  const fraction = ((low + high) / 2 - cAlong) / (dAlong - cAlong);
+  const x = c.x + fraction * (d.x - c.x), y = c.y + fraction * (d.y - c.y);
+  return Math.abs((x - a.x) * uy - (y - a.y) * ux) < 12;
+}
+
 /** A relation's grammatical actor is not always the moving object. An
  * attraction moves the patient toward the actor, so its motion cue runs back
  * toward the actor while the graph retains actor -> patient semantics. */
@@ -169,6 +185,7 @@ export function universalEdgeGeometry(relation: SceneRelation, entities: readonl
       if (intersects(a, b, labelBox(edge))) return true;
       return edge.points.slice(1).some((point, index) => {
         const previous = edge.points[index];
+        if (crowdedParallelStrokes(a, b, previous, point)) return true;
         const hit = crossing(a, b, previous, point);
         if (!hit) return false;
         if (hit.overlap) return true;

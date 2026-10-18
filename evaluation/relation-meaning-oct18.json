@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh relation-meaning checks. Exact approved paraphrases are evaluation data, never model prompt instructions.",
+  "cases": [
+    { "id": "magnet-attracts", "text": "A magnet attracts a nail.", "roles": ["magnet", "nail"], "links": [["magnet", "nail"]], "relations": [{ "from": "magnet", "to": "nail", "labels": ["attracts", "pulls", "magnetic attraction"] }] },
+    { "id": "filter-removes", "text": "A filter removes dust from air. A fan pushes air through the filter.", "roles": ["filter", "dust", "air", "fan"], "links": [["filter", "dust"], ["fan", "air"]], "relations": [{ "from": "filter", "to": "dust", "labels": ["removes", "removes dust", "filters out", "traps"] }, { "from": "fan", "to": "air", "labels": ["pushes", "pushes air", "pushes through filter", "pushes through"] }] },
+    { "id": "controller-opposing", "text": "A moisture sensor measures soil moisture. A controller reads the moisture sensor and activates a pump. A stop button disables the pump.", "roles": ["moisture sensor", "soil moisture", "controller", "pump", "stop button"], "links": [["moisture sensor", "soil moisture"], ["controller", "moisture sensor"], ["controller", "pump"], ["stop button", "pump"]], "relations": [{ "from": "moisture sensor", "to": "soil moisture", "labels": ["measures", "measures moisture"] }, { "from": "controller", "to": "moisture sensor", "labels": ["reads", "reads sensor"] }, { "from": "controller", "to": "pump", "labels": ["activates", "starts", "turns on"] }, { "from": "stop button", "to": "pump", "labels": ["disables", "stops", "turns off", "deactivates"] }] }
+  ]
+}

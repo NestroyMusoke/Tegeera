@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SceneEntity, SceneRelation } from "./schema";
 import { entityVisualGeometry } from "./entityGeometry";
-import { attractionMotion, awayFromMotion, originMotion, readableRelationLabel, universalEdgeGeometry, universalSceneEdges } from "./universalEdge";
+import { attractionMotion, awayFromMotion, crowdedParallelStrokes, originMotion, readableRelationLabel, universalEdgeGeometry, universalSceneEdges } from "./universalEdge";
 
 const entity = (id: string, x: number, y: number): SceneEntity => ({
   id, label: id, kind: "generic", x, y, scale: 1, direction: "right", highlighted: false
@@ -11,6 +11,15 @@ const edge = (from: string, to: string): SceneRelation => ({
 });
 
 describe("source-to-target connector geometry", () => {
+  it("detects sustained near-parallel overlap, including opposite arrow directions", () => {
+    const a = { x: 100, y: 300 }, b = { x: 500, y: 300 };
+    expect(crowdedParallelStrokes(a, b, { x: 490, y: 304 }, { x: 200, y: 310 })).toBe(true);
+    expect(crowdedParallelStrokes(a, b, { x: 200, y: 310 }, { x: 490, y: 304 })).toBe(true);
+    expect(crowdedParallelStrokes(a, b, { x: 200, y: 330 }, { x: 490, y: 330 })).toBe(false);
+    expect(crowdedParallelStrokes(a, b, { x: 501, y: 304 }, { x: 600, y: 304 })).toBe(false);
+    expect(crowdedParallelStrokes(a, b, a, { x: 100, y: 500 })).toBe(false);
+    expect(crowdedParallelStrokes(a, a, a, b)).toBe(false);
+  });
   it("clips connections to the visible enclosure border, not its hidden logical slot", () => {
     const holder = { ...entity("holder", 45, 32), visualRole: "container" as const };
     const content = { ...entity("content", 45, 62), visualRole: "contained" as const };
@@ -26,6 +35,18 @@ describe("source-to-target connector geometry", () => {
         Math.abs(route.end.y - (32 * 6.2 + 72)) / 116);
       expect(edgeDistance).toBeCloseTo(1);
     }
+  });
+  it("separates an enclosure's outgoing arrow from an incoming arrow to its content", () => {
+    const holder = { ...entity("holder", 45, 32), visualRole: "container" as const };
+    const content = { ...entity("content", 45, 62), visualRole: "contained" as const };
+    const outside = entity("outside", 90, 44);
+    const contains: SceneRelation = { id: "enclosure", kind: "contains", sourceIds: [holder.id], targetIds: [content.id] };
+    const outgoing = { ...edge(holder.id, outside.id), predicate: "through" };
+    const incoming = { ...edge(outside.id, content.id), predicate: "removes" };
+    const routes = universalSceneEdges([contains, outgoing, incoming], [holder, content, outside]);
+    expect(routes.get(outgoing.id)).toBeTruthy();
+    expect(routes.get(incoming.id)).toBeTruthy();
+    expect(routes.get(incoming.id)?.route).not.toBe("direct");
   });
   it("targets visible contained artwork without changing logical scene positions", () => {
     const holder = { ...entity("holder", 45, 32), visualRole: "container" as const };

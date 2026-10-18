@@ -2,7 +2,33 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — readable fallback labels, 18 October 2026
+## Latest checkpoint — relation checks and connector separation, 18 October 2026
+
+See [relation and clearance evidence](docs/RELATION_CLEARANCE_2026-10-18.md).
+Three fresh live probes used three provider attempts: 4.758, 7.637 and 11.970
+seconds. All passed their explicitly annotated relation labels and structural
+coverage, but visual inspection exposed near-parallel overlapping arrows in the
+filter scene. Shared geometric clearance now separates them; a zero-call replay
+and PNG inspection confirmed both remain visible, with a longer return route.
+No noun-specific production branches were added.
+
+The novel-graph evaluator now distinguishes endpoint coverage from annotated
+predicate coverage. Opposite meanings, negation, uncertainty and contradictory
+duplicates cannot pass the annotated predicate check merely because endpoints
+match. Unannotated meaning is explicitly not checked. Neither score is full
+semantic or visual approval; several live objects still use placeholders.
+
+Client: 741 passed, three optional smoke tests skipped. Backend: 69 passed;
+evaluation tooling: 28 passed. Both performance tests passed: 834 local SVG-ready
+samples, p95 16.92 ms, maximum 82.53 ms; cold unseen noun 33.47 ms. Timings
+exclude inference and screen painting. Independent corpus and strict gold remain
+unchanged. No overall completion percentage or real-time model claim.
+
+Lint, TypeScript, production build, bundle budget and Android web sync passed.
+Main chunk 509.28 kB retains its advisory warning. No APK, browser interaction,
+phone or deployment verification this run.
+
+## Previous checkpoint — readable fallback labels, 18 October 2026
 
 See [label readability and fresh live evidence](docs/LABEL_READABILITY_2026-10-18.md).
 Shared sticker text now wraps into up to three bounded lines instead of cutting

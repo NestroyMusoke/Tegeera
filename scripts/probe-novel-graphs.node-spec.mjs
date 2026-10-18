@@ -30,9 +30,12 @@ test("a captured blueprint can be replayed through the current renderer without 
     assert.equal(report.rows[0].replay, true);
     assert.equal(report.rows[0].attempts, 0);
     assert.equal(report.rows[0].rendered, true);
+    assert.equal(report.rows[0].relationComplete, null);
+    assert.equal(report.rows[0].semanticComplete, null);
     assert.equal(report.rows[0].connectionCount, 3);
     assert.equal(report.rows[0].links.some((link) => link.includes("feeds")), false);
     const review = await readFile(report.rows[0].reviewFile, "utf8");
+    assert.ok(review.includes("Annotated relation meaning: not checked"));
     assert.equal(review.includes("roof feeds rain"), false);
     assert.ok(review.includes('animation:none!important'));
     assert.ok(review.includes('stroke-dasharray:none!important;stroke-dashoffset:0!important'));
