@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { emojiPreviewFor, extractEmojiPreviews, natureEmojiPreviewFor } from "./emojiPreview";
 
 describe("offline emoji previews", () => {
+  it.each([["cookies", "cookie"], ["zombies", "zombie"]])("tries an exact alternative when %s does not end in a singular y", (plural, singular) => {
+    expect(emojiPreviewFor(plural)).toBeDefined();
+    expect(emojiPreviewFor(plural)).toBe(emojiPreviewFor(singular));
+  });
+  it.each(["constructor", "constructors", "the constructor", "tiny constructor"])("never mistakes inherited object properties for art: %s", (noun) => {
+    expect(emojiPreviewFor(noun)).toBeUndefined();
+    expect(natureEmojiPreviewFor(noun)).toBeUndefined();
+    expect(extractEmojiPreviews(`A ${noun} creates an object.`)).toEqual([]);
+  });
   it("separates a validated colour from an exact noun without stripping arbitrary modifiers", () => {
     expect(emojiPreviewFor("purple satellite", "purple")).toBe(emojiPreviewFor("satellite"));
     expect(emojiPreviewFor("purple satellite", "purple")).toBeDefined();

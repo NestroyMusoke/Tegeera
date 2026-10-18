@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh programming and ordinary vocabulary probes; expectations withheld from planner.",
+  "cases": [
+    { "id": "constructor-object", "text": "A constructor creates an object.", "roles": ["constructor", "object"], "links": [["constructor", "object"]] },
+    { "id": "compiler-program", "text": "A compiler reads a program and produces an executable file.", "roles": ["compiler", "program", "executable file"], "links": [["compiler", "program"], ["compiler", "executable file"]] },
+    { "id": "otter-basket", "text": "A basket contains a shell. An otter sits beside the basket and a heron stands to its right.", "roles": ["basket", "shell", "otter", "heron"], "links": [["basket", "shell"], ["otter", "basket"], ["heron", "basket"]] }
+  ]
+}

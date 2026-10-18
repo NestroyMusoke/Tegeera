@@ -2,7 +2,32 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — five-object composition and ranked validation, 18 October 2026
+## Latest checkpoint — vocabulary lookup safety, 18 October 2026
+
+See [fresh live probes and vocabulary evidence](docs/VOCABULARY_SAFETY_2026-10-18.md).
+A reproduced inherited-property lookup bug made `constructor` appear blank.
+Both emoji catalogs now accept only owned string entries; unknown nouns retain
+visible labeled fallbacks, and declared people retain their character rig.
+Plural retrieval tries bounded existing candidates instead of stopping early.
+No special-case noun branches or additional artwork were introduced.
+
+Three fresh live statements used three provider attempts (4.416, 6.135 and
+11.158 seconds). All were graph-complete; inspected static PNGs still show
+stickers for programming concepts and the heron, and no sitting/standing animal
+poses. A saved-response replay confirms the formerly blank constructor is now
+visible. This is a reliability fix, not universal drawing quality or real-time AI.
+
+Full client suite: 731 passed, three optional smoke tests skipped. Both isolated
+performance tests passed: 834 samples, local SVG-ready p95 17.09 ms, maximum
+35.88 ms; cold unseen-noun test 57.76 ms. These exclude model latency and paint.
+Independent corpus remains 26/60 drawn, 1 held, 33 clarified; strict gold 3/29.
+No product-completion percentage is claimed.
+
+Lint, TypeScript, production build, bundle budget and Android web sync passed.
+Main chunk: 508.43 kB; existing advisory chunk warning remains. Backend unchanged
+and not rerun. No interactive browser, APK, phone or deployment verification.
+
+## Previous checkpoint — five-object composition and ranked validation, 18 October 2026
 
 See [composition/workflow evidence](docs/COMPOSITION_WORKFLOW_2026-10-17.md).
 One enclosure can now retain three connected contextual objects. Partial layout

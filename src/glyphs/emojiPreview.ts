@@ -6,14 +6,26 @@ import type { SceneEntity } from "../doodlescript/schema";
 const index = emojiIndex as Record<string, string>;
 const natureIndex = natureEmojiIndex as Record<string, string>;
 
+// Nouns are untrusted keys. Only catalog-owned string values are artwork;
+// inherited Object properties must never reach the renderer or hint system.
+function lookup(entries: Record<string, string>, noun: string): string | undefined {
+  return Object.hasOwn(entries, noun) && typeof entries[noun] === "string" ? entries[noun] : undefined;
+}
+
 function exactOrSingular(label: string, entries: Record<string, string>): string | undefined {
   const noun = glyphKey(label).replace(/^(?:a|an|the) /, "");
   if (!noun) return undefined;
-  const direct = entries[noun];
+  const direct = lookup(entries, noun);
   if (direct) return direct;
-  if (noun.endsWith("ies")) return entries[`${noun.slice(0, -3)}y`];
-  if (noun.endsWith("es") && entries[noun.slice(0, -2)]) return entries[noun.slice(0, -2)];
-  if (noun.endsWith("s") && !noun.endsWith("ss")) return entries[noun.slice(0, -1)];
+  const candidates = [
+    ...(noun.endsWith("ies") ? [`${noun.slice(0, -3)}y`] : []),
+    ...(noun.endsWith("es") ? [noun.slice(0, -2)] : []),
+    ...(noun.endsWith("s") && !noun.endsWith("ss") ? [noun.slice(0, -1)] : [])
+  ];
+  for (const candidate of candidates) {
+    const match = lookup(entries, candidate);
+    if (match) return match;
+  }
   return undefined;
 }
 
@@ -46,7 +58,7 @@ export function extractEmojiPreviews(text: string, limit = 4): Array<{ label: st
     for (let width = Math.min(4, words.length - start); width >= 1; width -= 1) {
       const label = words.slice(start, start + width).join(" ");
       if (label.length < 3) continue;
-      if (width === 1 && !index[label] && !/^(?:a|an|the|[0-9]+)$/.test(words[start - 1] ?? "")) continue;
+      if (width === 1 && !lookup(index, label) && !/^(?:a|an|the|[0-9]+)$/.test(words[start - 1] ?? "")) continue;
       const emoji = emojiPreviewFor(label);
       if (!emoji || seen.has(emoji)) continue;
       previews.push({ label, emoji });

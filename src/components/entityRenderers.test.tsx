@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { entityKindSchema, type SceneEntity } from "../doodlescript/schema";
 import { characterPoseFor } from "./characterPerformance";
 import { EntityGlyph } from "./entityRenderers";
@@ -9,6 +9,21 @@ const entity = (kind: SceneEntity["kind"], id = `${kind}-1`): SceneEntity => ({
 });
 
 describe("entity renderer registry", () => {
+  it("renders unknown prototype-like nouns as labels without invalid React children", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const html = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("generic"), label: "constructor" }} />);
+      expect(html).toContain('data-glyph-source="sticker"');
+      expect(html).not.toContain('data-symbol-id="emoji-preview"');
+      expect(html).toContain("constructor");
+      expect(error).not.toHaveBeenCalled();
+    } finally { error.mockRestore(); }
+  });
+  it("does not misclassify a declared human using an inherited nature-index key", () => {
+    const html = renderToStaticMarkup(<EntityGlyph entity={{ ...entity("person"), label: "constructor" }} />);
+    expect(html).toContain("character-rig");
+    expect(html).not.toContain('data-symbol-id="emoji-preview"');
+  });
   it("tints temporary emoji with independent local filters and preserves their alpha", () => {
     const html = renderToStaticMarkup(<svg>{(["purple", "green"] as const).map((color, index) =>
       <EntityGlyph key={color} entity={{ ...entity("generic", `preview-${index}`), label: "octopus", color }} />)}</svg>);
