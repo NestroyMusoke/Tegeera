@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh descriptions; expected labels withheld from the provider. Labels are not visual property approval.",
+  "cases": [
+    { "id": "basket-scarf", "text": "A wicker basket holds a striped scarf.", "roles": ["wicker basket", "striped scarf"], "links": [["wicker basket", "striped scarf"]], "relations": [{ "from": "wicker basket", "to": "striped scarf", "labels": ["holds", "contains"] }] },
+    { "id": "locker-technician", "text": "A sealed equipment locker contains a portable measuring instrument. A technician stands to the right of the locker.", "roles": ["sealed equipment locker", "portable measuring instrument", "technician"], "links": [["sealed equipment locker", "portable measuring instrument"], ["technician", "sealed equipment locker"]], "relations": [{ "from": "sealed equipment locker", "to": "portable measuring instrument", "labels": ["contains", "holds"] }, { "from": "technician", "to": "sealed equipment locker", "labels": ["right of", "stands right of"] }] }
+  ]
+}

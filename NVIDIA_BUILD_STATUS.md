@@ -2,7 +2,32 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — bounded enclosure labels and audit correction, 18 October 2026
+## Latest checkpoint — explicit descriptive label recovery, 19 October 2026
+
+See [source-label recovery evidence](docs/EXPLICIT_LABELS_2026-10-19.md).
+The shared source-normalization path restores omitted words from unambiguous,
+complete containment clauses without changing object IDs or relationships. It
+does not invent attributes or infer visual properties. Saved specimen replay now
+retains transparent/mineral and passes its annotated checks without another call;
+the content remains a placeholder. No noun-specific production branches.
+
+Two fresh live statements: 10.988 and 13.384 seconds, one attempt each; graph
+coverage 2/2, complete annotated meaning 1/2 because a valid but unlisted spatial
+paraphrase remains flagged. Static PNGs inspected. Neither test proves detailed
+material/texture drawing or real-time inference.
+
+First full client run exposed a clause-boundary/schema-limit regression. Fixed
+the guard, added a regression, and reran: 748 client tests passed, three optional
+smoke tests skipped; 74 backend and 30 evaluation tests passed. Both performance
+tests passed after the fix: 834 samples, local SVG-ready p95 16.44 ms, maximum
+28.98 ms. Final client cold unseen-noun check: 35.63 ms. Model/paint excluded.
+
+Lint, TypeScript, production build, bundle budget and Android web sync passed.
+Main chunk 511.37 kB retains its advisory warning. No APK, browser interaction,
+phone or deployment verification. Independent corpus/strict gold unchanged;
+no overall completion percentage. The earlier timeout remains unresolved.
+
+## Previous checkpoint — bounded enclosure labels and audit correction, 18 October 2026
 
 See [enclosure label evidence](docs/ENCLOSURE_LABELS_2026-10-18.md).
 Fresh live result: 1/3 graph-complete. Refrigerator/strawberry passed (4.170 s);
