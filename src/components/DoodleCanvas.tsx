@@ -18,6 +18,7 @@ import { isPartWholeFlowRelation, partWholeAttachmentGeometry, partWholeFlowGeom
 import { resolveVisualSymbol } from "../doodlescript/symbolOntology";
 import { forceDiagramGeometry, isForceRelation } from "../doodlescript/forceDiagram";
 import { containedArtworkPlacement, labelledContainerGeometry } from "../doodlescript/labelledContainer";
+import { BoundedSvgLabel } from "./BoundedSvgLabel";
 import { geometricConstructionGeometry } from "../doodlescript/geometricConstruction";
 import { isLandscapeFlowRelation, landscapeFlowGeometry } from "../doodlescript/landscapeFlow";
 import { circulationLoopGeometry, isCirculationRelation } from "../doodlescript/circulationLoop";
@@ -796,7 +797,8 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
       <path className="doodle-detail" d={`M${left + 12} ${top + 48} Q${geometry.centerX} ${top + 42} ${left + geometry.width - 12} ${top + 48}`} />
       <g data-visual-cue="variable-label">
         <path d={`M${geometry.centerX - 90} ${top - 15} Q${geometry.centerX} ${top - 25} ${geometry.centerX + 90} ${top - 15} V${top + 31} H${geometry.centerX - 90} Z`} fill="#fbf7ed" stroke="#32735d" strokeWidth="3" />
-        <text x={geometry.centerX} y={top + 15} textAnchor="middle" fill="#245c4b" fontSize="25" fontWeight="700">{geometry.container.label}</text>
+        <BoundedSvgLabel value={geometry.container.label ?? geometry.container.kind} x={geometry.centerX}
+          y={top + 7} width={160} height={42} maxFont={25} fill="#245c4b" />
       </g>
       <g data-visual-cue="value-inside-container">
         {contentHasArt ? <>
@@ -807,7 +809,8 @@ function Relationship({ relation, relations, entities, genericEdges }: { relatio
             fontSize={Math.max(12, Math.min(22, (geometry.width - 32) / Math.max(1, contentLabel.length * 0.6)))}>{contentLabel}</text>
         </> : <>
         <path d={`M${geometry.centerX - 98} ${geometry.centerY - 2} Q${geometry.centerX} ${geometry.centerY - 16} ${geometry.centerX + 98} ${geometry.centerY - 2} V${geometry.centerY + 60} Q${geometry.centerX} ${geometry.centerY + 72} ${geometry.centerX - 98} ${geometry.centerY + 60} Z`} fill="#f4dfaa" stroke="#9b6a22" strokeWidth="3" />
-        <text x={geometry.centerX} y={geometry.centerY + 41} textAnchor="middle" fill="#694512" fontSize="29" fontWeight="700">{geometry.content.label}</text>
+        <BoundedSvgLabel value={contentLabel} x={geometry.centerX} y={geometry.centerY + 28}
+          width={176} height={58} maxFont={29} fill="#694512" />
         </>}
       </g>
     </g>;

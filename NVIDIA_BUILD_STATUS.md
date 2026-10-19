@@ -2,7 +2,33 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — relation checks and connector separation, 18 October 2026
+## Latest checkpoint — bounded enclosure labels and audit correction, 18 October 2026
+
+See [enclosure label evidence](docs/ENCLOSURE_LABELS_2026-10-18.md).
+Fresh live result: 1/3 graph-complete. Refrigerator/strawberry passed (4.170 s);
+specimen scene lost transparent/mineral modifiers (10.535 s); medical cabinet
+timed out at 42.011 s with unknown attempt count. These failures remain open.
+
+An explicitly synthetic offline medical-cabinet fixture reproduced heading/value
+text overflowing its plaques. Shared bounded SVG labels now wrap inside the same
+geometry, retain full accessibility metadata and preserve nested artwork. Before
+and after PNGs were inspected; the fixture is not counted as a live success.
+
+The visual audit now counts enclosure/content roles and marks text-only contained
+values as placeholders. Schematic enclosure and nested emoji are not counted as
+approved object artwork. This corrects previously optimistic placeholder counts.
+
+Client: 748 passed, three optional smoke tests skipped. Backend: 69 passed;
+evaluation tooling: 30 passed. Both performance tests passed: 834 local SVG-ready
+samples, p95 17.38 ms, maximum 32.88 ms; cold unseen noun 31.09 ms. Model calls
+and paint are excluded. Independent corpus and strict gold remain unchanged.
+No universal accuracy, completion percentage or real-time inference claim.
+
+Lint, TypeScript, production build, bundle budget and Android web sync passed.
+Main chunk 509.79 kB retains its advisory warning. No APK, interactive browser,
+phone or deployment verification this run.
+
+## Previous checkpoint — relation checks and connector separation, 18 October 2026
 
 See [relation and clearance evidence](docs/RELATION_CLEARANCE_2026-10-18.md).
 Three fresh live probes used three provider attempts: 4.758, 7.637 and 11.970

@@ -43,6 +43,23 @@ it("retains an honest labelled value when no artwork exists", () => {
   expect(contained.querySelector('[data-visual-cue="contained-artwork"]')).toBeNull();
 });
 
+it("fits long enclosure and content labels without moving the scene", () => {
+  const scene = sceneFor("portable oxygen cylinder");
+  scene.entities.find((entity) => entity.visualRole === "container")!.label = "emergency medical cabinet";
+  const before = structuredClone(scene);
+  const root = drawing(scene);
+  const labels = [...root.querySelectorAll('[data-bounded-label="true"]')];
+  expect(labels).toHaveLength(2);
+  expect(labels.map((label) => label.getAttribute("aria-label"))).toEqual(["emergency medical cabinet", "portable oxygen cylinder"]);
+  for (const label of labels) {
+    expect(label.querySelectorAll("text").length).toBeGreaterThan(1);
+    for (const line of label.querySelectorAll("text")) {
+      expect(Number(line.getAttribute("textLength"))).toBeLessThanOrEqual(Number(label.getAttribute("data-label-width")));
+    }
+  }
+  expect(scene).toEqual(before);
+});
+
 it("renders supplied validated artwork through the same nested path without changing the scene", () => {
   const scene = sceneFor("unmapped concept");
   const item = scene.entities.find((entity) => entity.visualRole === "contained")!;

@@ -20,3 +20,23 @@ test("schematic roles are counted separately from object artwork", () => {
   assert.equal(result.nonPlaceholderObjects, 0);
   assert.equal(result.humanVisualReview, "pending");
 });
+
+test("text-only contained values are placeholders, not missing objects or approved artwork", () => {
+  const markup = '<g class="labelled-container-annotation"><g data-visual-cue="value-inside-container"><text>unfamiliar content</text></g></g>';
+  const result = auditRenderedScene(markup);
+  assert.equal(result.renderedObjects, 2);
+  assert.equal(result.labelledPlaceholders, 1);
+  assert.equal(result.schematicEnclosures, 1);
+  assert.equal(result.schematicValues, 1);
+  assert.equal(result.nonPlaceholderObjects, 0);
+});
+
+test("nested emoji art and its enclosure are counted once and remain provisional", () => {
+  const result = auditRenderedScene('<g class="labelled-container-annotation"><g data-visual-cue="value-inside-container"><g data-visual-cue="contained-artwork"><g data-symbol-id="emoji-preview"></g></g></g></g>');
+  assert.equal(result.renderedObjects, 2);
+  assert.equal(result.labelledPlaceholders, 0);
+  assert.equal(result.emojiPreviews, 1);
+  assert.equal(result.nonPlaceholderObjects, 0);
+  assert.equal(result.schematicValues, 0);
+  assert.equal(result.humanVisualReview, "pending");
+});

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Fresh short and long enclosure labels; expectations never enter the model prompt.",
+  "cases": [
+    { "id": "fridge-strawberry", "text": "A refrigerator contains a strawberry.", "roles": ["refrigerator", "strawberry"], "links": [["refrigerator", "strawberry"]], "relations": [{ "from": "refrigerator", "to": "strawberry", "labels": ["contains"] }] },
+    { "id": "medical-cabinet", "text": "An emergency medical cabinet contains a portable oxygen cylinder.", "roles": ["emergency medical cabinet", "portable oxygen cylinder"], "links": [["emergency medical cabinet", "portable oxygen cylinder"]], "relations": [{ "from": "emergency medical cabinet", "to": "portable oxygen cylinder", "labels": ["contains"] }] },
+    { "id": "specimen-observer", "text": "A transparent specimen chamber contains a crystalline mineral sample. A researcher stands to the left of the chamber and looks at the sample.", "roles": ["transparent specimen chamber", "crystalline mineral sample", "researcher"], "links": [["transparent specimen chamber", "crystalline mineral sample"], ["researcher", "transparent specimen chamber"], ["researcher", "crystalline mineral sample"]], "relations": [{ "from": "transparent specimen chamber", "to": "crystalline mineral sample", "labels": ["contains"] }, { "from": "researcher", "to": "transparent specimen chamber", "labels": ["left of", "stands left of"] }, { "from": "researcher", "to": "crystalline mineral sample", "labels": ["looks at", "observes"] }] }
+  ]
+}
