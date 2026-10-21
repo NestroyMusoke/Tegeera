@@ -14,6 +14,9 @@ export default defineConfig(({ mode }) => ({
         manualChunks(id) {
           if (id.includes("node_modules/zod")) return "schema-vendor";
           if (id.includes("node_modules/react")) return "react-vendor";
+          // Keep the expanding visual presentation layer in its own bounded
+          // partition rather than raising the existing per-chunk budget.
+          if (id.includes("/src/components/")) return "scene-views";
         }
       }
     }

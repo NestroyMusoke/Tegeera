@@ -47,6 +47,13 @@ Port 5173 must be free. AI-generated artwork still requires review before reuse.
 
 ## What Tegeera can do today
 
+**Concept / argument maps:** abstract explanations can now appear as connected
+panels that preserve the speaker's exact wording, highlight negative words and
+keep questions open. Select **Visual format → Concept / argument map**, or use
+Automatic for longer explanations with definition, comparison or question cues.
+This works locally without model credits. It is a source-text map—not a fact-check
+or an automatically proven argument. [Scope and test evidence](docs/ARGUMENT_MAP_2026-10-21.md).
+
 Tegeera already accepts speech or typed input and turns supported explanations into deterministic, editable SVG scenes. It can currently visualize structures including:
 
 - queues, ownership, sharing, movement, gestures, contact, carrying, and handovers;

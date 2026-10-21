@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { DoodleCanvas } from "./components/DoodleCanvas";
+import { ScenePresentation } from "./components/ArgumentCanvas";
+import { buildArgumentMap, shouldUseArgumentMap, type ArgumentMap } from "./arguments/sourceMap";
 import { interpretTeacherText } from "./doodlescript/interpret";
 import { applyDoodleScript, initialScene } from "./doodlescript/scene";
 import type { SceneState } from "./doodlescript/schema";
@@ -54,9 +55,12 @@ const suggestions = [
 ];
 const localDevelopment = import.meta.env.MODE === "development";
 
+type PresentationScene = SceneState & { argumentMap?: ArgumentMap };
+
 function App() {
   const [input, setInput] = useState("");
-  const [history, setHistory] = useState<SceneState[]>([initialScene]);
+  const [history, setHistory] = useState<PresentationScene[]>([initialScene]);
+  const [presentationMode, setPresentationMode] = useState<"auto" | "objects" | "argument">("auto");
   const [issues, setIssues] = useState<GateIssue[]>([]);
   const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
   const [holdNotice, setHoldNotice] = useState<string | null>(null);
@@ -101,7 +105,7 @@ function App() {
   const remoteRequest = useRef<AbortController | null>(null);
   const remoteRequestSequence = useRef(0);
   const acceptedPlanCache = useRef(new AcceptedPlanCache());
-  const scene = history.at(-1) ?? initialScene;
+  const scene: PresentationScene = history.at(-1) ?? initialScene;
   useEffect(() => {
     glyphResolver.current!.setVisibleNouns(scene.entities
       .filter(needsRuntimeGlyph).map((entity) => entity.label ?? ""));
@@ -208,6 +212,7 @@ function App() {
 
   const spokenSummary = useMemo(
     () => {
+      if (scene.argumentMap) return `Source-preserving argument map. Not fact-checked. ${scene.argumentMap.source}`;
       if (!scene.entities.length) return "Nothing drawn yet";
       const labels = (ids: string[]) => ids.map((id) => scene.entities.find((entity) => entity.id === id)?.label ?? id).join(", ");
       return [scene.entities.map((entity) => entity.label ?? entity.kind).join(", "),
@@ -217,7 +222,7 @@ function App() {
         })
       ].join(". ");
     },
-    [scene.entities, scene.relations]
+    [scene.entities, scene.relations, scene.argumentMap]
   );
 
   const submit = (
@@ -241,6 +246,22 @@ function App() {
       };
     };
     const interpretation = interpretTeacherText(text, targetScene);
+    if (presentationMode === "argument" || (presentationMode === "auto" && !interpretation.ok && shouldUseArgumentMap(text))) {
+      try {
+        const argumentMap = buildArgumentMap(text);
+        const next: PresentationScene = { sceneId: targetScene.sceneId, revision: targetScene.revision + 1,
+          entities: [], relations: [], argumentMap };
+        setHistory(current => replaceScene ? [initialScene, next] : [...current, next]);
+        markDecision("draw");
+        setInput(current => current === text ? "" : current);
+        setIssues([]); setClarification(null); setHoldNotice(null);
+        setAiStatus("Source-preserving argument map created locally; no AI request or fact-check");
+      } catch (error) {
+        markDecision("reject");
+        setIssues([{ gate: "confidence", message: error instanceof Error ? error.message : "Could not map this explanation." }]);
+      }
+      return;
+    }
     if (!interpretation.ok) {
       if (remoteInterpreterEnabled(openRouterKey, localAiEnabled)) {
         const requestId = remoteRequestSequence.current;
@@ -394,10 +415,11 @@ function App() {
   const speech = useSpeechSession((transcript, timing) => submit(transcript, timing));
   const liveVisualHints = useMemo(() => extractEmojiPreviews(speech.partialTranscript || input), [speech.partialTranscript, input]);
   useEffect(() => {
+    if (presentationMode === "argument" || shouldUseArgumentMap(speech.partialTranscript)) return;
     if ((!openRouterKey && !localAiEnabled && !hostedInterpreterUrl) || !speech.partialTranscript.trim()) return;
     const timer = setTimeout(() => glyphResolver.current!.speculativePrefetch(speech.partialTranscript), 400);
     return () => clearTimeout(timer);
-  }, [openRouterKey, localAiEnabled, speech.partialTranscript]);
+  }, [openRouterKey, localAiEnabled, speech.partialTranscript, presentationMode]);
   const isListening = speech.status === "listening";
   const speechBusy =
     speech.status === "checking" ||
@@ -452,7 +474,7 @@ function App() {
         <span>Tegeera is not fully ready yet and has only reached a small early group of testers. These demonstrations are backed by automated semantic and rendering checks. Try them, challenge them, and help the vision of accessible real-time explanation grow.</span>
       </aside>
 
-      <DoodleCanvas scene={visualScene}>
+      <ScenePresentation scene={visualScene} map={scene.argumentMap}>
 
       <section className="control-card">
         <form
@@ -461,6 +483,11 @@ function App() {
             submit();
           }}
         >
+          <div className="presentation-choice"><label htmlFor="presentation-mode">Visual format</label>
+            <select id="presentation-mode" value={presentationMode} onChange={event => setPresentationMode(event.target.value as typeof presentationMode)}>
+              <option value="auto">Automatic</option><option value="objects">Object drawing</option><option value="argument">Concept / argument map</option>
+            </select>
+          </div>
           <label htmlFor="teacher-input">Your explanation</label>
           <div className={`input-row ${remoteBusy ? "has-stop-ai" : ""}`}>
             <input
@@ -722,7 +749,7 @@ function App() {
               <li key={`provisional-${noun}-${sourceUrl}`}>{noun} — Quick, Draw! contributor, {license}; provisional, not human-reviewed. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}</ul>
         </details> : null}
       </section>
-      </DoodleCanvas>
+      </ScenePresentation>
       <p className="sr-only" aria-live="polite">
         {spokenSummary}
       </p>

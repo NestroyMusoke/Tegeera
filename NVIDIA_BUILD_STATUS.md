@@ -2,7 +2,16 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — private local startup and fresh release probes, 20 October 2026
+## Latest checkpoint — source-preserving argument view, 21 October 2026
+
+See [argument-map scope and evidence](docs/ARGUMENT_MAP_2026-10-21.md). Abstract
+explanations now have a local, source-preserving panel view with negative wording,
+comparison/definition cues and open questions. The user's law paragraph and a
+fresh business example were verified through the browser, including switching
+back to object drawing and Undo. This is not yet an inferred semantic argument
+graph or universal illustrated explanation. Existing object-negation gates remain.
+
+## Previous checkpoint — private local startup and fresh release probes, 20 October 2026
 
 See [the release check](docs/LOCAL_RELEASE_CHECK_2026-10-20.md). One command now
 connects the private backend and frontend; real local startup/shutdown was checked
