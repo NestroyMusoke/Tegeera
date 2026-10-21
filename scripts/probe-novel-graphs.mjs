@@ -18,6 +18,8 @@ const seed = Number(option("--seed", "20260928"));
 const specificId = option("--id", "");
 const corpusFile = option("--corpus", join(root, "evaluation", "novel-graph-probes.json"));
 const replayCandidate = option("--replay-candidate", "");
+const thinking = option("--thinking", "default");
+if (!["default", "low", "off"].includes(thinking)) throw new Error("Use --thinking default, low or off; no model call was made.");
 const excluded = new Set(option("--exclude", "").split(",").filter(Boolean));
 if (!Number.isInteger(count) || count < 1 || count > 5 || !Number.isInteger(seed)) {
   throw new Error("Use --count 1..5 and an integer --seed. Each selected case may make two paid model calls.");
@@ -50,7 +52,7 @@ for (const [index, item] of selected.entries()) {
     const result = replayCandidate
       ? { candidate: JSON.parse(await readFile(resolve(replayCandidate), "utf8")), providerAttempts: 0 }
       : await interpretScene({ text: item.text, scene: { entities: [], relations: [] } }, configuration,
-        { signal: AbortSignal.timeout(42_000), onRepair: (diagnostic) => repairDiagnostics.push(diagnostic) });
+        { nebiusThinking: thinking, signal: AbortSignal.timeout(42_000), onRepair: (diagnostic) => repairDiagnostics.push(diagnostic) });
     if (!replayCandidate) {
       await mkdir(renderDirectory, { recursive: true });
       await writeFile(join(renderDirectory, `${item.id}-candidate.json`), `${JSON.stringify(result.candidate, null, 2)}\n`);
@@ -58,7 +60,7 @@ for (const [index, item] of selected.entries()) {
     const effective = completeExplicitPassages(item.text,
       normalizeOrdinaryCarry(normalizeOptionalTypedKinds(result.candidate)));
     const score = scoreNovelGraph(item, effective);
-    row = { id: item.id, replay: Boolean(replayCandidate), ...score, accepted: effective.confidence >= 0.58,
+    row = { id: item.id, thinking, replay: Boolean(replayCandidate), ...score, accepted: effective.confidence >= 0.58,
       confidence: effective.confidence, attempts: result.providerAttempts,
       elapsedMs: Math.round(performance.now() - started), objectCount: effective.objects.length,
       connectionCount: effective.connections.length,
@@ -77,7 +79,7 @@ for (const [index, item] of selected.entries()) {
       row.renderError = error instanceof Error ? error.message.slice(0, 200) : "Unknown render error";
     }
   } catch (error) {
-    row = { id: item.id, graphComplete: false, accepted: false,
+    row = { id: item.id, thinking, graphComplete: false, accepted: false,
       elapsedMs: Math.round(performance.now() - started), attempts: error?.providerAttempts ?? null,
       error: error instanceof Error ? error.message.slice(0, 160) : "Unknown error",
       ...(typeof error?.diagnostic === "string" ? { diagnostic: error.diagnostic.slice(0, 200) } : {}),

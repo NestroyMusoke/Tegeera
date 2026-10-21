@@ -34,6 +34,17 @@ Tegeera is not a cool demo looking for a problem. It is a personal attempt to ma
 
 These numbers do not prove that Tegeera is the answer. They explain why presentation and teaching tools should not assume that everyone can draw quickly, see clearly, speak confidently, or interact in the same way.
 
+## Run locally with your private AI backend
+
+With dependencies installed and your provider key already saved in the ignored
+`server/.env.local`, run `npm run dev:local` from the project folder. Open
+`http://127.0.0.1:5173`. This starts both services and connects them automatically;
+you do not need a second terminal or to paste a backend URL. Ctrl+C stops both.
+Provider credentials stay on the backend. Startup does not consume model credits.
+`npm run dev:local -- --check` verifies frontend/backend wiring and then exits.
+These commands are computer-local only, not a phone-accessible or deployed service.
+Port 5173 must be free. AI-generated artwork still requires review before reuse.
+
 ## What Tegeera can do today
 
 Tegeera already accepts speech or typed input and turns supported explanations into deterministic, editable SVG scenes. It can currently visualize structures including:

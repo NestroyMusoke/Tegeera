@@ -6,6 +6,8 @@
   "scripts": {
     "report:readiness": "node scripts/report-readiness.mjs",
     "dev": "vite",
+    "dev:local": "node scripts/dev-local.mjs",
+    "test:dev-local": "node --test scripts/dev-local.node-spec.mjs",
     "build": "tsc -b && vite build && node scripts/check-bundle.mjs",
     "verify:bundle": "node scripts/check-bundle.mjs",
     "test": "vitest run --exclude src/evaluation/runtimeEnvelope.test.tsx --no-file-parallelism",

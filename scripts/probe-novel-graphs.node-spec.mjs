@@ -5,6 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+test("invalid reasoning experiments fail before reading a key or calling a provider", () => {
+  const child = spawnSync(process.execPath, [join(import.meta.dirname, "probe-novel-graphs.mjs"), "--thinking", "invalid"], {
+    encoding: "utf8", timeout: 10000
+  });
+  assert.notEqual(child.status, 0);
+  assert.match(child.stderr, /Use --thinking default, low or off; no model call was made/);
+});
+
 test("a captured blueprint can be replayed through the current renderer without a provider key", async () => {
   const directory = await mkdtemp(join(tmpdir(), "tegeera-replay-"));
   try {
@@ -28,6 +36,7 @@ test("a captured blueprint can be replayed through the current renderer without 
     assert.equal(child.status, 0, child.stderr || child.stdout);
     const report = JSON.parse(await readFile(reportFile, "utf8"));
     assert.equal(report.rows[0].replay, true);
+    assert.equal(report.rows[0].thinking, "default");
     assert.equal(report.rows[0].attempts, 0);
     assert.equal(report.rows[0].rendered, true);
     assert.equal(report.rows[0].relationComplete, null);

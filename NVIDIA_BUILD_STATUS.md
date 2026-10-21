@@ -2,7 +2,16 @@
 
 This is a product-development checkpoint, not a claim that arbitrary speech already becomes an accurate, beautiful drawing.
 
-## Latest checkpoint — explicit descriptive label recovery, 19 October 2026
+## Latest checkpoint — private local startup and fresh release probes, 20 October 2026
+
+See [the release check](docs/LOCAL_RELEASE_CHECK_2026-10-20.md). One command now
+connects the private backend and frontend; real local startup/shutdown was checked
+without inference. Fresh glyphs were structurally valid but visually ambiguous.
+Two fresh scene probes did not pass strict graph expectations; one timed out.
+A bounded reasoning-off comparison was faster but still incomplete, so production
+defaults remain unchanged. These results do not support calling the product finished.
+
+## Previous checkpoint — explicit descriptive label recovery, 19 October 2026
 
 See [source-label recovery evidence](docs/EXPLICIT_LABELS_2026-10-19.md).
 The shared source-normalization path restores omitted words from unambiguous,

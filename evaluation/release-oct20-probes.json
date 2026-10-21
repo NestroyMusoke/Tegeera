@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Held-out release probes. Expectations are evaluation only, never sent to the planner. Not artwork approval.",
+  "cases": [
+    {
+      "id": "watering-can",
+      "text": "A watering can pours water into a flowerpot.",
+      "roles": ["watering can", "water", "flowerpot"],
+      "links": [["watering can", "water"], ["water", "flowerpot"]]
+    },
+    {
+      "id": "workshop-shelf",
+      "text": "A wooden shelf holds a red toolbox above a blue bucket while a mechanic carries a lantern toward a doorway.",
+      "roles": ["wooden shelf", "red toolbox", "blue bucket", "mechanic", "lantern", "doorway"],
+      "links": [["wooden shelf", "red toolbox"], ["red toolbox", "blue bucket"], ["mechanic", "lantern"], ["mechanic", "doorway"]]
+    }
+  ]
+}
