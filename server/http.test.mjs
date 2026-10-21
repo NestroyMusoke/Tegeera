@@ -96,6 +96,45 @@ test("HTTP interpretation returns a validated blueprint and never exposes its ke
   });
 });
 
+test("successive interpretations accept existing relationships without optional predicates", async () => {
+  let providerCalls = 0;
+  const candidate = { blueprintVersion: "1.0", mode: "replace", confidence: 0.9,
+    objects: [{ id: "new-object", label: "object", kind: "generic", x: 50, y: 50 }], connections: [] };
+  const entities = Array.from({ length: 12 }, (_, index) => ({ id: `old-${index}`, kind: "book", label: "book", x: 50, y: 50 }));
+  const relation = { kind: "owns", sourceIds: [entities[0].id], targetIds: entities.slice(1).map(entity => entity.id) };
+  await withServer({ configuration: modelConfiguration({ NVIDIA_API_KEY: "private-test-key" }),
+    limits: { perClientPerMinute: 100, maxConcurrentRequests: 2, maxProviderCallsPerDay: 100 },
+    modelFetch: async () => {
+      providerCalls++;
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(candidate) } }] }));
+    } }, async url => {
+    const post = (text, scene, extra = {}) => fetch(`${url}/v1/interpret`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, scene, ...extra })
+    });
+    for (const text of ["there was a lion and a car", "A telescope and a suitcase", "A musician stands near a fountain"]) {
+      for (const relations of [[], [relation], [{ ...relation, predicate: "owns" }]]) {
+        const response = await post(text, { entities, relations });
+        assert.equal(response.status, 200, JSON.stringify(await response.json()));
+      }
+    }
+    assert.equal(providerCalls, 9);
+    for (const predicate of [null, 123, {}, "", "x".repeat(65)]) {
+      const response = await post("A new drawing", { entities, relations: [{ ...relation, predicate }] });
+      assert.equal(response.status, 400);
+      assert.match((await response.json()).error, /current drawing/);
+    }
+    for (const targetIds of [["missing-id"], Array(13).fill(entities[0].id), []]) {
+      const response = await post("A new drawing", { entities, relations: [{ ...relation, targetIds }] });
+      assert.equal(response.status, 400);
+    }
+    const textError = await post("x".repeat(501), { entities: [], relations: [] });
+    assert.match((await textError.json()).error, /500/);
+    const nounError = await post("A new drawing", { entities: [], relations: [] }, { reusableGlyphNouns: Array(13).fill("book") });
+    assert.match((await nounError.json()).error, /artwork hints/);
+    assert.equal(providerCalls, 9, "invalid input must not spend model calls");
+  });
+});
+
 test("service limits reject invalid configuration instead of silently disabling the budget", () => {
   assert.deepEqual(serviceLimits({}), {
     perClientPerMinute: 12, maxConcurrentRequests: 2, maxProviderCallsPerDay: 80

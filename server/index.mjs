@@ -73,9 +73,12 @@ function validSceneHints(scene) {
   }
   return scene.relations.every((relation) => relation && typeof relation === "object"
     && typeof relation.kind === "string" && relation.kind.length <= 40
-    && typeof relation.predicate === "string" && relation.predicate.length <= 64
-    && Array.isArray(relation.sourceIds) && relation.sourceIds.length <= 8
-    && Array.isArray(relation.targetIds) && relation.targetIds.length <= 8
+    // Scene relationships use kind without requiring a free-text predicate.
+    // Match the client's optional field and 12-endpoint group capacity.
+    && (relation.predicate === undefined || (typeof relation.predicate === "string"
+      && relation.predicate.length > 0 && relation.predicate.length <= 64))
+    && Array.isArray(relation.sourceIds) && relation.sourceIds.length >= 1 && relation.sourceIds.length <= 12
+    && Array.isArray(relation.targetIds) && relation.targetIds.length >= 1 && relation.targetIds.length <= 12
     && [...relation.sourceIds, ...relation.targetIds].every((id) => ids.has(id)));
 }
 
@@ -121,9 +124,16 @@ return createServer(async (req, res) => {
   try { body = await readJson(req); }
   catch { return send(res, 400, { error: "Invalid or oversized JSON request." }, headers); }
   if (!body || typeof body !== "object") return send(res, 400, { error: "A JSON object is required." }, headers);
-  if (route === "/v1/interpret" && (typeof body.text !== "string" || !body.text.trim() || body.text.length > 500
-    || !validSceneHints(body.scene) || !validReusableNouns(body.reusableGlyphNouns))) {
-    return send(res, 400, { error: "A short utterance and bounded scene are required." }, headers);
+  if (route === "/v1/interpret") {
+    if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 500) {
+      return send(res, 400, { error: "Enter an explanation between 1 and 500 characters." }, headers);
+    }
+    if (!validSceneHints(body.scene)) {
+      return send(res, 400, { error: "The current drawing could not be sent to AI because its scene data is invalid or exceeds supported limits. Your new explanation is not the cause." }, headers);
+    }
+    if (!validReusableNouns(body.reusableGlyphNouns)) {
+      return send(res, 400, { error: "The reusable artwork hints exceed supported limits. Your explanation has not been sent to the model." }, headers);
+    }
   }
   if (route === "/v1/glyph" && (typeof body.noun !== "string" || !body.noun.trim() || body.noun.length > 48)) {
     return send(res, 400, { error: "A short drawing noun is required." }, headers);
