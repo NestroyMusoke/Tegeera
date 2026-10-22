@@ -9,6 +9,7 @@ import {
   type GateIssue
 } from "./doodlescript/validator";
 import { useSpeechSession } from "./speech/useSpeechSession";
+import { SpeechWorkQueue } from "./speech/SpeechWorkQueue";
 import { relationLabel } from "./doodlescript/motion";
 import type { ClarificationRequest } from "./doodlescript/clarification";
 import type { AcceptedSpeechTranscript } from "./speech/SpeechSession";
@@ -65,6 +66,15 @@ function App() {
   const [clarification, setClarification] = useState<ClarificationRequest | null>(null);
   const [holdNotice, setHoldNotice] = useState<string | null>(null);
   const [remoteBusy, setRemoteBusy] = useState(false);
+  const [queuedSpeech, setQueuedSpeech] = useState(0);
+  const [recentSpeech, setRecentSpeech] = useState<string[]>([]);
+  const speechSubmit = useRef<(text: string, timing: AcceptedSpeechTranscript) => void | Promise<void>>(() => undefined);
+  const speechQueue = useRef<SpeechWorkQueue<{ text: string; timing: AcceptedSpeechTranscript }> | null>(null);
+  if (!speechQueue.current) speechQueue.current = new SpeechWorkQueue(
+    ({ text, timing }) => speechSubmit.current(text, timing), setQueuedSpeech,
+    ({ text }) => { setInput(text); setHoldNotice("This spoken phrase could not be processed. It is retained in the input for retry."); }
+  );
+  useEffect(() => () => speechQueue.current?.clear(), []);
   const [openRouterKeyDraft, setOpenRouterKeyDraft] = useState("");
   const [openRouterKey, setOpenRouterKey] = useState("");
   const [localAiEnabled, setLocalAiEnabled] = useState(false);
@@ -231,6 +241,7 @@ function App() {
     targetScene = scene,
     replaceScene = false
   ) => {
+    if (!speechTiming) speechQueue.current?.clear();
     // An older model response must never replace a newer explanation or demo.
     cancelPendingRemote();
     const receivedAt = speechTiming?.finalReceivedAt ?? performance.now();
@@ -279,7 +290,7 @@ function App() {
           .filter((noun) => text.toLowerCase().includes(noun)).slice(0, 12);
         const response = cached ? Promise.resolve(cached)
           : interpretRemotely(text, targetScene, openRouterKey, controller.signal, reusableNouns, localAiEnabled);
-        void response.then(({ candidate, model, provider, providerAttempts: attempts, providerAttemptMs }) => {
+        return response.then(({ candidate, model, provider, providerAttempts: attempts, providerAttemptMs }) => {
           if (requestId !== remoteRequestSequence.current || controller.signal.aborted) return;
           providerAttempts = typeof attempts === "number" && Number.isInteger(attempts) && attempts >= 0 && attempts <= 2 ? attempts : undefined;
           providerMs = Array.isArray(providerAttemptMs) && providerAttemptMs.length <= 2
@@ -339,7 +350,6 @@ function App() {
           remoteRequest.current = null;
           setRemoteBusy(false);
         });
-        return;
       }
       markDecision("clarify");
       setHoldNotice(null);
@@ -402,6 +412,7 @@ function App() {
   }, [scene.revision, issues, clarification, holdNotice]);
 
   const undo = () => {
+    speechQueue.current?.clear();
     if (!canUndo) return;
     // Undo invalidates work based on the scene being removed, even if a
     // provider ignores AbortSignal and delivers its old response afterwards.
@@ -412,7 +423,15 @@ function App() {
     setHoldNotice(null);
   };
 
-  const speech = useSpeechSession((transcript, timing) => submit(transcript, timing));
+  speechSubmit.current = (text, timing) => submit(text, timing, sceneRef.current);
+  const speech = useSpeechSession((transcript, timing) => {
+    setRecentSpeech(current => [...current, transcript].slice(-20));
+    if (!speechQueue.current!.enqueue({ text: transcript, timing })) {
+      setInput(transcript);
+      setHoldNotice("Drawing is catching up. Listening paused; the extra phrase is kept in the input. Let queued phrases finish, then tap Speak.");
+      void speech.cancel();
+    }
+  });
   const liveVisualHints = useMemo(() => extractEmojiPreviews(speech.partialTranscript || input), [speech.partialTranscript, input]);
   useEffect(() => {
     if (presentationMode === "argument" || shouldUseArgumentMap(speech.partialTranscript)) return;
@@ -420,7 +439,7 @@ function App() {
     const timer = setTimeout(() => glyphResolver.current!.speculativePrefetch(speech.partialTranscript), 400);
     return () => clearTimeout(timer);
   }, [openRouterKey, localAiEnabled, speech.partialTranscript, presentationMode]);
-  const isListening = speech.status === "listening";
+  const isListening = speech.continuousActive || speech.status === "listening";
   const speechBusy =
     speech.status === "checking" ||
     speech.status === "requesting-permission" ||
@@ -509,7 +528,7 @@ function App() {
               aria-label={isListening ? "Stop listening" : "Start listening"}
               aria-pressed={isListening}
               className={`mic-button ${isListening ? "listening" : ""}`}
-              disabled={speech.status === "unavailable" || speechBusy}
+              disabled={speech.status === "unavailable" || (speechBusy && !isListening)}
               onClick={() => void (isListening ? speech.stop() : speech.start())}
               type="button"
             >
@@ -531,15 +550,21 @@ function App() {
             <span>
               {speech.partialTranscript ||
                 speech.message ||
-                "Tap Speak, then explain one change at a time."}
+                "Tap Speak to keep listening across phrases. Tap Stop when finished."}
             </span>
           </div>
           {(isListening || speech.status === "processing") && (
-            <button onClick={() => void speech.cancel()} type="button">
+            <button onClick={() => { speechQueue.current?.clear(); cancelPendingRemote(); void speech.cancel(); }} type="button">
               Cancel
             </button>
           )}
         </div>
+
+        {queuedSpeech > 0 && <p role="status">{queuedSpeech} spoken phrase{queuedSpeech === 1 ? "" : "s"} waiting to be illustrated in order.</p>}
+        {recentSpeech.length > 0 && <details className="speech-transcript-log"><summary>Recent speech ({recentSpeech.length} phrases)</summary>
+          <p>Last 20 accepted phrases, kept for this session even when a drawing needs clarification.</p>
+          <ol>{recentSpeech.map((text, index) => <li key={`${index}-${text}`}>{text}</li>)}</ol>
+        </details>}
 
         {liveVisualHints.length ? <div className="live-visual-hints" role="note" aria-label="Unverified instant visual hints">
           <strong>Instant visual hints</strong>

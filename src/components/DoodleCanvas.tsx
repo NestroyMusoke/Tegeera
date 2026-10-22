@@ -1,7 +1,7 @@
 import type { SceneEntity, SceneRelation, SceneState } from "../doodlescript/schema";
 import { isMotion, motionGeometry, relationLabel } from "../doodlescript/motion";
 import { ownershipBadges, type OwnershipBadge } from "./ownership";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isQueue, queueGeometry } from "../doodlescript/queue";
 import { EntityGlyph } from "./entityRenderers";
 import { emojiPreviewFor, natureEmojiPreviewFor } from "../glyphs/emojiPreview";
@@ -57,6 +57,7 @@ function hasEntityArtwork(entity: SceneEntity): boolean {
 }
 
 export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
+  const paperId = useId();
   const ownership = ownershipBadges(scene);
   const genericEdges = useMemo(() => universalSceneEdges(scene.relations ?? [], scene.entities), [scene]);
   const visibleEntities = useMemo(() => entitiesAtArtworkPositions(scene.relations ?? [], scene.entities), [scene]);
@@ -154,7 +155,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
         }
       >
         <defs>
-          <filter id="paper-grain">
+          <filter id={paperId}>
             <feTurbulence
               baseFrequency="0.7"
               numOctaves="2"
@@ -165,7 +166,7 @@ export function DoodleCanvas({ scene, children }: DoodleCanvasProps) {
           </filter>
         </defs>
         <rect width="1000" height="620" fill="#fbf7ed" />
-        <rect width="1000" height="620" filter="url(#paper-grain)" opacity=".5" />
+        <rect width="1000" height="620" filter={`url(#${paperId})`} opacity=".5" />
         <g ref={artwork} data-scene-art="true">
         {scene.relations?.map((relation) => {
           const definition = relationForKind(relation.kind);

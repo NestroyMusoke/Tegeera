@@ -15,7 +15,7 @@ export function useSpeechSession(
   if (!sessionRef.current || engineRef.current !== engine) {
     engineRef.current = engine;
     sessionRef.current = new SpeechSession(engine, (transcript, timing) =>
-      acceptTranscriptRef.current(transcript, timing)
+      acceptTranscriptRef.current(transcript, timing), { continuous: true }
     );
   }
   const session = sessionRef.current;

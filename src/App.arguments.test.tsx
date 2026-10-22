@@ -7,6 +7,17 @@ function submit(text: string) {
   fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: text } });
   fireEvent.click(screen.getByRole("button", { name: "Draw it" }));
 }
+it("mixes checked illustrations with connected questions and preserves every sentence", () => {
+  render(<App />);
+  const text = "Three students share two books. Is that fair? Draw a car. Who owns it?";
+  submit(text);
+  const map = screen.getByRole("region", { name: "Source-preserving argument map" });
+  expect(within(map).getByRole("group", { name: "Illustration of part 1" }).querySelector("svg")).toBeTruthy();
+  expect(within(map).getByRole("group", { name: "Illustration of part 3" }).querySelector("svg")).toBeTruthy();
+  expect(within(map).queryByRole("group", { name: "Illustration of part 2" })).toBeNull();
+  expect([...map.querySelectorAll("blockquote")].map(node => node.textContent).join("")).toBe(text);
+  expect(within(map).getAllByLabelText("Next part in reading order")).toHaveLength(3);
+});
 it("maps an abstract explanation offline, draws again, and restores the map with Undo", () => {
   const fetchMock = vi.fn().mockRejectedValue(new Error("offline"));
   vi.stubGlobal("fetch", fetchMock);

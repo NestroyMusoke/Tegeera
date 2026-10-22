@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { SceneState } from "../doodlescript/schema";
 import { type ArgumentMap, type ArgumentRole, wordingSegments } from "../arguments/sourceMap";
 import { DoodleCanvas } from "./DoodleCanvas";
+import { illustratePanel } from "../arguments/illustratedMap";
 import "./argumentCanvas.css";
 
 const labels: Record<ArgumentRole, string> = {
@@ -11,6 +12,7 @@ const labels: Record<ArgumentRole, string> = {
 const symbols: Record<ArgumentRole, string> = { definition: "≔", statement: "“", comparison: "↔", question: "?", condition: "if" };
 
 export function ArgumentCanvas({ map, revision }: { map: ArgumentMap; revision: number }) {
+  const illustrations = useMemo(() => map.panels.map(illustratePanel), [map]);
   return <section className="argument-map" aria-label="Source-preserving argument map">
     <header><span className="argument-kicker">Ideas, not just objects</span><h2>Your explanation, mapped</h2>
       <p>Original wording, not a fact-check. Headings are wording cues, not conclusions. Links show reading order—not proof or causation.</p></header>
@@ -22,6 +24,9 @@ export function ArgumentCanvas({ map, revision }: { map: ArgumentMap; revision: 
             <h3>Part {index + 1}</h3><div className="argument-tags">{panel.roles.map(role => <span key={role}>{labels[role]}</span>)}</div></div>
           <blockquote>{wordingSegments(panel.text).map((part, i) => part.negative
             ? <mark key={i}>{part.text}</mark> : <span key={i}>{part.text}</span>)}</blockquote>
+          {illustrations[index] ? <div className="argument-illustration" role="group" aria-label={`Illustration of part ${index + 1}`}>
+            <DoodleCanvas scene={illustrations[index]} />
+          </div> : <p className="argument-text-only">Wording preserved; no checked illustration for this part yet.</p>}
         </article>
       </li>)}
     </ol>

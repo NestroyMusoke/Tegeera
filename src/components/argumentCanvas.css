@@ -17,5 +17,8 @@
 .argument-link { display:flex; justify-content:center; align-items:center; gap:8px; padding:10px; font-size:.78rem; color:#52675f; }
 .argument-link span { font-size:1.5rem; }
 .argument-map footer { max-width:68ch; margin:20px auto 0; }
+.argument-illustration { margin-top:14px; min-width:0; }
+.argument-illustration .visual-scene { min-width:0; }
+.argument-text-only { font-size:.78rem; color:#52675f; margin:10px 0 0; }
 .presentation-choice { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
 .presentation-choice select { max-width:100%; padding:8px; border:1px solid #52675f; border-radius:8px; background:#fffdf7; color:#283b35; }
