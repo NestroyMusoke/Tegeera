@@ -10,7 +10,7 @@ import type {
   SpeechEventListener,
   SpeechPermission
 } from "./types";
-import { UnsupportedSpeechEngine } from "./unsupportedEngine";
+import { BrowserSpeechEngine } from "./browserEngine";
 
 interface TranscriptPayload {
   transcript: string;
@@ -132,7 +132,7 @@ export function getDefaultSpeechEngine(): SpeechEngine {
     defaultEngine =
       Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android"
         ? new AndroidSpeechEngine()
-        : new UnsupportedSpeechEngine();
+        : new BrowserSpeechEngine();
   }
   return defaultEngine;
 }

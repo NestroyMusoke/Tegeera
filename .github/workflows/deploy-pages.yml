@@ -51,6 +51,9 @@ jobs:
         env:
           VITE_TEGEERA_INTERPRETER_URL: ${{ vars.TEGEERA_INTERPRETER_URL }}
 
+      - name: Verify single-service web build
+        run: npm run build:web
+
   deploy:
     needs: verify
     environment:

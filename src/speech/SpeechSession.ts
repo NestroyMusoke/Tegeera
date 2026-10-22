@@ -122,6 +122,7 @@ export class SpeechSession {
       }
       await this.engine.start();
       if (generation !== this.generation) { await this.engine.cancel(); return; }
+      if (!this.accepting) return; // An asynchronous browser denial/end already updated the status.
       this.update({
         ...this.snapshot,
         status: "listening",
@@ -195,6 +196,16 @@ export class SpeechSession {
 
   private handleEngineEvent(event: SpeechEvent): void {
     if (!this.accepting) return;
+    if (event.type === "ended") {
+      this.accepting = false;
+      this.clearStabilityTimer();
+      if (this.keepListening && ++this.quietRetries <= 3) this.scheduleRestart();
+      else {
+        this.keepListening = false;
+        this.update({ ...this.snapshot, status: "idle", partialTranscript: "", message: "Listening stopped. Tap Speak to start again." });
+      }
+      return;
+    }
     if (event.type === "error") {
       this.clearStabilityTimer();
       this.accepting = false;
@@ -243,7 +254,7 @@ export class SpeechSession {
     }
 
     this.clearStabilityTimer();
-    this.accepting = false;
+    this.accepting = event.continues === true;
     if (
       event.confidence !== null &&
       event.confidence < this.minimumConfidence
@@ -256,7 +267,7 @@ export class SpeechSession {
         confidence: event.confidence,
         message: "I am not certain I heard that correctly. Please try again or type the command."
       });
-      if (this.keepListening) this.scheduleRestart();
+      if (this.keepListening && !event.continues) this.scheduleRestart();
       return;
     }
 
@@ -269,19 +280,21 @@ export class SpeechSession {
       message: "Updating the drawing…"
     });
     const finalReceivedAt = this.now();
+    const acceptedGeneration = this.generation;
     this.acceptTranscript(transcript, {
       finalReceivedAt,
       ...(this.stopRequestedAt === undefined ? {} : { finalizationMs: finalReceivedAt - this.stopRequestedAt })
     });
+    if (acceptedGeneration !== this.generation) return;
     this.stopRequestedAt = undefined;
     this.quietRetries = 0;
     this.update({
       ...this.snapshot,
-      status: "idle",
+      status: event.continues && this.keepListening ? "listening" : event.continues ? "processing" : "idle",
       partialTranscript: "",
       message: undefined
     });
-    if (this.keepListening) this.scheduleRestart();
+    if (this.keepListening && !event.continues) this.scheduleRestart();
   }
 
   private scheduleRestart(): void {

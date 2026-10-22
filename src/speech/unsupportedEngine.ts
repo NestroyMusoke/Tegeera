@@ -9,7 +9,7 @@ export class UnsupportedSpeechEngine implements SpeechEngine {
     return {
       supported: false,
       engine: "unsupported",
-      reason: "Live speech is available in the Android app. Typed input still works here."
+      reason: "Speech recognition is unavailable in this environment. Typed input still works."
     };
   }
 

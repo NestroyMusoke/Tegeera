@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "start:web": "node server/web.mjs",
+    "start:web:local": "node --env-file=server/.env.local server/web-local.mjs",
     "report:readiness": "node scripts/report-readiness.mjs",
     "dev": "vite",
     "dev:local": "node scripts/dev-local.mjs",

@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "./App";
 import { getDefaultSpeechEngine } from "./speech/androidEngine";
 import type { TestSpeechEngine } from "./speech/testEngine";
@@ -9,7 +9,20 @@ vi.mock("./speech/androidEngine", async () => {
   const engine = new TestSpeechEngine();
   return { getDefaultSpeechEngine: () => engine };
 });
-afterEach(() => cleanup());
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+beforeEach(() => { (getDefaultSpeechEngine() as TestSpeechEngine).calls.length = 0; });
+
+it("stops microphone capture when the page becomes hidden", async () => {
+  const engine = getDefaultSpeechEngine() as TestSpeechEngine;
+  render(<App />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Start listening" }).hasAttribute("disabled")).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "Start listening" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Stop listening" })).toBeTruthy());
+  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+  await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+  expect(engine.calls).toContain("cancel");
+  expect(screen.getByRole("button", { name: "Start listening" })).toBeTruthy();
+});
 
 it("continues from one final phrase to another and preserves the speech record", async () => {
   const engine = getDefaultSpeechEngine() as TestSpeechEngine;

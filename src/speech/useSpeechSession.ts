@@ -27,7 +27,15 @@ export function useSpeechSession(
 
   useEffect(() => {
     void session.initialize();
-    return () => session.destroy();
+    const pauseHidden = () => { if (document.hidden) void session.cancel(); };
+    const pauseLeaving = () => { void session.cancel(); };
+    document.addEventListener("visibilitychange", pauseHidden);
+    window.addEventListener("pagehide", pauseLeaving);
+    return () => {
+      document.removeEventListener("visibilitychange", pauseHidden);
+      window.removeEventListener("pagehide", pauseLeaving);
+      session.destroy();
+    };
   }, [session]);
 
   return {

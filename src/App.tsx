@@ -538,6 +538,7 @@ function App() {
           </div>
         </form>
 
+        {speech.availability?.engine === "browser" && <p className="speech-privacy" role="note">Browser speech may send audio to your browser's speech provider. Tegeera does not store audio. AI understanding sends explanation text to the configured model service. Speak only what you are comfortable sharing; typing is always available.</p>}
         <div className={`speech-status speech-${speech.status}`} role="status">
           <div>
             <strong>

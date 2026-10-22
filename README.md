@@ -6,7 +6,7 @@
 
 Tegeera turns supported spoken or typed explanations into simple, animated visual stories. For unfamiliar explanations, it can show unverified concept hints immediately while an optional AI planner works toward a validated scene.
 
-It is an Android-first education product in active development, created and developed by **Nestroy Musoke**.
+It is an education product in active development, created and developed by **Nestroy Musoke**. The browser and Android app share the same drawing engine. The new [web-app setup guide](docs/WEB_APP.md) covers browser speech and a single-service website/API deployment; public hosting and physical-device speech verification are separate release steps.
 
 ## The name
 

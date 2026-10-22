@@ -1,0 +1,12 @@
+{
+  "id": "./",
+  "name": "Tegeera — Speak it. See it. Understand it.",
+  "short_name": "Tegeera",
+  "description": "Explain with editable drawings and connected ideas.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf7ed",
+  "theme_color": "#f7f0df",
+  "icons": [{ "src": "./brand/tegeera-mark-v1.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }]
+}
