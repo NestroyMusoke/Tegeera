@@ -121,7 +121,8 @@ export class SpeechSession {
         return;
       }
       await this.engine.start();
-      if (generation !== this.generation) { await this.engine.cancel(); return; }
+      // Cancel already invalidated the old operation. Never cancel a newer session.
+      if (generation !== this.generation) return;
       if (!this.accepting) return; // An asynchronous browser denial/end already updated the status.
       this.update({
         ...this.snapshot,
@@ -132,11 +133,12 @@ export class SpeechSession {
         message: "Listening…"
       });
     } catch (error) {
-      this.fail("Could not start listening", error);
+      if (generation === this.generation) this.fail("Could not start listening", error);
     }
   }
 
   async stop(): Promise<void> {
+    const generation = this.generation;
     this.keepListening = false;
     this.clearRestartTimer();
     if (this.snapshot.status === "requesting-permission") { await this.cancel(); return; }
@@ -150,20 +152,25 @@ export class SpeechSession {
     try {
       await this.engine.stop();
     } catch (error) {
-      this.fail("Could not stop listening", error);
+      if (generation === this.generation) this.fail("Could not stop listening", error);
     }
   }
 
   async cancel(): Promise<void> {
-    ++this.generation;
+    const generation = ++this.generation;
     this.keepListening = false;
     this.accepting = false;
     this.clearRestartTimer();
     this.clearStabilityTimer();
+    let failed = false;
     try {
       await this.engine.cancel();
+    } catch (error) {
+      failed = true;
+      if (generation === this.generation) this.fail("Could not cancel listening", error);
+      return;
     } finally {
-      this.update({
+      if (generation === this.generation && !failed) this.update({
         ...this.snapshot,
         status: this.snapshot.availability?.supported ? "idle" : "unavailable",
         partialTranscript: "",
@@ -234,6 +241,9 @@ export class SpeechSession {
 
     const transcript = event.transcript.trim().replace(/\s+/g, " ");
     if (!transcript) {
+      // Continuous browser recognition can emit an empty final while still live.
+      // Wait for its next result/end instead of starting a second recognizer.
+      if (event.type === "final" && event.continues) return;
       if (event.type === "final") this.handleEngineEvent({ type: "error", code: "7", message: "No words were recognized." });
       return;
     }
@@ -306,9 +316,9 @@ export class SpeechSession {
       this.restartTimer = undefined;
       if (!this.keepListening || generation !== this.generation) return;
       this.accepting = true;
-      void this.engine.start().then(() => {
-        if (generation !== this.generation || !this.keepListening) return this.engine.cancel();
-      }).catch(error => this.fail("Could not continue listening", error));
+      void this.engine.start().catch(error => {
+        if (generation === this.generation) this.fail("Could not continue listening", error);
+      });
     }, 300);
   }
 
@@ -321,6 +331,7 @@ export class SpeechSession {
     this.keepListening = false;
     this.accepting = false;
     this.clearRestartTimer();
+    this.clearStabilityTimer();
     const detail = error instanceof Error ? `: ${error.message}` : ".";
     this.update({
       ...this.snapshot,

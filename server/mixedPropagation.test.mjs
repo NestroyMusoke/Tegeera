@@ -11,6 +11,14 @@ const plan = () => ({ blueprintVersion: '1.0', mode: 'replace', confidence: 0.94
     { from: 'r4', to: 'r3', label: 'observes' }] });
 const scene = { entities: [], relations: [] };
 
+test('repair identifies competing origin forms without silently removing either claim', () => {
+  const candidate = plan();
+  candidate.connections.push({ from: 'r0', to: 'r2', kind: 'enters', label: 'enters' });
+  const snapshot = structuredClone(candidate);
+  assert.match(sceneValidationIssue(candidate, scene), /competing origin links.*not both/);
+  assert.deepEqual(candidate, snapshot);
+});
+
 test('a complete propagation subgraph can retain connected ordinary context without losing roles', () => {
   const before = plan(); const snapshot = structuredClone(before);
   assert.deepEqual(propagationRoles(before), { source: 'r0', payload: 'r1', medium: 'r2', destination: 'r3' });

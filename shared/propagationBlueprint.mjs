@@ -29,6 +29,9 @@ export function propagationRoles(candidate) {
     edge.kind === "enters" && edge.to === through.to
     || edge.to === through.from && /^(?:emits|sends|generates|causes)$/.test(edge.label?.toLowerCase().trim() ?? "")
       && (!edge.kind || ["relatesTo", "emits", "causes"].includes(edge.kind))));
+  if (origins.length > 1) {
+    throw new Error(`Propagation has ${origins.length} competing origin links. Use exactly ONE source→payload emits OR source→medium enters link, not both. Preserve every distinct stated action using truthful ordinary labels if the specialist topology cannot express it; never invent or silently drop a source.`);
+  }
   if (origins.length !== 1) fail();
   const origin = origins[0];
   const feedsMedium = origin.kind === "enters" && origin.to === through.to;
