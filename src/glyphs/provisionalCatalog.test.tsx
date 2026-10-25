@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DoodleCanvas } from "../components/DoodleCanvas";
 import { initialScene } from "../doodlescript/scene";
 import type { SceneEntity } from "../doodlescript/schema";
-import { provisionalCatalog, provisionalPackSchema, withProvisionalPreviews } from "./provisionalCatalog";
+import { provisionalCatalog, provisionalPackSchema, withProvisionalPreviews, provisionalPreviewFor } from "./provisionalCatalog";
 import data from "./provisional-pack.json";
 import { LiveGlyphResolver } from "./runtimeResolver";
 
@@ -12,6 +12,14 @@ const subject = (label: string, kind: SceneEntity["kind"]): SceneEntity => ({
 });
 
 describe("provisional Quick, Draw! previews", () => {
+  it("does not substitute unrelated head-noun artwork for compounds", () => {
+    const bee = provisionalCatalog.preview.get("bee")!;
+    const pack = new Map([["hand", bee], ["lion", bee], ["key", bee]]);
+    for (const noun of ["clock hand", "sea lion", "encryption key", "second encryption key"]) {
+      expect(provisionalPreviewFor(noun, pack)).toBeUndefined();
+    }
+    expect(provisionalPreviewFor("second key", pack)).toBe(bee);
+  });
   it("keeps machine screening distinct from human approval and retains source credits", () => {
     expect(provisionalPackSchema.parse(data).entries).toHaveLength(17);
     expect(data.entries.every((entry) => entry.screening.humanReviewed === false)).toBe(true);

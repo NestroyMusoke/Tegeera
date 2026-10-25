@@ -64,15 +64,17 @@ export interface GlyphResolution {
 
 export const glyphKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-/** Exact noun phrase first, then its head noun. Only preview tiers use the
- * fallback: "second bee" can borrow bee art without asserting an approved
- * glyph is valid for every qualified phrase. */
+/** Exact phrase first; only non-identity instance modifiers may be removed.
+ * Never turn compound nouns such as "sea lion" or "clock hand" into their tail. */
 export function previewNounKeys(value: string): string[] {
   const words = glyphKey(value).replace(/^(?:a|an|the) /, "").split(" ").filter(Boolean);
   if (!words.length) return [];
   const full = words.join(" ");
   if (words.length === 1 || words.length > 4) return [full];
-  return [...new Set([full, words.slice(-2).join(" "), words.at(-1)!])];
+  const instanceModifier = /^(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|tiny|\d+)$/;
+  let offset = 0;
+  while (offset < words.length - 1 && instanceModifier.test(words[offset])) offset++;
+  return [...new Set([full, words.slice(offset).join(" ")])];
 }
 const validFrom = (source: GlyphSource, candidate?: unknown): GlyphResolution | undefined => {
   if (!candidate) return undefined;

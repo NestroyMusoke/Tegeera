@@ -13,6 +13,18 @@ const plan = () => ({ blueprintVersion: '1.0', mode: 'replace', confidence: 0.94
     { from: 'r4', to: 'r3', label: 'observes' }] });
 const text = 'An emitter sends a pulse through a cable to a receiver. An observer watches the receiver.';
 
+it('retains both compatible origin links and all their endpoints in the actual renderer', () => {
+  const candidate = plan();
+  candidate.connections.push({ from: 'r0', to: 'r2', kind: 'enters', label: 'enters' });
+  const script = compileUniversalScene(candidate, initialScene, text);
+  expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+  const scene = applyDoodleScript(initialScene, script);
+  expect(scene.relations).toHaveLength(5);
+  expect(scene.relations!.map(r => [r.sourceIds[0], r.targetIds[0], r.predicate])).toEqual(
+    candidate.connections.map(r => [r.from, r.to, r.label]));
+  expect(renderToStaticMarkup(<DoodleCanvas scene={scene} />)).not.toContain('data-relation-layout="linear-propagation"');
+});
+
 it('renders the complete mixed explanation rather than dropping the observer', () => {
   const candidate = plan(); const snapshot = structuredClone(candidate);
   const script = compileUniversalScene(candidate, initialScene, text);

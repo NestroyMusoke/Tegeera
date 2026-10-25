@@ -29,10 +29,14 @@ export function propagationRoles(candidate) {
     edge.kind === "enters" && edge.to === through.to
     || edge.to === through.from && /^(?:emits|sends|generates|causes)$/.test(edge.label?.toLowerCase().trim() ?? "")
       && (!edge.kind || ["relatesTo", "emits", "causes"].includes(edge.kind))));
-  if (origins.length > 1) {
+  const complementaryOrigins = origins.length === 2
+    && origins[0].from === origins[1].from
+    && origins.filter(edge => edge.kind === "enters").length === 1
+    && origins.filter(edge => edge.to === through.from).length === 1;
+  if (origins.length > 1 && !complementaryOrigins) {
     throw new Error(`Propagation has ${origins.length} competing origin links. Use exactly ONE source→payload emits OR source→medium enters link, not both. Preserve every distinct stated action using truthful ordinary labels if the specialist topology cannot express it; never invent or silently drop a source.`);
   }
-  if (origins.length !== 1) fail();
+  if (origins.length !== 1 && !complementaryOrigins) fail();
   const origin = origins[0];
   const feedsMedium = origin.kind === "enters" && origin.to === through.to;
   const emitsPayload = origin.to === through.from && /^(?:emits|sends|generates|causes)$/.test(origin.label?.toLowerCase().trim() ?? "")
@@ -41,7 +45,9 @@ export function propagationRoles(candidate) {
   const roles = { source: origin.from, medium: through.to, payload: through.from, destination: reaches.to };
   if (reaches.from !== roles.payload || new Set(Object.values(roles)).size !== 4
     || Object.values(roles).some((id) => !candidate.objects.some((object) => object.id === id))) fail();
-  const context = edges.filter((edge) => edge !== origin && edge !== through && edge !== reaches);
+  // Compatible source→payload and source→medium links express distinct facts.
+  // Retain both; the renderer uses the general graph when more than 3 edges exist.
+  const context = edges.filter((edge) => !origins.includes(edge) && edge !== through && edge !== reaches);
   // Do not combine unrelated specialist layouts, hide duplicate propagation
   // claims, or strip a type to bypass validation. Context must be ordinary.
   if (context.some((edge) => edge.via !== undefined || edge.kind && edge.kind !== "relatesTo")) fail();

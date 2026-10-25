@@ -3,6 +3,26 @@ import { SpeechSession } from "./SpeechSession";
 import { TestSpeechEngine } from "./testEngine";
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
+it("recovers when Stop never produces an end or final event", async () => {
+  const engine = new TestSpeechEngine(); const accept = vi.fn();
+  const session = new SpeechSession(engine, accept, { continuous: true, stopTimeoutMs: 1000 });
+  await session.initialize(); await session.start();
+  await session.stop(); await vi.advanceTimersByTimeAsync(1000);
+  expect(session.getSnapshot().status).toBe("error");
+  expect(engine.calls).toContain("cancel");
+  engine.emit({ type: "final", transcript: "stale result", confidence: .9 });
+  expect(accept).not.toHaveBeenCalled();
+  await session.start(); expect(session.getSnapshot().status).toBe("listening");
+  session.destroy();
+});
+it("does not fire the stop deadline after normal recognition completion", async () => {
+  const engine = new TestSpeechEngine();
+  const session = new SpeechSession(engine, vi.fn(), { continuous: true, stopTimeoutMs: 1000 });
+  await session.initialize(); await session.start(); await session.stop();
+  engine.emit({ type: "ended" }); await vi.advanceTimersByTimeAsync(1000);
+  expect(session.getSnapshot().status).toBe("idle");
+  expect(engine.calls).not.toContain("cancel"); session.destroy();
+});
 it.each([false, true])("ignores stale start completion (reject=%s) after a new session starts", async reject => {
   const engine = new TestSpeechEngine();
   let finish!: () => void;

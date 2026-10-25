@@ -1,6 +1,9 @@
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 import { editGlyph, generateGlyph, interpretScene, modelConfiguration, planLesson, validStrokes } from "./engine.mjs";
+import { createProviderBudget } from "./providerBudget.mjs";
+import { GlyphResultCache } from "./glyphResultCache.mjs";
+import { assertProductionSafety } from "./deploymentSafety.mjs";
 
 const port = Number(process.env.PORT || 8080);
 // Capacitor's Android WebView uses https://localhost by default. Configure
@@ -87,19 +90,15 @@ function validReusableNouns(nouns) {
     && nouns.every((noun) => typeof noun === "string" && noun.length >= 2 && noun.length <= 48));
 }
 
-export function createInterpreterServer({ configuration = modelConfiguration(), allowedOrigins = origins, modelFetch = fetch, limits = serviceLimits() } = {}) {
+export function createInterpreterServer({ configuration = modelConfiguration(), allowedOrigins = origins, modelFetch = fetch, limits = serviceLimits(), budgetFile = process.env.PROVIDER_BUDGET_FILE } = {}) {
+assertProductionSafety({ production: process.env.NODE_ENV === "production", configured: Boolean(configuration), budgetFile, allowedOrigins });
 const buckets = new Map();
+const glyphCache = new GlyphResultCache();
 let activeRequests = 0;
-let providerDay = Math.floor(Date.now() / 86_400_000);
-let providerCalls = 0;
-const budgetRemaining = () => {
-  const today = Math.floor(Date.now() / 86_400_000);
-  if (today !== providerDay) { providerDay = today; providerCalls = 0; }
-  return providerCalls < limits.maxProviderCallsPerDay;
-};
+const budget = createProviderBudget({ limit: limits.maxProviderCallsPerDay, file: budgetFile });
+const budgetRemaining = () => budget.remaining();
 const limitedModelFetch = (...args) => {
-  if (!budgetRemaining()) throw new Error("Provider call budget exhausted.");
-  providerCalls += 1; // Count every outbound attempt, including corrections and provider failures.
+  budget.reserve(); // Count every outbound attempt, including corrections and failures, before sending.
   return modelFetch(...args);
 };
 return createServer(async (req, res) => {
@@ -150,7 +149,13 @@ return createServer(async (req, res) => {
   if (route === "/v1/lesson-nouns" && (typeof body.topic !== "string" || !body.topic.trim() || body.topic.length > 120)) {
     return send(res, 400, { error: "A short lesson topic is required." }, headers);
   }
-  if (!budgetRemaining()) return send(res, 429, { error: "The daily model-request allowance is exhausted. Local drawings still work." }, headers);
+  const glyphKey = route === "/v1/glyph" ? body.noun.trim() : undefined;
+  const cachedGlyph = glyphKey ? glyphCache.get(glyphKey) : undefined;
+  const compatibleGlyph = result => body.strokeFormat !== "1.1"
+    ? { ...result, candidate: { strokes: result.candidate.strokes.map(({ part, color, pts }) => ({ part, color, pts })) } }
+    : result;
+  if (cachedGlyph) return send(res, 200, compatibleGlyph(cachedGlyph), headers);
+  if (!budgetRemaining()) return send(res, 429, { error: "The daily model-request allowance is exhausted or its budget store is unavailable. Local drawings still work." }, headers);
   if (activeRequests >= limits.maxConcurrentRequests) return send(res, 429, { error: "The drawing service is busy. Please try again shortly." }, headers);
   activeRequests += 1;
   const disconnected = new AbortController();
@@ -162,11 +167,10 @@ return createServer(async (req, res) => {
       : route === "/v1/glyph" ? await generateGlyph(body, configuration, options)
       : route === "/v1/glyph/edit" ? await editGlyph(body, configuration, options)
       : await planLesson(body, configuration, options);
+    if (glyphKey) glyphCache.set(glyphKey, result);
     // Installed older apps validate stroke objects strictly. Negotiate the
     // additive field rather than breaking them when the backend deploys first.
-    const response = glyphRoute && body.strokeFormat !== "1.1"
-      ? { ...result, candidate: { strokes: result.candidate.strokes.map(({ part, color, pts }) => ({ part, color, pts })) } }
-      : result;
+    const response = glyphRoute ? compatibleGlyph(result) : result;
     return send(res, 200, response, headers);
   } catch (error) {
     if (disconnected.signal.aborted) return;

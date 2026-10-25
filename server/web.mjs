@@ -17,6 +17,13 @@ const security = {
 /** One deployment, one origin. Only built public assets are readable, never source/secrets. */
 export function createWebServer({ directory = fileURLToPath(new URL("../dist/", import.meta.url)), apiOptions = {} } = {}) {
   const root = realpathSync.native(directory);
+  const budgetFile = apiOptions.budgetFile ?? process.env.PROVIDER_BUDGET_FILE;
+  if (budgetFile) {
+    const distance = relative(root, resolve(budgetFile));
+    if (distance === "" || (!isAbsolute(distance) && distance !== ".." && !distance.startsWith(`..${sep}`))) {
+      throw new Error("The provider budget must be outside the public build directory.");
+    }
+  }
   const api = createInterpreterServer(apiOptions);
   return createServer(async (req, res) => {
     for (const [name, value] of Object.entries(security)) res.setHeader(name, value);

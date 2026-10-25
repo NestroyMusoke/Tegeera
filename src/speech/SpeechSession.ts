@@ -36,6 +36,7 @@ interface SpeechSessionOptions {
   continuous?: boolean;
   minimumConfidence?: number;
   stabilityDelayMs?: number;
+  stopTimeoutMs?: number;
   setTimer?: typeof setTimeout;
   clearTimer?: typeof clearTimeout;
   now?: () => number;
@@ -46,6 +47,8 @@ export class SpeechSession {
   private readonly listeners = new Set<() => void>();
   private engineUnsubscribe?: () => void;
   private stabilityTimer?: ReturnType<typeof setTimeout>;
+  private stopTimer?: ReturnType<typeof setTimeout>;
+  private readonly stopTimeoutMs: number;
   private readonly minimumConfidence: number;
   private readonly stabilityDelayMs: number;
   private readonly setTimer: typeof setTimeout;
@@ -67,6 +70,7 @@ export class SpeechSession {
     this.continuous = options.continuous ?? false;
     this.minimumConfidence = options.minimumConfidence ?? 0.58;
     this.stabilityDelayMs = options.stabilityDelayMs ?? 800;
+    this.stopTimeoutMs = options.stopTimeoutMs ?? 5000;
     this.setTimer = options.setTimer ?? setTimeout;
     this.clearTimer = options.clearTimer ?? clearTimeout;
     this.now = options.now ?? (() => performance.now());
@@ -149,6 +153,12 @@ export class SpeechSession {
     this.clearStabilityTimer();
     this.stopRequestedAt = this.now();
     this.update({ ...this.snapshot, status: "processing", message: "Finishing…" });
+    this.clearStopTimer();
+    this.stopTimer = this.setTimer(() => {
+      if (generation !== this.generation || !this.accepting) return;
+      this.fail("Speech did not finish in time", new Error("Please retry or use typed input"));
+      void this.engine.cancel().catch(() => undefined);
+    }, this.stopTimeoutMs);
     try {
       await this.engine.stop();
     } catch (error) {
@@ -162,6 +172,7 @@ export class SpeechSession {
     this.accepting = false;
     this.clearRestartTimer();
     this.clearStabilityTimer();
+    this.clearStopTimer();
     let failed = false;
     try {
       await this.engine.cancel();
@@ -187,6 +198,7 @@ export class SpeechSession {
     const wasAccepting = this.accepting;
     this.accepting = false;
     this.clearRestartTimer();
+    this.clearStopTimer();
     if (wasAccepting) void this.engine.cancel().catch(() => undefined);
     this.clearStabilityTimer();
     this.engineUnsubscribe?.();
@@ -204,6 +216,7 @@ export class SpeechSession {
   private handleEngineEvent(event: SpeechEvent): void {
     if (!this.accepting) return;
     if (event.type === "ended") {
+      this.clearStopTimer();
       this.accepting = false;
       this.clearStabilityTimer();
       if (this.keepListening && ++this.quietRetries <= 3) this.scheduleRestart();
@@ -214,6 +227,7 @@ export class SpeechSession {
       return;
     }
     if (event.type === "error") {
+      this.clearStopTimer();
       this.clearStabilityTimer();
       this.accepting = false;
       // Android speech timeout/no match: recover briefly, never loop on permissions/network.
@@ -265,6 +279,7 @@ export class SpeechSession {
 
     this.clearStabilityTimer();
     this.accepting = event.continues === true;
+    if (!this.accepting) this.clearStopTimer();
     if (
       event.confidence !== null &&
       event.confidence < this.minimumConfidence
@@ -332,6 +347,7 @@ export class SpeechSession {
     this.accepting = false;
     this.clearRestartTimer();
     this.clearStabilityTimer();
+    this.clearStopTimer();
     const detail = error instanceof Error ? `: ${error.message}` : ".";
     this.update({
       ...this.snapshot,
@@ -345,6 +361,11 @@ export class SpeechSession {
       this.clearTimer(this.stabilityTimer);
       this.stabilityTimer = undefined;
     }
+  }
+
+  private clearStopTimer(): void {
+    if (this.stopTimer !== undefined) this.clearTimer(this.stopTimer);
+    this.stopTimer = undefined;
   }
 
   private update(snapshot: SpeechSnapshot): void {

@@ -6,6 +6,9 @@
 !server/index.mjs
 !server/engine.mjs
 !server/sceneResponseSchema.mjs
+!server/providerBudget.mjs
+!server/glyphResultCache.mjs
+!server/deploymentSafety.mjs
 !shared/
 !shared/*.mjs
 **/.env*

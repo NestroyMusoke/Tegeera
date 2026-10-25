@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "New synthetic cross-domain probes for this pass. Expected roles and endpoints are local scoring data, not model inputs. Not visual approval.",
+  "cases": [
+    { "id": "law-reader", "text": "A judge reads a contract.", "roles": ["judge", "contract"], "links": [["judge", "contract"]] },
+    { "id": "network-observer", "text": "A router sends a packet through a cable to a server while an analyst watches the server.", "roles": ["router", "packet", "cable", "server", "analyst"], "links": [["router", "packet"], ["packet", "cable"], ["packet", "server"], ["analyst", "server"]] },
+    { "id": "biology-interaction", "text": "A beetle eats a leaf while a bird watches the beetle.", "roles": ["beetle", "leaf", "bird"], "links": [["beetle", "leaf"], ["bird", "beetle"]] },
+    { "id": "transport-route", "text": "A courier carries a parcel across a footbridge to a clinic. A nurse waits at the clinic.", "roles": ["courier", "parcel", "footbridge", "clinic", "nurse"], "links": [["courier", "parcel"], ["courier", "footbridge"], ["footbridge", "clinic"], ["nurse", "clinic"]] }
+  ]
+}

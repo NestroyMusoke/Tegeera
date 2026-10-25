@@ -34,7 +34,7 @@ test("glyph endpoints negotiate additive geometry without breaking legacy client
     const response = await fetch(`${url}/v1/glyph`, { method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ noun: "object", strokeFormat: "unsupported" }) });
     assert.equal(response.status, 400);
-    assert.equal(calls, 6);
+    assert.equal(calls, 4); // Three formats reuse one generated draft; edits remain fresh.
   });
 });
 
@@ -50,6 +50,22 @@ test("health is honest without a key; Android origin is allowed and unknown orig
     assert.equal(unavailable.status, 503);
     const blocked = await fetch(`${url}/health`, { headers: { Origin: "https://untrusted.example" } });
     assert.equal(blocked.status, 403);
+  });
+});
+
+test("validated glyph cache stays usable after budget exhaustion without paying again", async () => {
+  let calls = 0;
+  const candidate = { strokes: [{ part: "outline", color: "#2f3e46", pts: [[8,8],[42,8],[42,42],[8,42],[8,8]] }] };
+  await withServer({ configuration: modelConfiguration({ NVIDIA_API_KEY: "private-test-key" }),
+    limits: { perClientPerMinute: 12, maxConcurrentRequests: 2, maxProviderCallsPerDay: 1 },
+    modelFetch: async () => { calls++; return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(candidate) } }] })); }
+  }, async url => {
+    const draw = noun => fetch(`${url}/v1/glyph`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ noun, strokeFormat: "1.1" }) });
+    assert.equal((await draw("abstract object")).status, 200);
+    const repeated = await draw("abstract object"); assert.equal(repeated.status, 200);
+    assert.equal((await repeated.json()).providerAttempts, 0);
+    assert.equal((await draw("different object")).status, 429);
+    assert.equal(calls, 1);
   });
 });
 

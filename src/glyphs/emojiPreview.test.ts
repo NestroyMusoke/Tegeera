@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { emojiPreviewFor, extractEmojiPreviews, natureEmojiPreviewFor } from "./emojiPreview";
 
 describe("offline emoji previews", () => {
+  it("does not confuse compound concepts with animals named by their final word", () => {
+    expect(natureEmojiPreviewFor("computer mouse")).toBeUndefined();
+    expect(natureEmojiPreviewFor("butterfly valve")).toBeUndefined();
+    expect(natureEmojiPreviewFor("sea lion")).not.toBe(natureEmojiPreviewFor("lion"));
+  });
   it.each([["cookies", "cookie"], ["zombies", "zombie"]])("tries an exact alternative when %s does not end in a singular y", (plural, singular) => {
     expect(emojiPreviewFor(plural)).toBeDefined();
     expect(emojiPreviewFor(plural)).toBe(emojiPreviewFor(singular));
