@@ -6,6 +6,30 @@ import { validateDoodleScript } from "../doodlescript/validator";
 import { compileUniversalScene } from "./universalScene";
 
 describe("explicit spatial recovery and coloured artwork", () => {
+  it.each(["red", "blue", "yellow", "purple"])("resolves %s artwork using the explicit colour attribute", (color) => {
+    for (const [noun, expectedKind] of [["cup", "generic"], ["book", "book"], ["car", "car"]]) {
+      const script = compileUniversalScene({ blueprintVersion: "1.0", confidence: .95,
+        objects: [{ id: "subject", label: `${color} ${noun}`, color, kind: "generic", x: 50, y: 50 }],
+        connections: [] }, initialScene, `A ${color} ${noun}.`);
+      expect(validateDoodleScript(script, initialScene).ok).toBe(true);
+      const entity = applyDoodleScript(initialScene, script).entities[0];
+      expect(entity.kind).toBe(expectedKind);
+      expect(entity.color).toBe(color);
+      if (noun === "cup") expect(entity.glyphSource).toBe("provisional");
+    }
+  });
+
+  it.each(["blue whale", "black hole", "red sea", "family tree", "car engine"])(
+    "preserves the identity of %s without colour evidence", (label) => {
+      const script = compileUniversalScene({ blueprintVersion: "1.0", confidence: .95,
+        objects: [{ id: "subject", label, kind: "generic", x: 50, y: 50 }], connections: []
+      }, initialScene, "Draw the subject.");
+      const entity = applyDoodleScript(initialScene, script).entities[0];
+      expect(entity.kind).toBe("generic");
+      expect(entity.label).toBe(label);
+      expect(entity.glyph).toBeUndefined();
+    });
+
   it("recovers an omitted spatial link beside a containment relation", () => {
     const script = compileUniversalScene({ blueprintVersion: "1.0", mode: "replace", confidence: 0.95,
       objects: [{ id: "case", label: "case", kind: "generic", x: 50, y: 50 },

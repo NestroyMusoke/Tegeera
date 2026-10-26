@@ -377,10 +377,18 @@ export function compileUniversalScene(
           // otherwise allow the noun's own glyph/preview/sticker to represent it.
           const concreteRig = ["car", "book", "desk", "tree", "building", "process", "cpu"].includes(declaredKind);
           const nounLabel = glyphKey(object.label).replace(/^(?:a|an|the) /, "");
-          const registered = conceptForAlias(nounLabel) ?? (typeof object.color === "string"
-            && colorWords.has(object.color) && nounLabel.startsWith(`${object.color} `)
-            ? conceptForAlias(nounLabel.slice(object.color.length + 1)) : undefined);
-          const kind = concreteRig && !previewNounKeys(object.label).some((key) => conceptForAlias(key)?.kind === declaredKind)
+          const nounKeys = previewNounKeys(nounLabel);
+          const [modifier, ...remainder] = nounLabel.split(" ");
+          const uncolouredNoun = remainder.join(" ");
+          // Remove a colour only with semantic evidence: an explicit attribute,
+          // or a concrete type agreeing with the exact remaining noun. Keep the
+          // full phrase first, and never reduce a compound to its final word.
+          if (colorWords.has(modifier) && uncolouredNoun && (object.color === modifier
+            || (concreteRig && conceptForAlias(uncolouredNoun)?.kind === declaredKind))) {
+            nounKeys.push(...previewNounKeys(uncolouredNoun));
+          }
+          const registered = nounKeys.map(conceptForAlias).find(Boolean);
+          const kind = concreteRig && !nounKeys.some((key) => conceptForAlias(key)?.kind === declaredKind)
             ? "generic"
             : declaredKind === "generic" && !object.glyph && !object.visual && registered
               ? registered.kind : declaredKind;
@@ -388,15 +396,16 @@ export function compileUniversalScene(
           // noun's rig without a network call; never infer it from a compound's
           // last word (a family tree is not a tree). Preserve supplied artwork.
           if (kind !== "generic") return { ...object, kind, glyph: undefined, glyphSource: undefined };
-          const resolved = resolveGlyph({
-            noun: object.label, kind: "generic",
+          const resolutions = [object.label, ...nounKeys].map((noun) => resolveGlyph({
+            noun, kind: "generic",
             ...glyphSources, generated: object.glyph as TegeeraGlyph | undefined
-          });
+          }));
+          const resolved = resolutions.find((result) => result.glyph) ?? resolutions[0];
           if (!resolved.glyph || resolved.source === "sticker" || resolved.source === "hero-rig") {
             // Layout and painting must use the same artwork. Previously previews
             // arrived only after staging, so a held sketch inherited sticker or
             // emoji geometry even though its visible outline was different.
-            const preview = provisionalPreviewFor(object.label);
+            const preview = nounKeys.map((noun) => provisionalPreviewFor(noun)).find(Boolean);
             return preview ? { ...object, kind, glyph: preview, glyphSource: "provisional" } : { ...object, kind };
           }
           return { ...object, kind, glyph: resolved.glyph, glyphSource: resolved.source };

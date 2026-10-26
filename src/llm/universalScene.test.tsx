@@ -99,7 +99,8 @@ describe("universal visual scene compiler", () => {
     for (const [label, supplied, expected] of [
       ["bridge", "building", "generic"], ["viaduct", "building", "generic"],
       ["bicycle", "car", "generic"], ["yellow car", "car", "car"],
-      ["school", "building", "building"], ["oak tree", "tree", "tree"]
+      // An unregistered species needs its own artwork, not a guessed silhouette.
+      ["school", "building", "building"], ["oak tree", "tree", "generic"]
     ]) {
       const script = compileUniversalScene({ blueprintVersion: "1.0", confidence: 0.9,
         objects: [{ id: "subject", label, kind: supplied, x: 50, y: 50 }], connections: []
