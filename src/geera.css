@@ -1,0 +1,135 @@
+.geera-site { --paper: #e9e4d9; --ink: #263b38; --teal: #326b60; --wash: #dfdfd5; background: var(--paper); color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif; min-height: 100vh; padding: 0 32px; }
+.geera-site a { color: inherit; text-decoration: none; }
+.geera-site button:not(.app button) { color: inherit; background: transparent; border: 0; border-radius: 0; box-shadow: none; min-height: 48px; padding: 12px 18px; font-size: 16px; font-weight: 500; }
+.geera-site :is(a,button,input):focus-visible { outline: 3px solid var(--teal); outline-offset: 5px; }
+.geera-site button:active { transform: scale(.97); }
+.geera-site a:hover { text-decoration: underline; text-underline-offset: 6px; }
+.geera-skip { position: absolute; left: 24px; top: -100px; background: var(--paper); z-index: 10; padding: 16px; }
+.geera-skip:focus { top: 8px; }
+.geera-nav { display:flex; align-items:center; justify-content:space-between; padding: 20px 0; }
+.geera-brand { font-size: 36px; font-weight: 650; letter-spacing: -.07em; }
+.geera-brand span { color: var(--teal); }
+.geera-nav nav { display:flex; align-items:center; gap: 28px; }
+.geera-nav nav button { padding-right: 0; }
+.geera-opening { padding: 55px 0 40px; }
+.geera-opening h2 { font-size:clamp(36px,5vw,72px); letter-spacing:-.05em; line-height:1.05; font-weight:500; margin:0 0 42px; }
+.geera-opening h1 { font-size: clamp(52px, 8.6vw, 136px); font-weight: 500; letter-spacing: -.07em; line-height: 1; margin: 0 0 42px; }
+.geera-intro { display:grid; grid-template-columns: 1fr 1.2fr; gap: 64px; align-items: start; }
+.geera-intro > p { font-size: clamp(24px, 2.4vw, 36px); line-height: 1.3; margin: 0; letter-spacing: -.03em; }
+.geera-intro label { display:block; font-size:16px; margin-bottom: 12px; }
+.geera-input-row { display:flex; background: var(--wash); padding: 6px; }
+.geera-input-row input { width: 100%; min-width: 0; border: 0; background: transparent; color: var(--ink); padding: 14px 12px; font: inherit; font-size: 16px; border-radius:0; }
+.geera-input-row input::placeholder { color: #52625c; }
+.geera-site .geera-input-row button { background:var(--ink); color: var(--paper); flex-shrink:0; }
+.geera-intro form > p { font-size: 14px; line-height: 1.5; margin: 12px 0 0; max-width: 65ch; }
+.geera-film { margin: 0; }
+.geera-film video { display:block; width:100%; max-height:70vh; aspect-ratio:16/9; object-fit:contain; background:var(--wash); }
+.geera-film figcaption { display:flex; align-items:center; justify-content:space-between; gap:20px; font-size:14px; padding-top:8px; }
+.geera-film figcaption button { padding-right:0; white-space:nowrap; }
+.geera-canvas { scroll-margin-top: 16px; }
+.geera-canvas:empty { display:none; }
+.geera-canvas:not(:empty) { margin:80px -16px; padding:16px; background:var(--wash); }
+.geera-canvas .app { width:100%; }
+.geera-origin { display:grid; grid-template-columns: 1fr 1.2fr; gap:64px; padding:140px 0; }
+.geera-origin h2 { font-size:clamp(36px,4.7vw,72px); font-weight:500; line-height:1.05; letter-spacing:-.05em; margin:0; }
+.geera-origin p { font-size:20px; line-height:1.55; margin:0 0 24px; max-width:54ch; }
+.geera-origin p:last-child { font-size:16px; margin-bottom:0; }
+.geera-footer { background:var(--paper); color:var(--ink); margin:0 -32px; padding:36px 32px 0; overflow:hidden; }
+.geera-footer > div { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.geera-footer p { font-size:16px; }
+.geera-footer button { color:var(--ink); }
+.geera-signoff { display:block; text-align:center; font-size:clamp(100px,30vw,480px); line-height:1; font-weight:600; letter-spacing:-.085em; padding-bottom:32px; }
+.geera-signoff:hover { text-decoration:none !important; }
+.geera-wordmark { display:inline-flex; align-items:center; font-family:Georgia,serif; font-weight:400; letter-spacing:-.055em; line-height:1; }
+.geera-letter { display:inline-block; width:.68em; height:1.12em; overflow:hidden; position:relative; mix-blend-mode:multiply; }
+.geera-letter img { position:absolute; width:3.5em; max-width:none; height:auto; left:-1.38em; top:-.43em; }
+.geera-scroll-film { margin:0 -32px; background:var(--paper); }
+.geera-scroll-film.is-scrubbing { height:480svh; }
+.geera-stage { position:relative; height:100svh; min-height:580px; overflow:hidden; background:var(--paper); }
+.is-scrubbing .geera-stage { position:sticky; top:0; }
+.geera-stage canvas,.geera-film-still { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.geera-film-nav { position:absolute; z-index:2; top:0; left:0; width:100%; padding:24px 32px; display:flex; justify-content:space-between; gap:24px; }
+.geera-film-nav .geera-wordmark { font-size:36px; }
+.geera-film-nav p { font-size:13px; margin:8px 0; max-width:23ch; }
+.geera-film-nav nav { display:flex; gap:24px; align-items:start; }
+.geera-film-nav nav a { padding-top:14px; }
+.geera-site .geera-stage button { background:var(--ink); color:var(--paper); border-radius:999px; }
+.geera-film-copy { position:absolute; bottom:48px; left:32px; right:32px; display:grid; grid-template-columns:1.5fr 1fr; gap:48px; align-items:end; }
+.geera-film-copy h1 { font-family:Georgia,serif; font-size:clamp(36px,4.5vw,72px); line-height:1.06; letter-spacing:-.045em; font-weight:400; margin:0; }
+.geera-film-copy p { font-size:20px; line-height:1.5; margin:0 0 20px; }
+.geera-film-caption { position:absolute; bottom:64px; left:24px; right:24px; text-align:center; font:400 clamp(24px,3vw,44px)/1.2 Georgia,serif; }
+.geera-film-end { position:absolute; bottom:48px; left:24px; right:24px; text-align:center; }
+.geera-film-end p { font-size:18px; }
+.geera-film-progress { position:absolute; bottom:0; left:0; width:100%; height:3px; background:var(--teal); transform-origin:left; }
+.geera-final-still { display:block; width:min(100%,720px); margin:0 auto; mix-blend-mode:multiply; }
+@media (max-width:800px) {
+ .geera-scroll-film { margin:0 -20px; }
+ .geera-scroll-film.is-scrubbing { height:420svh; }
+ .geera-film-nav { padding:20px; gap:12px; }
+ .geera-film-nav nav { gap:12px; font-size:14px; }
+ .geera-film-nav nav button { padding:10px; font-size:14px; }
+ .geera-film-nav p { font-size:12px; max-width:17ch; }
+ .geera-film-copy { left:20px; right:20px; bottom:32px; grid-template-columns:1fr; gap:20px; }
+ .geera-film-copy h1 { font-size:clamp(30px,6.6vw,48px); }
+ .geera-film-copy p { font-size:18px; }
+ .geera-film-still { object-fit:contain; object-position:center 24%; }
+}
+@media (prefers-reduced-motion:reduce) { .geera-scroll-film.is-scrubbing { height:auto; } .is-scrubbing .geera-stage { position:relative; } }
+
+/* Film and copy own separate grid tracks. No scroll frame can cover text. */
+.geera-stage { display:grid; grid-template-rows:96px minmax(0,1fr) auto; min-height:660px; }
+.geera-film-source { grid-row:2; width:100%; height:100%; min-height:0; object-fit:contain; }
+.geera-film-nav { position:relative; grid-row:1; grid-column:1; align-items:center; padding:20px 32px; }
+.geera-film-text { grid-row:3; padding:24px 32px 40px; min-height:190px; background:var(--paper); }
+.geera-film-copy,.geera-film-caption,.geera-film-end { position:static; margin:0; }
+.geera-film-copy { grid-template-columns:1.3fr 1fr; gap:32px; }
+.geera-film-copy h1 { font-size:clamp(32px,4vw,62px); }
+.geera-stage [hidden] { display:none !important; }
+.geera-film-caption,.geera-film-end { padding-top:20px; }
+.geera-g { height:1.22em; width:.75em; overflow:visible; flex:none; }
+.geera-wordmark { align-items:center; gap:0; }
+.geera-g { transform:translateY(.16em); }
+.geera-film-source { width:min(100%,calc((100svh - 290px)*1.7778)); height:auto; max-height:100%; aspect-ratio:16/9; align-self:center; justify-self:center; mask-image:linear-gradient(to right,transparent,black 10%,black 90%,transparent),linear-gradient(to bottom,transparent,black 8%,black 90%,transparent); mask-composite:intersect; }
+.geera-signoff .geera-wordmark { font-size:inherit; }
+.canvas-product-header { display:flex; justify-content:space-between; align-items:center; gap:24px; padding:8px 0 24px; }
+.canvas-product-header h2 { font-size:26px; margin:0; }
+.canvas-product-header p { max-width:45ch; font-size:14px; }
+.app-embedded .control-card { background:var(--paper); border:0; box-shadow:none; border-radius:0; }
+.app-embedded .showcase { padding:20px 0; background:transparent; border:0; }
+.app-embedded .showcase summary { cursor:pointer; padding:12px 0; font-size:18px; }
+.app-embedded .showcase-grid { display:flex; flex-direction:column; gap:8px; }
+.app-embedded .showcase-grid button { text-align:left; background:var(--wash); color:var(--ink); border:0; border-radius:4px; box-shadow:none; min-height:48px; }
+@media (max-width:800px) {
+ .geera-stage { grid-template-rows:80px minmax(0,1fr) auto; min-height:640px; }
+ .geera-film-nav { padding:16px 20px; }
+ .geera-film-text { padding:20px; min-height:225px; }
+ .geera-film-copy { grid-template-columns:1fr; gap:14px; }
+ .geera-film-copy h1 { font-size:32px; max-width:18ch; }
+ .geera-film-copy p { font-size:16px; margin-bottom:12px; }
+ .canvas-product-header { align-items:start; flex-direction:column; gap:8px; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .geera-site :is(button,a) { transition:transform 180ms, opacity 180ms; }
+  .geera-opening h1 { animation:geera-arrive 800ms both; }
+  @supports (animation-timeline: view()) {
+    .geera-signoff { animation:geera-grow linear both; animation-timeline:view(); animation-range:entry 0% entry 100%; }
+    .geera-film video { animation:geera-open linear both; animation-timeline:view(); animation-range:entry 0% entry 90%; }
+  }
+}
+@keyframes geera-arrive { from { transform:translateY(16px); } to { transform:translateY(0); } }
+@keyframes geera-grow { from { transform:scale(.94); } to { transform:scale(1); } }
+@keyframes geera-open { from { clip-path:inset(0 4%); } to { clip-path:inset(0); } }
+@media (max-width:800px) {
+ .geera-site { padding:0 20px; }
+ .geera-opening { padding-top:36px; }
+ .geera-intro { grid-template-columns:1fr; gap:28px; }
+ .geera-origin { grid-template-columns:1fr; gap:32px; padding:88px 0; }
+ .geera-origin p { font-size:18px; }
+ .geera-footer { margin:0 -20px; padding:24px 20px 0; }
+ .geera-footer > div { align-items:start; flex-direction:column; gap:8px; }
+ .geera-film figcaption { align-items:start; }
+ .geera-film figcaption span { max-width:25ch; }
+ .geera-nav nav { gap:16px; }
+ .geera-nav nav a { font-size:14px; }
+ .geera-opening h1 { max-width:12ch; }
+}

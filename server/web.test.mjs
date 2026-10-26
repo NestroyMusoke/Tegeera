@@ -10,6 +10,7 @@ test("single-origin web server serves only public build assets and protects API 
   const directory = join(root, "dist"); await mkdir(directory); await mkdir(join(directory, "assets"));
   await writeFile(join(directory, "index.html"), "<h1>Tegeera test</h1>");
   await writeFile(join(directory, "assets", "index-abc123.js"), "console.log('public')");
+  await writeFile(join(directory, "film.mp4"), Buffer.from("0123456789"));
   await writeFile(join(directory, ".env"), "SECRET=must-not-leak");
   await writeFile(join(root, "secret.json"), '{"secret":"must-not-leak"}');
   await mkdir(join(root, "outside"));
@@ -24,6 +25,16 @@ test("single-origin web server serves only public build assets and protects API 
   assert.match(page.headers.get("content-security-policy"), /frame-ancestors 'none'/);
   assert.equal((await fetch(base, { method: "HEAD" })).headers.get("content-length"), String(Buffer.byteLength("<h1>Tegeera test</h1>")));
   assert.match((await fetch(`${base}/assets/index-abc123.js`)).headers.get("cache-control"), /immutable/);
+  const film = await fetch(`${base}/film.mp4`);
+  assert.equal(film.headers.get("content-type"), "video/mp4");
+  assert.equal(film.headers.get("accept-ranges"), "bytes");
+  for (const [range, expected] of [["bytes=2-5", "2345"], ["bytes=6-", "6789"], ["bytes=-3", "789"]]) {
+    const partial = await fetch(`${base}/film.mp4`, { headers: { Range: range } });
+    assert.equal(partial.status, 206); assert.equal(await partial.text(), expected);
+  }
+  for (const range of ["bytes=99-", "bytes=5-2", "bytes=-0", "bytes=0-2,4-5", "bytes=-"]) {
+    assert.equal((await fetch(`${base}/film.mp4`, { headers: { Range: range } })).status, 416);
+  }
   for (const path of ["/.env", "/%2eenv", "/..%2fsecret.json", "/%5c..%5csecret.json", "/escaped/private.json", "/server/engine.mjs", "/unknown", "/bad%zz"]) {
     const response = await fetch(base + path); assert.equal(response.status, 404, path); assert.doesNotMatch(await response.text(), /must-not-leak/);
   }

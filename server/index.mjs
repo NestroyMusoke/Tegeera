@@ -181,6 +181,12 @@ return createServer(async (req, res) => {
       return send(res, 429, { error: "The model provider is rate limiting requests. Local drawings still work; try again later." }, headers);
     }
     console.error(error instanceof Error ? error.message : "Interpreter failure");
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      return send(res, 504, { error: "The drawing service took too long to respond. Please try again. Your current drawing is unchanged." }, headers);
+    }
+    if (error instanceof TypeError && error.message === "fetch failed") {
+      return send(res, 503, { error: "The drawing service could not reach its model provider. Check the server connection and try again. Your current drawing is unchanged." }, headers);
+    }
     return send(res, 502, { error: "The model could not produce a valid drawing plan. The current scene is safe." }, headers);
   } finally { res.off("close", onClose); activeRequests -= 1; }
 });

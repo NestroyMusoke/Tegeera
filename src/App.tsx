@@ -58,7 +58,7 @@ const localDevelopment = import.meta.env.MODE === "development";
 
 type PresentationScene = SceneState & { argumentMap?: ArgumentMap };
 
-function App() {
+function App({ initialExplanation = "", initialRequestId = 1, embedded = false }: { initialExplanation?: string; initialRequestId?: number; embedded?: boolean }) {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<PresentationScene[]>([initialScene]);
   const [presentationMode, setPresentationMode] = useState<"auto" | "objects" | "argument">("auto");
@@ -78,6 +78,7 @@ function App() {
   const [openRouterKeyDraft, setOpenRouterKeyDraft] = useState("");
   const [openRouterKey, setOpenRouterKey] = useState("");
   const [localAiEnabled, setLocalAiEnabled] = useState(false);
+  const [bridgeChecked, setBridgeChecked] = useState(!localDevelopment || Boolean(hostedInterpreterUrl));
   const [aiStatus, setAiStatus] = useState(hostedInterpreterUrl ? "Hosted AI configured; checking connection" : "Not enabled");
   const [hostedHealthy, setHostedHealthy] = useState(false);
   const [lastRemoteModel, setLastRemoteModel] = useState<string | null>(null);
@@ -188,7 +189,7 @@ function App() {
         if (controller.signal.aborted || !health?.configured) return;
         setLocalAiEnabled(true);
         setAiStatus("Connected automatically (local)");
-      }).catch(() => undefined);
+      }).catch(() => undefined).finally(() => { if (!controller.signal.aborted) setBridgeChecked(true); });
     return () => controller.abort();
   }, []);
 
@@ -424,6 +425,19 @@ function App() {
   };
 
   speechSubmit.current = (text, timing) => submit(text, timing, sceneRef.current);
+  const initialSubmit = useRef(submit);
+  initialSubmit.current = submit;
+  const initialConsumed = useRef(0);
+  useEffect(() => {
+    if (!initialExplanation.trim() || !bridgeChecked || initialConsumed.current === initialRequestId) return;
+    // Schedule after mounting so StrictMode's rehearsal cannot abort the only submission.
+    const timer = setTimeout(() => {
+      initialConsumed.current = initialRequestId;
+      setInput(initialExplanation);
+      void initialSubmit.current(initialExplanation);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [initialExplanation, initialRequestId, bridgeChecked]);
   const speech = useSpeechSession((transcript, timing) => {
     setRecentSpeech(current => [...current, transcript].slice(-20));
     if (!speechQueue.current!.enqueue({ text: transcript, timing })) {
@@ -462,14 +476,14 @@ function App() {
   };
 
   return (
-    <main className="app">
-      <header className="topbar">
+    <main className={embedded ? "app app-embedded" : "app"}>
+      {!embedded && <><header className="topbar">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">
             <img src="./brand/tegeera-mark-v1.png" alt="" />
           </span>
           <div>
-            <strong>Tegeera</strong>
+            <strong>{embedded ? "Geera" : "Tegeera"}</strong>
             <span>Speak it. See it. Understand it.</span>
           </div>
         </div>
@@ -492,6 +506,8 @@ function App() {
         <strong>You are seeing the vision in active development.</strong>
         <span>Tegeera is not fully ready yet and has only reached a small early group of testers. These demonstrations are backed by automated semantic and rendering checks. Try them, challenge them, and help the vision of accessible real-time explanation grow.</span>
       </aside>
+      </>}
+      {embedded && <header className="canvas-product-header"><h2>Your canvas</h2><p role="status">{hostedInterpreterUrl ? (hostedHealthy ? "Ready for your explanation" : aiStatus) : "Local drawing ready"}</p></header>}
 
       <ScenePresentation scene={visualScene} map={scene.argumentMap}>
 
@@ -538,7 +554,7 @@ function App() {
           </div>
         </form>
 
-        {speech.availability?.engine === "browser" && <p className="speech-privacy" role="note">Browser speech may send audio to your browser's speech provider. Tegeera does not store audio. AI understanding sends explanation text to the configured model service. Speak only what you are comfortable sharing; typing is always available.</p>}
+        {speech.availability?.engine === "browser" && <p className="speech-privacy" role="note">Speech may send audio to your browser's speech provider. Explanations are sent to our model provider. Avoid personal information. Typing is always available.</p>}
         <div className={`speech-status speech-${speech.status}`} role="status">
           <div>
             <strong>
@@ -573,7 +589,7 @@ function App() {
           <div className="live-visual-hint-list">{liveVisualHints.map(({ label, emoji }) => <span className="live-visual-hint" key={label}><span aria-hidden="true">{emoji}</span>{label}</span>)}</div>
         </div> : null}
 
-        <details className="latency-panel">
+        {!embedded && <details className="latency-panel">
           <summary>Device performance evidence</summary>
           {latestLatency ? (
             <output
@@ -594,7 +610,7 @@ function App() {
             Download performance evidence
           </button>
           <small>The evidence contains timings and device capability only—never lesson text or transcripts.</small>
-        </details>
+        </details>}
 
         {editableNouns.length && (openRouterKey || localAiEnabled || hostedInterpreterUrl) ? <details className="latency-panel">
           <summary>Refine a doodle (optional)</summary>
@@ -619,7 +635,7 @@ function App() {
           <small>This sends the selected generated strokes and your short instruction to the configured model. Edits are validated before replacing the cached doodle.</small>
         </details> : null}
 
-        <details className="latency-panel">
+        {!embedded && <details className="latency-panel">
           <summary>Prepare a lesson (optional)</summary>
           <label htmlFor="lesson-topic">Lesson topic</label>
           <input id="lesson-topic" value={lessonTopic} onChange={(event) => setLessonTopic(event.target.value)} placeholder="For example, plant reproduction" />
@@ -631,9 +647,9 @@ function App() {
           }}>Prepare lesson nouns</button>
           <small>This asks the configured model for up to 30 likely nouns and may make up to 30 more requests. Start it explicitly only when your provider budget allows.</small>
           {lessonPrepStatus ? <output>{lessonPrepStatus}</output> : null}
-        </details>
+        </details>}
 
-        <details className="latency-panel">
+        {!embedded && <details className="latency-panel">
           <summary>AI understanding (optional)</summary>
           {!hostedInterpreterUrl ? <>
             <label htmlFor="openrouter-key">OpenRouter key for this session</label>
@@ -663,7 +679,8 @@ function App() {
           <div className="ai-connection-status" role="status" data-ai-enabled={Boolean(hostedHealthy || openRouterKey || localAiEnabled)}><strong>{aiStatus}</strong>{` · Scene model: ${lastRemoteModel ?? (hostedInterpreterUrl ? "reported after first request" : `${DEFAULT_FREE_SCENE_MODEL} (free fallback enabled)`)}`}{` · Doodle model: ${hostedInterpreterUrl ? "hosted service" : DEFAULT_FREE_GLYPH_MODEL}`}</div>
           {glyphIssue ? <p role="alert">{glyphIssue}</p> : null}
           <small>{hostedInterpreterUrl ? "Unfamiliar explanations use the private hosted model; local instructions remain fast. " : localAiEnabled && !openRouterKey ? "Local development uses the private key from .env.local automatically; it never reaches the browser. " : "The pasted key stays in browser memory only and disappears when this page closes. "}{!hostedInterpreterUrl ? "Unsupported explanations use OpenRouter; familiar instructions remain local and fast." : "A generated scene appears after the model replies; noun doodles can finish later."}</small>
-        </details>
+        </details>}
+        {embedded && glyphIssue ? <p role="alert">{glyphIssue}</p> : null}
 
         {pendingGlyphReview.length ? <section className="glyph-review" aria-label="Review generated doodles">
           <strong>Are these doodles worth reusing?</strong>
@@ -715,7 +732,7 @@ function App() {
         ) : null}
 
         <div className="control-footer">
-          <div className="suggestions" aria-label="Example commands">
+          {!embedded && <div className="suggestions" aria-label="Example commands">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion}
@@ -728,7 +745,7 @@ function App() {
                 {suggestion}
               </button>
             ))}
-          </div>
+          </div>}
           <button
             className="undo-button"
             disabled={!canUndo}
@@ -739,21 +756,23 @@ function App() {
           </button>
         </div>
 
-        <section className="showcase" aria-labelledby="showcase-title">
+        <details className="showcase" aria-labelledby="showcase-title">
+          <summary id="showcase-title">Explore examples by subject</summary>
+          {!embedded &&
           <div>
             <p className="eyebrow">Demonstrated visual grammars</p>
-            <h2 id="showcase-title">Try everything Tegeera can currently demonstrate</h2>
+            <h2>Tested explanations</h2>
             <p>Each example below is automatically tested for interpretation and validator safety. Early public testing is still limited, so your visual feedback matters.</p>
-          </div>
+          </div>}
           {showcaseGroups.map((group) => (
-            <details key={group.subject} open>
+            <details key={group.subject}>
               <summary>{group.subject} · {group.examples.length}</summary>
               <div className="showcase-grid">
                 {group.examples.map((example) => <button key={example} type="button" onClick={() => { setInput(example); submit(example, undefined, initialScene, true); }}>{example}</button>)}
               </div>
             </details>
           ))}
-          <details>
+          {!embedded && <details>
             <summary>All {allTestedPhrases.length} accepted language probes</summary>
             <p className="architecture-note"><strong>These are not phrase-to-picture shortcuts.</strong> Every sentence is interpreted through shared semantic frames, typed relation registries, reusable layout planners and one validator. The variations deliberately change subjects, verbs and wording to test whether the same visual grammar generalizes.</p>
             <label htmlFor="example-search">Find a tested explanation</label>
@@ -764,15 +783,15 @@ function App() {
                 .map(({ id, text, layout }) => <button key={id} title={`Reusable visual grammar: ${layout}`} type="button" onClick={() => { setInput(text); submit(text, undefined, initialScene, true); }}><span>{text}</span><small>{layout}</small></button>)}
             </div>
             {exampleLimit < filteredTestedPhrases.length ? <button className="load-more" type="button" onClick={() => setExampleLimit((current) => current + 24)}>Show 24 more</button> : null}
-          </details>
-        </section>
+          </details>}
+        </details>
         {offlineArtworkAttributions.length || provisionalCatalog.attributions.length ? <details className="latency-panel">
           <summary>Artwork credits</summary>
           <p>Approved artwork is listed below when available. Provisional sketches use credited Quick, Draw! strokes, passed a blind 64-pixel model check, and have not been human-reviewed. They are previews, not verified illustrations.</p>
           <ul>{offlineArtworkAttributions.map(({ noun, author, license, sourceUrl }) =>
-            <li key={`${noun}-${sourceUrl}`}>{noun} — {author}, {license}. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}
+            <li key={`${noun}-${sourceUrl}`}>{noun}, {author}, {license}. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}
             {provisionalCatalog.attributions.map(({ noun, license, sourceUrl }) =>
-              <li key={`provisional-${noun}-${sourceUrl}`}>{noun} — Quick, Draw! contributor, {license}; provisional, not human-reviewed. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}</ul>
+              <li key={`provisional-${noun}-${sourceUrl}`}>{noun}, Quick, Draw! contributor, {license}; provisional, not human-reviewed. <a href={sourceUrl} target="_blank" rel="noreferrer">Source drawing</a></li>)}</ul>
         </details> : null}
       </section>
       </ScenePresentation>

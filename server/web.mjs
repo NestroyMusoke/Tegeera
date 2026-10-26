@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInterpreterServer } from "./index.mjs";
 
 const mime = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8", ".json": "application/json", ".webmanifest": "application/manifest+json",
+  ".css": "text/css; charset=utf-8", ".json": "application/json", ".webmanifest": "application/manifest+json", ".mp4": "video/mp4",
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon", ".woff2": "font/woff2" };
 const security = {
   "x-content-type-options": "nosniff", "referrer-policy": "strict-origin-when-cross-origin",
@@ -43,6 +43,21 @@ export function createWebServer({ directory = fileURLToPath(new URL("../dist/", 
       const type = mime[extname(candidate)];
       if (!type || !(await stat(candidate)).isFile()) return missing();
       const bytes = await readFile(candidate);
+      // Browser seeking and mobile media loading use single byte ranges.
+      if (type === "video/mp4") {
+        res.setHeader("accept-ranges", "bytes");
+        const range = req.method === "GET" ? req.headers.range : undefined;
+        if (range) {
+          const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+          const start = match?.[1] ? Number(match[1]) : Math.max(0, bytes.length - Number(match?.[2]));
+          const end = match?.[1] && match?.[2] ? Math.min(Number(match[2]), bytes.length - 1) : bytes.length - 1;
+          if (!match || (!match[1] && !match[2]) || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || start >= bytes.length) {
+            res.writeHead(416, { "content-range": `bytes */${bytes.length}` }); res.end(); return;
+          }
+          res.writeHead(206, { "content-type": type, "content-length": end - start + 1, "content-range": `bytes ${start}-${end}/${bytes.length}`, "cache-control": "no-cache" });
+          res.end(bytes.subarray(start, end + 1)); return;
+        }
+      }
       res.writeHead(200, { "content-type": type, "content-length": bytes.length,
         "cache-control": /^\/assets\/[^/]+-[\w-]+\.(js|css)$/.test(path) ? "public, max-age=31536000, immutable" : "no-cache" });
       res.end(req.method === "HEAD" ? undefined : bytes);

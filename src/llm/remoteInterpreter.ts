@@ -1,5 +1,6 @@
 import type { SceneState } from "../doodlescript/schema";
 import { CORE_SCENE_RULES } from "../../shared/scenePlanningRules.mjs";
+import { Capacitor } from "@capacitor/core";
 
 export interface RemoteInterpretation {
   candidate: unknown;
@@ -9,7 +10,8 @@ export interface RemoteInterpretation {
   providerAttemptMs?: number[];
 }
 
-export const hostedInterpreterUrl = (import.meta.env.VITE_TEGEERA_INTERPRETER_URL as string | undefined)?.trim().replace(/\/$/, "");
+export const hostedInterpreterUrl = (import.meta.env.VITE_TEGEERA_INTERPRETER_URL as string | undefined)?.trim().replace(/\/$/, "")
+  || (import.meta.env.PROD && !Capacitor.isNativePlatform() ? "/api" : undefined);
 export const FREE_SCENE_MODELS = [
   "google/gemma-4-26b-a4b-it:free",
   "google/gemma-4-31b-it:free",

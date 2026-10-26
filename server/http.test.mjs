@@ -11,6 +11,22 @@ async function withServer(settings, run) {
   finally { await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
 }
 
+test("connection failures and timeouts are not reported as invalid drawing plans", async () => {
+  for (const [error, status, message] of [
+    [new TypeError("fetch failed"), 503, /could not reach/],
+    [new DOMException("Timed out", "TimeoutError"), 504, /took too long/],
+  ]) {
+    await withServer({ configuration: modelConfiguration({ NVIDIA_API_KEY: "test-only" }),
+      modelFetch: async () => { throw error; } }, async url => {
+      const response = await fetch(`${url}/v1/interpret`, { method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: "A car and a mouse", scene: { entities: [], relations: [] } }) });
+      assert.equal(response.status, status);
+      assert.match((await response.json()).error, message);
+    });
+  }
+});
+
 test("glyph endpoints negotiate additive geometry without breaking legacy clients", async () => {
   const configuration = modelConfiguration({ NVIDIA_API_KEY: "private-test-key" });
   const stroke = { part: "outline", color: "#2f3e46", pts: [[8,8],[42,8],[42,42],[8,42],[8,8]] };
