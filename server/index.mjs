@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 import { editGlyph, generateGlyph, interpretScene, modelConfiguration, planLesson, validStrokes } from "./engine.mjs";
 import { createProviderBudget } from "./providerBudget.mjs";
+import { createRemoteBudget, remoteBudgetConfiguration } from "./remoteBudget.mjs";
 import { GlyphResultCache } from "./glyphResultCache.mjs";
 import { assertProductionSafety } from "./deploymentSafety.mjs";
 
@@ -90,15 +91,18 @@ function validReusableNouns(nouns) {
     && nouns.every((noun) => typeof noun === "string" && noun.length >= 2 && noun.length <= 48));
 }
 
-export function createInterpreterServer({ configuration = modelConfiguration(), allowedOrigins = origins, modelFetch = fetch, limits = serviceLimits(), budgetFile = process.env.PROVIDER_BUDGET_FILE } = {}) {
-assertProductionSafety({ production: process.env.NODE_ENV === "production", configured: Boolean(configuration), budgetFile, allowedOrigins });
+export function createInterpreterServer({ configuration = modelConfiguration(), allowedOrigins = origins, modelFetch = fetch, limits = serviceLimits(), budgetFile = process.env.PROVIDER_BUDGET_FILE, remoteBudget = remoteBudgetConfiguration(), budgetFetch = fetch } = {}) {
+assertProductionSafety({ production: process.env.NODE_ENV === "production", configured: Boolean(configuration), budgetFile, allowedOrigins, remoteBudget });
 const buckets = new Map();
 const glyphCache = new GlyphResultCache();
 let activeRequests = 0;
-const budget = createProviderBudget({ limit: limits.maxProviderCallsPerDay, file: budgetFile });
+const budget = remoteBudget
+  ? createRemoteBudget({ configuration: remoteBudget, limit: limits.maxProviderCallsPerDay, fetchImpl: budgetFetch })
+  : createProviderBudget({ limit: limits.maxProviderCallsPerDay, file: budgetFile });
 const budgetRemaining = () => budget.remaining();
-const limitedModelFetch = (...args) => {
-  budget.reserve(); // Count every outbound attempt, including corrections and failures, before sending.
+const limitedModelFetch = async (...args) => {
+  await budget.reserve(); // Count every outbound attempt, including corrections and failures, before sending.
+  args[1]?.signal?.throwIfAborted();
   return modelFetch(...args);
 };
 return createServer(async (req, res) => {

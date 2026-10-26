@@ -1,8 +1,8 @@
 import { isAbsolute } from "node:path";
 
-export function assertProductionSafety({ production, configured, budgetFile, allowedOrigins }) {
+export function assertProductionSafety({ production, configured, budgetFile, allowedOrigins, remoteBudget }) {
   if (!production || !configured) return;
-  if (!budgetFile || !isAbsolute(budgetFile)) throw new Error("Production AI requires PROVIDER_BUDGET_FILE on a persistent volume.");
+  if (!remoteBudget && (!budgetFile || !isAbsolute(budgetFile))) throw new Error("Production AI requires a persistent quota file or configured Upstash budget.");
   if (!allowedOrigins.size) throw new Error("Production AI requires an explicit HTTPS ALLOWED_ORIGINS value.");
   for (const origin of allowedOrigins) {
     let url;

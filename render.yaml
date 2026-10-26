@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: geera
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build:web
+    startCommand: npm run start:web
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: NODE_ENV
+        value: production
+      - key: NEBIUS_API_KEY
+        sync: false
+      - key: NEBIUS_MODEL
+        value: nvidia/nemotron-3-super-120b-a12b
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: MAX_PROVIDER_CALLS_PER_DAY
+        value: 80
+      - key: MAX_PROVIDER_CALLS_TOTAL
+        value: 1000
+      - key: MAX_CONCURRENT_MODEL_REQUESTS
+        value: 2
+      - key: MAX_REQUESTS_PER_CLIENT_PER_MINUTE
+        value: 12

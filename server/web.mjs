@@ -67,6 +67,6 @@ export function createWebServer({ directory = fileURLToPath(new URL("../dist/", 
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env.PORT || 8080);
-  const allowedOrigins = new Set((process.env.ALLOWED_ORIGINS || `http://localhost:${port},http://127.0.0.1:${port}`).split(",").map(origin => origin.trim()).filter(Boolean));
+  const allowedOrigins = new Set((process.env.ALLOWED_ORIGINS || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port},http://127.0.0.1:${port}`).split(",").map(origin => origin.trim()).filter(Boolean));
   createWebServer({ apiOptions: { allowedOrigins } }).listen(port, process.env.HOST || "0.0.0.0", () => console.log(`Tegeera web app listening on ${port}; API at /api`));
 }

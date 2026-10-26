@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 const root = resolve(import.meta.dirname, "..");
 test("container source selection includes the complete server import graph", async () => {
   const dockerfile = await readFile(join(root, "server/Dockerfile"), "utf8");
-  const serverFiles = ["package.json", "index.mjs", "engine.mjs", "sceneResponseSchema.mjs", "providerBudget.mjs", "glyphResultCache.mjs", "deploymentSafety.mjs"];
+  const serverFiles = ["package.json", "index.mjs", "engine.mjs", "sceneResponseSchema.mjs", "providerBudget.mjs", "glyphResultCache.mjs", "deploymentSafety.mjs", "remoteBudget.mjs"];
   assert.ok(dockerfile.includes(`COPY ${serverFiles.map((file) => `server/${file}`).join(" ")} ./server/`));
   assert.ok(dockerfile.includes("COPY shared/*.mjs ./shared/"));
   assert.ok(dockerfile.includes('CMD ["node", "server/index.mjs"]'));
@@ -34,7 +34,7 @@ test("container context defaults to excluding files and explicitly excludes cred
   assert.equal(rules[0], "**");
   assert.deepEqual(rules.filter((line) => line.startsWith("!")), [
     "!server/", "!server/Dockerfile", "!server/package.json", "!server/index.mjs",
-    "!server/engine.mjs", "!server/sceneResponseSchema.mjs", "!server/providerBudget.mjs", "!server/glyphResultCache.mjs", "!server/deploymentSafety.mjs", "!shared/", "!shared/*.mjs"
+    "!server/engine.mjs", "!server/sceneResponseSchema.mjs", "!server/providerBudget.mjs", "!server/glyphResultCache.mjs", "!server/deploymentSafety.mjs", "!server/remoteBudget.mjs", "!shared/", "!shared/*.mjs"
   ]);
   assert.deepEqual(rules.slice(-2), ["**/.env*", "**/*.local"]);
 });

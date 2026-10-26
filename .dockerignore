@@ -9,6 +9,7 @@
 !server/providerBudget.mjs
 !server/glyphResultCache.mjs
 !server/deploymentSafety.mjs
+!server/remoteBudget.mjs
 !shared/
 !shared/*.mjs
 **/.env*
