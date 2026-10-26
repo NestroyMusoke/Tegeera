@@ -1,251 +1,208 @@
-# Tegeera
+# Geera
 
-### Speak it. See it. Understand it.
+### Give your words shape.
 
-[Try the live web demo](https://nestroymusoke.github.io/Tegeera/) · [See the current NVIDIA build gates](NVIDIA_BUILD_STATUS.md) · [Evaluate the hosted planner](HOSTED_EVALUATION.md) · [Review the no-cost doodle intake](QUICKDRAW_INTAKE.md) · [See the engineering evidence](ENGINEERING_STATUS.md) · [Read the path to broad visualization](OPEN_VISUALIZATION_ARCHITECTURE.md)
+**What if the explanation in your head could become something others can see, as you speak?** No slides prepared beforehand. No drawing skills required. Just your understanding and your words.
 
-Tegeera turns supported spoken or typed explanations into simple, animated visual stories. For unfamiliar explanations, it can show unverified concept hints immediately while an optional AI planner works toward a validated scene.
+Geera is an early-stage speech-and-text visualization app working toward that vision. This version turns supported explanations into SVG drawings, diagrams, and mixed visual/text explanations, with NVIDIA Nemotron through Nebius handling unfamiliar language.
 
-It is an education product in active development, created and developed by **Nestroy Musoke**. The browser and Android app share the same drawing engine. The new [web-app setup guide](docs/WEB_APP.md) covers browser speech and a single-service website/API deployment; public hosting and physical-device speech verification are separate release steps.
+[![Try Geera](https://img.shields.io/badge/Try-Geera-326b60?style=flat-square)](https://geera-y7hb.onrender.com/)
+[![Stage: early access](https://img.shields.io/badge/Stage-early_access-d2a14b?style=flat-square)](#what-works-today)
+[![Code license: MIT](https://img.shields.io/badge/Code-MIT-263b38?style=flat-square)](LICENSE)
+[![AI: NVIDIA on Nebius](https://img.shields.io/badge/AI-NVIDIA_on_Nebius-263b38?style=flat-square)](#how-it-works)
 
-## The name
+**[Open the app](https://geera-y7hb.onrender.com/) · [Try an explanation](#try-it) · [Architecture](#how-it-works) · [Evidence and failures](#what-testing-has-taught-us) · [Run locally](#run-locally)**
 
-**Tegeera** means **“understand”** in Luganda.
+![Actual Geera reflection diagram showing an incoming light ray, mirror, normal, angle markers and reflected ray.](docs/media/reflection.jpg)
 
-That is not branding added after the product was built. It is the reason the product exists.
+*Captured from the running application. This is a supported reflection example, not a generated marketing mockup or a claim that every explanation works.*
 
-## Why I started building it
+## A classroom started this
 
-When I was studying Biology during my O Levels, one of my teachers had arthritis. He understood the subject deeply, but writing and demonstrating ideas on a chalkboard was physically difficult for him. I watched him work through that pain while trying to help us picture roots absorbing water, food chains, life cycles, and systems inside the body.
+My O-level Biology teacher struggled to write on the chalkboard. I watched the effort it took to turn what he understood into something we could understand too.
 
-Years later, I found myself facing a different version of the same problem. During presentations, I sometimes knew what I meant but struggled to turn the explanation in my head into something an audience could immediately see.
+Later, struggling to explain my own ideas during presentations, I kept returning to that classroom. What if the act of explaining could build the visual alongside the words?
 
-Tegeera grew from both experiences.
+That became Geera. Its name comes from the Luganda **tegeera**, meaning **to understand**. Earlier source files and development records retain the name Tegeera.
 
-It is for the teacher whose hands make drawing difficult. It is for the student who has an idea but cannot explain it confidently. It is for the learner who understands better through pictures than paragraphs. Its long-term vision includes people who are blind or have low vision, people with mobility or dexterity impairments, and anyone whose way of communicating does not fit the tools already in the classroom.
+The ambition reaches from nursery and primary classrooms to secondary school, university, presentations, and everyday explanations. A teacher or student should be able to use the device they already have, including a simple phone. Accessibility, broader language support, and reliable real-time drawing are goals we are building toward; this first version does not yet fulfil all of them.
 
-Tegeera is not a cool demo looking for a problem. It is a personal attempt to make understanding easier to reach.
+## Try it
 
-## The problem is larger than one classroom
+1. Open **[geera-y7hb.onrender.com](https://geera-y7hb.onrender.com/)** and choose **Open canvas**. Render's free instance can take roughly a minute to wake after inactivity.
+2. Type **`Three students share two books`**. Inspect the objects and the shared relationship.
+3. Expand **Explore examples by subject → Science** and choose **`A light ray travels toward a mirror and reflects off it.`**
+4. Try your own wording. Inspect the meaning and arrows, not only whether something appeared. Use **Undo** to return to the previous scene.
+5. For speech, open the HTTPS site in a browser that supports speech recognition, tap **Speak**, allow the microphone, and speak with brief pauses between sentences. **Stop** ends listening. Browser/device support varies; typing remains available.
 
-- The World Health Organization estimates that **1.3 billion people—about 16% of the world—experience significant disability**. [WHO: Disability and health](https://www.who.int/news-room/fact-sheets/detail/disability-and-health)
-- Around **1.71 billion people live with musculoskeletal conditions**, which can limit mobility and dexterity. [WHO: Musculoskeletal health](https://www.who.int/news-room/fact-sheets/detail/musculoskeletal-conditions)
-- UNICEF estimates that **nearly 240 million children live with disabilities**, and says they remain among the children most likely to be excluded from education. [UNICEF: Inclusive education](https://www.unicef.org/education/inclusive-education)
+New AI interpretations can take seconds and use a limited shared allowance. If the service is waking, unavailable, or out of allowance, supported local drawing remains available after the page loads. Do not submit private or sensitive information: explanations may be sent to the model provider, and browser speech may use the browser's speech service.
 
-These numbers do not prove that Tegeera is the answer. They explain why presentation and teaching tools should not assume that everyone can draw quickly, see clearly, speak confidently, or interact in the same way.
+![Actual Geera classroom scene: three student figures connected to two books by a shared relationship.](docs/media/classroom.jpg)
 
-## Run locally with your private AI backend
+## What works today
 
-With dependencies installed and your provider key already saved in the ignored
-`server/.env.local`, run `npm run dev:local` from the project folder. Open
-`http://127.0.0.1:5173`. This starts both services and connects them automatically;
-you do not need a second terminal or to paste a backend URL. Ctrl+C stops both.
-Provider credentials stay on the backend. Startup does not consume model credits.
-`npm run dev:local -- --check` verifies frontend/backend wiring and then exits.
-These commands are computer-local only, not a phone-accessible or deployed service.
-Port 5173 must be free. AI-generated artwork still requires review before reuse.
+| Area | Implemented in this version | Current boundary |
+| --- | --- | --- |
+| Drawings and diagrams | Counts, colors, sharing, queues, movement, and supported science/computing visual families | Coverage is uneven; an accepted plan can still omit meaning or have weak artwork |
+| Broader language | Hosted Nemotron produces structured scene plans for the browser compiler | A network request and sometimes a repair are needed; accuracy is not universal |
+| Abstract and mixed explanations | Source-text maps can combine locally supported illustrations with preserved statements and questions | Text relationships are not fact-checks; some drawable clauses still remain text |
+| Continuous speech | Recognized final phrases enter an ordered queue while capture continues; interim words can show provisional hints | Not word-by-word finished drawing; provider delays can create a backlog, and phone reliability needs more testing |
+| Noun artwork | Procedural figures, licensed provisional sketches, exact-name previews, cached approved art, and generated drafts | Unfamiliar nouns may stay labelled placeholders; recognizability requires review |
+| Access | Browser app, keyboard controls, SVG accessibility descriptions, larger-label detail view, reduced motion | Broader accessibility and classroom testing remain open |
 
-## What Tegeera can do today
+The browser and Capacitor Android project share the drawing engine. The current public entry point is the web app. This repository does not claim a newly verified APK release.
 
-**Concept / argument maps:** abstract explanations can now appear as connected
-panels that preserve the speaker's exact wording, highlight negative words and
-keep questions open. Select **Visual format → Concept / argument map**, or use
-Automatic for longer explanations with definition, comparison or question cues.
-This works locally without model credits. It is a source-text map—not a fact-check
-or an automatically proven argument. [Scope and test evidence](docs/ARGUMENT_MAP_2026-10-21.md).
+## How it works
 
-Tegeera already accepts speech or typed input and turns supported explanations into deterministic, editable SVG scenes. It can currently visualize structures including:
+**The model interprets; the application checks, lays out, and renders.** Scene geometry is produced by code rather than accepted as unrestricted model-generated markup.
 
-- queues, ownership, sharing, movement, gestures, contact, carrying, and handovers;
-- composable object colors across singular objects, counted groups, ownership, and actions;
-- cause-and-effect graphs and multi-step visual flows;
-- plant intake through roots and leaves;
-- circulation, water cycles, life cycles, and food chains;
-- forces, reflection, changing speed, landscapes, angles, and fraction subtraction;
-- stacks, arrays, linked lists, conditions, loops, binary search, processor-memory communication, routines, and doubling growth.
-
-With a **hosted AI service** configured, NVIDIA Nemotron 3 Super on **Nebius Token Factory** is the preferred planner for language the local interpreter cannot handle. The direct NVIDIA Catalog and OpenRouter paths remain development fallbacks, but neither alone meets the current Nebius x NVIDIA hackathon requirement. The model produces a bounded semantic blueprint, not a finished image. The validated scene appears after the planner returns—not instantly. Complete input → part → whole plans are staged with a reusable channel layout and recognizable parts are shown against their whole; the same layout is tested with unrelated plant and machine nouns. Noun drawing is a separate, non-blocking step: the accepted scene can show labelled placeholders while approved offline artwork or validated cached artwork appears synchronously. For an unseen noun, the model can emit coarse-grid strokes; the hosted service returns the complete validated stroke set, then the client reveals it with write-on motion. Direct OpenRouter mode can stream complete strokes progressively. Tegeera smooths those points into bounded SVG paths locally. A short instruction can edit a runtime doodle without regenerating its whole scene. This is a general noun mechanism, not a bank of scripted classroom sentences.
-
-An exact repeat of a previously accepted hosted explanation in the same scene context can reuse its session-memory plan without a second model call. The plan is revalidated on replay; this does not improve unseen-prompt latency or certify visual correctness. The hosted blueprint protocol can also express complete containment, call-return, and changing-speed graphs using the existing SVG grammars; partial graphs fail closed. In a small live probe the model still missed all three target graphs, so protocol support is not a claim of broad accuracy. See [measured real-time inference limits and next gates](docs/REALTIME_INFERENCE.md).
-
-Validated runtime strokes remain session drafts until the user explicitly keeps
-them; shape validation alone cannot prove that they resemble the requested noun.
-Drafts can be previewed in the current scene but are not promoted to the reusable
-or persistent cache. Rejecting a draft cancels in-flight generation and editing,
-so an older response cannot silently restore it. Only approved drafts are saved
-on that device. Previously auto-saved, unreviewed
-artwork is ignored on upgrade. The shipped offline pack has a separate provenance
-and visual-approval gate and is still empty while curation begins. Model-generated
-strokes and editing require a reachable model; the existing scene remains usable
-without one.
-
-The Nebius Token Factory path has passed a private local connectivity check and four bounded comparisons of the same three teacher statements. In the latest run, a shared source-to-graph audit and revised general planner instructions yielded **3/3 semantic-ready blueprints**, each reaching the real renderer with required SVG cues. The force case needed a second model call and 22.2 seconds; the others took 11.4 and 11.9 seconds. Formal phone visual review remains pending, so there are **0/3 recorded strict visual passes**. Three rehearsed cases are not broad accuracy or real-time performance. The public demo and APK do not gain hosted AI merely by merging this code. The secret must be set only on a separately hosted backend, and the public backend URL must be supplied to the client builds. See [server setup](server/README.md), [hosted evaluation](HOSTED_EVALUATION.md), and [build evidence](NVIDIA_BUILD_STATUS.md). The $25 Token Factory credit is for model inference, not a free public backend host. Tegeera's local drawing remains available without a backend; arbitrary-speech understanding and high-quality long-tail artwork do not.
-
-Related work: [SketchAgent (CVPR 2025)](https://openaccess.thecvf.com/content/CVPR2025/html/Vinker_SketchAgent_Language-Driven_Sequential_Sketch_Generation_CVPR_2025_paper.html) demonstrates sequential, language-driven sketching and conversational refinement. Tegeera takes inspiration from that research direction but uses its own stroke schema and rendering code; no SketchAgent code or artwork is copied. Tegeera's focus is a validated, offline-first classroom scene with immediate placeholders and explicit ambiguity handling. The paper is evidence that the method is promising, not evidence that Tegeera can yet draw every requested concept accurately.
-
-Try explanations such as:
-
-```text
-A plant takes in water through its roots and sunlight through its leaves.
-
-A yellow book. Then say: Make the book green.
-
-The food chain starts with grass, then a grasshopper eats it,
-then a frog eats the grasshopper, then a snake eats the frog.
-
-A ball thrown upward slows down, stops for a moment,
-then speeds up as it falls because of gravity.
-
-In a print queue, the first task to arrive is the first one processed.
+```mermaid
+flowchart TD
+    A[Typed explanation] --> C[Interpretation router]
+    B[Browser or Android speech] --> Q[Final phrases: bounded ordered queue]
+    Q --> C
+    C --> L[Fast local interpreter]
+    L -->|Supported meaning| D[DoodleScript]
+    L -->|Unfamiliar language| API[Private Node API]
+    API --> Budget[Reserve provider allowance]
+    Budget --> N[NVIDIA Nemotron on Nebius Token Factory]
+    N --> V[Validate bounded scene blueprint]
+    V --> Compiler[Browser blueprint compiler]
+    Compiler --> D
+    D --> Gates[Schema, semantics, layout and confidence checks]
+    Gates -->|Accepted| S[Commit SVG scene and Undo history]
+    Gates -->|Rejected| Keep[Keep current scene and explain the problem]
+    S --> G[Resolve noun artwork without blocking the scene]
+    G --> Ready[Rig, available artwork or labelled placeholder]
+    G -.-> Draft[Background glyph generation and review]
+    Draft -.->|Approved artwork| S
 ```
 
-When Tegeera cannot support the meaning safely, it preserves the current scene and asks for clarification. A confident-looking wrong diagram is worse than an honest pause.
+The server also validates provider output and bounds repair attempts. Validation catches specified failure classes; it cannot establish complete semantic truth or visual quality.
 
-## What happens after you speak
+### Engineering decisions worth inspecting
 
-```text
-Speech or typed explanation
-          ↓
-Fast local semantic frame ── or ── AI visual blueprint for unfamiliar language
-          ↓
-Local blueprint compiler: safe IDs, density-aware layout and validated glyphs
-          ↓
-DoodleScript: a small, versioned visual language (current: 2.27)
-          ↓
-Schema → meaning → layout → confidence safety gates
-          ↓
-Deterministic, style-normalized SVG scene
-```
+| Decision | Why it matters | Implementation |
+| --- | --- | --- |
+| A constrained visual language | Separates meaning from rendering and makes scene changes testable | [DoodleScript validator](src/doodlescript/validator.ts), [blueprint compiler](src/llm/universalScene.ts) |
+| Ordered speech with backpressure | New speech does not cancel earlier work; a bounded queue prevents unlimited backlog | [SpeechWorkQueue](src/speech/SpeechWorkQueue.ts), [session lifecycle](src/speech/SpeechSession.ts) |
+| Synchronous artwork lookup, asynchronous generation | A slow noun request does not block the accepted semantic scene | [LiveGlyphResolver](src/glyphs/runtimeResolver.ts), [stroke language](src/glyphs/strokeGlyph.ts) |
+| Revalidate cached plans | Exact repeats in the same context can avoid another model call without bypassing validation | [Accepted-plan cache](src/llm/acceptedPlanCache.ts) |
+| Durable usage reservations | Render restarts must not reset the shared provider allowance | [Atomic Redis budget](server/remoteBudget.mjs), [deployment gates](server/deploymentSafety.mjs) |
+| One web origin | The site and `/api` run in one Node service; shared provider keys stay server-side | [Web server](server/web.mjs), [Render blueprint](render.yaml) |
 
-The language model does not draw pixels directly or supply executable scene commands. Every interpretation must become a bounded blueprint, then constrained DoodleScript, and pass independent validation before it can change the lesson. The compiler refuses positive-only plans for explicitly negated statements and plans that drop or visibly misassign a stated colour. This is a conservative safety check, not proof that all other meaning is complete. Direct edits and prepared lessons can remain local and fast.
+The local interpreter has explicit rules and reusable visual grammars. It is not a universal language model. The hosted path fills open entity and relationship slots; it does not retrieve a finished picture for each benchmark sentence. Evaluation expectations live separately from the production grammar. That separation supports generalization, but does not prove it. See the [evaluation methodology](evaluation/README.md).
 
-This architecture gives Tegeera three properties that matter in a classroom:
+## What testing has taught us
 
-1. **Speed:** common supported meanings do not wait for image generation.
-2. **Consistency:** the same meaning produces the same visual structure.
-3. **Safety:** unsupported or contradictory meaning cannot silently mutate the scene.
+**A passing validator is not the same thing as a correct explanation. A fast response is not the same thing as a good drawing.**
 
-## Evidence, not inflated accuracy
+| Finding | Engineering response | Evidence and remaining gap |
+| --- | --- | --- |
+| A model could return valid JSON while losing important relationships | Added source-grounding checks and bounded repair feedback | [Inference investigation](docs/REALTIME_INFERENCE.md); some valid plans still miss meaning |
+| Generated noun strokes passed the schema but looked unrecognizable | Separated artwork review from structural validation; retained honest fallbacks and licensed retrieval | [Glyph quality experiments](docs/GLYPH_QUALITY_STATUS.md); long-tail artwork remains a major gap |
+| Faster reasoning modes traded correctness for speed in small probes | Kept model settings evidence-driven rather than promoting the fastest response | [Timing and quality comparisons](docs/REALTIME_INFERENCE.md); not a general speed benchmark |
+| Late speech callbacks and cancellation could interfere with a newer session | Added session-generation checks, bounded restarts, and regression tests | [23 October reliability report](docs/RELIABILITY_2026-10-23.md) |
+| A roof → gutter → barrel explanation repeatedly produced inconsistent propagation | Recorded the rejection and preserved the scene instead of counting it as success | [Live failure record](docs/RELIABILITY_2026-10-23.md); still unresolved in that checkpoint |
 
-The current checkpoint is reproducible from this repository:
+### Evidence, with scope attached
 
-| Check | Current evidence |
-| --- | ---: |
-| Automated tests | **472 passing**, 3 optional live-provider tests skipped |
-| Generated supported variations | **278** |
-| Incomplete, unsafe, or structurally wrong near-misses | **65 safely clarified** |
-| Independent teacher corpus | **25/60 drawn**, 1 held, 34 clarified |
-| Gold semantic-scene cases | **28/29 automated-ready** |
-| False-confident gold acceptances | **0** |
-| Strict gold result | **3/29** |
-| Formal external classroom review | **Pending**; local visual fixtures are ready |
-| Local SVG-ready benchmark | **18.17 ms p95** over 834 warmed samples in the latest two-worker full run; excludes speech, browser paint, and Android scheduling |
-| Production JavaScript | Guardrailed at **500 KiB** per chunk; largest current chunk **394.08 KiB** |
-| Visual-review output | **52 fixtures**, including a 25-scene implemented-case review station, an unseen-noun procedural scene, single-subject phone previews, and multi-object drawing-area reviews |
+- **26 October:** 89 backend tests passed again during this README update. These use controlled tests; they do not measure live-provider accuracy.
+- **26 October:** 44 focused client regressions passed during the mobile/speech patch, alongside TypeScript, lint, production bundling, and bundle-budget checks. Phone-sized browser screenshots were inspected; physical-phone microphone behavior remains unverified.
+- **23 October historical checkpoint:** 807 client tests passed, with three optional live-provider tests skipped. This is a dated full-run record, not today's asserted total.
+- **9 October local-only baseline:** 25 of 60 independent teacher statements produced validator-safe drawings. This measures local coverage, not visual correctness or hosted AI coverage.
 
-The strict score is intentionally lower than the automated-ready score. Code can prove that required concepts, relationships, visual cues, and validation gates exist. It cannot declare its own drawings beautiful or classroom-ready. Formal external classroom review remains a release gate.
+No overall completion percentage or universal accuracy claim is inferred from these numbers. Small live probes have taken seconds, with repairs sometimes extending them to tens of seconds. The real-time vision remains ahead of the current implementation.
 
-The 60-statement corpus is kept outside production grammar so the product cannot secretly read its answers. The full methodology is documented in [evaluation/README.md](evaluation/README.md).
+**[Evidence ledger and reproduction limits](docs/README_EVIDENCE.md) · [Measured readiness](docs/MEASURED_READINESS.md) · [Hosted evaluation](HOSTED_EVALUATION.md)**
 
-## Accessibility is a direction and a test obligation
+## Run locally
 
-Today, Tegeera includes:
-
-- typed input that remains available when speech recognition fails;
-- semantic accessibility labels for rendered relationships and specialist diagrams;
-- keyboard-readable controls and a detail view for larger labels;
-- reduced-motion behavior that preserves the meaning of animated scenes;
-- color descriptions repeated in visible labels and accessibility summaries, so color is never the only cue;
-- offline-first deterministic rendering for supported lessons;
-- privacy-safe performance reports that exclude lesson text and transcripts.
-
-The vision is broader: screen-reader narration of scene changes, switch and voice navigation, tactile and high-contrast representations, multilingual explanation, and testing led by people with disabilities.
-
-Those features are not claimed as complete. In particular, physical Android accessibility testing and human visual approval are still outstanding.
-
-## Built for openness, not sixty hard-coded answers
-
-Tegeera separates five things that are often mixed together:
-
-- **language understanding** identifies the meaning;
-- **DoodleScript** represents the meaning without deciding its art style;
-- **GlyphResolver** selects a trusted rig, pack/retrieval glyph, cached glyph, or validated model glyph;
-- **layout grammars** decide how relationships should be arranged;
-- **procedural SVG rigs** decide how the scene looks and moves.
-
-New nouns occupy open semantic slots. New visual families are registered as reusable structures rather than complete classroom sentences. Open Peeps and DiceBear informed only the study of pose coverage and modular component architecture; no artwork, paths, proportions, or style definitions were imported. Tegeera's visual identity and procedural rig are original.
-
-See [TEGEERA_POSE_EXPRESSION_SPEC.md](TEGEERA_POSE_EXPRESSION_SPEC.md) for the character contract, [GLYPH_PACK_GUIDE.md](GLYPH_PACK_GUIDE.md) for noun-art curation, and [OPEN_VISUALIZATION_ARCHITECTURE.md](OPEN_VISUALIZATION_ARCHITECTURE.md) for the long-term system design.
-
-## Test it in a browser
-
-Requirements: Node.js 20 or newer.
-
-### Optional broad-language interpreter
-
-Tegeera always attempts its fast deterministic interpreter first. For local development, put a private `OPENROUTER_API_KEY=...` in the root `.env.local` file and run `npm run dev`. The app detects the private local bridge automatically; you do **not** have to paste or enable anything in the interface. The browser never receives that key. The bridge is development-only, bound by Vite's local server and rate-limited. Never commit `.env.local`.
-
-The public GitHub Pages site and installed APK cannot safely bundle a shared API key. They still need a private hosted backend for automatic AI access. Until one exists, the static website offers a personal session-key field; that field is an optional demo fallback, not an automatic public deployment. A GitHub Actions variable or `VITE_` variable is **not** a safe place for the key.
-
-Unsupported language then falls through to an OpenRouter visual planner. The model returns a small semantic blueprint—not HTML, executable code, or unrestricted SVG. The current free-model preference is Gemma 4 26B, then Gemma 4 31B, then the OpenRouter free router when an upstream model errors. Free availability and latency are variable: a recent live semantic request took about 23 seconds, and later requests encountered invalid plans and HTTP 429. Immediate hints are not proof of a real-time accepted scene. A separate noun-stroke request never blocks an already accepted scene. It can emit at most ten strokes with 4–14 bounded grid points apiece and Tegeera's six-color palette. Tegeera compiles each stroke into its allowlisted SVG path format, then handles spacing and scene identities locally. The semantic DoodleScript must pass the same schema, confidence, and layout gates. The interface reports the exact model OpenRouter selected for the semantic request; the doodle model is shown separately. Speculative and lesson prefetch can make additional API calls. See [the interpreter deployment guide](server/README.md) and [glyph pack guide](GLYPH_PACK_GUIDE.md).
-
-For exact concrete-noun matches, a compact offline Unicode emoji index can show an immediate recognizable **preview** while a Tegeera doodle is prepared. Typed words and partial speech can surface up to four such hints before the scene is accepted; they are marked unverified and do not change the canvas. This adds no network call and does not pretend emoji font art is finished Tegeera artwork. The label stays visible; unknown or ambiguous nouns remain honest stickers. See [the third-party notice](THIRD_PARTY_NOTICES.md).
+Use **Node.js 24** and npm. No model key is needed to try the supported local interpreter.
 
 ```bash
 git clone https://github.com/NestroyMusoke/Tegeera.git
 cd Tegeera
-npm install
+npm ci
 npm run dev
 ```
 
-Then open the local URL printed by Vite and try the example explanations above.
+Open the address Vite prints. For the broader-language path, create an ignored `server/.env.local`:
 
-Run the complete engineering checks:
+```dotenv
+NEBIUS_API_KEY=your_private_key
+NEBIUS_MODEL=nvidia/nemotron-3-super-120b-a12b
+```
+
+Then run:
+
+```bash
+npm run dev:local
+```
+
+This starts the local frontend and private backend together. Never commit the key or put it in a `VITE_` variable. Development fallback providers are documented in [server/README.md](server/README.md); the current deployment configuration selects Nebius.
+
+<details>
+<summary><strong>Verification commands</strong></summary>
 
 ```bash
 npm test
+npm test --prefix server
 npm run lint
-npm run build
-node scripts/visual-check.mjs
+npm run build:web
+npm run report:readiness
 ```
 
-The visual-review command generates ignored local fixtures in `.visual-check/`. Open `human-visual-review.html` to inspect and record real drawing decisions.
+`report:readiness` measures the local corpus without model calls. Live benchmarks and provider smoke tests are separate, consume credits, and should be run deliberately. Read the [evaluation guide](HOSTED_EVALUATION.md) before starting them.
 
-## Android remains the product architecture
+</details>
 
-The hosted demo is a second delivery target, not a replacement for the Android application. Both targets use the same React, DoodleScript, renderer, and test suite.
+<details>
+<summary><strong>Deploy or work on Android</strong></summary>
+
+The web build uses `/api` on the same origin:
+
+```bash
+npm run build:web
+npm run start:web
+```
+
+For public AI hosting, configure private credentials, allowed origins and durable quotas using the [Render deployment guide](docs/RENDER_DEPLOYMENT.md). The supplied configuration reserves up to 80 provider attempts per day and 1,000 total, with two concurrent model requests. Attempts are not dollar limits; model credits and hosting availability are separate constraints.
+
+The shared Android target remains in `android/`:
 
 ```bash
 npm run android:sync
-cd android
-gradlew.bat assembleDebug
+npm run android:open
 ```
 
-The Android speech bridge requests microphone permission only after the user presses **Speak**, prefers an offline recognizer, and preserves typed input when speech is unavailable.
+Native compilation requires the Android SDK and compatible Java tooling. Android sync alone is not evidence of a working installed APK.
 
-The web application and Android assets currently build and synchronize successfully. Native Gradle execution on this Windows machine is still blocked by `Unable to establish loopback connection` before Android compilation. The first Linux GitHub Actions run reached Java compilation, then failed because its Java 17 setup could not compile Capacitor's Java 21 source. The workflow now installs Java 21; this correction needs a new run before an APK can be claimed. If it succeeds, open **Actions → Build Tegeera Android debug APK → latest successful run → Artifacts** to download `tegeera-debug-apk`. A debug APK is not a release-signed APK. Physical-device and accessibility verification remain release work.
+</details>
 
-## What comes next
+## Where the next versions go
 
-1. Evaluate validated glyph generation on frozen unseen explanations and add automatic repair only where failures are measurable.
-2. Build and curate the offline teaching-noun glyph pack, then add licensed icon/stroke retrieval without adding lesson-specific production branches.
-3. Collect consented teacher speech covering Ugandan English, different accents, classroom noise, and real corrections.
-4. Complete assistive-technology testing with blind, low-vision, and mobility-impaired participants.
-5. Add multilingual narration, prepared offline lessons, teacher-authored templates, and tactile/export formats.
-6. Publish separate measurements for transcription, meaning, coverage, clarification, visual readability, latency, and memory.
+| Priority | What would count as progress |
+| --- | --- |
+| Continuous speech on real phones | Measured sentence-to-scene delay, reliable Stop/Cancel, and recovery across permissions, interruptions, accents and classroom noise |
+| Broader understanding | Better results on held-out explanations, paraphrases, negation, corrections and mixed abstract/concrete ideas |
+| Recognizable art | More reviewed licensed glyphs, fewer placeholders, and blind recognition checks at the size users actually see |
+| Accessibility | Testing with users of assistive technology, clearer scene narration, and multilingual input |
+| Sustainable deployment | Representative cost/latency measurements, stronger abuse protection, and dependable access during real lessons |
 
-The goal is ambitious: say almost anything teachable and watch it become a clear visual explanation in real time. The current system does not claim to have reached that goal. It proves that the path can be engineered carefully, measured honestly, and expanded without turning into a collection of hard-coded demos.
+Help is most useful when it includes an exact non-sensitive explanation, expected meaning, screenshot, device/browser, and what went wrong. **[Open an issue](https://github.com/NestroyMusoke/Tegeera/issues)** or contribute a general fix with a regression test. Please avoid adding a one-sentence special case solely to make a demonstration pass.
 
-## Current hackathon focus
+## People, credits and license
 
-Tegeera remains Android-first, but the current development target is the Nebius x NVIDIA Global AI Hackathon's Best Apps and Agents track. The required NVIDIA model must run through Nebius Token Factory or Nebius AI Cloud. The earlier product work predates this submission period; the Token Factory integration and subsequent measured improvements are new work and must be distinguished clearly in the submission. A real Nebius request, a working test build, and a demonstrated end-to-end flow are still pending.
+**Created and developed by Nestroy Musoke.** Thank you to **Carol Naddunga** for her help along the way in bringing this first version to life.
 
-## Maker
+- **NVIDIA Nemotron / Nebius Token Factory:** hosted model inference. Their use does not imply endorsement.
+- **Quick, Draw! contributors and Google Creative Lab:** selected provisional human strokes, adapted with attribution under CC BY 4.0. See the [per-drawing credits](GLYPH_CREDITS.md); these are not all original Geera artwork or a fully reviewed art library.
+- **Emojibase / Unicode CLDR:** metadata for exact-name emoji previews; device fonts supply the emoji artwork. [Notices and licenses](THIRD_PARTY_NOTICES.md).
+- **Open Peeps and DiceBear:** structural inspiration for studying modular poses and expressions, not copied artwork. [Original rig specification](TEGEERA_POSE_EXPRESSION_SPEC.md).
+- **SketchAgent:** related research in sequential language-driven sketching. [Research discussion](OPEN_VISUALIZATION_ARCHITECTURE.md). Its results are not Geera's results.
+- **Gemini:** the website's supplied brand film is a generated identity asset, not drawing-engine output. The README screenshots above show the actual app's drawings.
 
-**Created and developed by Nestroy Musoke.**
+Source code: **[MIT](LICENSE)**. Third-party data and artwork retain their own licenses and attribution requirements.
 
-Tegeera began with a teacher who kept teaching through pain, a student who remembered, and a belief that understanding should not depend on how easily someone can fill a chalkboard.
-
-## License
-
-MIT
+Geera began with a teacher working hard to make an idea visible. The goal is to make that act of understanding easier to share.
