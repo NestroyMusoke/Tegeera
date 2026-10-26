@@ -21,6 +21,31 @@ class Recognition implements BrowserRecognition {
 const host = (extra = {}) => ({ isSecureContext: true, SpeechRecognition: Recognition, ...extra }) as unknown as Window;
 afterEach(() => { Recognition.instances = []; vi.useRealTimers(); });
 
+it("releases a recognizer that never starts and allows a retry", async () => {
+  vi.useFakeTimers();
+  class Silent extends Recognition { start = vi.fn(); }
+  const engine = new BrowserSpeechEngine(host({ SpeechRecognition: Silent }));
+  const events = vi.fn(); engine.subscribe(events);
+  const pending = engine.start();
+  await vi.advanceTimersByTimeAsync(15000); await pending;
+  expect(events).toHaveBeenCalledWith(expect.objectContaining({ type: "error", code: "start-timeout" }));
+  expect(Recognition.instances[0].abort).toHaveBeenCalledOnce();
+  const retry = engine.start();
+  Recognition.instances[1].onstart?.(); await retry;
+  expect(events).toHaveBeenLastCalledWith({ type: "listening", listening: true });
+  await engine.cancel();
+});
+
+it("cancelling before permission resolves clears the startup deadline", async () => {
+  vi.useFakeTimers();
+  class Silent extends Recognition { start = vi.fn(); }
+  const engine = new BrowserSpeechEngine(host({ SpeechRecognition: Silent }));
+  const events = vi.fn(); engine.subscribe(events);
+  const pending = engine.start(); await engine.cancel(); await pending;
+  await vi.advanceTimersByTimeAsync(16000);
+  expect(events).not.toHaveBeenCalled();
+});
+
 it("detects missing APIs and insecure contexts without prompting", async () => {
   expect((await new BrowserSpeechEngine(host({ SpeechRecognition: undefined })).initialize()).supported).toBe(false);
   expect((await new BrowserSpeechEngine(host({ isSecureContext: false })).initialize()).supported).toBe(false);
@@ -30,7 +55,7 @@ it("supports prefixed browsers and configures continuous recognition", async () 
   const engine = new BrowserSpeechEngine(host({ SpeechRecognition: undefined, webkitSpeechRecognition: Recognition }));
   expect((await engine.initialize()).engine).toBe("browser");
   await engine.start();
-  expect(Recognition.instances[0]).toMatchObject({ continuous: true, interimResults: true, lang: "en-UG" });
+  expect(Recognition.instances[0]).toMatchObject({ continuous: true, interimResults: true, lang: "en-US" });
 });
 it("deduplicates cumulative finals, emits interim text, and accepts a repeated phrase at a new index", async () => {
   const engine = new BrowserSpeechEngine(host());

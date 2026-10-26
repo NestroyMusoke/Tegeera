@@ -7,20 +7,44 @@ export function GeeraWordmark() {
 export default function GeeraFilm({ openCanvas }: { openCanvas: () => void }) {
   const root = useRef<HTMLElement>(null);
   const film = useRef<HTMLVideoElement>(null);
+  const frame = useRef<HTMLImageElement>(null);
+  const [mobile] = useState(() => matchMedia("(max-width: 800px)").matches);
   const [progress, setProgress] = useState(0);
   const [scrubbing, setScrubbing] = useState(false);
   useEffect(() => {
-    const section = root.current!, video = film.current!;
+    const section = root.current!, video = film.current;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     let raf = 0, target = 0, failed = false;
+    let disposed = false, next = 0;
+    const frames = new Map<number, HTMLImageElement>();
+    const loaded = new Set<number>();
+    const paint = () => {
+      if (!frame.current || !loaded.size) return;
+      const desired = Math.round(target * 59);
+      const closest = [...loaded].reduce((a, b) => Math.abs(b - desired) < Math.abs(a - desired) ? b : a);
+      const source = frames.get(closest)!.src;
+      if (frame.current.src !== source) frame.current.src = source;
+    };
+    const preload = () => {
+      if (disposed || next >= 60) return;
+      const index = next++, image = new Image();
+      frames.set(index, image);
+      image.onload = () => { if (!disposed) { loaded.add(index); paint(); preload(); } };
+      image.onerror = () => { if (!disposed) preload(); };
+      image.src = `${import.meta.env.BASE_URL}media/film/mobile/${index}.webp`;
+    };
+    // About 206 KB total, with four downloads at a time and no video seeking.
+    if (mobile && !reduced.matches) for (let i = 0; i < 4; i++) preload();
     const seek = () => {
+      if (mobile) { paint(); return; }
+      if (!video) return;
       if (video.seeking || !Number.isFinite(video.duration) || video.duration <= 0) return;
       const time = target * Math.max(0, video.duration - .04);
       if (Math.abs(video.currentTime - time) > .025) video.currentTime = time;
     };
     const measure = () => {
       raf = 0;
-      const stage = video.parentElement!;
+      const stage = section.firstElementChild as HTMLElement;
       const span = section.offsetHeight - stage.clientHeight;
       const p = reduced.matches || failed ? 0 : Math.max(0, Math.min(1, -section.getBoundingClientRect().top / Math.max(1, span)));
       target = Math.min(1, p / .88);
@@ -28,19 +52,19 @@ export default function GeeraFilm({ openCanvas }: { openCanvas: () => void }) {
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(measure); };
     const onError = () => { failed = true; setScrubbing(false); setProgress(0); };
-    video.addEventListener("loadedmetadata", schedule);
-    video.addEventListener("seeked", seek);
-    video.addEventListener("error", onError);
+    video?.addEventListener("loadedmetadata", schedule);
+    video?.addEventListener("seeked", seek);
+    video?.addEventListener("error", onError);
     reduced.addEventListener("change", schedule);
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     measure();
-    return () => { cancelAnimationFrame(raf); video.removeEventListener("loadedmetadata", schedule); video.removeEventListener("seeked", seek); video.removeEventListener("error", onError); reduced.removeEventListener("change", schedule); window.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); };
-  }, []);
+    return () => { disposed = true; frames.forEach(image => { image.onload = null; image.onerror = null; }); frames.clear(); cancelAnimationFrame(raf); video?.removeEventListener("loadedmetadata", schedule); video?.removeEventListener("seeked", seek); video?.removeEventListener("error", onError); reduced.removeEventListener("change", schedule); window.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); };
+  }, [mobile]);
   const beat = progress < .2 ? 0 : progress < .52 ? 1 : progress < .82 ? 2 : 3;
   return <section ref={root} id="home" className={`geera-scroll-film ${scrubbing ? "is-scrubbing" : "is-still"}`} aria-label="Geera brand film">
     <div className="geera-stage">
-      <video className="geera-film-source" ref={film} src={`${import.meta.env.BASE_URL}media/geera-motion.mp4`} poster={`${import.meta.env.BASE_URL}media/film/mobile/0.webp`} muted playsInline preload="auto" aria-label="A ribbon forms Geera’s g as you scroll" />
+      {mobile ? <img className="geera-film-source" ref={frame} src={`${import.meta.env.BASE_URL}media/film/mobile/0.webp`} alt="A ribbon forms Geera’s g as you scroll" /> : <video className="geera-film-source" ref={film} src={`${import.meta.env.BASE_URL}media/geera-motion.mp4`} poster={`${import.meta.env.BASE_URL}media/film/mobile/0.webp`} muted playsInline preload="auto" aria-label="A ribbon forms Geera’s g as you scroll" />}
       <header className="geera-film-nav"><a href="#home" aria-label="Geera home"><GeeraWordmark /></a><button onClick={openCanvas}>Open canvas</button></header>
       <div className="geera-film-text">
         <div className="geera-film-copy" hidden={beat !== 0}>

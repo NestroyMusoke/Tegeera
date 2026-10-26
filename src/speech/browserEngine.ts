@@ -25,6 +25,7 @@ export class BrowserSpeechEngine implements SpeechEngine {
   private listeners = new Set<SpeechEventListener>();
   private current?: BrowserRecognition;
   private settleStart?: () => void;
+  private startTimer?: ReturnType<typeof setTimeout>;
   constructor(private readonly host: SpeechWindow = window) {}
 
   private constructorForBrowser(): RecognitionConstructor | undefined {
@@ -47,7 +48,8 @@ export class BrowserSpeechEngine implements SpeechEngine {
     if (!Constructor || !this.host.isSecureContext) throw new Error("Browser speech requires a supported browser and HTTPS.");
     const recognition = new Constructor();
     this.current = recognition;
-    recognition.lang = "en-UG";
+    // English service locale supported more widely than en-UG.
+    recognition.lang = "en-US";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -55,8 +57,9 @@ export class BrowserSpeechEngine implements SpeechEngine {
     let terminalError = false;
     const live = () => this.current === recognition;
     return new Promise<void>((resolve, reject) => {
-      this.settleStart = resolve;
-      recognition.onstart = () => { if (live()) { this.emit({ type: "listening", listening: true }); resolve(); } };
+      const settle = () => { clearTimeout(this.startTimer); this.startTimer = undefined; resolve(); };
+      this.settleStart = settle;
+      recognition.onstart = () => { if (live()) { this.emit({ type: "listening", listening: true }); settle(); } };
       recognition.onresult = event => {
         if (!live() || terminalError) return;
         const partial: string[] = [];
@@ -82,6 +85,8 @@ export class BrowserSpeechEngine implements SpeechEngine {
           "not-allowed": "Microphone permission was denied. Enable it in your browser's site settings to try again.",
           "service-not-allowed": "Your browser blocked its speech recognition service.",
           "audio-capture": "No working microphone was found.",
+          "language-not-supported": "This browser's speech service does not support English. Try Chrome with speech services enabled.",
+          "start-timeout": "The microphone did not start. Allow microphone access in this site's browser settings, then tap Speak again. If it still fails, open this page directly in Chrome.",
           network: "The browser speech service could not connect. Check your connection.",
           "no-speech": "No speech was recognized.",
           aborted: "Speech recognition was interrupted."
@@ -91,18 +96,21 @@ export class BrowserSpeechEngine implements SpeechEngine {
         this.settleStart = undefined;
         this.emit({ type: "error", code: event.error === "no-speech" ? "6" : event.error,
           message: messages[event.error] ?? "Browser speech recognition stopped unexpectedly." });
-        resolve();
+        settle();
         try { recognition.abort(); } catch { /* already ended */ }
       };
       recognition.onend = () => {
         if (!live()) return;
         this.current = undefined;
         this.settleStart = undefined;
-        resolve();
+        settle();
         if (!terminalError) this.emit({ type: "ended" });
       };
+      this.startTimer = setTimeout(() => {
+        if (live()) recognition.onerror?.({ error: "start-timeout" });
+      }, 15000);
       try { recognition.start(); }
-      catch (error) { this.current = undefined; this.settleStart = undefined; reject(error); }
+      catch (error) { clearTimeout(this.startTimer); this.current = undefined; this.settleStart = undefined; reject(error); }
     });
   }
   async stop(): Promise<void> { this.current?.stop(); }

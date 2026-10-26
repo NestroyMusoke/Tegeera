@@ -87,7 +87,7 @@
 .geera-stage [hidden] { display:none !important; }
 .geera-film-caption,.geera-film-end { padding-top:20px; }
 .geera-g { height:1.22em; width:.75em; overflow:visible; flex:none; }
-.geera-wordmark { align-items:center; gap:0; }
+.geera-wordmark { align-items:center; letter-spacing:-.025em; gap:.025em; }
 .geera-g { transform:translateY(.16em); }
 .geera-film-source { width:min(100%,calc((100svh - 290px)*1.7778)); height:auto; max-height:100%; aspect-ratio:16/9; align-self:center; justify-self:center; mask-image:linear-gradient(to right,transparent,black 10%,black 90%,transparent),linear-gradient(to bottom,transparent,black 8%,black 90%,transparent); mask-composite:intersect; }
 .geera-signoff .geera-wordmark { font-size:inherit; }
@@ -121,6 +121,14 @@
 @keyframes geera-open { from { clip-path:inset(0 4%); } to { clip-path:inset(0); } }
 @media (max-width:800px) {
  .geera-site { padding:0 20px; }
+ .geera-canvas:not(:empty) { margin:40px -8px; padding:8px; }
+ .app-embedded .control-card { width:100%; padding:16px 8px; margin:0; }
+ .app-embedded .empty-canvas { padding:24px; text-align:center; }
+ .app-embedded .empty-canvas p { font-size:22px; line-height:1.3; max-width:24ch; }
+ .app-embedded .empty-canvas small { font-size:14px; line-height:1.5; }
+ .app-embedded .speech-privacy { font-size:14px; line-height:1.5; }
+ .app-embedded .speech-status { font-size:15px; line-height:1.5; }
+ .geera-stage { min-height:560px; }
  .geera-opening { padding-top:36px; }
  .geera-intro { grid-template-columns:1fr; gap:28px; }
  .geera-origin { grid-template-columns:1fr; gap:32px; padding:88px 0; }

@@ -6,7 +6,7 @@ import GeeraExperience from "./GeeraExperience";
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
-  vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+  vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("reduced-motion"), addEventListener() {}, removeEventListener() {} }));
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
