@@ -14,12 +14,15 @@ it("scrubs cached phone frames forwards and backwards without loading video", ()
   const { container } = render(<GeeraFilm openCanvas={() => undefined} />);
   expect(container.querySelector("video")).toBeNull();
   expect(images).toHaveLength(4);
-  act(() => { for (let i = 0; i < 60; i++) images[i].onload?.(); });
-  expect(images).toHaveLength(60);
   const section = container.querySelector("section")!;
   Object.defineProperty(section, "offsetHeight", { value: 4000 });
   Object.defineProperty(section.firstElementChild, "clientHeight", { value: 800 });
   const rect = vi.spyOn(section, "getBoundingClientRect");
+  rect.mockReturnValue({ top: -3200 } as DOMRect);
+  act(() => { fireEvent.scroll(window); callback(0); images[0].onload?.(); });
+  expect(images[4].src).toContain("/59.webp");
+  act(() => { for (let i = 1; i < 60; i++) images[i].onload?.(); });
+  expect(images).toHaveLength(60);
   rect.mockReturnValue({ top: -3200 } as DOMRect);
   act(() => { fireEvent.scroll(window); callback(0); });
   expect(container.querySelector(".geera-film-source")?.getAttribute("src")).toContain("/59.webp");

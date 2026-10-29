@@ -29,6 +29,10 @@ The ambition reaches from nursery and primary classrooms to secondary school, un
 
 ## Try it
 
+**[Watch the story and demo](https://www.youtube.com/watch?v=R_VkPubjWnQ)** · **[Fresh judge walkthrough and live results](docs/JUDGE_TESTING_2026-10-29.md)**
+
+The walkthrough records five accepted relationship scenes and two rejected explanations from one fresh deployed-app session, including unfinished artwork. It is not a universal accuracy claim or a physical-phone speech verification.
+
 1. Open **[geera-y7hb.onrender.com](https://geera-y7hb.onrender.com/)** and choose **Open canvas**. Render's free instance can take roughly a minute to wake after inactivity.
 2. Type **`Three students share two books`**. Inspect the objects and the shared relationship.
 3. Expand **Explore examples by subject → Science** and choose **`A light ray travels toward a mirror and reflects off it.`**
@@ -93,7 +97,29 @@ The server also validates provider output and bounds repair attempts. Validation
 
 The local interpreter has explicit rules and reusable visual grammars. It is not a universal language model. The hosted path fills open entity and relationship slots; it does not retrieve a finished picture for each benchmark sentence. Evaluation expectations live separately from the production grammar. That separation supports generalization, but does not prove it. See the [evaluation methodology](evaluation/README.md).
 
+## Trade-offs we chose deliberately
+
+Geera focuses on one task: making an explanation visible. The current architecture balances that task against limited inference credits, ordinary devices, and the risk of drawing the wrong relationship.
+
+| Choice | What it buys | What it costs, and the next step |
+| --- | --- | --- |
+| Local visual grammars plus hosted Nemotron 3 Super | Supported explanations render without a model request; unfamiliar language gets broader reasoning | Local coverage is bounded and hosted calls take seconds. Measure routing and repair rates on unseen explanations before changing the model. |
+| Schema-constrained plans and bounded repair | Inspectable entities and relationships, with opportunities to catch malformed or incomplete output | Valid JSON can still miss meaning, and repairs add latency and tokens. Evaluate semantic correctness separately from structure. |
+| Keep tested reasoning settings | Protects completeness on the small difficult-graph probes we recorded | Faster modes sometimes lost important relationships. A smaller/faster model needs its own quality evaluation; it is not an automatic upgrade. |
+| Procedural figures, retrieved sketches, and labelled placeholders | Available artwork can appear without waiting for fresh generation | Style and recognizability vary. Build a reviewed, consistent doodle vocabulary and improve unfamiliar-object generation in the background. A placeholder is not a finished illustration. |
+| Final recognized phrases processed in order | Preserves speech order and supports Undo while listening continues | This is not word-by-word finished drawing. Incremental scene updates need stronger context handling and real-phone latency measurements. |
+| Hosted inference and lightweight browser SVG | Users do not need to run the language model on their own device | Unfamiliar explanations need connectivity. Broad low-end-device, accessibility, and classroom performance remain to be tested. |
+| Free Render hosting and bounded provider usage | Makes a publicly accessible early version affordable | Idle services can take about a minute to wake, and shared inference allowance is finite. The brand animation is optional; use **Open canvas** for the product. |
+
+The [inference investigation](docs/REALTIME_INFERENCE.md) records the actual model/mode experiments and their limitations. We used Nebius Token Factory's hosted API, not self-managed GPU instances or a claimed autoscaling deployment. The roadmap is to reduce waiting while improving meaning and artwork together, rather than counting a faster but less accurate drawing as progress.
+
 ## What testing has taught us
+
+### Speech portability and presentation cost
+
+Speech recognition is supplied by the browser or Android service, not by Nemotron. Chrome's continuous recognition path remains separate from drawing inference. Browsers without that service, including Opera configurations, offer device keyboard dictation into the same explanation field followed by **Draw it**. This fallback does not provide continuous in-app listening. A cross-browser transcription service is a remaining integration, with additional audio privacy, latency and inference-cost considerations.
+
+The brand film is separate from inference. Its existing media files are preserved: the phone loader prioritizes frames near the current scroll position, rendering updates avoid a React update for every scroll position, and the web server supplies cache validators plus a one-hour media cache. These changes reduce repeat transfers and unnecessary work; they cannot remove Render's cold start or make the first download instantaneous.
 
 **A passing validator is not the same thing as a correct explanation. A fast response is not the same thing as a good drawing.**
 

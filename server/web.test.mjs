@@ -28,6 +28,12 @@ test("single-origin web server serves only public build assets and protects API 
   const film = await fetch(`${base}/film.mp4`);
   assert.equal(film.headers.get("content-type"), "video/mp4");
   assert.equal(film.headers.get("accept-ranges"), "bytes");
+  assert.equal(film.headers.get("cache-control"), "public, max-age=3600");
+  const unchanged = await fetch(`${base}/film.mp4`, { headers: { "If-None-Match": film.headers.get("etag") } });
+  assert.equal(unchanged.status, 304);
+  assert.equal(await unchanged.text(), "");
+  assert.equal((await fetch(`${base}/film.mp4`, { headers: { "If-None-Match": '"old-version"' } })).status, 200);
+  assert.equal(page.headers.get("cache-control"), "no-cache");
   for (const [range, expected] of [["bytes=2-5", "2345"], ["bytes=6-", "6789"], ["bytes=-3", "789"]]) {
     const partial = await fetch(`${base}/film.mp4`, { headers: { Range: range } });
     assert.equal(partial.status, 206); assert.equal(await partial.text(), expected);

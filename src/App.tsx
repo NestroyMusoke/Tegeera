@@ -541,18 +541,26 @@ function App({ initialExplanation = "", initialRequestId = 1, embedded = false }
               setHoldNotice("AI request stopped. The previous drawing is unchanged.");
             }}>Stop AI</button> : null}
             <button
-              aria-label={isListening ? "Stop listening" : "Start listening"}
+              aria-label={speech.status === "unavailable" ? "Use device dictation" : isListening ? "Stop listening" : "Start listening"}
               aria-pressed={isListening}
               className={`mic-button ${isListening ? "listening" : ""}`}
-              disabled={speech.status === "unavailable" || (speechBusy && !isListening)}
-              onClick={() => void (isListening ? speech.stop() : speech.start())}
+              disabled={speechBusy && !isListening && speech.status !== "unavailable"}
+              onClick={() => {
+                if (speech.status === "unavailable") {
+                  document.getElementById("teacher-input")?.focus();
+                  return;
+                }
+                void (isListening ? speech.stop() : speech.start());
+              }}
               type="button"
             >
               <span aria-hidden="true">{isListening ? "■" : "●"}</span>
-              {isListening ? "Stop" : "Speak"}
+              {speech.status === "unavailable" ? "Device dictation" : isListening ? "Stop" : "Speak"}
             </button>
           </div>
         </form>
+
+        {speech.status === "unavailable" && <p role="note">Tap Device dictation, then use your phone keyboard’s microphone, Windows + H on Windows, or your Mac’s Dictation shortcut. Review the words and tap Draw it. Geera cannot switch on device dictation itself.</p>}
 
         {speech.availability?.engine === "browser" && <p className="speech-privacy" role="note">Speech may send audio to your browser's speech provider. Explanations are sent to our model provider. Avoid personal information. Typing is always available.</p>}
         <div className={`speech-status speech-${speech.status}`} role="status">

@@ -15,7 +15,8 @@ export default function GeeraFilm({ openCanvas }: { openCanvas: () => void }) {
     const section = root.current!, video = film.current;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     let raf = 0, target = 0, failed = false;
-    let disposed = false, next = 0;
+    let disposed = false;
+    const pending = new Set(Array.from({ length: 60 }, (_, index) => index));
     const frames = new Map<number, HTMLImageElement>();
     const loaded = new Set<number>();
     const paint = () => {
@@ -26,10 +27,20 @@ export default function GeeraFilm({ openCanvas }: { openCanvas: () => void }) {
       if (frame.current.src !== source) frame.current.src = source;
     };
     const preload = () => {
-      if (disposed || next >= 60) return;
-      const index = next++, image = new Image();
+      if (disposed || reduced.matches || !pending.size) return;
+      // Follow the visitor, including reverse scroll, instead of waiting for
+      // every earlier frame to download before fetching the visible position.
+      const desired = Math.round(target * 59);
+      const index = [...pending].reduce((a, b) => Math.abs(b - desired) < Math.abs(a - desired) ? b : a);
+      pending.delete(index);
+      const image = new Image();
       frames.set(index, image);
-      image.onload = () => { if (!disposed) { loaded.add(index); paint(); preload(); } };
+      image.onload = () => {
+        const ready = () => { if (!disposed) { loaded.add(index); paint(); preload(); } };
+        // Decode before swapping the visible source to avoid decode stalls on scroll.
+        if (image.decode) void image.decode().then(ready, ready);
+        else ready();
+      };
       image.onerror = () => { if (!disposed) preload(); };
       image.src = `${import.meta.env.BASE_URL}media/film/mobile/${index}.webp`;
     };
@@ -48,7 +59,9 @@ export default function GeeraFilm({ openCanvas }: { openCanvas: () => void }) {
       const span = section.offsetHeight - stage.clientHeight;
       const p = reduced.matches || failed ? 0 : Math.max(0, Math.min(1, -section.getBoundingClientRect().top / Math.max(1, span)));
       target = Math.min(1, p / .88);
-      setProgress(p); setScrubbing(!reduced.matches && !failed); seek();
+      // React only needs caption boundaries; frame updates stay outside React.
+      const captionProgress = p < .2 ? 0 : p < .52 ? .2 : p < .82 ? .52 : .82;
+      setProgress(captionProgress); setScrubbing(!reduced.matches && !failed); seek();
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(measure); };
     const onError = () => { failed = true; setScrubbing(false); setProgress(0); };

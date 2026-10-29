@@ -36,7 +36,7 @@ export class BrowserSpeechEngine implements SpeechEngine {
     return { supported, engine: supported ? "browser" : "unsupported", reason: supported
       ? "Browser speech may send audio to your browser's speech provider. Tap Speak to grant microphone access."
       : !this.host.isSecureContext ? "Microphone access requires HTTPS or localhost. Typed input still works."
-        : "This browser does not provide speech recognition. You can type your explanation or try another browser." };
+        : "This browser does not provide built-in speech recognition. Use device dictation in the explanation field, then tap Draw it. For continuous in-app listening, open Geera in Chrome." };
   }
   async requestPermission(): Promise<SpeechPermission> {
     // Recognition.start owns the browser permission prompt; do not open a second audio stream.

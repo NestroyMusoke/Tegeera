@@ -41,7 +41,19 @@ export function createWebServer({ directory = fileURLToPath(new URL("../dist/", 
       const distance = relative(root, candidate);
       if (isAbsolute(distance) || distance === ".." || distance.startsWith(`..${sep}`)) return missing();
       const type = mime[extname(candidate)];
-      if (!type || !(await stat(candidate)).isFile()) return missing();
+      const metadata = await stat(candidate);
+      if (!type || !metadata.isFile()) return missing();
+      // Validators avoid rereading/retransmitting unchanged media. Short freshness
+      // permits browser reuse while allowing unversioned artwork to be replaced.
+      const etag = `W/"${metadata.size.toString(16)}-${metadata.mtimeMs.toString(16)}"`;
+      const cacheControl = /^\/assets\/[^/]+-[\w-]+\.(js|css)$/.test(path)
+        ? "public, max-age=31536000, immutable"
+        : /\.(mp4|webp|woff2)$/.test(path) ? "public, max-age=3600" : "no-cache";
+      res.setHeader("etag", etag);
+      res.setHeader("cache-control", cacheControl);
+      if (req.headers["if-none-match"]?.split(",").map(value => value.trim()).some(value => value === etag || value === "*")) {
+        res.writeHead(304); res.end(); return;
+      }
       const bytes = await readFile(candidate);
       // Browser seeking and mobile media loading use single byte ranges.
       if (type === "video/mp4") {
@@ -54,12 +66,12 @@ export function createWebServer({ directory = fileURLToPath(new URL("../dist/", 
           if (!match || (!match[1] && !match[2]) || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || start >= bytes.length) {
             res.writeHead(416, { "content-range": `bytes */${bytes.length}` }); res.end(); return;
           }
-          res.writeHead(206, { "content-type": type, "content-length": end - start + 1, "content-range": `bytes ${start}-${end}/${bytes.length}`, "cache-control": "no-cache" });
+          res.writeHead(206, { "content-type": type, "content-length": end - start + 1, "content-range": `bytes ${start}-${end}/${bytes.length}` });
           res.end(bytes.subarray(start, end + 1)); return;
         }
       }
       res.writeHead(200, { "content-type": type, "content-length": bytes.length,
-        "cache-control": /^\/assets\/[^/]+-[\w-]+\.(js|css)$/.test(path) ? "public, max-age=31536000, immutable" : "no-cache" });
+        "cache-control": cacheControl });
       res.end(req.method === "HEAD" ? undefined : bytes);
     } catch { missing(); }
   });

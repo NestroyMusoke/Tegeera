@@ -12,6 +12,20 @@ vi.mock("./speech/androidEngine", async () => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 beforeEach(() => { (getDefaultSpeechEngine() as TestSpeechEngine).calls.length = 0; });
 
+it("offers device dictation without attempting unsupported browser recognition", async () => {
+  const engine = getDefaultSpeechEngine() as TestSpeechEngine;
+  vi.spyOn(engine, "initialize").mockResolvedValue({ supported: false, engine: "unsupported" });
+  render(<App />);
+  const button = await screen.findByRole("button", { name: "Use device dictation" });
+  fireEvent.click(button);
+  expect(document.activeElement).toBe(screen.getByLabelText("Your explanation"));
+  expect(engine.calls).not.toContain("start");
+  expect(screen.getByText(/Windows \+ H/)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Your explanation"), { target: { value: "Draw a car" } });
+  fireEvent.click(screen.getByRole("button", { name: "Draw it" }));
+  await waitFor(() => expect(screen.getByText("Revision 1")).toBeTruthy());
+}, 20_000);
+
 it("stops microphone capture when the page becomes hidden", async () => {
   const engine = getDefaultSpeechEngine() as TestSpeechEngine;
   render(<App />);
